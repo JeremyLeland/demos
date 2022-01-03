@@ -1,0 +1,89 @@
+<link rel='stylesheet' href='./style.css'>
+
+<body>
+</body>
+
+<script type='module'>
+
+  import * as THREE from './lib/three.module.js';
+  import { OBJLoader } from './lib/loaders/OBJLoader.js';
+  import { OrbitControls } from './lib/controls/OrbitControls.js';
+
+  import { ThreeGame } from './src/ThreeGame.js';
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color( 0x010101 );
+
+  scene.add( new THREE.AxesHelper( 5 ) );
+
+  const grid = new THREE.GridHelper( 10, 10 );
+  grid.material.opacity = 0.2;
+  grid.material.transparent = true;
+  scene.add( grid );
+
+  scene.add( new THREE.AmbientLight( 0xffffff, 0.2 ) );
+
+  const light = new THREE.DirectionalLight( 0xffffff, 0.8 );
+  light.position.set( 0, 1, 1 );
+  light.target.position.set( 0, 0, 0 );
+  scene.add( light );
+
+  const game = new ThreeGame();
+  game.scene = scene;
+  
+  game.camera.position.set( 2, 2, 4 );
+
+  const controls = new OrbitControls( game.camera, game.renderer.domElement );
+  controls.target.set( 0, 0, 0 );
+  controls.minDistance = 1;
+  controls.maxDistance = 10;
+  controls.update();
+
+  // game.camera.lookAt( 0, 0, 0 );
+
+  loadMesh();
+
+  game.start( ( dt ) => {
+  } );
+
+  // TODO: Do OBJ for now, then try to find some GLTF, since those are (maybe?) supported as modules
+
+  function loadMesh() {
+    const loader = new OBJLoader();
+    loader.load(
+      'models/Alien.obj',
+      ( object ) => scene.add( object ),
+      ( xhr )    => console.log( ( xhr.loaded / xhr.total ) * 100 + '% loaded' ),
+      ( error )  => console.log( error ),
+    );
+  }
+
+  //
+  // Drag and drop to load mesh
+  //
+  // window.ondragover = ( event ) => {
+  //   event.preventDefault();
+  // }
+  // window.ondrop = ( event ) => {
+  //   event.preventDefault();
+
+  //   if ( event.dataTransfer.items ) {
+  //     for ( let i = 0; i < event.dataTransfer.items.length; i ++ ) {
+  //       if ( event.dataTransfer.items[ i ].kind === 'file' ) {
+  //         const file = event.dataTransfer.items[ i ].getAsFile();
+  //         const reader = new FileReader();
+  //         reader.onloadend = () => {
+  //           setLevel( { src: reader.result } );
+  //         };
+  //         reader.readAsDataURL( file );
+  //       }
+  //     }
+  //   }
+  //   else {
+  //     for ( let i = 0; i < event.dataTransfer.files.length; i ++ ) {
+  //       setLevel( { src: event.dataTransfer.files[ i ].name } );
+  //     }
+  //   }
+  // }
+
+</script>
