@@ -6,7 +6,7 @@
 <script type='module'>
 
   import * as THREE from './lib/three.module.js';
-  import { OBJLoader } from './lib/loaders/OBJLoader.js';
+  import { FBXLoader } from './lib/loaders/FBXLoader.js';
   import { OrbitControls } from './lib/controls/OrbitControls.js';
 
   import { ThreeGame } from './src/ThreeGame.js';
@@ -35,24 +35,33 @@
 
   const controls = new OrbitControls( game.camera, game.renderer.domElement );
   controls.target.set( 0, 0, 0 );
-  controls.minDistance = 1;
-  controls.maxDistance = 10;
+  // controls.minDistance = 1;
+  // controls.maxDistance = 10;
   controls.update();
 
   // game.camera.lookAt( 0, 0, 0 );
 
+  let mixer;
   loadMesh();
 
   game.start( ( dt ) => {
-  } );
-
-  // TODO: Do OBJ for now, then try to find some GLTF, since those are (maybe?) supported as modules
+    mixer?.update( dt / 1000 );
+  } );  
 
   function loadMesh() {
-    const loader = new OBJLoader();
+    const loader = new FBXLoader();
     loader.load(
-      'models/Alien.obj',
-      ( object ) => scene.add( object ),
+      'models/Alien.fbx',
+      ( object ) => {
+
+        mixer = new THREE.AnimationMixer( object );
+
+        const action = mixer.clipAction( object.animations[ 3 ] );
+        action.play();
+
+        object.scale.set( 0.01, 0.01, 0.01 );
+        scene.add( object );
+      },
       ( xhr )    => console.log( ( xhr.loaded / xhr.total ) * 100 + '% loaded' ),
       ( error )  => console.log( error ),
     );
