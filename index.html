@@ -42,22 +42,29 @@
   // game.camera.lookAt( 0, 0, 0 );
 
   let mixer;
+
+  const texture = new THREE.TextureLoader().load( 'textures/Alien_Texture.png' );
   loadMesh();
 
   game.start( ( dt ) => {
     mixer?.update( dt / 1000 );
-  } );  
+  } );
 
   function loadMesh() {
     const loader = new FBXLoader();
     loader.load(
       'models/Alien.fbx',
       ( object ) => {
-
         mixer = new THREE.AnimationMixer( object );
 
         const action = mixer.clipAction( object.animations[ 3 ] );
         action.play();
+
+        object.traverse( ( child ) => {
+          if ( child.isMesh ) {
+            child.material.map = texture;
+          }
+        } );
 
         object.scale.set( 0.01, 0.01, 0.01 );
         scene.add( object );
