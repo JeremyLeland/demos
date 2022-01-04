@@ -11,6 +11,38 @@
 
   import { ThreeGame } from './src/ThreeGame.js';
 
+  class Monster {
+    mesh;
+
+    constructor( type ) {
+      const texture = new THREE.TextureLoader().load( `./textures/${ type }_texture.png` );
+
+      const loader = new FBXLoader();
+      loader.load(
+        `./models/${ type }.fbx`,
+        ( object ) => {
+          mixer = new THREE.AnimationMixer( object );
+
+          const action = mixer.clipAction( object.animations[ 0 ] );
+          action.play();
+
+          object.traverse( ( child ) => {
+            if ( child.isMesh ) {
+              child.material.map = texture;
+            }
+          } );
+
+          object.scale.set( 0.01, 0.01, 0.01 );
+          scene.add( object );
+
+          this.mesh = object;
+        },
+        ( xhr )    => console.log( ( xhr.loaded / xhr.total ) * 100 + '% loaded' ),
+        ( error )  => console.log( error ),
+      );
+    }
+  }
+
   const scene = new THREE.Scene();
   scene.background = new THREE.Color( 0x010101 );
 
@@ -43,36 +75,13 @@
 
   let mixer;
 
-  const texture = new THREE.TextureLoader().load( 'textures/Cactus_Texture.png' );
-  loadMesh();
+  
+  const monster = new Monster( 'Bat' );
 
   game.start( ( dt ) => {
     mixer?.update( dt / 1000 );
   } );
 
-  function loadMesh() {
-    const loader = new FBXLoader();
-    loader.load(
-      'models/Cactus.fbx',
-      ( object ) => {
-        mixer = new THREE.AnimationMixer( object );
-
-        const action = mixer.clipAction( object.animations[ 7 ] );
-        action.play();
-
-        object.traverse( ( child ) => {
-          if ( child.isMesh ) {
-            child.material.map = texture;
-          }
-        } );
-
-        object.scale.set( 0.01, 0.01, 0.01 );
-        scene.add( object );
-      },
-      ( xhr )    => console.log( ( xhr.loaded / xhr.total ) * 100 + '% loaded' ),
-      ( error )  => console.log( error ),
-    );
-  }
 
   //
   // Drag and drop to load mesh
