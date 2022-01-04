@@ -21,7 +21,7 @@
   grid.material.transparent = true;
   scene.add( grid );
 
-  scene.add( new THREE.AmbientLight( 0xffffff, 0.2 ) );
+  scene.add( new THREE.AmbientLight( 0xffffff, 0.4 ) );
 
   const light = new THREE.DirectionalLight( 0xffffff, 0.8 );
   light.position.set( 0, 1, 1 );
@@ -43,7 +43,7 @@
 
   let mixer;
 
-  const texture = new THREE.TextureLoader().load( 'textures/Alien_Texture.png' );
+  const texture = new THREE.TextureLoader().load( 'textures/Cactus_Texture.png' );
   loadMesh();
 
   game.start( ( dt ) => {
@@ -53,11 +53,11 @@
   function loadMesh() {
     const loader = new FBXLoader();
     loader.load(
-      'models/Alien.fbx',
+      'models/Cactus.fbx',
       ( object ) => {
         mixer = new THREE.AnimationMixer( object );
 
-        const action = mixer.clipAction( object.animations[ 3 ] );
+        const action = mixer.clipAction( object.animations[ 7 ] );
         action.play();
 
         object.traverse( ( child ) => {
