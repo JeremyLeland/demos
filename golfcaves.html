@@ -1,0 +1,35 @@
+<link rel='stylesheet' href='./style.css'>
+
+<body>
+  <canvas id='canvas' width="800" height="750"></canvas>
+</body>
+
+<script type='module'>
+  
+  const width = 300, height = 100;
+
+  const points = [];
+
+  for ( let t = 0; t <= 20; t ++ ) {
+    points.push( {
+      x: width * Math.cos( ( t + Math.random() - 0.5 ) * Math.PI * 2 ),
+      y: height * ( t - 0.5 + Math.random() ),
+    } );
+  }
+
+  const canvas = document.getElementById( 'canvas' );
+  const ctx = canvas.getContext( '2d' );
+
+  ctx.translate( 400, 50 );
+
+  const path = new Path2D( 'M' + points.map( p => `${ p.x },${ p.y }` ).join(' L ' ) );
+  ctx.strokeStyle = 'white';
+  ctx.stroke( path );
+
+  ctx.fillStyle = 'red';
+  points.forEach( point => {
+    ctx.fillRect( point.x - 2, point.y - 2, 4, 4 );
+  } );
+
+  
+</script>
