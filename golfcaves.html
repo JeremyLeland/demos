@@ -1,19 +1,19 @@
 <link rel='stylesheet' href='./style.css'>
 
 <body>
-  <canvas id='canvas' width="800" height="750"></canvas>
+  <canvas id='canvas' width="800" height="1750"></canvas>
 </body>
 
 <script type='module'>
   
-  const width = 300, height = 100;
+  const width = 300, height = 200, height_var = 20;
 
   const points = [];
 
-  for ( let t = 0; t <= 20; t ++ ) {
+  for ( let t = 0; t <= 120; t += 0.5 ) {
     points.push( {
-      x: width * Math.cos( ( t + Math.random() - 0.5 ) * Math.PI * 2 ),
-      y: height * ( t - 0.5 + Math.random() ),
+      x: width * ( Math.random() - 0.5 ),
+      y: height * t + height_var * ( Math.random() - 0.5 ),
     } );
   }
 
@@ -31,6 +31,7 @@
 
   const path = new Path2D( curveStr );
   ctx.strokeStyle = 'white';
+  ctx.lineWidth = 10;
   ctx.stroke( path );
 
   ctx.fillStyle = 'red';
