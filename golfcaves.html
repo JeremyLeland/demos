@@ -24,7 +24,7 @@
   //   curveStr += ` C ${ c.control1.x },${ c.control1.y } ${ c.control2.x },${ c.control2.y } ${ c.end.x },${ c.end.y } `
   // );
 
-  const middle = [], left = [], right = [];
+  const middle = [], offset = [], left = [], right = [];
 
   curves.forEach( c => {
     for ( let t = 0; t < 1; t += 0.05 ) {
@@ -32,16 +32,23 @@
       const norm = getCurveNormal( c, t );
       middle.push( pos );
 
-      let radius = 10 + ( 2 + Math.sin( t * Math.PI * 2 * 123 ) ) * 5;
+      const off = Math.sin( t * Math.PI * 2 * 123 ) * Math.random() * 5;
+      const mid = {
+        x: pos.x + norm.x * off,
+        y: pos.y + norm.y * off,
+      }
+      offset.push( mid );
+
+      let radius = 20; //10 + ( 2 + Math.sin( t * Math.PI * 2 * 123 ) ) * 5;
       left.push( { 
-        x: pos.x + norm.x * radius,// + ( Math.random() - 0.5 ) * 5,
-        y: pos.y + norm.y * radius,// + ( Math.random() - 0.5 ) * 5,
+        x: mid.x + norm.x * radius,// + ( Math.random() - 0.5 ) * 5,
+        y: mid.y + norm.y * radius,// + ( Math.random() - 0.5 ) * 5,
       } );
 
-      radius = 10 + ( 2 + Math.sin( t * Math.PI * 2 * 123 + 42 ) ) * 5;
+      // radius = 10 + ( 2 + Math.sin( t * Math.PI * 2 * 123 + 42 ) ) * 5;
       right.push( {
-        x: pos.x + norm.x * -radius,// + ( Math.random() - 0.5 ) * 5,
-        y: pos.y + norm.y * -radius,// + ( Math.random() - 0.5 ) * 5,
+        x: mid.x + norm.x * -radius,// + ( Math.random() - 0.5 ) * 5,
+        y: mid.y + norm.y * -radius,// + ( Math.random() - 0.5 ) * 5,
       } );
     }
   } );
@@ -51,14 +58,10 @@
 
   ctx.translate( 400, 50 );
 
-  ctx.strokeStyle = 'white';
-  ctx.stroke( new Path2D( 'M ' + middle.map( p => `${ p.x },${ p.y }` ).join( ' L ' ) ) );
-
-  ctx.strokeStyle = 'yellow';
-  ctx.stroke( new Path2D( 'M ' + left.map( p => `${ p.x },${ p.y }` ).join( ' L ' ) ) );
-
-  ctx.strokeStyle = 'orange';
-  ctx.stroke( new Path2D( 'M ' + right.map( p => `${ p.x },${ p.y }` ).join( ' L ' ) ) );
+  drawCurve( middle, 'white' );
+  drawCurve( offset, 'dodgerblue' );
+  drawCurve( left, 'yellow' );
+  drawCurve( right, 'orange' );
 
 
   ctx.fillStyle = 'red';
@@ -127,6 +130,11 @@
     // also, normalize it
     const dist = Math.hypot( x, y );
     return { x: -y / dist, y: x / dist };
+  }
+
+  function drawCurve( curve, color ) {
+    ctx.strokeStyle = color;
+    ctx.stroke( new Path2D( 'M ' + curve.map( p => `${ p.x },${ p.y }` ).join( ' L ' ) ) );
   }
 
 
