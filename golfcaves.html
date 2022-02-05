@@ -39,7 +39,7 @@
       }
       offset.push( mid );
 
-      let radius = 20; //10 + ( 2 + Math.sin( t * Math.PI * 2 * 123 ) ) * 5;
+      let radius = 20 + 5 * Math.sin( t * Math.PI * 2 ); //10 + ( 2 + Math.sin( t * Math.PI * 2 * 123 ) ) * 5;
       left.push( { 
         x: mid.x + norm.x * radius,// + ( Math.random() - 0.5 ) * 5,
         y: mid.y + norm.y * radius,// + ( Math.random() - 0.5 ) * 5,
