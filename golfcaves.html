@@ -24,11 +24,17 @@
   //   curveStr += ` C ${ c.control1.x },${ c.control1.y } ${ c.control2.x },${ c.control2.y } ${ c.end.x },${ c.end.y } `
   // );
 
-  const points = [];
+  const middle = [], left = [], right = [];
 
   curves.forEach( c => {
     for ( let t = 0; t < 1; t += 0.1 ) {
-      points.push( getCurvePosition( c, t ) );
+      const pos = getCurvePosition( c, t );
+      const norm = getCurveNormal( c, t );
+      middle.push( pos );
+
+      const radius = 20;
+      left.push( { x: pos.x + norm.x * radius, y: pos.y + norm.y * radius } );
+      right.push( { x: pos.x + norm.x * -radius, y: pos.y + norm.y * -radius } );
     }
   } );
 
@@ -37,10 +43,15 @@
 
   ctx.translate( 400, 50 );
 
-  const path = new Path2D( 'M ' + points.map( p => `${ p.x },${ p.y }` ).join( ' L ' ) );
   ctx.strokeStyle = 'white';
-  // ctx.lineWidth = 20;
-  ctx.stroke( path );
+  ctx.stroke( new Path2D( 'M ' + middle.map( p => `${ p.x },${ p.y }` ).join( ' L ' ) ) );
+
+  ctx.strokeStyle = 'yellow';
+  ctx.stroke( new Path2D( 'M ' + left.map( p => `${ p.x },${ p.y }` ).join( ' L ' ) ) );
+
+  ctx.strokeStyle = 'orange';
+  ctx.stroke( new Path2D( 'M ' + right.map( p => `${ p.x },${ p.y }` ).join( ' L ' ) ) );
+
 
   ctx.fillStyle = 'red';
   flags.forEach( flag => {
