@@ -27,14 +27,22 @@
   const middle = [], left = [], right = [];
 
   curves.forEach( c => {
-    for ( let t = 0; t < 1; t += 0.1 ) {
+    for ( let t = 0; t < 1; t += 0.05 ) {
       const pos = getCurvePosition( c, t );
       const norm = getCurveNormal( c, t );
       middle.push( pos );
 
-      const radius = 20;
-      left.push( { x: pos.x + norm.x * radius, y: pos.y + norm.y * radius } );
-      right.push( { x: pos.x + norm.x * -radius, y: pos.y + norm.y * -radius } );
+      let radius = 10 + ( 2 + Math.sin( t * Math.PI * 2 * 123 ) ) * 5;
+      left.push( { 
+        x: pos.x + norm.x * radius,// + ( Math.random() - 0.5 ) * 5,
+        y: pos.y + norm.y * radius,// + ( Math.random() - 0.5 ) * 5,
+      } );
+
+      radius = 10 + ( 2 + Math.sin( t * Math.PI * 2 * 123 + 42 ) ) * 5;
+      right.push( {
+        x: pos.x + norm.x * -radius,// + ( Math.random() - 0.5 ) * 5,
+        y: pos.y + norm.y * -radius,// + ( Math.random() - 0.5 ) * 5,
+      } );
     }
   } );
 
