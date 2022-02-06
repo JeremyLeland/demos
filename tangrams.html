@@ -1,0 +1,88 @@
+<link rel='stylesheet' href='./style.css'>
+
+<body>
+  <canvas id='canvas' width="800" height="600"></canvas>
+</body>
+
+<script type='module'>
+  class Edge {
+    x1;
+    y1;
+    x2;
+    y2;
+    link;
+    owner;
+
+    constructor( info ) {
+      Object.assign( this, info );
+    }
+
+    getTransformed() {
+      const cosX = Math.cos( this.owner.angle );
+      const sinX = Math.sin( this.owner.angle );
+      const cosY = Math.cos( this.owner.angle + Math.PI / 2 );
+      const sinY = Math.sin( this.owner.angle + Math.PI / 2 );
+
+      return {
+        x1: this.owner.x + cosX * this.x1 + cosY * this.y1,
+        y1: this.owner.y + sinX * this.x1 + sinY * this.y1,
+        x2: this.owner.x + cosX * this.x2 + cosY * this.y2,
+        y2: this.owner.y + sinX * this.x2 + sinY * this.y2,
+      };
+    }
+  }
+  
+  class Block {
+    x = 0;
+    y = 0;
+    angle = 0;
+
+    #edges = [];
+
+    constructor( info ) {
+      Object.assign( this, info );
+
+      const size = 100;
+      const height = Math.sqrt( 3 ) / 2;
+
+      const points = [ [ 0, -height / 2 ], [ 0.5, height / 2 ], [ -0.5, height / 2 ] ];
+
+      for ( let i = 0; i < points.length; i ++ ) {
+        const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
+
+        this.#edges.push( new Edge( { 
+          x1: current[ 0 ] * size, 
+          y1: current[ 1 ] * size,
+          x2: next[ 0 ] * size,
+          y2: next[ 1 ] * size,
+          owner: this, 
+        } ) );
+      }
+    }
+
+    draw( ctx ) {
+      ctx.beginPath();
+      this.#edges.forEach( edge => {
+        const transformed = edge.getTransformed();
+
+        ctx.moveTo( transformed.x1, transformed.y1 );
+        ctx.lineTo( transformed.x2, transformed.y2 );
+      } );
+      ctx.strokeStyle = 'black';
+      ctx.stroke();
+    }
+  }
+
+  const blocks = [
+    new Block( { x: 100, y: 100, angle: 0 } ),
+    new Block( { x: 200, y: 100, angle: Math.PI } ),
+  ];
+
+  const canvas = document.getElementById( 'canvas' );
+  const ctx = canvas.getContext( '2d' );
+
+  //ctx.translate( 400, 300 );
+
+  blocks.forEach( block => block.draw( ctx ) );
+
+</script>
