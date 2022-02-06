@@ -39,16 +39,16 @@
 
     #edges = [];
 
+    // TODO: Static functions to create each shape?
+
     constructor( info ) {
       Object.assign( this, info );
 
       const size = 100;
       const height = Math.sqrt( 3 ) / 2;
 
-      const points = [ [ 0, -height / 2 ], [ 0.5, height / 2 ], [ -0.5, height / 2 ] ];
-
-      for ( let i = 0; i < points.length; i ++ ) {
-        const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
+      for ( let i = 0; i < this.points.length; i ++ ) {
+        const current = this.points[ i ], next = this.points[ ( i + 1 ) % this.points.length ];
 
         this.#edges.push( new Edge( { 
           x1: current[ 0 ] * size, 
@@ -65,17 +65,46 @@
       this.#edges.forEach( edge => {
         const transformed = edge.getTransformed();
 
-        ctx.moveTo( transformed.x1, transformed.y1 );
+        ctx.lineTo( transformed.x1, transformed.y1 );
         ctx.lineTo( transformed.x2, transformed.y2 );
       } );
+
+      ctx.fillStyle = this.color;
+      ctx.fill();
       ctx.strokeStyle = 'black';
+      ctx.lineWidth = 2;
       ctx.stroke();
     }
   }
 
+  const HEIGHT = Math.sqrt( 3 ) / 2;
+
+  const BlockInfo = {
+    Triangle: {
+      points: [ [ 0, -HEIGHT / 2 ], [ 1 / 2, HEIGHT / 2 ], [ -1 / 2, HEIGHT / 2 ] ],
+      color: 'green',
+    },
+    Square: {
+      points: [ [ -1/2, -1/2 ], [ 1/2, -1/2 ], [ 1/2, 1/2 ], [ -1/2, 1/2 ] ],
+      color: 'orange',
+    },
+    Diamond: {
+      points: [ [ 0, -HEIGHT ], [ 1/2, 0 ], [ 0, HEIGHT ], [ -1/2, 0 ] ],
+      color: 'blue',
+    },
+    ThinDiamond: {
+      // TODO: Not quite right width...
+      points: [ [ 0, -Math.cos( Math.PI / 12 ) ], [ 1/4, 0 ], [ 0, Math.cos( Math.PI / 12 ) ], [ -1/4, 0 ] ],
+      color: 'tan',
+    }
+  }
+
   const blocks = [
-    new Block( { x: 100, y: 100, angle: 0 } ),
-    new Block( { x: 200, y: 100, angle: Math.PI } ),
+    new Block( Object.assign( { x: 100, y: 100, angle: 0 }, BlockInfo.Triangle ) ),
+    new Block( Object.assign( { x: 100, y: 200, angle: 0 }, BlockInfo.Square ) ),
+    new Block( Object.assign( { x: 200, y: 200, angle: Math.PI / 2 }, BlockInfo.Triangle ) ),
+    new Block( Object.assign( { x: 175, y: 125, angle: -Math.PI / 4 }, BlockInfo.ThinDiamond ) ),
+    new Block( Object.assign( { x: 250, y: 250, angle: -Math.PI / 2 }, BlockInfo.Diamond ) ),
   ];
 
   const canvas = document.getElementById( 'canvas' );
