@@ -1,5 +1,9 @@
 <link rel='stylesheet' href='./style.css'>
 
+<style>
+  body { background-color: gray;}
+</style>
+
 <body>
   <canvas id='canvas' width="800" height="600"></canvas>
 </body>
@@ -38,11 +42,8 @@
     y = 0;
     angle = 0;
 
-
     #edges = [];
     #fillStyle;
-
-    // TODO: Static functions to create each shape?
 
     constructor( info ) {
       Object.assign( this, info );
@@ -56,10 +57,10 @@
         const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
 
         this.#edges.push( new Edge( { 
-          x1: current[ 0 ] * size, 
-          y1: current[ 1 ] * size,
-          x2: next[ 0 ] * size,
-          y2: next[ 1 ] * size,
+          x1: current[ 0 ], 
+          y1: current[ 1 ],
+          x2: next[ 0 ],
+          y2: next[ 1 ],
           owner: this, 
         } ) );
       }
@@ -77,7 +78,7 @@
       ctx.fillStyle = this.#fillStyle;
       ctx.fill();
       ctx.strokeStyle = 'black';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 0.02;
       ctx.stroke();
     }
   }
@@ -113,19 +114,45 @@
     },
   }
 
-  const blocks = [
-    new Block( { type: 'triangle', x: 100, y: 100, angle: 0 } ),
-    new Block( { type: 'square', x: 100, y: 200, angle: 0 } ),
-    new Block( { type: 'triangle', x: 200, y: 200, angle: Math.PI / 2 } ),
-    new Block( { type: 'thin', x: 175, y: 125, angle: -Math.PI / 4 } ),
-    new Block( { type: 'diamond', x: 243, y: 252, angle: -Math.PI / 2 } ),
-    new Block( { type: 'trapezoid', x: 100, y: 300, angle: 0 } ),
-    new Block( { type: 'hexagon', x: 100, y: 400, angle: 0 } ),
-  ];
+  const level = [
+    { type: 'hexagon', x: 0, y: 0, angle: 0 },
+
+    { type: 'hexagon', x: -2, y: 0, angle: 0 },
+    { type: 'hexagon', x:  2, y: 0, angle: 0 },
+
+    { type: 'triangle', x: -3, y: -HEIGHT/2, angle: Math.PI },
+    { type: 'triangle', x:  3, y: -HEIGHT/2, angle: Math.PI },
+    { type: 'triangle', x: -3, y:  HEIGHT/2, angle: 0 },
+    { type: 'triangle', x:  3, y:  HEIGHT/2, angle: 0 },
+
+    { type: 'diamond', x: -1, y: -HEIGHT, angle: 0 },
+    { type: 'diamond', x:  1, y: -HEIGHT, angle: 0 },
+    { type: 'diamond', x: -1, y:  HEIGHT, angle: 0 },
+    { type: 'diamond', x:  1, y:  HEIGHT, angle: 0 },
+
+    { type: 'diamond', x: -3.5, y: 0, angle: 0 },
+    { type: 'diamond', x:  3.5, y: 0, angle: 0 },
+
+    { type: 'square', x: HEIGHT * 5, y: HEIGHT * 2/3, angle: Math.PI / 6 },
+
+    { type: 'trapezoid', x: 0, y: HEIGHT * -3/2, angle: Math.PI },
+    { type: 'trapezoid', x: 0, y: HEIGHT *  3/2, angle: 0 },
+
+    { type: 'thin', x: 1.5, y: HEIGHT * 2, angle: Math.PI / 12 },
+  ]
+
+  const blocks = [];
+
+  level.forEach( block => blocks.push( new Block( block ) ) );
 
   const canvas = document.getElementById( 'canvas' );
   const ctx = canvas.getContext( '2d' );
 
+  ctx.scale( 80, 80 );
+  ctx.translate( 4, 3 );
+
   blocks.forEach( block => block.draw( ctx ) );
+
+
 
 </script>
