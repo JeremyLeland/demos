@@ -33,22 +33,27 @@
   }
   
   class Block {
+    type;
     x = 0;
     y = 0;
     angle = 0;
 
+
     #edges = [];
+    #fillStyle;
 
     // TODO: Static functions to create each shape?
 
     constructor( info ) {
       Object.assign( this, info );
 
-      const size = 100;
-      const height = Math.sqrt( 3 ) / 2;
+      const blockInfo = BlockInfo[ this.type ];
+      this.#fillStyle = blockInfo.color;
 
-      for ( let i = 0; i < this.points.length; i ++ ) {
-        const current = this.points[ i ], next = this.points[ ( i + 1 ) % this.points.length ];
+      const size = 100;
+      const points = blockInfo.points;
+      for ( let i = 0; i < points.length; i ++ ) {
+        const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
 
         this.#edges.push( new Edge( { 
           x1: current[ 0 ] * size, 
@@ -69,7 +74,7 @@
         ctx.lineTo( transformed.x2, transformed.y2 );
       } );
 
-      ctx.fillStyle = this.color;
+      ctx.fillStyle = this.#fillStyle;
       ctx.fill();
       ctx.strokeStyle = 'black';
       ctx.lineWidth = 2;
@@ -80,37 +85,46 @@
   const HEIGHT = Math.sqrt( 3 ) / 2;
 
   const BlockInfo = {
-    Triangle: {
-      points: [ [ 0, -HEIGHT / 2 ], [ 1 / 2, HEIGHT / 2 ], [ -1 / 2, HEIGHT / 2 ] ],
-      color: 'green',
+    hexagon: {
+      points: [ 
+        [ -1, 0 ], [ -1/2, -HEIGHT ], [ 1/2, -HEIGHT ], [ 1, 0 ], [ 1/2, HEIGHT ], [ -1/2, HEIGHT ]
+      ],
+      color: 'yellow',
     },
-    Square: {
-      points: [ [ -1/2, -1/2 ], [ 1/2, -1/2 ], [ 1/2, 1/2 ], [ -1/2, 1/2 ] ],
-      color: 'orange',
+    trapezoid: {
+      points: [ [ -1, HEIGHT / 2 ], [ -1/2, -HEIGHT / 2 ], [ 1/2, -HEIGHT / 2 ], [ 1, HEIGHT / 2 ] ],
+      color: 'red',
     },
-    Diamond: {
+    diamond: {
       points: [ [ 0, -HEIGHT ], [ 1/2, 0 ], [ 0, HEIGHT ], [ -1/2, 0 ] ],
       color: 'blue',
     },
-    ThinDiamond: {
-      // TODO: Not quite right width...
+    triangle: {
+      points: [ [ 0, -HEIGHT / 2 ], [ 1/2, HEIGHT / 2 ], [ -1/2, HEIGHT / 2 ] ],
+      color: 'green',
+    },
+    square: {
+      points: [ [ -1/2, -1/2 ], [ 1/2, -1/2 ], [ 1/2, 1/2 ], [ -1/2, 1/2 ] ],
+      color: 'orange',
+    },
+    thin: {
       points: [ [ 0, -Math.cos( Math.PI / 12 ) ], [ 1/4, 0 ], [ 0, Math.cos( Math.PI / 12 ) ], [ -1/4, 0 ] ],
       color: 'tan',
-    }
+    },
   }
 
   const blocks = [
-    new Block( Object.assign( { x: 100, y: 100, angle: 0 }, BlockInfo.Triangle ) ),
-    new Block( Object.assign( { x: 100, y: 200, angle: 0 }, BlockInfo.Square ) ),
-    new Block( Object.assign( { x: 200, y: 200, angle: Math.PI / 2 }, BlockInfo.Triangle ) ),
-    new Block( Object.assign( { x: 175, y: 125, angle: -Math.PI / 4 }, BlockInfo.ThinDiamond ) ),
-    new Block( Object.assign( { x: 250, y: 250, angle: -Math.PI / 2 }, BlockInfo.Diamond ) ),
+    new Block( { type: 'triangle', x: 100, y: 100, angle: 0 } ),
+    new Block( { type: 'square', x: 100, y: 200, angle: 0 } ),
+    new Block( { type: 'triangle', x: 200, y: 200, angle: Math.PI / 2 } ),
+    new Block( { type: 'thin', x: 175, y: 125, angle: -Math.PI / 4 } ),
+    new Block( { type: 'diamond', x: 243, y: 252, angle: -Math.PI / 2 } ),
+    new Block( { type: 'trapezoid', x: 100, y: 300, angle: 0 } ),
+    new Block( { type: 'hexagon', x: 100, y: 400, angle: 0 } ),
   ];
 
   const canvas = document.getElementById( 'canvas' );
   const ctx = canvas.getContext( '2d' );
-
-  //ctx.translate( 400, 300 );
 
   blocks.forEach( block => block.draw( ctx ) );
 
