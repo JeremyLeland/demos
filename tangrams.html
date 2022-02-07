@@ -8,7 +8,15 @@
   <canvas id='canvas' width="800" height="800"></canvas>
 </body>
 
-<script type='module'>
+<script>
+  function fixAngle( a ) {
+    return a > Math.PI ? a - Math.PI * 2 : a < -Math.PI ? a + Math.PI * 2 : a;
+  }
+
+  function deltaAngle( a, b ) {
+    return fixAngle( b - a );
+  }
+
   class Edge {
     x1;
     y1;
@@ -21,17 +29,36 @@
       Object.assign( this, info );
     }
 
-    getTransformed() {
-      const cosX = Math.cos( this.owner.angle );
-      const sinX = Math.sin( this.owner.angle );
-      const cosY = Math.cos( this.owner.angle + Math.PI / 2 );
-      const sinY = Math.sin( this.owner.angle + Math.PI / 2 );
+    getTransformed( angle = this.owner.angle ) {
+      const cosX = Math.cos( angle );
+      const sinX = Math.sin( angle );
+      const cosY = Math.cos( angle + Math.PI / 2 );
+      const sinY = Math.sin( angle + Math.PI / 2 );
 
       return {
         x1: this.owner.x + cosX * this.x1 + cosY * this.y1,
         y1: this.owner.y + sinX * this.x1 + sinY * this.y1,
         x2: this.owner.x + cosX * this.x2 + cosY * this.y2,
         y2: this.owner.y + sinX * this.x2 + sinY * this.y2,
+      };
+    }
+
+    getTransformToAlignWith( other ) {
+      const seg1 = this.getTransformed();
+      const seg2 = other.getTransformed();
+
+      // Since edges are running opposite directions, we will compare x1,y1 to x2,y2 and vice versa
+      const dAngle = deltaAngle(
+        Math.atan2( seg2.y1 - seg2.y2, seg2.x1 - seg2.x2 ),
+        Math.atan2( seg1.y2 - seg1.y1, seg1.x2 - seg1.x1 ),
+      );
+
+      const seg2rotated = other.getTransformed( other.owner.angle + dAngle );
+      
+      return { 
+        dx: seg1.x1 - seg2rotated.x2,
+        dy: seg1.y1 - seg2rotated.y2, 
+        dAngle: dAngle
       };
     }
   }
@@ -42,7 +69,7 @@
     y = 0;
     angle = 0;
 
-    #edges = [];
+    edges = [];
     #fillStyle;
 
     constructor( info ) {
@@ -56,7 +83,7 @@
       for ( let i = 0; i < points.length; i ++ ) {
         const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
 
-        this.#edges.push( new Edge( { 
+        this.edges.push( new Edge( { 
           x1: current[ 0 ], 
           y1: current[ 1 ],
           x2: next[ 0 ],
@@ -73,7 +100,7 @@
       ctx.rotate( this.angle );
 
       ctx.beginPath();
-      this.#edges.forEach( edge => {
+      this.edges.forEach( edge => {
         //const transformed = edge.getTransformed();
 
         ctx.lineTo( edge.x1, edge.y1 );
@@ -157,7 +184,12 @@
     { type: 'trapezoid', x: 0, y: HEIGHT * -3/2, angle: Math.PI },
     { type: 'trapezoid', x: 0, y: HEIGHT *  3/2, angle: 0 },
 
-    { type: 'thin', x: 1.5, y: HEIGHT * 2, angle: Math.PI / 12 },
+    {
+      type: 'thin',
+      x: 2,// + Math.cos( Math.PI / 12 ) * ( HEIGHT/3 ), 
+      y: HEIGHT + HEIGHT,// + Math.sin( Math.PI / 12 ) * ( HEIGHT/3 ),
+      angle: 0//Math.PI / 12
+    },
 
 
 
@@ -176,11 +208,24 @@
       y: 4 + Math.sin( -5 * Math.PI / 6 ) * ( HEIGHT/3 + 1/2 ), 
       angle: -5 * Math.PI / 6 
     },
+
+    { type: 'triangle', x: 4, y: 4, angle: 0 },
+    { type: 'square', x: 5.5, y: 4, angle: 0 },
   ];
 
   const blocks = [];
 
   level.forEach( block => blocks.push( new Block( block ) ) );
+
+  function align( block1, edge1, block2, edge2 ) {
+    const transform = block1.edges[ edge1 ].getTransformToAlignWith( block2.edges[ edge2 ] );
+    block2.x += transform.dx;
+    block2.y += transform.dy;
+    block2.angle += transform.dAngle;
+  }
+
+  align( blocks[ 10 ], 1, blocks[ 18 ], 3 );
+  align( blocks[ 23 ], 0, blocks[ 24 ], 3 );
 
   const canvas = document.getElementById( 'canvas' );
   const ctx = canvas.getContext( '2d' );
@@ -190,6 +235,23 @@
 
   blocks.forEach( block => block.draw( ctx ) );
 
+  // See if there's a snap-grid pattern that makes sense
+  
+  // ctx.lineWidth = 0.01;
+  // ctx.strokeStyle = 'black';
+  
+  // ctx.beginPath();
+  // for ( let y = -3; y <= 6; y += 1 ) {
+  //   for ( let x = -4; x <= 4; x += 1 ) {
+  //     ctx.moveTo( x + 0.04, y );
+  //     ctx.arc( x, y, 0.04, 0, Math.PI * 2 );
+  //   }
+  // }
+  // ctx.fillStyle = 'white';
+  // ctx.fill();
+  // ctx.stroke();
+
+  
   // For later, if we ever try to save level state in URL
   const levelAscii = JSON.stringify( level );
   const levelBase64 = btoa( levelAscii );
