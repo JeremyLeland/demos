@@ -20,6 +20,7 @@
 
   let square = document.getElementById( 'test' );
   square.addEventListener( 'mousedown', inputStart );
+  square.addEventListener( 'wheel', wheel );
   document.addEventListener( 'mousemove', inputMove );
   document.addEventListener( 'mouseup', inputStop );
 
@@ -27,6 +28,12 @@
   square.y = 1;
   square.angle = Math.PI / 6;
   square.style.transform = `translate( ${ square.x }px,${ square.y }px ) rotate( ${ square.angle }rad )`;
+
+  function wheel( e ) {
+    e.currentTarget.angle -= ( e.wheelDelta / 120 ) * ( Math.PI / 6 );
+    square.style.transform = `translate( ${ square.x }px,${ square.y }px ) rotate( ${ square.angle }rad )`;
+
+  }
 
   function inputStart( e ) {
     activeBlock = e.currentTarget;
