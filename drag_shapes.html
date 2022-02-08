@@ -19,10 +19,13 @@
   let activeBlock, lastX, lastY;
 
   let square = document.getElementById( 'test' );
-  square.addEventListener( 'mousedown', inputStart );
   square.addEventListener( 'wheel', wheel );
+  square.addEventListener( 'mousedown', inputStart );
+  square.addEventListener( 'touchstart', inputStart );
   document.addEventListener( 'mousemove', inputMove );
+  document.addEventListener( 'touchmove', inputMove );
   document.addEventListener( 'mouseup', inputStop );
+  document.addEventListener( 'touchend', inputStop );
 
   square.x = 1;
   square.y = 1;
