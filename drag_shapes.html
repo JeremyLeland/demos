@@ -1,0 +1,59 @@
+<link rel='stylesheet' href='./style.css'>
+
+<style>
+  body { background-color: gray;}
+  .square {
+    fill: orange;
+    stroke: black;
+    stroke-width: 0.05;
+  }
+</style>
+
+<body>
+  <svg viewBox="-5 -5 10 10" width="100%" height="100%">
+    <path id="test" class="square" d="M -0.5 -0.5 L 0.5 -0.5 L 0.5 0.5 L -0.5 0.5 Z"></path>
+  </svg>
+</body>
+
+<script>
+  let activeBlock, lastX, lastY;
+
+  let square = document.getElementById( 'test' );
+  square.addEventListener( 'mousedown', inputStart );
+  document.addEventListener( 'mousemove', inputMove );
+  document.addEventListener( 'mouseup', inputStop );
+
+  square.x = 1;
+  square.y = 1;
+  square.angle = Math.PI / 6;
+  square.style.transform = `translate( ${ square.x }px,${ square.y }px ) rotate( ${ square.angle }rad )`;
+
+  function inputStart( e ) {
+    activeBlock = e.currentTarget;
+
+    const pos = e.touches?.[ 0 ] ?? e;
+    lastX = pos.pageX;
+    lastY = pos.pageY;
+  }
+
+  function inputMove( e ) {
+    if ( activeBlock ) {
+      const pos = e.touches?.[ 0 ] ?? e;
+      const ratio = 10 / Math.min( window.innerWidth, window.innerHeight );
+      const dx = ( pos.pageX - lastX ) * ratio;
+      const dy = ( pos.pageY - lastY ) * ratio;
+      lastX = pos.pageX;
+      lastY = pos.pageY;
+
+      activeBlock.x += dx;
+      activeBlock.y += dy;
+
+      activeBlock.style.transform = `translate( ${ activeBlock.x }px,${ activeBlock.y }px ) rotate( ${ activeBlock.angle }rad )`;
+    }
+  }
+
+  function inputStop( e ) {
+    activeBlock = null;
+  }
+
+</script>
