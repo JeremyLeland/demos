@@ -92,15 +92,15 @@
 
       // Since edges are running opposite directions, we will compare x1,y1 to x2,y2 and vice versa
       const dAngle = deltaAngle(
-        Math.atan2( seg2.y1 - seg2.y2, seg2.x1 - seg2.x2 ),
         Math.atan2( seg1.y2 - seg1.y1, seg1.x2 - seg1.x1 ),
+        Math.atan2( seg2.y1 - seg2.y2, seg2.x1 - seg2.x2 ),
       );
 
-      const seg2rotated = other.getTransformed( other.owner.angle + dAngle );
+      const seg1rotated = this.getTransformed( this.owner.angle + dAngle );
       
-      return { 
-        dx: seg1.x1 - seg2rotated.x2,
-        dy: seg1.y1 - seg2rotated.y2, 
+      return {
+        dx: seg2.x2 - seg1rotated.x1,
+        dy: seg2.y2 - seg1rotated.y1, 
         dAngle: dAngle
       };
     }
@@ -166,15 +166,18 @@
 
   level.forEach( block => blocks.push( new Block( block ) ) );
 
-  function align( block1, edge1, block2, edge2 ) {
-    const transform = block1.edges[ edge1 ].getTransformToAlignWith( block2.edges[ edge2 ] );
-    block2.x += transform.dx;
-    block2.y += transform.dy;
-    block2.angle += transform.dAngle;
+  function align( target, targetEdge, destination, destinationEdge ) {
+    const transform = target.edges[ targetEdge ].getTransformToAlignWith( destination.edges[ destinationEdge ] );
+    target.x += transform.dx;
+    target.y += transform.dy;
+    target.angle += transform.dAngle;
   }
 
-  // align( blocks[ 10 ], 1, blocks[ 18 ], 3 );
-  // align( blocks[ 23 ], 0, blocks[ 24 ], 3 );
+  align( blocks[ 0 ], 0, blocks[ 1 ], 1 );
+  align( blocks[ 2 ], 0, blocks[ 1 ], 2 );
+  align( blocks[ 3 ], 0, blocks[ 2 ], 3 );
+  align( blocks[ 4 ], 0, blocks[ 0 ], 3 );
+  align( blocks[ 5 ], 1, blocks[ 4 ], 3 );
 
 
   blocks.forEach( block => block.updateSVG() );
