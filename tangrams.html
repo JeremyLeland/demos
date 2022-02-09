@@ -1,14 +1,28 @@
 <link rel='stylesheet' href='./style.css'>
 
 <style>
-  body { background-color: gray;}
+  svg {
+    background-color: gray;
+    width: 100%;
+    height: 100%;
+    stroke: black;
+    stroke-width: 0.04;
+  }
+  .hexagon    { fill: yellow; }
+  .trapezoid  { fill: red; }
+  .diamond    { fill: blue; }
+  .triangle   { fill: green; }
+  .square     { fill: orange; }
+  .thin       { fill: tan; }
 </style>
 
 <body>
-  <canvas id='canvas' width="800" height="800"></canvas>
+  <svg id='svg' viewBox="-6 -6 12 12"></svg>
 </body>
 
 <script>
+  const svg = document.getElementById( 'svg' );
+
   function fixAngle( a ) {
     return a > Math.PI ? a - Math.PI * 2 : a < -Math.PI ? a + Math.PI * 2 : a;
   }
@@ -70,13 +84,12 @@
     angle = 0;
 
     edges = [];
-    #fillStyle;
+    #svg;
 
     constructor( info ) {
       Object.assign( this, info );
 
       const blockInfo = BlockInfo[ this.type ];
-      this.#fillStyle = blockInfo.color;
 
       const size = 100;
       const points = blockInfo.points;
@@ -91,29 +104,15 @@
           owner: this, 
         } ) );
       }
+
+      this.#svg = document.createElementNS( 'http://www.w3.org/2000/svg', 'path' );
+      this.#svg.setAttribute( 'class', this.type );
+      this.#svg.setAttribute( 'd', `M ${ points.join( ' L ' ) } Z` );
+      svg.appendChild( this.#svg );
     }
 
-    draw( ctx ) {
-      ctx.save();
-
-      ctx.translate( this.x, this.y );
-      ctx.rotate( this.angle );
-
-      ctx.beginPath();
-      this.edges.forEach( edge => {
-        //const transformed = edge.getTransformed();
-
-        ctx.lineTo( edge.x1, edge.y1 );
-        ctx.lineTo( edge.x2, edge.y2 );
-      } );
-
-      ctx.fillStyle = this.#fillStyle;
-      ctx.fill();
-      ctx.strokeStyle = 'black';
-      ctx.lineWidth = 0.02;
-      ctx.stroke();
-
-      ctx.restore();
+    updateSVG() {
+      this.#svg.style.transform = `translate( ${ this.x }px,${ this.y }px ) rotate( ${ this.angle }rad )`;
     }
   }
 
@@ -124,27 +123,21 @@
       points: [ 
         [ -1, 0 ], [ -1/2, -HEIGHT ], [ 1/2, -HEIGHT ], [ 1, 0 ], [ 1/2, HEIGHT ], [ -1/2, HEIGHT ]
       ],
-      color: 'yellow',
     },
     trapezoid: {
       points: [ [ -1, HEIGHT / 2 ], [ -1/2, -HEIGHT / 2 ], [ 1/2, -HEIGHT / 2 ], [ 1, HEIGHT / 2 ] ],
-      color: 'red',
     },
     diamond: {
       points: [ [ 0, -HEIGHT ], [ 1/2, 0 ], [ 0, HEIGHT ], [ -1/2, 0 ] ],
-      color: 'blue',
     },
     triangle: {
       points: [ [ 0, -2 * HEIGHT / 3 ], [ 1/2, HEIGHT / 3 ], [ -1/2, HEIGHT / 3 ] ],
-      color: 'green',
     },
     square: {
       points: [ [ -1/2, -1/2 ], [ 1/2, -1/2 ], [ 1/2, 1/2 ], [ -1/2, 1/2 ] ],
-      color: 'orange',
     },
     thin: {
       points: [ [ 0, -Math.cos( Math.PI / 12 ) ], [ 1/4, 0 ], [ 0, Math.cos( Math.PI / 12 ) ], [ -1/4, 0 ] ],
-      color: 'tan',
     },
   }
 
@@ -227,29 +220,8 @@
   align( blocks[ 10 ], 1, blocks[ 18 ], 3 );
   align( blocks[ 23 ], 0, blocks[ 24 ], 3 );
 
-  const canvas = document.getElementById( 'canvas' );
-  const ctx = canvas.getContext( '2d' );
 
-  ctx.scale( 80, 80 );
-  ctx.translate( 4, 3 );
-
-  blocks.forEach( block => block.draw( ctx ) );
-
-  // See if there's a snap-grid pattern that makes sense
-  
-  // ctx.lineWidth = 0.01;
-  // ctx.strokeStyle = 'black';
-  
-  // ctx.beginPath();
-  // for ( let y = -3; y <= 6; y += 1 ) {
-  //   for ( let x = -4; x <= 4; x += 1 ) {
-  //     ctx.moveTo( x + 0.04, y );
-  //     ctx.arc( x, y, 0.04, 0, Math.PI * 2 );
-  //   }
-  // }
-  // ctx.fillStyle = 'white';
-  // ctx.fill();
-  // ctx.stroke();
+  blocks.forEach( block => block.updateSVG() );
 
   
   // For later, if we ever try to save level state in URL
