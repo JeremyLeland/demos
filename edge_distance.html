@@ -1,0 +1,152 @@
+<link rel='stylesheet' href='./style.css'>
+
+<body>
+  <canvas id='canvas' width="800" height="500"></canvas>
+</body>
+
+<style>
+  body { background-color: gray; }
+</style>
+
+<script>
+
+  const canvas = document.getElementById( 'canvas' );
+  const ctx = canvas.getContext( '2d' );
+
+  const seg1 = { x1: 120, y1: 120, x2: 200, y2: 220 };
+  const seg2 = { x1: 120, y1: 150, x2: 250, y2: 220 };
+
+  ctx.beginPath();
+  ctx.moveTo( seg1.x1, seg1.y1 );
+  ctx.lineTo( seg1.x2, seg1.y2 );
+  ctx.moveTo( seg2.x1, seg2.y1 );
+  ctx.lineTo( seg2.x2, seg2.y2 );
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  const angle = Math.atan2( seg2.y2 - seg2.y1, seg2.x2 - seg2.x1 );
+  const normAngle = angle - Math.PI / 2;
+  const normX = Math.cos( normAngle );
+  const normY = Math.sin( normAngle );
+
+  const midX = ( seg2.x1 + seg2.x2 ) / 2;
+  const midY = ( seg2.y1 + seg2.y2 ) / 2;
+
+  ctx.beginPath();
+  ctx.moveTo( midX, midY );
+  ctx.lineTo( midX + normX * 20, midY + normY * 20 );
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  const AToCD = ( seg2.x1 - seg1.x1 ) * normX + ( seg2.y1 - seg1.y1 ) * normY;
+  const AToCDX = seg1.x1 + AToCD * normX;
+  const AToCDY = seg1.y1 + AToCD * normY;
+
+  ctx.beginPath();
+  ctx.moveTo( seg1.x1, seg1.y1 );
+  ctx.lineTo( AToCDX, AToCDY );
+  ctx.strokeStyle = 'yellow';
+  ctx.stroke();
+
+  const BToCD = ( seg2.x2 - seg1.x2 ) * normX + ( seg2.y2 - seg1.y2 ) * normY;
+  const BToCDX = seg1.x2 + BToCD * normX;
+  const BToCDY = seg1.y2 + BToCD * normY;
+
+  ctx.beginPath();
+  ctx.moveTo( seg1.x2, seg1.y2 );
+  ctx.lineTo( BToCDX, BToCDY );
+  ctx.strokeStyle = 'blue';
+  ctx.stroke();
+
+
+  const AtoC = Math.hypot( seg2.x1 - seg1.x1, seg2.y1 - seg1.y1 );
+  const AtoD = Math.hypot( seg2.x2 - seg1.x1, seg2.y2 - seg1.y1 );
+  const BtoC = Math.hypot( seg2.x1 - seg1.x2, seg2.y1 - seg1.y2 );
+  const BtoD = Math.hypot( seg2.x2 - seg1.x2, seg2.y2 - seg1.y2 );
+
+  ctx.beginPath();
+  ctx.moveTo( seg1.x1, seg1.y1 );
+  ctx.lineTo( seg2.x1, seg2.y1 );
+  ctx.strokeStyle = 'red';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo( seg1.x1, seg1.y1 );
+  ctx.lineTo( seg2.x2, seg2.y2 );
+  ctx.strokeStyle = 'orange';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo( seg1.x2, seg1.y2 );
+  ctx.lineTo( seg2.x1, seg2.y1 );
+  ctx.strokeStyle = 'green';
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo( seg1.x2, seg1.y2 );
+  ctx.lineTo( seg2.x2, seg2.y2 );
+  ctx.strokeStyle = 'purple';
+  ctx.stroke();
+
+
+  // Based on Lua example from: 
+  // https://stackoverflow.com/questions/2824478/shortest-distance-between-two-line-segments
+  
+  function nearestPointsOnLineSegments( a, b ) {
+    const rx = b.x1 - a.x1;
+    const ry = b.y1 - a.y1;
+    const ux = a.x2 - a.x1;
+    const uy = a.y2 - a.y1;
+    const vx = b.x2 - b.x1;
+    const vy = b.y2 - b.y1;
+
+    const ru = rx * ux + ry * uy;
+    const rv = rx * vx + ry * vy;
+    const uu = ux * ux + uy * uy;
+    const uv = ux * vx + uy * vy;
+    const vv = vx * vx + vy * vy;
+
+    const det = uu * vv - uv * uv;
+    let s, t;
+
+    if ( det < 1e-6 * uu * vv ) {
+      s = Math.max( 0, Math.min( ru / uu, 1 ) );
+      t = 0;
+    }
+    else {
+      s = Math.max( 0, Math.min( ( ru * vv - rv * uv ) / det, 1 ) );
+      t = Math.max( 0, Math.min( ( ru * uv - rv * uu ) / det, 1 ) );
+    }
+
+    const S = Math.max( 0, Math.min( ( t * uv + ru ) / uu, 1 ) );
+    const T = Math.max( 0, Math.min( ( s * uv - rv ) / vv, 1 ) );
+
+    const Ax = a.x1 + S * ux;
+    const Ay = a.y1 + S * uy;
+    const Bx = b.x1 + T * vx;
+    const By = b.y1 + T * vy;
+
+    return {
+      Ax: Ax,
+      Ay: Ay, 
+      Bx: Bx,
+      By: By, 
+      dist: Math.hypot( Bx - Ax, By - Ay ),
+    }
+  }
+
+  const nearest = nearestPointsOnLineSegments( seg1, seg2 );
+
+  ctx.fillStyle = 'brown';
+  ctx.fillRect( nearest.Ax - 2, nearest.Ay - 1, 4, 4 );
+  ctx.fillRect( nearest.Bx - 2, nearest.By - 1, 4, 4 );
+
+  ctx.beginPath();
+  ctx.moveTo( nearest.Ax, nearest.Ay );
+  ctx.lineTo( nearest.Bx, nearest.By );
+  ctx.strokeStyle = 'brown';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+</script>
