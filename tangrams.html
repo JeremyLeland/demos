@@ -113,6 +113,9 @@
       const Bx = other.x1 + T * vx;
       const By = other.y1 + T * vy;
 
+      // lines will touch but face opposite directions
+      const dAngle = deltaAngle( Math.atan2( uy, ux ), Math.atan2( -vy, -vx ) );
+
       return {
         A: this,
         Ax: Ax,
@@ -121,27 +124,8 @@
         Bx: Bx,
         By: By, 
         dist: Math.hypot( Bx - Ax, By - Ay ),   // TODO: directional distance with dot prod instead of hypot?
-        dAngle: deltaAngle( Math.atan2( uy, ux ), Math.atan2( -vy, -vx ) )  // lines will face opposite directions
-      }
-    }
-
-    getTransformToAlignWith( other ) {
-      const seg1 = this.getTransformed();
-      const seg2 = other.getTransformed();
-
-      // Since edges are running opposite directions, we will compare x1,y1 to x2,y2 and vice versa
-      const dAngle = deltaAngle(
-        Math.atan2( seg1.y2 - seg1.y1, seg1.x2 - seg1.x1 ),
-        Math.atan2( seg2.y1 - seg2.y2, seg2.x1 - seg2.x2 ),
-      );
-
-      const seg1rotated = this.getTransformed( this.owner.angle + dAngle );
-      
-      return {
-        dx: seg2.x2 - seg1rotated.x1,
-        dy: seg2.y2 - seg1rotated.y1, 
         dAngle: dAngle
-      };
+      }
     }
   }
   
@@ -169,21 +153,19 @@
     }
 
     getEdges() {
-      const cosX = Math.cos( this.angle );
-      const sinX = Math.sin( this.angle );
-      const cosY = Math.cos( this.angle + Math.PI / 2 );
-      const sinY = Math.sin( this.angle + Math.PI / 2 );
-
+      const cos = Math.cos( this.angle );
+      const sin = Math.sin( this.angle );
+      
       const edges = [];
       const points = BlockInfo[ this.type ].points;
       for ( let i = 0; i < points.length; i ++ ) {
         const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
 
         edges.push( new Edge( {
-          x1: this.x + cosX * current[ 0 ] + cosY * current[ 1 ],
-          y1: this.y + sinX * current[ 0 ] + sinY * current[ 1 ],
-          x2: this.x + cosX * next[ 0 ] + cosY * next[ 1 ],
-          y2: this.y + sinX * next[ 0 ] + sinY * next[ 1 ],
+          x1: this.x + cos * current[ 0 ] - sin * current[ 1 ],
+          y1: this.y + sin * current[ 0 ] + cos * current[ 1 ],
+          x2: this.x + cos * next[ 0 ] - sin * next[ 1 ],
+          y2: this.y + sin * next[ 0 ] + cos * next[ 1 ],
         } ) );
       }
 
@@ -273,8 +255,11 @@
 
       edgeDists.sort( ( a, b ) => a.dist - b.dist );
 
-      const nearest = edgeDists.filter( e => e.dist - edgeDists[ 0 ].dist < 1e-6 );
-
+      // NOTE: Need to be generous with distances here since since the wrong lines sometimes appear closer
+      // TODO: Another possible way to do this would be some sort of "average distance" of x1,y1 and x2,y2
+      //       If both of those points are closer to segment, it would have lower "average distance" than an
+      //       edge where only one point touches
+      const nearest = edgeDists.filter( e => e.dist - edgeDists[ 0 ].dist < 0.1 );
       nearest.sort( ( a, b ) => Math.abs( a.dAngle ) - Math.abs( b.dAngle ) );
 
       const bestAlign = nearest[ 0 ];
