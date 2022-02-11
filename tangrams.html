@@ -242,32 +242,27 @@
       activeBlock.y += dy;
 
       const activeEdges = activeBlock.getEdges();
-
-      // for ( let i = 0; i < activeEdges.length; i ++ ) {
-        
-      // }
-      const otherEdges = [];
-      blocks.filter( b => b != activeBlock ).forEach( b => otherEdges.push( ...b.getEdges() ) );
+      const otherEdges = blocks.filter( b => b != activeBlock ).flatMap( b => b.getEdges() );
       
-      const edgeDists = otherEdges.map( e => activeEdges[ 0 ].distanceFrom( e ) );
 
-      nearestSVG.setAttribute( 'd', edgeDists.map( e => `M ${ e.Ax },${ e.Ay } L ${ e.Bx },${ e.By } ` ).join() );
+      const edgeDists = activeEdges.flatMap( a => otherEdges.map( e => a.distanceFrom( e ) ) );
+      // nearestSVG.setAttribute( 'd', edgeDists.map( e => `M ${ e.Ax },${ e.Ay } L ${ e.Bx },${ e.By } ` ).join() );
 
+      // TODO: Take dx/dy into account when snapping -- are we moving toward snap or away from it?
+      //       We need to be able to move pieces again after they've snapped the first time
+
+      // Find closest edge with smallest difference in angle
       edgeDists.sort( ( a, b ) => a.dist - b.dist );
 
       // NOTE: Need to be generous with distances here since since the wrong lines sometimes appear closer
-      // TODO: Another possible way to do this would be some sort of "average distance" of x1,y1 and x2,y2
-      //       If both of those points are closer to segment, it would have lower "average distance" than an
-      //       edge where only one point touches
       const nearest = edgeDists.filter( e => e.dist - edgeDists[ 0 ].dist < 0.1 );
       nearest.sort( ( a, b ) => Math.abs( a.dAngle ) - Math.abs( b.dAngle ) );
 
       const bestAlign = nearest[ 0 ];
-
       if ( bestAlign.dist < SNAP_DIST ) {
         // Since edges are running opposite directions, we will compare x1,y1 to x2,y2 and vice versa
-        const px = activeBlock.x - activeEdges[ 0 ].x1;
-        const py = activeBlock.y - activeEdges[ 0 ].y1;
+        const px = activeBlock.x - bestAlign.A.x1;
+        const py = activeBlock.y - bestAlign.A.y1;
 
         const cos = Math.cos( bestAlign.dAngle );
         const sin = Math.sin( bestAlign.dAngle );
