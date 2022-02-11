@@ -65,7 +65,7 @@
   }
   prepareCSS();
 
-  const ALIGN_DELTA = 0.001;
+  const SNAP_DIST = 0.2;
 
   class Edge {
     x1;
@@ -79,15 +79,13 @@
     }
 
     distanceFrom( other ) {
-      const a = this.getTransformed();
-      const b = other.getTransformed();
-
-      const rx = b.x1 - a.x1;
-      const ry = b.y1 - a.y1;
-      const ux = a.x2 - a.x1;
-      const uy = a.y2 - a.y1;
-      const vx = b.x2 - b.x1;
-      const vy = b.y2 - b.y1;
+      // See https://stackoverflow.com/questions/2824478/shortest-distance-between-two-line-segments
+      const rx = other.x1 - this.x1;
+      const ry = other.y1 - this.y1;
+      const ux = this.x2 - this.x1;
+      const uy = this.y2 - this.y1;
+      const vx = other.x2 - other.x1;
+      const vy = other.y2 - other.y1;
 
       const ru = rx * ux + ry * uy;
       const rv = rx * vx + ry * vy;
@@ -110,10 +108,10 @@
       const S = Math.max( 0, Math.min( ( t * uv + ru ) / uu, 1 ) );
       const T = Math.max( 0, Math.min( ( s * uv - rv ) / vv, 1 ) );
 
-      const Ax = a.x1 + S * ux;
-      const Ay = a.y1 + S * uy;
-      const Bx = b.x1 + T * vx;
-      const By = b.y1 + T * vy;
+      const Ax = this.x1 + S * ux;
+      const Ay = this.y1 + S * uy;
+      const Bx = other.x1 + T * vx;
+      const By = other.y1 + T * vy;
 
       return {
         A: this,
@@ -122,22 +120,9 @@
         B: other,
         Bx: Bx,
         By: By, 
-        dist: Math.hypot( Bx - Ax, By - Ay ),
+        dist: Math.hypot( Bx - Ax, By - Ay ),   // TODO: directional distance with dot prod instead of hypot?
+        dAngle: deltaAngle( Math.atan2( uy, ux ), Math.atan2( -vy, -vx ) )  // lines will face opposite directions
       }
-    }
-
-    getTransformed( angle = this.owner.angle ) {
-      const cosX = Math.cos( angle );
-      const sinX = Math.sin( angle );
-      const cosY = Math.cos( angle + Math.PI / 2 );
-      const sinY = Math.sin( angle + Math.PI / 2 );
-
-      return {
-        x1: this.owner.x + cosX * this.x1 + cosY * this.y1,
-        y1: this.owner.y + sinX * this.x1 + sinY * this.y1,
-        x2: this.owner.x + cosX * this.x2 + cosY * this.y2,
-        y2: this.owner.y + sinX * this.x2 + sinY * this.y2,
-      };
     }
 
     getTransformToAlignWith( other ) {
@@ -172,22 +157,6 @@
     constructor( info ) {
       Object.assign( this, info );
 
-      const blockInfo = BlockInfo[ this.type ];
-
-      const size = 100;
-      const points = blockInfo.points;
-      for ( let i = 0; i < points.length; i ++ ) {
-        const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
-
-        this.edges.push( new Edge( { 
-          x1: current[ 0 ], 
-          y1: current[ 1 ],
-          x2: next[ 0 ],
-          y2: next[ 1 ],
-          owner: this, 
-        } ) );
-      }
-
       this.#svg = document.createElementNS( 'http://www.w3.org/2000/svg', 'path' );
       this.#svg.setAttribute( 'class', this.type );
       
@@ -199,11 +168,26 @@
       blocksSVG.appendChild( this.#svg );
     }
 
-    alignEdgeToOtherEdge( edgeIndex, otherEdge ) {
-      const transform = this.edges[ edgeIndex ].getTransformToAlignWith( otherEdge );
-      this.x += transform.dx;
-      this.y += transform.dy;
-      this.angle += transform.dAngle;
+    getEdges() {
+      const cosX = Math.cos( this.angle );
+      const sinX = Math.sin( this.angle );
+      const cosY = Math.cos( this.angle + Math.PI / 2 );
+      const sinY = Math.sin( this.angle + Math.PI / 2 );
+
+      const edges = [];
+      const points = BlockInfo[ this.type ].points;
+      for ( let i = 0; i < points.length; i ++ ) {
+        const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
+
+        edges.push( new Edge( {
+          x1: this.x + cosX * current[ 0 ] + cosY * current[ 1 ],
+          y1: this.y + sinX * current[ 0 ] + sinY * current[ 1 ],
+          x2: this.x + cosX * next[ 0 ] + cosY * next[ 1 ],
+          y2: this.y + sinX * next[ 0 ] + sinY * next[ 1 ],
+        } ) );
+      }
+
+      return edges;
     }
 
     updateSVG() {
@@ -227,12 +211,6 @@
   ]
 
   level.forEach( block => blocks.push( new Block( block ) ) );
-
-  // align( blocks[ 0 ], 0, blocks[ 1 ], 1 );
-  // align( blocks[ 2 ], 0, blocks[ 1 ], 2 );
-  // align( blocks[ 3 ], 0, blocks[ 2 ], 3 );
-  // align( blocks[ 4 ], 0, blocks[ 0 ], 3 );
-  // align( blocks[ 5 ], 1, blocks[ 4 ], 3 );
 
 
   blocks.forEach( block => block.updateSVG() );
@@ -272,7 +250,7 @@
   function inputMove( e ) {
     if ( activeBlock ) {
       const pos = e.touches?.[ 0 ] ?? e;
-      const ratio = 10 / Math.min( window.innerWidth, window.innerHeight );
+      const ratio = 12 / Math.min( window.innerWidth, window.innerHeight );
       const dx = ( pos.pageX - lastX ) * ratio;
       const dy = ( pos.pageY - lastY ) * ratio;
       lastX = pos.pageX;
@@ -281,18 +259,40 @@
       activeBlock.x += dx;
       activeBlock.y += dy;
 
-      // TODO: Combine with below
-      const edges = [];
-      blocks.filter( b => b != activeBlock ).forEach( b => edges.push( ...b.edges ) );
+      const activeEdges = activeBlock.getEdges();
 
-      const edgeDists = edges.map( e => activeBlock.edges[ 0 ].distanceFrom( e ) );
+      // for ( let i = 0; i < activeEdges.length; i ++ ) {
+        
+      // }
+      const otherEdges = [];
+      blocks.filter( b => b != activeBlock ).forEach( b => otherEdges.push( ...b.getEdges() ) );
+      
+      const edgeDists = otherEdges.map( e => activeEdges[ 0 ].distanceFrom( e ) );
 
       nearestSVG.setAttribute( 'd', edgeDists.map( e => `M ${ e.Ax },${ e.Ay } L ${ e.Bx },${ e.By } ` ).join() );
 
       edgeDists.sort( ( a, b ) => a.dist - b.dist );
 
-      if ( edgeDists[ 0 ].dist < 0.1 ) {
-        activeBlock.alignEdgeToOtherEdge( 0, edgeDists[ 0 ].B );
+      const nearest = edgeDists.filter( e => e.dist - edgeDists[ 0 ].dist < 1e-6 );
+
+      nearest.sort( ( a, b ) => Math.abs( a.dAngle ) - Math.abs( b.dAngle ) );
+
+      const bestAlign = nearest[ 0 ];
+
+      if ( bestAlign.dist < SNAP_DIST ) {
+        // Since edges are running opposite directions, we will compare x1,y1 to x2,y2 and vice versa
+        const px = activeBlock.x - activeEdges[ 0 ].x1;
+        const py = activeBlock.y - activeEdges[ 0 ].y1;
+
+        const cos = Math.cos( bestAlign.dAngle );
+        const sin = Math.sin( bestAlign.dAngle );
+        const newX = px * cos - py * sin;
+        const newY = px * sin + py * cos; 
+
+        activeBlock.x = bestAlign.B.x2 + newX;
+        activeBlock.y = bestAlign.B.y2 + newY;
+
+        activeBlock.angle += bestAlign.dAngle;
       }
 
       activeBlock.updateSVG();
@@ -311,6 +311,5 @@
   function deltaAngle( a, b ) {
     return fixAngle( b - a );
   }
-
 
 </script>
