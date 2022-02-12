@@ -8,13 +8,13 @@
     stroke: black;
     stroke-width: 0.04;
   }
-  .main {
+  #main {
     position: absolute;
     background-color: gray;
     width: 100%;
     height: 100%;
   }
-  .ui {
+  #ui {
     margin: 0 auto;
   }
   .button {
@@ -22,39 +22,20 @@
     border-radius: 25%;
     border: 2px solid black;
     background-color: lightslategray;
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
   }
 </style>
 
 <body>
-  <svg class="main" viewBox="-6 -6 12 12">
+  <svg id="main" viewBox="-6 -6 12 12">
     <g id="blocks"></g>
-    <path id="nearest"></path>
   </svg>
-  <div class="ui">
-    <svg class="button" viewBox="-1 -1 2 2">
-      <path class="hexagon"></path>
-    </svg>
-    <svg class="button" viewBox="-1 -1 2 2">
-      <path class="trapezoid"></path>
-    </svg>
-    <svg class="button" viewBox="-1 -1 2 2">
-      <path class="diamond"></path>
-    </svg>
-    <svg class="button" viewBox="-1 -1 2 2">
-      <path class="triangle"></path>
-    </svg>
-    <svg class="button" viewBox="-1 -1 2 2">
-      <path class="square"></path>
-    </svg>
-    <svg class="button" viewBox="-1 -1 2 2">
-      <path class="thin"></path>
-    </svg>
-  </div>
+  <div id="ui"></div>
 </body>
 
 <script>
+  const SVG_NS = 'http://www.w3.org/2000/svg';
   const TRI_HEIGHT = Math.sqrt( 3 ) / 2;
   const THIN_WIDTH = Math.cos( Math.PI / 12 );
 
@@ -104,6 +85,25 @@
     }
   }
   prepareCSS();
+
+  function prepareUI() {
+    const uiDiv = document.getElementById( 'ui' );
+
+    for ( const type in BlockInfo ) {
+      const svg = document.createElementNS( SVG_NS, 'svg' );
+      svg.setAttribute( 'class', 'button' );
+      svg.setAttribute( 'viewBox', '-1 -1 2 2' );
+
+      const path = document.createElementNS( SVG_NS, 'path' );
+      path.setAttribute( 'class', type );
+
+      svg.addEventListener( 'click', () => addBlock( type ) );
+
+      svg.appendChild( path );
+      uiDiv.appendChild( svg );
+    }
+  }
+  prepareUI();
 
   const SNAP_DIST = 0.2;
 
@@ -181,7 +181,7 @@
     constructor( info ) {
       Object.assign( this, info );
 
-      this.#svg = document.createElementNS( 'http://www.w3.org/2000/svg', 'path' );
+      this.#svg = document.createElementNS( SVG_NS, 'path' );
       this.#svg.setAttribute( 'class', this.type );
       
       this.#svg.addEventListener( 'wheel', wheel );
@@ -221,15 +221,14 @@
   const blocks = [];
 
   const blocksSVG = document.getElementById( 'blocks' );
-  const nearestSVG = document.getElementById( 'nearest' );
 
   const level = [
-    { type: 'hexagon', x: -4, y: 0, angle: 0 },
-    { type: 'trapezoid', x: -2, y: 0, angle: 0 },
-    { type: 'diamond', x: 0, y: 0, angle: 0 },
-    { type: 'triangle', x: 2, y: 0, angle: 0 },
-    { type: 'square', x: 4, y: 0, angle: 0 },
-    { type: 'thin', x: 5, y: 0, angle: 0 },
+    // { type: 'hexagon', x: -4, y: 0, angle: 0 },
+    // { type: 'trapezoid', x: -2, y: 0, angle: 0 },
+    // { type: 'diamond', x: 0, y: 0, angle: 0 },
+    // { type: 'triangle', x: 2, y: 0, angle: 0 },
+    // { type: 'square', x: 4, y: 0, angle: 0 },
+    // { type: 'thin', x: 5, y: 0, angle: 0 },
   ]
 
   level.forEach( block => blocks.push( new Block( block ) ) );
@@ -258,7 +257,6 @@
 
     block.angle -= ( e.wheelDelta / 120 ) * ( Math.PI / 12 );
     block.updateSVG();
-
   }
 
   function inputStart( e ) {
@@ -286,7 +284,6 @@
       
 
       const edgeDists = activeEdges.flatMap( a => otherEdges.map( e => a.distanceFrom( e ) ) );
-      // nearestSVG.setAttribute( 'd', edgeDists.map( e => `M ${ e.Ax },${ e.Ay } L ${ e.Bx },${ e.By } ` ).join() );
 
       // TODO: Take dx/dy into account when snapping -- are we moving toward snap or away from it?
       //       We need to be able to move pieces again after they've snapped the first time
@@ -304,7 +301,7 @@
       nearest.sort( ( a, b ) => Math.abs( a.dAngle ) - Math.abs( b.dAngle ) );
 
       const bestAlign = nearest[ 0 ];
-      if ( bestAlign.dist < SNAP_DIST ) {
+      if ( bestAlign && bestAlign.dist < SNAP_DIST ) {
         // Since edges are running opposite directions, we will compare x1,y1 to x2,y2 and vice versa
         const px = activeBlock.x - bestAlign.A.x1;
         const py = activeBlock.y - bestAlign.A.y1;
@@ -326,6 +323,14 @@
 
   function inputStop( e ) {
     activeBlock = null;
+  }
+
+  function addBlock( type ) {
+    // TODO: Spawn where user clicks on button, so they can drag it in?
+    const block = new Block( { type: type } );
+    
+    blocks.push( block );
+    //activeBlock = block;
   }
 
 
