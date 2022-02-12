@@ -26,7 +26,7 @@
 
 <body>
   <svg id="main" viewBox="-6 -6 12 12">
-    <defs>
+    <defs id="defs">
       <rect id="button" x="-1" y="-1" rx="0.5px"></rect>
     </defs>
     <g id="ui"></g>
@@ -35,6 +35,7 @@
 </body>
 
 <script>
+  const svg = document.getElementById( 'main' );
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const TRI_HEIGHT = Math.sqrt( 3 ) / 2;
   const THIN_WIDTH = Math.cos( Math.PI / 12 );
@@ -71,18 +72,21 @@
     },
   };
 
-  function prepareCSS() {
-    const styleSheet = document.styleSheets[ 1 ];
+  function prepareDefs() {
+    const defs = document.getElementById( 'defs' );
 
     for ( const type in BlockInfo ) {
+      const path = document.createElementNS( SVG_NS, 'path' );
+      path.id = type;
+
       const info = BlockInfo[ type ];
-      styleSheet.insertRule( `.${ type } {
-        d: path( "M ${ info.points.join( ' L ' ) } Z" );
-        fill: ${ info.color };
-      }` );
+      path.setAttribute( 'd', `M ${ info.points.join( ' L ' ) } Z` );
+      path.setAttribute( 'fill', info.color );
+
+      defs.appendChild( path );
     }
   }
-  prepareCSS();
+  prepareDefs();
 
   function prepareUI() {
     const uiSvg = document.getElementById( 'ui' );
@@ -93,13 +97,11 @@
       g.style.transform = `translateX( ${ x }px )`;
       x += 2;
 
-      const use = document.createElementNS( SVG_NS, 'use' );
-      use.setAttribute( 'href', '#button' );
-      g.appendChild( use );
-
-      const path = document.createElementNS( SVG_NS, 'path' );
-      path.setAttribute( 'class', type );
-      g.appendChild( path );
+      [ '#button', `#${ type }` ].forEach( href => {
+        const use = document.createElementNS( SVG_NS, 'use' );
+        use.setAttribute( 'href', href );
+        g.appendChild( use );
+      } );
 
       g.addEventListener( 'mousedown', ( e ) => addBlock( type, e ) );
 
@@ -134,8 +136,8 @@
     constructor( info ) {
       Object.assign( this, info );
 
-      this.#svg = document.createElementNS( SVG_NS, 'path' );
-      this.#svg.setAttribute( 'class', this.type );
+      this.#svg = document.createElementNS( SVG_NS, 'use' );
+      this.#svg.setAttribute( 'href', `#${ this.type }` );
       
       this.#svg.addEventListener( 'wheel', wheel );
       this.#svg.addEventListener( 'mousedown', inputStart );
@@ -176,7 +178,7 @@
 
   const blocks = [];
 
-  const svg = document.getElementById( 'main' );
+  
   const blocksSVG = document.getElementById( 'blocks' );
 
   const level = [
