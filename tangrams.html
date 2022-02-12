@@ -104,6 +104,7 @@
       } );
 
       g.addEventListener( 'mousedown', ( e ) => addBlock( type, e ) );
+      g.addEventListener( 'touchstart', ( e ) => addBlock( type, e ) );
 
       uiSvg.appendChild( g );
     }
@@ -210,6 +211,14 @@
   document.addEventListener( 'mouseup', inputStop );
   document.addEventListener( 'touchend', inputStop );
 
+  function getSVGPoint( e ) {
+    const pos = e.touches?.[ 0 ] ?? e;
+    const pt = svg.createSVGPoint();
+    pt.x = pos.pageX;
+    pt.y = pos.pageY;
+    return pt.matrixTransform( svg.getScreenCTM().inverse() );
+  }
+
   let activeBlock, lastPos;
   function wheel( e ) {
     const block = activeBlock ?? e.currentTarget.parent;
@@ -220,28 +229,15 @@
 
   function inputStart( e ) {
     activeBlock = e.currentTarget.parent;
-
-    const pos = e.touches?.[ 0 ] ?? e;
-
-    const pt = svg.createSVGPoint();
-    pt.x = pos.pageX;
-    pt.y = pos.pageY;
-    lastPos = pt.matrixTransform( svg.getScreenCTM().inverse() );
+    lastPos = getSVGPoint( e );
   }
 
   function inputMove( e ) {
     if ( activeBlock ) {
-      const pos = e.touches?.[ 0 ] ?? e;
-
-      const pt = svg.createSVGPoint();
-      pt.x = pos.pageX;
-      pt.y = pos.pageY;
-      svgP = pt.matrixTransform( svg.getScreenCTM().inverse() );
-
-      const dx = svgP.x - lastPos.x;
-      const dy = svgP.y - lastPos.y;
-
-      lastPos = svgP;
+      const pos = getSVGPoint( e );
+      const dx = pos.x - lastPos.x;
+      const dy = pos.y - lastPos.y;
+      lastPos = pos;
 
       activeBlock.x += dx;
       activeBlock.y += dy;
@@ -309,14 +305,9 @@
   }
 
   function addBlock( type, e ) {
+    lastPos = getSVGPoint( e );
 
-    const pt = svg.createSVGPoint();
-    pt.x = e.pageX;
-    pt.y = e.pageY;
-    const svgP = pt.matrixTransform( svg.getScreenCTM().inverse() );
-    lastPos = svgP;
-
-    const block = new Block( { type: type, x: svgP.x, y: svgP.y } );
+    const block = new Block( { type: type, x: lastPos.x, y: lastPos.y } );
     
     blocks.push( block );
     activeBlock = block;
