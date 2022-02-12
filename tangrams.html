@@ -95,7 +95,7 @@
       const path = document.createElementNS( SVG_NS, 'path' );
       path.setAttribute( 'class', type );
 
-      svg.addEventListener( 'click', ( e ) => addBlock( type ) );
+      svg.addEventListener( 'mousedown', ( e ) => addBlock( type, e ) );
 
       svg.appendChild( path );
       uiDiv.appendChild( svg );
@@ -137,6 +137,9 @@
       this.#svg.addEventListener( 'touchstart', inputStart );
 
       this.#svg.parent = this;
+
+      this.updateSVG();
+
       blocksSVG.appendChild( this.#svg );
     }
 
@@ -168,6 +171,7 @@
 
   const blocks = [];
 
+  const svg = document.getElementById( 'main' );
   const blocksSVG = document.getElementById( 'blocks' );
 
   const level = [
@@ -199,7 +203,7 @@
   document.addEventListener( 'mouseup', inputStop );
   document.addEventListener( 'touchend', inputStop );
 
-  let activeBlock, lastX, lastY;
+  let activeBlock, lastPos;
   function wheel( e ) {
     const block = activeBlock ?? e.currentTarget.parent;
 
@@ -211,18 +215,26 @@
     activeBlock = e.currentTarget.parent;
 
     const pos = e.touches?.[ 0 ] ?? e;
-    lastX = pos.pageX;
-    lastY = pos.pageY;
+
+    const pt = svg.createSVGPoint();
+    pt.x = pos.pageX;
+    pt.y = pos.pageY;
+    lastPos = pt.matrixTransform( svg.getScreenCTM().inverse() );
   }
 
   function inputMove( e ) {
     if ( activeBlock ) {
       const pos = e.touches?.[ 0 ] ?? e;
-      const ratio = 12 / Math.min( window.innerWidth, window.innerHeight );
-      const dx = ( pos.pageX - lastX ) * ratio;
-      const dy = ( pos.pageY - lastY ) * ratio;
-      lastX = pos.pageX;
-      lastY = pos.pageY;
+
+      const pt = svg.createSVGPoint();
+      pt.x = pos.pageX;
+      pt.y = pos.pageY;
+      svgP = pt.matrixTransform( svg.getScreenCTM().inverse() );
+
+      const dx = svgP.x - lastPos.x;
+      const dy = svgP.y - lastPos.y;
+
+      lastPos = svgP;
 
       activeBlock.x += dx;
       activeBlock.y += dy;
@@ -230,7 +242,6 @@
       const activeEdges = activeBlock.getEdges();
       const otherEdges = blocks.filter( b => b != activeBlock ).flatMap( b => b.getEdges() );
       
-
       const edgeDists = activeEdges.flatMap( a => otherEdges.map( b => {
         // Since edges are running opposite directions, we will compare x1,y1 to x2,y2 and vice versa
         const dAngle = deltaAngle(
@@ -290,12 +301,18 @@
     activeBlock = null;
   }
 
-  function addBlock( type ) {
-    // TODO: Spawn where user clicks on button, so they can drag it in?
-    const block = new Block( { type: type } );
+  function addBlock( type, e ) {
+
+    const pt = svg.createSVGPoint();
+    pt.x = e.pageX;
+    pt.y = e.pageY;
+    const svgP = pt.matrixTransform( svg.getScreenCTM().inverse() );
+    lastPos = svgP;
+
+    const block = new Block( { type: type, x: svgP.x, y: svgP.y } );
     
     blocks.push( block );
-    //activeBlock = block;
+    activeBlock = block;
   }
 
 
