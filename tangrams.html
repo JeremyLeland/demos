@@ -1,20 +1,57 @@
 <link rel='stylesheet' href='./style.css'>
 
 <style>
+  body {
+    display: flex;
+  }
   svg {
+    stroke: black;
+    stroke-width: 0.04;
+  }
+  .main {
+    position: absolute;
     background-color: gray;
     width: 100%;
     height: 100%;
-    stroke: black;
-    stroke-width: 0.04;
+  }
+  .ui {
+    margin: 0 auto;
+  }
+  .button {
+    position: relative;
+    border-radius: 25%;
+    border: 2px solid black;
+    background-color: lightslategray;
+    width: 100px;
+    height: 100px;
   }
 </style>
 
 <body>
-  <svg viewBox="-6 -6 12 12">
+  <svg class="main" viewBox="-6 -6 12 12">
     <g id="blocks"></g>
     <path id="nearest"></path>
   </svg>
+  <div class="ui">
+    <svg class="button" viewBox="-1 -1 2 2">
+      <path class="hexagon"></path>
+    </svg>
+    <svg class="button" viewBox="-1 -1 2 2">
+      <path class="trapezoid"></path>
+    </svg>
+    <svg class="button" viewBox="-1 -1 2 2">
+      <path class="diamond"></path>
+    </svg>
+    <svg class="button" viewBox="-1 -1 2 2">
+      <path class="triangle"></path>
+    </svg>
+    <svg class="button" viewBox="-1 -1 2 2">
+      <path class="square"></path>
+    </svg>
+    <svg class="button" viewBox="-1 -1 2 2">
+      <path class="thin"></path>
+    </svg>
+  </div>
 </body>
 
 <script>
@@ -31,7 +68,10 @@
     // TODO: Extra point for long edge of trapezoid (so that all edges have length 1)?
     //       Then solution could be all the outer edges (of length 1)
     trapezoid: {
-      points: [ [ -1, TRI_HEIGHT / 2 ], [ -1/2, -TRI_HEIGHT / 2 ], [ 1/2, -TRI_HEIGHT / 2 ], [ 1, TRI_HEIGHT / 2 ] ],
+      points: [ 
+        [ -1/2, -TRI_HEIGHT / 2 ], [ 1/2, -TRI_HEIGHT / 2 ], 
+        [ 1, TRI_HEIGHT / 2 ], [ 0, TRI_HEIGHT / 2 ], [ -1, TRI_HEIGHT / 2 ]
+      ],
       color: 'red',
     },
     diamond: {
@@ -255,6 +295,11 @@
       edgeDists.sort( ( a, b ) => a.dist - b.dist );
 
       // NOTE: Need to be generous with distances here since since the wrong lines sometimes appear closer
+      // TODO: Another possible way to do this would be some sort of "average distance" of x1,y1 and x2,y2
+      //       If both of those points are closer to segment, it would have lower "average distance" than an
+      //       edge where only one point touches
+      // TODO: Could also do the movement calculation below as part of distance detection, 
+      //       and use whichever has smallest move instead of the actual distance
       const nearest = edgeDists.filter( e => e.dist - edgeDists[ 0 ].dist < 0.1 );
       nearest.sort( ( a, b ) => Math.abs( a.dAngle ) - Math.abs( b.dAngle ) );
 
