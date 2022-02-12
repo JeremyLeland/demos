@@ -46,8 +46,6 @@
       ],
       color: 'yellow',
     },
-    // TODO: Extra point for long edge of trapezoid (so that all edges have length 1)?
-    //       Then solution could be all the outer edges (of length 1)
     trapezoid: {
       points: [ 
         [ -1/2, -TRI_HEIGHT / 2 ], [ 1/2, -TRI_HEIGHT / 2 ], 
@@ -97,7 +95,7 @@
       const path = document.createElementNS( SVG_NS, 'path' );
       path.setAttribute( 'class', type );
 
-      svg.addEventListener( 'click', () => addBlock( type ) );
+      svg.addEventListener( 'click', ( e ) => addBlock( type ) );
 
       svg.appendChild( path );
       uiDiv.appendChild( svg );
@@ -105,7 +103,7 @@
   }
   prepareUI();
 
-  const SNAP_DIST = 0.2;
+  const SNAP_DIST = 0.5;
 
   class Edge {
     x1;
@@ -116,56 +114,6 @@
 
     constructor( info ) {
       Object.assign( this, info );
-    }
-
-    distanceFrom( other ) {
-      // See https://stackoverflow.com/questions/2824478/shortest-distance-between-two-line-segments
-      const rx = other.x1 - this.x1;
-      const ry = other.y1 - this.y1;
-      const ux = this.x2 - this.x1;
-      const uy = this.y2 - this.y1;
-      const vx = other.x2 - other.x1;
-      const vy = other.y2 - other.y1;
-
-      const ru = rx * ux + ry * uy;
-      const rv = rx * vx + ry * vy;
-      const uu = ux * ux + uy * uy;
-      const uv = ux * vx + uy * vy;
-      const vv = vx * vx + vy * vy;
-
-      const det = uu * vv - uv * uv;
-      let s, t;
-
-      if ( det < 1e-6 * uu * vv ) {
-        s = Math.max( 0, Math.min( ru / uu, 1 ) );
-        t = 0;
-      }
-      else {
-        s = Math.max( 0, Math.min( ( ru * vv - rv * uv ) / det, 1 ) );
-        t = Math.max( 0, Math.min( ( ru * uv - rv * uu ) / det, 1 ) );
-      }
-
-      const S = Math.max( 0, Math.min( ( t * uv + ru ) / uu, 1 ) );
-      const T = Math.max( 0, Math.min( ( s * uv - rv ) / vv, 1 ) );
-
-      const Ax = this.x1 + S * ux;
-      const Ay = this.y1 + S * uy;
-      const Bx = other.x1 + T * vx;
-      const By = other.y1 + T * vy;
-
-      // lines will touch but face opposite directions
-      const dAngle = deltaAngle( Math.atan2( uy, ux ), Math.atan2( -vy, -vx ) );
-
-      return {
-        A: this,
-        Ax: Ax,
-        Ay: Ay,
-        B: other,
-        Bx: Bx,
-        By: By, 
-        dist: Math.hypot( Bx - Ax, By - Ay ),   // TODO: directional distance with dot prod instead of hypot?
-        dAngle: dAngle
-      }
     }
   }
   
@@ -223,12 +171,12 @@
   const blocksSVG = document.getElementById( 'blocks' );
 
   const level = [
-    // { type: 'hexagon', x: -4, y: 0, angle: 0 },
-    // { type: 'trapezoid', x: -2, y: 0, angle: 0 },
-    // { type: 'diamond', x: 0, y: 0, angle: 0 },
-    // { type: 'triangle', x: 2, y: 0, angle: 0 },
-    // { type: 'square', x: 4, y: 0, angle: 0 },
-    // { type: 'thin', x: 5, y: 0, angle: 0 },
+    { type: 'hexagon', x: -4, y: 0, angle: 0 },
+    { type: 'trapezoid', x: -2, y: 0, angle: 0 },
+    { type: 'diamond', x: 0, y: 0, angle: 0 },
+    { type: 'triangle', x: 2, y: 0, angle: 0 },
+    { type: 'square', x: 4, y: 0, angle: 0 },
+    { type: 'thin', x: 5, y: 0, angle: 0 },
   ]
 
   level.forEach( block => blocks.push( new Block( block ) ) );
@@ -283,13 +231,39 @@
       const otherEdges = blocks.filter( b => b != activeBlock ).flatMap( b => b.getEdges() );
       
 
-      const edgeDists = activeEdges.flatMap( a => otherEdges.map( e => a.distanceFrom( e ) ) );
+      const edgeDists = activeEdges.flatMap( a => otherEdges.map( b => {
+        // Since edges are running opposite directions, we will compare x1,y1 to x2,y2 and vice versa
+        const dAngle = deltaAngle(
+          Math.atan2( a.y2 - a.y1, a.x2 - a.x1 ),
+          Math.atan2( b.y1 - b.y2, b.x1 - b.x2 ),
+        );
+
+        const px = activeBlock.x - a.x1;
+        const py = activeBlock.y - a.y1;
+
+        const cos = Math.cos( dAngle );
+        const sin = Math.sin( dAngle );
+        const newX = px * cos - py * sin;
+        const newY = px * sin + py * cos;
+
+        const snapX = b.x2 + newX - activeBlock.x;
+        const snapY = b.y2 + newY - activeBlock.y;
+
+        const snapDir = snapX * dx + snapY * dy;
+
+        return {
+          snapX: snapX,
+          snapY: snapY,
+          snapDist: Math.hypot( snapX, snapY ),
+          dAngle: dAngle
+        };
+      } ) );
 
       // TODO: Take dx/dy into account when snapping -- are we moving toward snap or away from it?
       //       We need to be able to move pieces again after they've snapped the first time
 
       // Find closest edge with smallest difference in angle
-      edgeDists.sort( ( a, b ) => a.dist - b.dist );
+      edgeDists.sort( ( a, b ) => a.snapDist - b.snapDist );
 
       // NOTE: Need to be generous with distances here since since the wrong lines sometimes appear closer
       // TODO: Another possible way to do this would be some sort of "average distance" of x1,y1 and x2,y2
@@ -297,24 +271,14 @@
       //       edge where only one point touches
       // TODO: Could also do the movement calculation below as part of distance detection, 
       //       and use whichever has smallest move instead of the actual distance
-      const nearest = edgeDists.filter( e => e.dist - edgeDists[ 0 ].dist < 0.1 );
+      const nearest = edgeDists.filter( e => e.snapDist - edgeDists[ 0 ].snapDist < 0.1 );
       nearest.sort( ( a, b ) => Math.abs( a.dAngle ) - Math.abs( b.dAngle ) );
 
-      const bestAlign = nearest[ 0 ];
-      if ( bestAlign && bestAlign.dist < SNAP_DIST ) {
-        // Since edges are running opposite directions, we will compare x1,y1 to x2,y2 and vice versa
-        const px = activeBlock.x - bestAlign.A.x1;
-        const py = activeBlock.y - bestAlign.A.y1;
-
-        const cos = Math.cos( bestAlign.dAngle );
-        const sin = Math.sin( bestAlign.dAngle );
-        const newX = px * cos - py * sin;
-        const newY = px * sin + py * cos; 
-
-        activeBlock.x = bestAlign.B.x2 + newX;
-        activeBlock.y = bestAlign.B.y2 + newY;
-
-        activeBlock.angle += bestAlign.dAngle;
+      const bestSnap = nearest[ 0 ];
+      if ( bestSnap && bestSnap.snapDist < SNAP_DIST ) {
+        activeBlock.x += bestSnap.snapX;
+        activeBlock.y += bestSnap.snapY;
+        activeBlock.angle += bestSnap.dAngle;
       }
 
       activeBlock.updateSVG();
