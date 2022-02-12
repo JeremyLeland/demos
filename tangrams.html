@@ -249,12 +249,13 @@
         const snapX = b.x2 + newX - activeBlock.x;
         const snapY = b.y2 + newY - activeBlock.y;
 
+        // Only snap in direction we are already moving
         const snapDir = snapX * dx + snapY * dy;
 
         return {
           snapX: snapX,
           snapY: snapY,
-          snapDist: Math.hypot( snapX, snapY ),
+          snapDist: snapDir < -0.01 ? Infinity : Math.hypot( snapX, snapY ),
           dAngle: dAngle
         };
       } ) );
