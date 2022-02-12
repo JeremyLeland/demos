@@ -15,23 +15,23 @@
     height: 100%;
   }
   #ui {
-    margin: 0 auto;
+    transform: translateY( -4.9px );
   }
-  .button {
-    position: relative;
-    border-radius: 25%;
-    border: 2px solid black;
-    background-color: lightslategray;
-    width: 80px;
-    height: 80px;
+  #button {
+    fill: lightslategray;
+    width: 2px;
+    height: 2px;
   }
 </style>
 
 <body>
   <svg id="main" viewBox="-6 -6 12 12">
+    <defs>
+      <rect id="button" x="-1" y="-1" rx="0.5px"></rect>
+    </defs>
+    <g id="ui"></g>
     <g id="blocks"></g>
   </svg>
-  <div id="ui"></div>
 </body>
 
 <script>
@@ -85,20 +85,25 @@
   prepareCSS();
 
   function prepareUI() {
-    const uiDiv = document.getElementById( 'ui' );
+    const uiSvg = document.getElementById( 'ui' );
 
+    let x = -5;
     for ( const type in BlockInfo ) {
-      const svg = document.createElementNS( SVG_NS, 'svg' );
-      svg.setAttribute( 'class', 'button' );
-      svg.setAttribute( 'viewBox', '-1 -1 2 2' );
+      const g = document.createElementNS( SVG_NS, 'g' );
+      g.style.transform = `translateX( ${ x }px )`;
+      x += 2;
+
+      const use = document.createElementNS( SVG_NS, 'use' );
+      use.setAttribute( 'href', '#button' );
+      g.appendChild( use );
 
       const path = document.createElementNS( SVG_NS, 'path' );
       path.setAttribute( 'class', type );
+      g.appendChild( path );
 
-      svg.addEventListener( 'mousedown', ( e ) => addBlock( type, e ) );
+      g.addEventListener( 'mousedown', ( e ) => addBlock( type, e ) );
 
-      svg.appendChild( path );
-      uiDiv.appendChild( svg );
+      uiSvg.appendChild( g );
     }
   }
   prepareUI();
