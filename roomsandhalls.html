@@ -1,0 +1,92 @@
+<title>Rooms and Halls</title>
+<link rel="stylesheet" href="./style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="500px"></canvas>
+</body>
+
+<script type="module">
+  class Room {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+      this.halls = [];
+    }
+  }
+
+  class Hall {
+    constructor(startRoom, endRoom) {
+      this.startRoom = startRoom;
+      this.endRoom = endRoom;
+
+      this.startRoom.halls.push(this);
+      this.endRoom.halls.push(this);
+    }
+  }
+
+  const SIZE = 64;
+  const COLS = 10, ROWS = 5;
+  const rooms = Array( COLS ).fill().map( x => Array( ROWS ).fill() );
+
+  for (var row = 0; row < rooms[ 0 ].length; row ++) {
+    for (var col = 0; col < rooms.length; col ++) {
+      rooms[col][row] = new Room(col * SIZE + SIZE / 2, row * SIZE + SIZE / 2);
+    }
+  }
+
+  const halls = [];
+
+  addHalls(0, 0, null);
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+
+  drawRoomsAndHalls(ctx);
+
+  function addHalls(col, row, lastRoom) {
+    if (col < 0 || row < 0 || col >= rooms.length || row >= rooms[ 0 ].length) {
+      return;
+    }
+
+    const room = rooms[col][row];
+
+    if (room.halls.length > 0) {
+      return;
+    }
+
+    if (lastRoom != null) {
+      halls.push(new Hall(lastRoom, room));
+    }
+
+    const dirs = [ [-1, 0], [0, -1], [1, 0], [0, 1] ];
+
+    while (dirs.length > 0) {
+      const ndx = Math.floor(Math.random() * dirs.length);
+      const dir = dirs.splice(ndx, 1)[0];        
+      addHalls(col + dir[0], row + dir[1], room);
+    }
+  }
+
+  function drawRoomsAndHalls( ctx ) {
+    ctx.fillStyle = ctx.strokeStyle = 'chocolate';
+  
+    for (var row = 0; row < rooms[0].length; row ++) {
+      for (var col = 0; col < rooms.length; col ++) {
+        const room = rooms[col][row];
+
+        ctx.beginPath();
+        ctx.arc(room.x, room.y, SIZE / 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.lineWidth = 8;
+    halls.forEach(hall => {
+      ctx.beginPath();
+      ctx.moveTo(hall.startRoom.x, hall.startRoom.y);
+      ctx.lineTo(hall.endRoom.x, hall.endRoom.y);
+      ctx.stroke();
+    });
+  }
+  
+  
+</script>
