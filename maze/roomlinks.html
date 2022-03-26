@@ -6,7 +6,7 @@
 </body>
 
 <script type="module">
-  const SIZE = 32;
+  const SIZE = 64;
 
   class Room {
     constructor( x, y ) {
@@ -27,14 +27,15 @@
     }
   }
 
-  const rooms = getGridRooms( 20, 15 );
+  // const rooms = getGridRooms( 20, 15 );
+  const rooms = getHexRooms( 10, 5 );
 
-  checkRooms( rooms[ 0 ] );
+  doMazeLink( rooms[ 0 ] );
 
   
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
   drawRooms( ctx );
-  drawNeighbors( ctx );
+  // drawNeighbors( ctx );
   drawLinks( ctx );
 
 
@@ -64,7 +65,43 @@
     return rooms;
   }
 
-  function checkRooms( current, previous ) {
+  function getHexRooms( cols, rows ) {
+    const roomHex = Array( cols ).fill().map( x => Array( rows ).fill() );
+    const rooms = [];
+
+    for ( let row = 0; row < roomHex[ 0 ].length; row ++ ) {
+      for ( let col = 0; col < roomHex.length; col ++ ) {
+        const room = new Room( ( col + ( row % 2 == 0 ? 1 : 0.5 ) ) * SIZE, ( row + 0.5 ) * SIZE );
+        roomHex[ col ][ row ] = room;
+        rooms.push( room );
+
+        if ( col > 0 ) {
+          const left = roomHex[ col - 1 ][ row ];
+          room.neighbors.add( left );
+          left.neighbors.add( room );
+        }  
+        if ( row > 0 )  {
+          const leftCol = col - ( row % 2 );
+          const rightCol = leftCol + 1;
+
+          if ( leftCol >= 0 ) {
+            const topLeft = roomHex[ leftCol ][ row - 1 ];
+            room.neighbors.add( topLeft );
+            topLeft.neighbors.add( room );
+          }
+          if ( rightCol < roomHex.length ) {
+            const topRight = roomHex[ rightCol ][ row - 1 ];
+            room.neighbors.add( topRight );
+            topRight.neighbors.add( room );
+          }
+        }
+      }
+    }
+
+    return rooms;
+  }
+
+  function doMazeLink( current, previous ) {
     if ( current.links.size > 0 ) {
       return;
     }
@@ -82,12 +119,12 @@
     // }
 
     const neighbors = Array.from( current.neighbors ).sort( ( a, b ) => Math.random() > 0.5 ? 1 : -1 );
-    neighbors.forEach( next => checkRooms( next, current ) );
+    neighbors.forEach( next => doMazeLink( next, current ) );
   }
 
   function drawRooms( ctx ) {
     ctx.fillStyle = 'chocolate';
-    rooms.forEach( room => {
+    rooms.filter( r => r.links.size != 2 ).forEach( room => {
       ctx.beginPath();
       ctx.arc( room.x, room.y, SIZE / 4, 0, Math.PI * 2 );
       ctx.fill();
@@ -119,8 +156,8 @@
       } );
     } );
 
-    ctx.strokeStyle = 'yellow';
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'chocolate';
+    ctx.lineWidth = 8;
     ctx.stroke();
   }
   
