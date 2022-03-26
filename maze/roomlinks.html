@@ -1,0 +1,135 @@
+<title>Linked Rooms</title>
+<link rel="stylesheet" href="../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="500px"></canvas>
+</body>
+
+<script type="module">
+  const SIZE = 64;
+
+  class Room {
+    constructor( x, y ) {
+      this.x = x;
+      this.y = y;
+      this.links = new Set();
+    }
+
+    static linkRooms( a, b ) {
+      a.links.add( b );
+      b.links.add( a );
+    }
+
+    static unlinkRooms( a, b ) {
+      a.links.delete( b );
+      b.links.delete( a );
+    }
+  }
+
+  const neighborMap = getGridNeighborMap( 10, 5 );
+
+
+
+  // addHalls(0, 0, null);
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  ctx.fillStyle = ctx.strokeStyle = 'chocolate';
+  ctx.stroke( getNeighborMapPath( neighborMap ) );
+
+  //drawRoomsAndHalls(ctx);
+
+  function getGridNeighborMap( cols, rows ) {
+    const roomGrid = Array( cols ).fill().map( x => Array( rows ).fill() );
+
+    const neighborMap = new Map();
+
+    for ( let row = 0; row < roomGrid[ 0 ].length; row ++ ) {
+      for ( let col = 0; col < roomGrid.length; col ++ ) {
+        const room = new Room( ( col + 0.5 ) * SIZE, ( row + 0.5 ) * SIZE );
+        const neighbors = [];
+        neighborMap.set( room, neighbors );
+
+        roomGrid[ col ][ row ] = room;
+
+        if ( col > 0 ) {
+          const left = roomGrid[ col - 1 ][ row ];
+          neighbors.push( left );
+          neighborMap.get( left ).push( room );
+        }  
+        if ( row > 0 )  {
+          const top = roomGrid[ col ][ row - 1 ];
+          neighbors.push( top );
+          neighborMap.get( top ).push( room );
+        }
+      }
+    }
+
+    return neighborMap;
+  }
+
+  function addHalls(col, row, lastRoom) {
+    if (col < 0 || row < 0 || col >= rooms.length || row >= rooms[ 0 ].length) {
+      return;
+    }
+
+    const room = rooms[col][row];
+
+    if (room.halls.length > 0) {
+      return;
+    }
+
+    if (lastRoom != null) {
+      halls.push(new Hall(lastRoom, room));
+    }
+
+    const dirs = [ [-1, 0], [0, -1], [1, 0], [0, 1] ];
+
+    while (dirs.length > 0) {
+      const ndx = Math.floor(Math.random() * dirs.length);
+      const dir = dirs.splice(ndx, 1)[0];        
+      addHalls(col + dir[0], row + dir[1], room);
+    }
+  }
+
+  function getNeighborMapPath( neighborMap ) {
+    const path = new Path2D();
+
+    neighborMap.forEach( ( neighbors, room ) => {
+      const p = new Path2D();
+      p.arc( room.x, room.y, SIZE / 3, 0, Math.PI * 2 );
+
+      neighbors.forEach( neighbor => { 
+        p.moveTo( room.x, room.y );
+        p.lineTo( neighbor.x, neighbor.y );
+      } );
+
+      path.addPath( p );
+    } );
+
+    return path;
+  }
+
+  function drawRoomsAndHalls( ctx ) {
+    ctx.fillStyle = ctx.strokeStyle = 'chocolate';
+  
+    for (var row = 0; row < rooms[0].length; row ++) {
+      for (var col = 0; col < rooms.length; col ++) {
+        const room = rooms[col][row];
+
+        ctx.beginPath();
+        ctx.arc(room.x, room.y, SIZE / ( 3 + Math.random() ), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.lineWidth = 8;
+    halls.forEach(hall => {
+      ctx.beginPath();
+      ctx.moveTo(hall.startRoom.x, hall.startRoom.y);
+      ctx.lineTo(hall.endRoom.x, hall.endRoom.y);
+      ctx.stroke();
+    });
+  }
+  
+  
+</script>
