@@ -6,7 +6,7 @@
 </body>
 
 <script type="module">
-  const SIZE = 16;
+  const SIZE = 32;
 
   class Room {
     constructor( x, y ) {
@@ -27,13 +27,15 @@
     }
   }
 
-  const rooms = getGridRooms( 40, 30 );
+  const rooms = getGridRooms( 20, 15 );
 
   checkRooms( rooms[ 0 ] );
 
+  
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
-  ctx.fillStyle = ctx.strokeStyle = 'chocolate';
-  ctx.stroke( getRoomLinksPath( rooms ) );
+  drawRooms( ctx );
+  drawNeighbors( ctx );
+  drawLinks( ctx );
 
 
   function getGridRooms( cols, rows ) {
@@ -83,23 +85,43 @@
     neighbors.forEach( next => checkRooms( next, current ) );
   }
 
-  function getRoomLinksPath( rooms ) {
-    const path = new Path2D();
+  function drawRooms( ctx ) {
+    ctx.fillStyle = 'chocolate';
+    rooms.forEach( room => {
+      ctx.beginPath();
+      ctx.arc( room.x, room.y, SIZE / 4, 0, Math.PI * 2 );
+      ctx.fill();
+    } );
+  }
+
+  function drawNeighbors( ctx ) {
+    ctx.beginPath();
 
     rooms.forEach( room => {
-      const p = new Path2D();
-      p.arc( room.x, room.y, SIZE / 3, 0, Math.PI * 2 );
-
-      room.links.forEach( other => { 
-        p.moveTo( room.x, room.y );
-        p.lineTo( other.x, other.y );
+      room.neighbors.forEach( other => { 
+        ctx.moveTo( room.x, room.y );
+        ctx.lineTo( other.x, other.y );
       } );
-
-      path.addPath( p );
     } );
 
-    return path;
+    ctx.strokeStyle = 'darkred';
+    ctx.lineWidth = 2;
+    ctx.stroke();
   }
-  
+
+  function drawLinks( ctx ) {
+    ctx.beginPath();
+
+    rooms.forEach( room => {
+      room.links.forEach( other => { 
+        ctx.moveTo( room.x, room.y );
+        ctx.lineTo( other.x, other.y );
+      } );
+    } );
+
+    ctx.strokeStyle = 'yellow';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+  }
   
 </script>
