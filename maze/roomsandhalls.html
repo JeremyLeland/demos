@@ -1,5 +1,5 @@
 <title>Rooms and Halls</title>
-<link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="../style.css">
 
 <body>
   <canvas id="canvas" width="800px" height="500px"></canvas>
@@ -7,7 +7,7 @@
 
 <script type="module">
   class Room {
-    constructor(x, y) {
+    constructor( x, y ) {
       this.x = x;
       this.y = y;
       this.halls = [];
@@ -19,8 +19,8 @@
       this.startRoom = startRoom;
       this.endRoom = endRoom;
 
-      this.startRoom.halls.push(this);
-      this.endRoom.halls.push(this);
+      this.startRoom.halls.push( this );
+      this.endRoom.halls.push( this );
     }
   }
 
@@ -30,7 +30,7 @@
 
   for (var row = 0; row < rooms[ 0 ].length; row ++) {
     for (var col = 0; col < rooms.length; col ++) {
-      rooms[col][row] = new Room(col * SIZE + SIZE / 2, row * SIZE + SIZE / 2);
+      rooms[col][row] = new Room( col * SIZE + SIZE / ( 1.5 + Math.random() ), row * SIZE + SIZE / ( 1.5 + Math.random() ) );
     }
   }
 
@@ -74,7 +74,7 @@
         const room = rooms[col][row];
 
         ctx.beginPath();
-        ctx.arc(room.x, room.y, SIZE / 3, 0, Math.PI * 2);
+        ctx.arc(room.x, room.y, SIZE / ( 3 + Math.random() ), 0, Math.PI * 2);
         ctx.fill();
       }
     }
