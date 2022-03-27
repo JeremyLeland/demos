@@ -6,7 +6,7 @@
 </body>
 
 <script type="module">
-  const SIZE = 128;
+  const SIZE = 64;
   const HALL_WIDTH = 8;
 
   class Room {
@@ -29,7 +29,7 @@
     }
   }
 
-  const rooms = getGridRooms( 5, 5 );
+  const rooms = getGridRooms( 10, 10 );
   // const rooms = getHexRooms( 10, 5 );
 
   doMazeLink( rooms[ Math.floor( Math.random() * rooms.length ) ] );
@@ -187,11 +187,28 @@
       const angle = Math.atan2( current.y - previous.y, current.x - previous.x );
       const sin = Math.sin( angle ), cos = Math.cos( angle );
 
-      ctx.lineTo( previous.x - sin * HALL_WIDTH, previous.y + cos * HALL_WIDTH );
-      ctx.lineTo( current.x - sin * HALL_WIDTH, current.y + cos * HALL_WIDTH );
+      ctx.lineTo(
+        previous.x + sin * HALL_WIDTH + cos * previous.size,
+        previous.y - cos * HALL_WIDTH + sin * previous.size,
+      );
+      ctx.lineTo(
+        current.x + sin * HALL_WIDTH - cos * current.size,
+        current.y - cos * HALL_WIDTH - sin * current.size,
+      );
     }
 
-    current.links.forEach( next => {
+     // TODO: Visit these in clock-wise order from our entry point
+    //       (Find previous in our links, split the list around it for the rest?)
+
+    // if ( current.links.size > 2 ) {
+    //   debugger;
+    // }
+
+    const linkedNeighbors = Array.from( current.neighbors ).filter( n => current.links.has( n ) );
+    const prevIndex = linkedNeighbors.indexOf( previous );
+    const links = linkedNeighbors.slice( prevIndex + 1 ).concat( linkedNeighbors.slice( 0, prevIndex ) );
+
+    links.forEach( next => {
       if ( !visited.has( next ) ) {
         drawLink( ctx, visited, next, current );
       }
@@ -201,8 +218,14 @@
       const angle = Math.atan2( current.y - previous.y, current.x - previous.x );
       const sin = Math.sin( angle ), cos = Math.cos( angle );
 
-      ctx.lineTo( current.x + sin * HALL_WIDTH, current.y - cos * HALL_WIDTH );
-      ctx.lineTo( previous.x + sin * HALL_WIDTH, previous.y - cos * HALL_WIDTH );
+      ctx.lineTo(
+        current.x - sin * HALL_WIDTH - cos * current.size,
+        current.y + cos * HALL_WIDTH - sin * current.size,
+      );
+      ctx.lineTo(
+        previous.x - sin * HALL_WIDTH + cos * previous.size, 
+        previous.y + cos * HALL_WIDTH + sin * previous.size,
+      );
     }
   }
 
