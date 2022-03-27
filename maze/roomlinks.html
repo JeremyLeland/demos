@@ -2,16 +2,17 @@
 <link rel="stylesheet" href="../style.css">
 
 <body>
-  <canvas id="canvas" width="800px" height="500px"></canvas>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
 </body>
 
 <script type="module">
   const SIZE = 64;
 
   class Room {
-    constructor( x, y ) {
+    constructor( x, y, size ) {
       this.x = x;
       this.y = y;
+      this.size = size;
       this.neighbors = new Set();
       this.links = new Set();
     }
@@ -27,13 +28,14 @@
     }
   }
 
-  const rooms = getGridRooms( 10, 5 );
+  const rooms = getGridRooms( 10, 10 );
   // const rooms = getHexRooms( 10, 5 );
 
-  doMazeLink( rooms[ 0 ] );
+  doMazeLink( rooms[ Math.floor( Math.random() * rooms.length ) ] );
 
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  ctx.translate( SIZE / 2, SIZE / 2 );
   drawRooms( ctx );
   // drawNeighbors( ctx );
   drawLinks( ctx );
@@ -45,7 +47,11 @@
 
     for ( let row = 0; row < roomGrid[ 0 ].length; row ++ ) {
       for ( let col = 0; col < roomGrid.length; col ++ ) {
-        const room = new Room( ( col + Math.random() * 0.5 ) * SIZE, ( row + Math.random() ) * SIZE );
+        const room = new Room( 
+          ( col + ( Math.random() - 0.5 ) * 0.5 ) * SIZE, 
+          ( row + ( Math.random() - 0.5 ) * 0.5 ) * SIZE,
+          ( Math.random() + 0.5 ) * SIZE / 4 
+        );
         roomGrid[ col ][ row ] = room;
         rooms.push( room );
 
@@ -102,7 +108,7 @@
   }
 
   function doMazeLink( current, previous ) {
-    if ( current.links.size > 0 ) {
+    if ( current.links.size > Math.random() + 0.2 ) {
       return;
     }
 
@@ -126,7 +132,7 @@
     ctx.fillStyle = 'chocolate';
     rooms.filter( r => r.links.size != 2 ).forEach( room => {
       ctx.beginPath();
-      ctx.arc( room.x, room.y, SIZE / 4, 0, Math.PI * 2 );
+      ctx.arc( room.x, room.y, room.size, 0, Math.PI * 2 );
       ctx.fill();
     } );
   }
