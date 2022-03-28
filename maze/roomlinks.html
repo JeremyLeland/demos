@@ -6,6 +6,8 @@
 </body>
 
 <script type="module">
+  import { Curve } from '../src/Curve.js';
+
   const SIZE = 64;
   const HALL_WIDTH = 8;
 
@@ -37,7 +39,7 @@
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
   ctx.translate( SIZE / 2, SIZE / 2 );
-  // drawRooms( ctx );
+  drawRooms( ctx );
   // drawNeighbors( ctx );
   drawLinks( ctx );
 
@@ -51,7 +53,7 @@
         const room = new Room( 
           ( col + 0.5 /* * ( Math.random() - 0.5 )*/ ) * SIZE, 
           ( row + 0.5 /* * ( Math.random() - 0.5 )*/ ) * SIZE,
-          ( Math.random() + 0.5 ) * SIZE / 4 
+          ( 0.75 + 0.25 * Math.random() ) * SIZE / 3
         );
         roomGrid[ col ][ row ] = room;
         rooms.push( room );
@@ -134,11 +136,11 @@
     neighbors.forEach( next => doMazeLink( next, current ) );
   }
 
-  // TODO: Draw depth-first (avoiding cycles?!?) so we can get joints (and eventually beizer curves?)
-
+  // TODO: Make this debugRooms(), and have it draw simple circles for rooms and lines for neighbors/links
+  //       differentiate neighbors/links with colors
   function drawRooms( ctx ) {
     ctx.fillStyle = 'chocolate';
-    rooms.filter( r => r.links.size != 2 ).forEach( room => {
+    rooms./*filter( r => r.links.size != 2 ).*/forEach( room => {
       ctx.beginPath();
       ctx.arc( room.x, room.y, room.size, 0, Math.PI * 2 );
       ctx.fill();
@@ -163,46 +165,42 @@
   function drawLinks( ctx ) {
     ctx.beginPath();
 
-    drawLink( ctx, new Set(), rooms[ 0 ] );
+    const points = [];
 
-    // rooms.forEach( room => {
-    //   room.links.forEach( other => {
-    //     ctx.moveTo( room.x, room.y );
-    //     ctx.lineTo( other.x, other.y );
-    //   } );
-    // } );
+    getLinkPoints( points, new Set(), rooms[ 0 ] );
 
-    ctx.fillStyle = 'chocolate';
-    ctx.strokeStyle = 'white';
-    ctx.fill();
-    ctx.stroke();
+    const curves = Curve.getCurvesThroughPoints( points );
+
+    curves.forEach( curve => curve.draw( ctx, 0.2 ) );
+
+    // ctx.fillStyle = 'chocolate';
+    // ctx.strokeStyle = 'white';
+    // ctx.fill();
+    // ctx.stroke();
   }
 
-  
+  // TODO: Make sure this handles cycles! (hopefully visisted Set handles this)
 
-  function drawLink( ctx, visited, current, previous ) {
+  function getLinkPoints( points, visited, current, previous ) {
     visited.add( current );
 
     if ( previous ) {
       const angle = Math.atan2( current.y - previous.y, current.x - previous.x );
       const sin = Math.sin( angle ), cos = Math.cos( angle );
 
-      ctx.lineTo(
-        previous.x + sin * HALL_WIDTH + cos * previous.size,
-        previous.y - cos * HALL_WIDTH + sin * previous.size,
-      );
-      ctx.lineTo(
-        current.x + sin * HALL_WIDTH - cos * current.size,
-        current.y - cos * HALL_WIDTH - sin * current.size,
-      );
+      points.push( {
+        x: previous.x + sin * HALL_WIDTH + cos * previous.size,
+        y: previous.y - cos * HALL_WIDTH + sin * previous.size,
+      } );
+      points.push( {
+        x: current.x + sin * HALL_WIDTH - cos * current.size,
+        y: current.y - cos * HALL_WIDTH - sin * current.size,
+      } );
     }
 
-     // TODO: Visit these in clock-wise order from our entry point
-    //       (Find previous in our links, split the list around it for the rest?)
-
-    // if ( current.links.size > 2 ) {
-    //   debugger;
-    // }
+    // TODO: How to detect and handle joints and gaps between lines?
+    // Each gap represents a potential room, so this is where rooms would be drawn
+    // If links == 2, then no room -- continue the hall, or do a curved joint
 
     const linkedNeighbors = Array.from( current.neighbors ).filter( n => current.links.has( n ) );
     const prevIndex = linkedNeighbors.indexOf( previous );
@@ -210,7 +208,7 @@
 
     links.forEach( next => {
       if ( !visited.has( next ) ) {
-        drawLink( ctx, visited, next, current );
+        getLinkPoints( points, visited, next, current );
       }
     } );
 
@@ -218,14 +216,14 @@
       const angle = Math.atan2( current.y - previous.y, current.x - previous.x );
       const sin = Math.sin( angle ), cos = Math.cos( angle );
 
-      ctx.lineTo(
-        current.x - sin * HALL_WIDTH - cos * current.size,
-        current.y + cos * HALL_WIDTH - sin * current.size,
-      );
-      ctx.lineTo(
-        previous.x - sin * HALL_WIDTH + cos * previous.size, 
-        previous.y + cos * HALL_WIDTH + sin * previous.size,
-      );
+      points.push( {
+        x: current.x - sin * HALL_WIDTH - cos * current.size,
+        y: current.y + cos * HALL_WIDTH - sin * current.size,
+      } );
+      points.push( {
+        x: previous.x - sin * HALL_WIDTH + cos * previous.size, 
+        y: previous.y + cos * HALL_WIDTH + sin * previous.size,
+      } );
     }
   }
 
