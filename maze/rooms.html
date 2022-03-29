@@ -8,15 +8,22 @@
 <script type="module">
   import { Curve } from '../src/Curve.js';
 
-  const CELL_SIZE = 64, OFFSET = 25, COLS = 10, ROWS = 10;
+  const CELL_SIZE = 64, OFFSET = 32, COLS = 10, ROWS = 10;
+
+  class Cell {
+    constructor( NW, NE, SW, SE ) {
+      this.NW = NW;
+      this.NE = NE;
+      this.SW = SW;
+      this.SE = SE;
+    }
+  }
 
   const cellPoints = Array.from( 
     Array( COLS + 1 ), ( _, col ) => Array.from( 
       Array( ROWS + 1 ), ( _, row ) => ( { 
-        x: col, 
-        y: row,
-        angle: Math.random() * Math.PI * 2,
-        dist: 0.5 + 0.5 * Math.random(),
+        x: col * CELL_SIZE + ( Math.random() - 0.5 ) * OFFSET, 
+        y: row * CELL_SIZE + ( Math.random() - 0.5 ) * OFFSET,
       } ) 
     )
   );
@@ -24,17 +31,28 @@
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
   ctx.translate( CELL_SIZE / 2, CELL_SIZE / 2 );
   debugCells( cellPoints );
+
+  const roomPoints = [
+    cellPoints[ 5 ][ 5 ], 
+    cellPoints[ 5 ][ 6 ],
+    cellPoints[ 5 ][ 7 ],
+    cellPoints[ 6 ][ 7 ],
+    cellPoints[ 7 ][ 7 ],
+    cellPoints[ 7 ][ 6 ],
+    cellPoints[ 6 ][ 6 ],
+    cellPoints[ 6 ][ 5 ],
+  ];
+
+  const curves = Curve.getLoopThroughPoints( roomPoints );
+  curves.forEach( curve => curve.draw( ctx ) );
   
   function debugCells( cellPoints ) {
     for ( let row = 0; row < ROWS; row ++ ) {
       for ( let col = 0; col < COLS; col ++ ) {
-        const NW = getPoint( cellPoints[ col ][ row ] );
-        const NE = getPoint( cellPoints[ col + 1 ][ row ] );
-        const SW = getPoint( cellPoints[ col ][ row + 1 ] );
-        const SE = getPoint( cellPoints[ col + 1 ][ row + 1 ] );
-
-        const curves = Curve.getLoopThroughPoints( [ NW, SW, SE, NE ] );
-        curves.forEach( curve => curve.draw( ctx ) );
+        const NW = cellPoints[ col ][ row ];
+        const NE = cellPoints[ col + 1 ][ row ];
+        const SW = cellPoints[ col ][ row + 1 ];
+        const SE = cellPoints[ col + 1 ][ row + 1 ];
         
         ctx.beginPath();
         [ NW, NE, SE, SW ].forEach( point => {
@@ -42,17 +60,10 @@
         } );
         ctx.closePath();
 
-        ctx.strokeStyle = 'white';
+        ctx.strokeStyle = 'dimgray';
         ctx.stroke();
       }
     }
-  }
-
-  function getPoint( point ) {
-    return {
-      x: point.x * CELL_SIZE + Math.cos( point.angle ) * point.dist * OFFSET,
-      y: point.y * CELL_SIZE + Math.sin( point.angle ) * point.dist * OFFSET,
-    };
   }
 
 </script>
