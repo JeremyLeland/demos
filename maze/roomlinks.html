@@ -60,6 +60,7 @@
       }
     }
 
+    // TODO: Should these be counter-clockwise so the normals point inward?
     // Make sure links are added in clockwise order
     for ( let row = 0; row < rows; row ++ ) {
       for ( let col = 0; col < cols; col ++ ) {
@@ -213,8 +214,8 @@
         const angle = Math.atan2( next.y - current.y, next.x - current.x );
         const sin = Math.sin( angle ), cos = Math.cos( angle );
         points.push( {
-          x: current.x + cos * current.size,
-          y: current.y + sin * current.size,
+          x: current.x + cos * HALL_WIDTH, //current.size,
+          y: current.y + sin * HALL_WIDTH, //current.size,
         } );
       }
     } );
