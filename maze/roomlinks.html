@@ -8,7 +8,7 @@
 <script type="module">
   import { Curve } from '../src/Curve.js';
 
-  const SIZE = 64;
+  const SIZE = 64, COLS = 10, ROWS = 10;
   const HALL_WIDTH = 8;
 
   class Room {
@@ -31,7 +31,7 @@
     }
   }
 
-  const rooms = getGridRooms( 10, 10 );
+  const rooms = getGridRooms( COLS, ROWS );
   // const rooms = getHexRooms( 10, 5 );
 
   doMazeLink( rooms[ Math.floor( Math.random() * rooms.length ) ] );
@@ -40,7 +40,6 @@
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
   ctx.translate( SIZE / 2, SIZE / 2 );
   debugRooms( ctx );
-  // drawNeighbors( ctx );
   drawLinks( ctx );
 
 
@@ -50,10 +49,11 @@
 
     for ( let row = 0; row < rows; row ++ ) {
       for ( let col = 0; col < cols; col ++ ) {
+        const size = HALL_WIDTH * ( 2.0 + Math.random() );
         const room = new Room( 
-          ( col + 0.5 * ( Math.random() - 0.5 ) ) * SIZE, 
-          ( row + 0.5 * ( Math.random() - 0.5 ) ) * SIZE,
-          ( 0.75 + 0.25 * Math.random() ) * SIZE / 3
+          ( col + 0.5 ) * SIZE + ( Math.random() - 0.5 ) * ( SIZE - size * 2 ), 
+          ( row + 0.5 ) * SIZE + ( Math.random() - 0.5 ) * ( SIZE - size * 2 ),
+          size
         );
         roomGrid[ col ][ row ] = room;
         rooms.push( room );
@@ -138,7 +138,15 @@
   }
 
   function debugRooms( ctx ) {
-    ctx.fillStyle = '#221100';
+
+    ctx.strokeStyle = '#333333';
+    for ( let row = 0; row < ROWS; row ++ ) {
+      for ( let col = 0; col < COLS; col ++ ) {
+        ctx.strokeRect( col * SIZE, row * SIZE, SIZE, SIZE );
+      }
+    }
+
+    ctx.fillStyle = '#553300';
     rooms.forEach( room => {
       ctx.beginPath();
       ctx.arc( room.x, room.y, room.size, 0, Math.PI * 2 );
@@ -154,7 +162,7 @@
       } );
     } );
 
-    ctx.strokeStyle = '#220000';
+    ctx.strokeStyle = '#550000';
     ctx.stroke();
   }
 
