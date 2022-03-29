@@ -32,6 +32,9 @@
         const NE = getPoint( cellPoints[ col + 1 ][ row ] );
         const SW = getPoint( cellPoints[ col ][ row + 1 ] );
         const SE = getPoint( cellPoints[ col + 1 ][ row + 1 ] );
+
+        const curves = Curve.getLoopThroughPoints( [ NW, SW, SE, NE ] );
+        curves.forEach( curve => curve.draw( ctx ) );
         
         ctx.beginPath();
         [ NW, NE, SE, SW ].forEach( point => {
@@ -39,7 +42,7 @@
         } );
         ctx.closePath();
 
-        ctx.strokeStyle = '#333333';
+        ctx.strokeStyle = 'white';
         ctx.stroke();
       }
     }
