@@ -32,20 +32,34 @@
   ctx.translate( CELL_SIZE / 2, CELL_SIZE / 2 );
   debugCells( cellPoints );
 
-  const roomPoints = [
-    cellPoints[ 5 ][ 5 ], 
-    cellPoints[ 5 ][ 6 ],
-    cellPoints[ 5 ][ 7 ],
-    cellPoints[ 6 ][ 7 ],
-    cellPoints[ 7 ][ 7 ],
-    cellPoints[ 7 ][ 6 ],
-    cellPoints[ 6 ][ 6 ],
-    cellPoints[ 6 ][ 5 ],
-  ];
+  const room1 = { NW: cellPoints[ 5 ][ 5 ], NE: cellPoints[ 6 ][ 5 ], SW: cellPoints[ 5 ][ 6 ], SE: cellPoints[ 6 ][ 6 ] };
+  const room2 = { NW: cellPoints[ 5 ][ 6 ], NE: cellPoints[ 6 ][ 6 ], SW: cellPoints[ 5 ][ 7 ], SE: cellPoints[ 6 ][ 7 ] };
+  const room3 = { NW: cellPoints[ 6 ][ 6 ], NE: cellPoints[ 7 ][ 6 ], SW: cellPoints[ 6 ][ 7 ], SE: cellPoints[ 7 ][ 7 ] };
+  
+  const roomPoints = [ room1.NW, room1.SW, room1.SE, room1.NE ];
+
+  addRoom( roomPoints, room2 );
+  addRoom( roomPoints, room3 );
 
   const curves = Curve.getLoopThroughPoints( roomPoints );
   curves.forEach( curve => curve.draw( ctx ) );
-  
+
+  function addRoom( combined, room ) {
+    const nwIndex = combined.indexOf( room.NW );
+    const neIndex = combined.indexOf( room.NE );
+    const swIndex = combined.indexOf( room.SW );
+    const seIndex = combined.indexOf( room.SE );
+
+    // South
+    if ( nwIndex > 0 && neIndex > 0 ) {
+      combined.splice( nwIndex + 1, 0, room.SW, room.SE );
+    }
+    // East
+    if ( nwIndex > 0 && swIndex > 0 ) {
+      combined.splice( swIndex + 1, 0, room.SE, room.NE );
+    }
+  }
+
   function debugCells( cellPoints ) {
     for ( let row = 0; row < ROWS; row ++ ) {
       for ( let col = 0; col < COLS; col ++ ) {
