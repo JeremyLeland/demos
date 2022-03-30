@@ -10,12 +10,58 @@
 
   const CELL_SIZE = 64, OFFSET = 32, COLS = 10, ROWS = 10;
 
+  class Edge {
+    start;
+    end;
+    neighbor;
+
+    constructor( start, end, neighbor ) {
+      this.start = start;
+      this.end = end;
+      this.neighbor = neighbor;
+    }
+
+    draw( ctx ) {
+      ctx.beginPath();
+      ctx.moveTo( this.start.x, this.start.y );
+      ctx.lineTo( this.end.x, this.end.y );
+
+      ctx.strokeStyle = 'dimgray';
+      ctx.stroke();
+    }
+  }
+
   class Cell {
-    constructor( NW, NE, SW, SE ) {
-      this.NW = NW;
-      this.NE = NE;
-      this.SW = SW;
-      this.SE = SE;
+    center = { x: 0, y: 0 };
+    edges = [];
+
+    constructor( points ) {
+      points.forEach( point => {
+        this.center.x += point.x;
+        this.center.y += point.y;
+      } );
+      this.center.x /= points.length;
+      this.center.y /= points.length;
+
+      for ( let i = 0; i < points.length; i ++ ) {
+        const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
+        this.edges.push( new Edge( current, next ) );
+      }
+    }
+
+    draw( ctx ) {
+      this.edges.forEach( edge => edge.draw( ctx ) );
+      ctx.fillStyle = 'darkred';
+      ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
+    }
+  }
+
+  class Room {
+    cells = [];
+    edges = [];
+
+    constructor( cell ) {
+      this.cells.push( cell );
     }
   }
 
@@ -28,22 +74,38 @@
     )
   );
 
+  const cellGrid = Array.from( 
+    Array( COLS ), ( _, col ) => Array.from( 
+      Array( ROWS ), ( _, row ) => new Cell( [ 
+        cellPoints[ col ][ row ], 
+        cellPoints[ col ][ row + 1 ], 
+        cellPoints[ col + 1 ][ row + 1 ], 
+        cellPoints[ col + 1 ][ row ], 
+      ] )
+    )
+  );
+
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
   ctx.translate( CELL_SIZE / 2, CELL_SIZE / 2 );
-  debugCells( cellPoints );
 
-  const room1 = getRoom( 5, 5 );
-  const roomPoints = [ room1.NW, room1.SW, room1.SE, room1.NE ];
+  for ( let row = 0; row < ROWS; row ++ ) {
+    for ( let col = 0; col < COLS; col ++ ) {
+      cellGrid[ col ][ row ].draw( ctx );
+    }
+  }
 
-  addRoom( roomPoints, getRoom( 5, 6 ) );
-  addRoom( roomPoints, getRoom( 6, 6 ) );
-  addRoom( roomPoints, getRoom( 4, 6 ) );
-  addRoom( roomPoints, getRoom( 5, 7 ) );
-  addRoom( roomPoints, getRoom( 5, 4 ) );
-  addRoom( roomPoints, getRoom( 6, 4 ) );
+  // const room1 = getRoom( 5, 5 );
+  // const roomPoints = [ room1.NW, room1.SW, room1.SE, room1.NE ];
 
-  const curves = Curve.getLoopThroughPoints( roomPoints );
-  curves.forEach( curve => curve.draw( ctx ) );
+  // addRoom( roomPoints, getRoom( 5, 6 ) );
+  // addRoom( roomPoints, getRoom( 6, 6 ) );
+  // addRoom( roomPoints, getRoom( 4, 6 ) );
+  // addRoom( roomPoints, getRoom( 5, 7 ) );
+  // addRoom( roomPoints, getRoom( 5, 4 ) );
+  // addRoom( roomPoints, getRoom( 6, 4 ) );
+
+  // const curves = Curve.getLoopThroughPoints( roomPoints );
+  // curves.forEach( curve => curve.draw( ctx ) );
 
   function addRoom( combined, room ) {
     const nwIndex = combined.indexOf( room.NW );
