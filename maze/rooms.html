@@ -13,12 +13,15 @@
   class Edge {
     start;
     end;
-    neighbor;
 
-    constructor( start, end, neighbor ) {
+    constructor( start, end ) {
       this.start = start;
       this.end = end;
-      this.neighbor = neighbor;
+    }
+
+    coincidentWith( other ) {
+      return this.start.x == other.end.x && this.start.y == other.end.y &&
+        this.end.x == other.start.x && this.end.y == other.start.y;
     }
 
     draw( ctx ) {
@@ -34,6 +37,7 @@
   class Cell {
     center = { x: 0, y: 0 };
     edges = [];
+    neighbors = [];
 
     constructor( points ) {
       points.forEach( point => {
@@ -51,7 +55,16 @@
 
     draw( ctx ) {
       this.edges.forEach( edge => edge.draw( ctx ) );
-      ctx.fillStyle = 'darkred';
+      
+      ctx.beginPath();
+      this.neighbors.forEach( neighbor => {
+        ctx.moveTo( this.center.x, this.center.y );
+        ctx.lineTo( neighbor.center.x, neighbor.center.y );
+      } );
+      ctx.strokeStyle = 'darkred';
+      ctx.stroke();
+
+      ctx.fillStyle = 'yellow';
       ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
     }
   }
@@ -59,6 +72,8 @@
   class Room {
     cells = [];
     edges = [];
+
+    // TODO: Map< Edge, Cell> for neighbors?
 
     constructor( cell ) {
       this.cells.push( cell );
@@ -84,6 +99,17 @@
       ] )
     )
   );
+
+  for ( let row = 0; row < ROWS; row ++ ) {
+    for ( let col = 0; col < COLS; col ++ ) {
+      const cell = cellGrid[ col ][ row ];
+
+      if ( col > 0 )  cell.neighbors.push( cellGrid[ col - 1 ][ row ] );
+      if ( row < ROWS - 1 )  cell.neighbors.push( cellGrid[ col ][ row + 1 ] );
+      if ( col < COLS - 1 )  cell.neighbors.push( cellGrid[ col + 1 ][ row ] );
+      if ( row > 0 )  cell.neighbors.push( cellGrid[ col ][ row - 1 ] );
+    }
+  }
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
   ctx.translate( CELL_SIZE / 2, CELL_SIZE / 2 );
