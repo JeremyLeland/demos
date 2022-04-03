@@ -12,16 +12,12 @@
     start;
     end;
     neighbor;
-    linked = false;
+    previous;
+    next;
 
     constructor( start, end ) {
       this.start = start;
       this.end = end;
-    }
-
-    coincidentWith( other ) {
-      return this.start.x == other.end.x && this.start.y == other.end.y &&
-        this.end.x == other.start.x && this.end.y == other.start.y;
     }
 
     draw( ctx ) {
@@ -57,6 +53,14 @@
         const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
         this.edges.push( new Edge( current, next ) );
       }
+
+      for ( let i = 0; i < this.edges.length; i ++ ) {
+        const current = this.edges[ i ];
+        const prev = this.edges[ ( i - 1 ) % points.length ];
+        const next = this.edges[ ( i + 1 ) % points.length ];
+        current.previous = prev;
+        current.next = next;
+      }
     }
 
     draw( ctx ) {
@@ -67,16 +71,20 @@
     }
 
     linkTo( other ) {
-      this.edges.find( edge => edge.neighbor == other ).linked = true;
-    }
+      const thisEdge = this.edges.find( edge => edge.neighbor == other );
+      const otherEdge = other.edges.find( edge => edge.neighbor == this );
 
-    static linkCells( a, b ) {
-      a.linkTo( b );
-      b.linkTo( a );
+      thisEdge.previous.next = otherEdge.next;
+      thisEdge.next.previous = otherEdge.previous;
+
+      otherEdge.previous.next = thisEdge.next;
+      otherEdge.next.previous = thisEdge.previous;
+
+      // TODO: Remove edges that we've worked around?
     }
   }
 
-  function getCellGrid( cols, rows, size = 64, offset = 32 ) {
+  function getCellGrid( cols, rows, size = 128, offset = 32 ) {
     const cellPoints = Array.from( 
       Array( cols + 1 ), ( _, col ) => Array.from( 
         Array( rows + 1 ), ( _, row ) => ( { 
@@ -113,13 +121,13 @@
 
   const cellGrid = getCellGrid( 5, 5 );
 
-  Cell.linkCells( cellGrid[ 1 ][ 1 ], cellGrid[ 1 ][ 0 ] );
-  Cell.linkCells( cellGrid[ 1 ][ 1 ], cellGrid[ 0 ][ 1 ] );
-  Cell.linkCells( cellGrid[ 1 ][ 1 ], cellGrid[ 2 ][ 1 ] );
-  Cell.linkCells( cellGrid[ 1 ][ 1 ], cellGrid[ 1 ][ 2 ] );
+  cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 1 ][ 0 ] );
+  cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 0 ][ 1 ] );
+  // cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 2 ][ 1 ] );
+  // cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 1 ][ 2 ] );
 
-  Cell.linkCells( cellGrid[ 1 ][ 2 ], cellGrid[ 2 ][ 2 ] );
-  // Cell.linkCells( cellGrid[ 2 ][ 1 ], cellGrid[ 2 ][ 2 ] );
+  // cellGrid[ 1 ][ 2 ].linkTo( cellGrid[ 2 ][ 2 ] );
+  // cellGrid[ 2 ][ 1 ].linkTo( cellGrid[ 2 ][ 2 ] );
   
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
@@ -131,47 +139,29 @@
     }
   }
 
-  const PADDING = 0.3;
+  const points = [];
 
-  const points = new Set();
+  let edge = cellGrid[ 1 ][ 0 ].edges[ 2 ];
+  const visited = new Set();
 
-  let cell = cellGrid[ 1 ][ 0 ];
+  while ( !visited.has( edge ) ) {
+    visited.add( edge );
 
-  drawCell( cell );
+    points.push( {
+      x: edge.start.x,
+      y: edge.start.y,
+    } );
 
-  function drawCell( current, prev, visited ) {
-    visited ??= [];
-    visited.push( current );
-
-    let index = prev ? current.edges.findIndex( e => e.neighbor == prev ) : -1;
-    for ( let i = 0; i < current.edges.length; i ++ ) {
-      const edge = current.edges[ ++index % current.edges.length ];
-
-      if ( edge.linked && visited.indexOf( edge.neighbor ) == -1 ) {
-        drawCell( edge.neighbor, current, visited );
-      }
-      else if ( !edge.linked ) {
-        points.add( {
-          x: ( 1 - PADDING ) * edge.start.x + PADDING * current.center.x,
-          y: ( 1 - PADDING ) * edge.start.y + PADDING * current.center.y,
-        } );
-        points.add( {
-          x: ( 1 - PADDING ) * edge.end.x + PADDING * current.center.x,
-          y: ( 1 - PADDING ) * edge.end.y + PADDING * current.center.y,
-        } );
-      }
-    }
-
-    visited.pop( current );
+    edge = edge.next;
   }
 
-  const pointsList = Array.from( points );
 
-  const path = new Path2D( 'M ' + pointsList.map( e => e.x + ',' + e.y ).join(' L ') + ' Z' );
+
+  const path = new Path2D( 'M ' + points.map( e => e.x + ',' + e.y ).join(' L ') + ' Z' );
   ctx.strokeStyle = 'red';
   ctx.stroke( path );
   
-  const curves = Curve.getLoopThroughPoints( pointsList );
-  curves.forEach( curve => curve.draw( ctx, 0.2 ) );
+  const curves = Curve.getLoopThroughPoints( points );
+  curves.forEach( curve => curve.draw( ctx ) );
 
 </script>
