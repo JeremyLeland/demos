@@ -103,20 +103,20 @@
 
       let [ thisIndex, otherIndex ] = firstCoincident( this.edges, cell.edges );
 
-      this.edges.splice( thisIndex, 1 );
-      thisIndex = thisIndex % this.edges.length;
+      // this.edges.splice( thisIndex, 1 );
+      // thisIndex = thisIndex % this.edges.length;
 
-      for ( let i = ( otherIndex + 1 ) % cell.edges.length; 
-            i != otherIndex; 
-            i = ( i + 1 ) % cell.edges.length ) {
-        if ( this.edges[ thisIndex ].coincidentWith( cell.edges[ i ] ) ) {
-          this.edges.splice( thisIndex, 1 );
-          thisIndex = thisIndex % this.edges.length;
+      for ( let i = 0; i < cell.edges.length; i ++ ) {
+        const index = this.edges.findIndex( edge => edge.coincidentWith( cell.edges[ otherIndex ] ) );
+        if ( index > -1 ) {
+          this.edges.splice( index, 1 );
+          thisIndex = index % this.edges.length;
         }
         else {
-          this.edges.splice( thisIndex, 0, cell.edges[ i ] );
+          this.edges.splice( thisIndex, 0, cell.edges[ otherIndex ] );
           thisIndex = ( thisIndex + 1 ) % this.edges.length;
         }
+        otherIndex = ( otherIndex + 1 ) % cell.edges.length;
       }
     }
 
@@ -176,6 +176,9 @@
   }
 
   const room = new Room( cellGrid[ 5 ][ 5 ] );
+  // room.addCell( cellGrid[ 5 ][ 4 ] );
+  // room.addCell( cellGrid[ 6 ][ 4 ] );
+  // room.addCell( cellGrid[ 6 ][ 5 ] );
 
   for ( let i = 0; i < 5; i ++ ) {  
     const neighbors = Array.from( room.neighbors );
