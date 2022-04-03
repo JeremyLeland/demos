@@ -56,13 +56,13 @@
     draw( ctx ) {
       this.edges.forEach( edge => edge.draw( ctx ) );
       
-      ctx.beginPath();
-      this.neighbors.forEach( neighbor => {
-        ctx.moveTo( this.center.x, this.center.y );
-        ctx.lineTo( neighbor.center.x, neighbor.center.y );
-      } );
-      ctx.strokeStyle = 'darkblue';
-      ctx.stroke();
+      // ctx.beginPath();
+      // this.neighbors.forEach( neighbor => {
+      //   ctx.moveTo( this.center.x, this.center.y );
+      //   ctx.lineTo( neighbor.center.x, neighbor.center.y );
+      // } );
+      // ctx.strokeStyle = 'darkblue';
+      // ctx.stroke();
 
       ctx.fillStyle = 'yellow';
       ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
@@ -72,16 +72,24 @@
   class Room {
     cells = [];
     edges = [];
-
-    // TODO: Map< Edge, Cell> for neighbors?
+    neighbors = new Set();
 
     constructor( cell ) {
       this.cells.push( cell );
       this.edges = Array.from( cell.edges );
+
+      this.#updateNeighbors();
+    }
+
+    #updateNeighbors() {
+      this.neighbors = new Set();
+      this.cells.forEach( c => c.neighbors.forEach( n => this.neighbors.add( n ) ) );
+      this.cells.forEach( c => this.neighbors.delete( c ) );
     }
 
     addCell( cell ) {
       this.cells.push( cell );
+      this.#updateNeighbors();
 
       const firstCoincident = ( a, b ) => {
         for ( let aIndex = 0; aIndex < a.length; aIndex ++ ) {
@@ -116,6 +124,14 @@
       const points = this.edges.map( edge => edge.start );
       const curves = Curve.getLoopThroughPoints( points );
       curves.forEach( curve => curve.draw( ctx ) );
+
+      ctx.beginPath();
+      this.neighbors.forEach( neighbor => {
+        ctx.moveTo( this.cells[ 0 ].center.x, this.cells[ 0 ].center.y );
+        ctx.lineTo( neighbor.center.x, neighbor.center.y );
+      } );
+      ctx.strokeStyle = 'darkblue';
+      ctx.stroke();
     }
   }
 
@@ -160,73 +176,12 @@
   }
 
   const room = new Room( cellGrid[ 5 ][ 5 ] );
-  room.addCell( cellGrid[ 4 ][ 5 ] );
-  room.addCell( cellGrid[ 5 ][ 4 ] );
-  room.addCell( cellGrid[ 4 ][ 4 ] );
+
+  for ( let i = 0; i < 5; i ++ ) {  
+    const neighbors = Array.from( room.neighbors );
+    room.addCell( neighbors[ Math.floor( Math.random() * neighbors.length ) ] );
+  }
+
   room.draw( ctx );
-  // const roomPoints = [ room1.NW, room1.SW, room1.SE, room1.NE ];
-
-  // addRoom( roomPoints, getRoom( 5, 6 ) );
-  // addRoom( roomPoints, getRoom( 6, 6 ) );
-  // addRoom( roomPoints, getRoom( 4, 6 ) );
-  // addRoom( roomPoints, getRoom( 5, 7 ) );
-  // addRoom( roomPoints, getRoom( 5, 4 ) );
-  // addRoom( roomPoints, getRoom( 6, 4 ) );
-
-  // const curves = Curve.getLoopThroughPoints( roomPoints );
-  // curves.forEach( curve => curve.draw( ctx ) );
-
-  function addRoom( combined, room ) {
-    const nwIndex = combined.indexOf( room.NW );
-    const neIndex = combined.indexOf( room.NE );
-    const swIndex = combined.indexOf( room.SW );
-    const seIndex = combined.indexOf( room.SE );
-
-    // North
-    if ( swIndex >= 0 && seIndex >= 0 ) {
-      combined.splice( seIndex + 1, 0, room.NE, room.NW );
-    }
-    // West
-    if ( neIndex >= 0 && seIndex >= 0 ) {
-      combined.splice( neIndex + 1, 0, room.NW, room.SW );
-    }
-    // South
-    if ( nwIndex >= 0 && neIndex >= 0 ) {
-      combined.splice( nwIndex + 1, 0, room.SW, room.SE );
-    }
-    // East
-    if ( nwIndex >= 0 && swIndex >= 0 ) {
-      combined.splice( swIndex + 1, 0, room.SE, room.NE );
-    }
-  }
-
-  function getRoom( col, row ) {
-    return {
-      NW: cellPoints[ col ][ row ], 
-      NE: cellPoints[ col + 1 ][ row ], 
-      SW: cellPoints[ col ][ row + 1 ], 
-      SE: cellPoints[ col + 1][ row + 1 ],
-    };
-  }
-
-  function debugCells( cellPoints ) {
-    for ( let row = 0; row < ROWS; row ++ ) {
-      for ( let col = 0; col < COLS; col ++ ) {
-        const NW = cellPoints[ col ][ row ];
-        const NE = cellPoints[ col + 1 ][ row ];
-        const SW = cellPoints[ col ][ row + 1 ];
-        const SE = cellPoints[ col + 1 ][ row + 1 ];
-        
-        ctx.beginPath();
-        [ NW, NE, SE, SW ].forEach( point => {
-          ctx.lineTo( point.x, point.y );
-        } );
-        ctx.closePath();
-
-        ctx.strokeStyle = 'dimgray';
-        ctx.stroke();
-      }
-    }
-  }
 
 </script>
