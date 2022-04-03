@@ -56,7 +56,7 @@
 
       for ( let i = 0; i < this.edges.length; i ++ ) {
         const current = this.edges[ i ];
-        const prev = this.edges[ ( i - 1 ) % points.length ];
+        const prev = this.edges[ ( points.length + i - 1 ) % points.length ];
         const next = this.edges[ ( i + 1 ) % points.length ];
         current.previous = prev;
         current.next = next;
@@ -123,8 +123,8 @@
 
   cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 1 ][ 0 ] );
   cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 0 ][ 1 ] );
-  // cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 2 ][ 1 ] );
-  // cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 1 ][ 2 ] );
+  cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 2 ][ 1 ] );
+  cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 1 ][ 2 ] );
 
   // cellGrid[ 1 ][ 2 ].linkTo( cellGrid[ 2 ][ 2 ] );
   // cellGrid[ 2 ][ 1 ].linkTo( cellGrid[ 2 ][ 2 ] );
