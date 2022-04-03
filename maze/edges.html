@@ -49,9 +49,20 @@
       this.center.x /= points.length;
       this.center.y /= points.length;
 
+      const PADDING = 0.2;
+
       for ( let i = 0; i < points.length; i ++ ) {
         const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
-        this.edges.push( new Edge( current, next ) );
+        this.edges.push( new Edge( 
+          {
+            x: ( 1 - PADDING ) * current.x + PADDING * this.center.x,
+            y: ( 1 - PADDING ) * current.y + PADDING * this.center.y, 
+          },
+          {
+            x: ( 1 - PADDING ) * next.x + PADDING * this.center.x,
+            y: ( 1 - PADDING ) * next.y + PADDING * this.center.y, 
+          }
+        ) );
       }
 
       for ( let i = 0; i < this.edges.length; i ++ ) {
@@ -84,7 +95,7 @@
     }
   }
 
-  function getCellGrid( cols, rows, size = 128, offset = 32 ) {
+  function getCellGrid( cols, rows, size = 128, offset = 64 ) {
     const cellPoints = Array.from( 
       Array( cols + 1 ), ( _, col ) => Array.from( 
         Array( rows + 1 ), ( _, row ) => ( { 
@@ -126,8 +137,10 @@
   cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 2 ][ 1 ] );
   cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 1 ][ 2 ] );
 
-  // cellGrid[ 1 ][ 2 ].linkTo( cellGrid[ 2 ][ 2 ] );
-  // cellGrid[ 2 ][ 1 ].linkTo( cellGrid[ 2 ][ 2 ] );
+  cellGrid[ 1 ][ 2 ].linkTo( cellGrid[ 2 ][ 2 ] );
+  cellGrid[ 2 ][ 1 ].linkTo( cellGrid[ 2 ][ 2 ] );
+
+  cellGrid[ 0 ][ 1 ].linkTo( cellGrid[ 0 ][ 2 ] );
   
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
@@ -152,14 +165,21 @@
       y: edge.start.y,
     } );
 
+    if ( edge.end.x != edge.next.start.x || edge.end.y != edge.next.start.y ) {
+      points.push( {
+        x: edge.end.x,
+        y: edge.end.y,
+      } );
+    }
+    
     edge = edge.next;
   }
 
 
 
-  const path = new Path2D( 'M ' + points.map( e => e.x + ',' + e.y ).join(' L ') + ' Z' );
-  ctx.strokeStyle = 'red';
-  ctx.stroke( path );
+  // const path = new Path2D( 'M ' + points.map( e => e.x + ',' + e.y ).join(' L ') + ' Z' );
+  // ctx.strokeStyle = 'red';
+  // ctx.stroke( path );
   
   const curves = Curve.getLoopThroughPoints( points );
   curves.forEach( curve => curve.draw( ctx ) );
