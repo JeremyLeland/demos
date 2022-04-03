@@ -35,7 +35,7 @@
         ctx.beginPath();
         ctx.moveTo( ( this.start.x + this.end.x ) / 2, ( this.start.y + this.end.y ) / 2 );
         ctx.lineTo( this.neighbor.center.x, this.neighbor.center.y );
-        ctx.strokeStyle = 'darkblue';
+        ctx.strokeStyle = this.linked ? 'darkgreen' : 'darkblue';
         ctx.stroke();
       }
     }
@@ -64,6 +64,15 @@
       
       ctx.fillStyle = 'yellow';
       ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
+    }
+
+    linkTo( other ) {
+      this.edges.find( edge => edge.neighbor == other ).linked = true;
+    }
+
+    static linkCells( a, b ) {
+      a.linkTo( b );
+      b.linkTo( a );
     }
   }
 
@@ -104,6 +113,9 @@
 
   const cellGrid = getCellGrid( 5, 5 );
 
+  Cell.linkCells( cellGrid[ 0 ][ 0 ], cellGrid[ 0 ][ 1 ] );
+  
+
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
   ctx.translate( 50, 50 );
 
@@ -115,16 +127,25 @@
 
   const PADDING = 0.3;
 
-  const cell = cellGrid[ 0 ][ 0 ];
-
   const points = [];
 
-  cell.edges.forEach( edge => {
-    points.push( {
-      x: ( 1 - PADDING ) * edge.start.x + PADDING * cell.center.x,
-      y: ( 1 - PADDING ) * edge.start.y + PADDING * cell.center.y,
+  let cell = cellGrid[ 0 ][ 0 ];
+
+  drawCell( cell );
+
+  function drawCell( current, prev ) {
+    current.edges.forEach( edge => {
+      if ( edge.linked && edge.neighbor != prev ) {
+        drawCell( edge.neighbor, current );
+      }
+      else {
+        points.push( {
+          x: ( 1 - PADDING ) * edge.start.x + PADDING * current.center.x,
+          y: ( 1 - PADDING ) * edge.start.y + PADDING * current.center.y,
+        } );
+      }
     } );
-  } );
+  }
 
   const curves = Curve.getLoopThroughPoints( points );
   curves.forEach( curve => curve.draw( ctx, 0.2 ) );
