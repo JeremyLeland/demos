@@ -117,6 +117,9 @@
   Cell.linkCells( cellGrid[ 1 ][ 1 ], cellGrid[ 0 ][ 1 ] );
   Cell.linkCells( cellGrid[ 1 ][ 1 ], cellGrid[ 2 ][ 1 ] );
   Cell.linkCells( cellGrid[ 1 ][ 1 ], cellGrid[ 1 ][ 2 ] );
+
+  Cell.linkCells( cellGrid[ 1 ][ 2 ], cellGrid[ 2 ][ 2 ] );
+  // Cell.linkCells( cellGrid[ 2 ][ 1 ], cellGrid[ 2 ][ 2 ] );
   
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
@@ -130,31 +133,45 @@
 
   const PADDING = 0.3;
 
-  const points = [];
+  const points = new Set();
 
   let cell = cellGrid[ 1 ][ 0 ];
 
   drawCell( cell );
 
-  function drawCell( current, prev ) {
+  function drawCell( current, prev, visited ) {
+    visited ??= [];
+    visited.push( current );
 
     let index = prev ? current.edges.findIndex( e => e.neighbor == prev ) : -1;
     for ( let i = 0; i < current.edges.length; i ++ ) {
       const edge = current.edges[ ++index % current.edges.length ];
 
-      if ( edge.linked && edge.neighbor != prev ) {
-        drawCell( edge.neighbor, current );
+      if ( edge.linked && visited.indexOf( edge.neighbor ) == -1 ) {
+        drawCell( edge.neighbor, current, visited );
       }
-      else {
-        points.push( {
+      else if ( !edge.linked ) {
+        points.add( {
           x: ( 1 - PADDING ) * edge.start.x + PADDING * current.center.x,
           y: ( 1 - PADDING ) * edge.start.y + PADDING * current.center.y,
         } );
+        points.add( {
+          x: ( 1 - PADDING ) * edge.end.x + PADDING * current.center.x,
+          y: ( 1 - PADDING ) * edge.end.y + PADDING * current.center.y,
+        } );
       }
     }
+
+    visited.pop( current );
   }
 
-  const curves = Curve.getLoopThroughPoints( points );
+  const pointsList = Array.from( points );
+
+  const path = new Path2D( 'M ' + pointsList.map( e => e.x + ',' + e.y ).join(' L ') + ' Z' );
+  ctx.strokeStyle = 'red';
+  ctx.stroke( path );
+  
+  const curves = Curve.getLoopThroughPoints( pointsList );
   curves.forEach( curve => curve.draw( ctx, 0.2 ) );
 
 </script>
