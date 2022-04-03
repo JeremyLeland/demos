@@ -61,7 +61,7 @@
         ctx.moveTo( this.center.x, this.center.y );
         ctx.lineTo( neighbor.center.x, neighbor.center.y );
       } );
-      ctx.strokeStyle = 'darkred';
+      ctx.strokeStyle = 'darkblue';
       ctx.stroke();
 
       ctx.fillStyle = 'yellow';
@@ -77,6 +77,45 @@
 
     constructor( cell ) {
       this.cells.push( cell );
+      this.edges = Array.from( cell.edges );
+    }
+
+    addCell( cell ) {
+      this.cells.push( cell );
+
+      const firstCoincident = ( a, b ) => {
+        for ( let aIndex = 0; aIndex < a.length; aIndex ++ ) {
+          for ( let bIndex = 0; bIndex < b.length; bIndex ++ ) {
+            if ( a[ aIndex ].coincidentWith( b[ bIndex ] ) ) {
+              return [ aIndex, bIndex ];
+            }
+          }
+        }
+      };
+
+      let [ thisIndex, otherIndex ] = firstCoincident( this.edges, cell.edges );
+
+      this.edges.splice( thisIndex, 1 );
+      thisIndex = thisIndex % this.edges.length;
+
+      for ( let i = ( otherIndex + 1 ) % cell.edges.length; 
+            i != otherIndex; 
+            i = ( i + 1 ) % cell.edges.length ) {
+        if ( this.edges[ thisIndex ].coincidentWith( cell.edges[ i ] ) ) {
+          this.edges.splice( thisIndex, 1 );
+          thisIndex = thisIndex % this.edges.length;
+        }
+        else {
+          this.edges.splice( thisIndex, 0, cell.edges[ i ] );
+          thisIndex = ( thisIndex + 1 ) % this.edges.length;
+        }
+      }
+    }
+
+    draw( ctx ) {
+      const points = this.edges.map( edge => edge.start );
+      const curves = Curve.getLoopThroughPoints( points );
+      curves.forEach( curve => curve.draw( ctx ) );
     }
   }
 
@@ -120,7 +159,11 @@
     }
   }
 
-  // const room1 = getRoom( 5, 5 );
+  const room = new Room( cellGrid[ 5 ][ 5 ] );
+  room.addCell( cellGrid[ 4 ][ 5 ] );
+  room.addCell( cellGrid[ 5 ][ 4 ] );
+  room.addCell( cellGrid[ 4 ][ 4 ] );
+  room.draw( ctx );
   // const roomPoints = [ room1.NW, room1.SW, room1.SE, room1.NE ];
 
   // addRoom( roomPoints, getRoom( 5, 6 ) );
