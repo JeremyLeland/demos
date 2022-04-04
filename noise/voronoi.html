@@ -21,7 +21,7 @@
 
   
   ctx.strokeStyle = 'dimgray';
-  ctx.fillStyle = 'yellow';
+  ctx.fillStyle = 'white';
   for ( let row = 0; row < rows; row ++ ) {
     for ( let col = 0; col < cols; col ++ ) {
       const seed = seeds[ col ][ row ];
@@ -32,32 +32,63 @@
 
   let seedCol = 1, seedRow = 1, seed = seeds[ seedCol ][ seedRow ];
 
-  ctx.strokeStyle = 'darkred';
-  ctx.beginPath();
+  const colors = [ 'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'brown', 'gray' ];
+
+  const lines = [];
 
   for ( let row = Math.max( 0, seedRow - 1 ); row <= Math.min( rows - 1, seedRow + 1 ); row ++ ) {
     for ( let col = Math.max( 0, seedCol - 1 ); col <= Math.min( rows - 1, seedCol + 1 ); col ++ ) {
       if ( col == seedCol && row == seedRow ) {
         continue;
       }
-
+      
       const otherSeed = seeds[ col ][ row ];
-
+      
       const halfDist = Math.hypot( otherSeed.x - seed.x, otherSeed.y - seed.y ) / 2;
       const ang = Math.atan2( otherSeed.y - seed.y, otherSeed.x - seed.x );
-
-      const midPoint = {
-        x: seed.x + Math.cos( ang ) * halfDist,
-        y: seed.y + Math.sin( ang ) * halfDist,
-      }
-
-      const slope = { x: -Math.sin( ang ), y: Math.cos( ang ) };
-
-      ctx.moveTo( midPoint.x - slope.x * size, midPoint.y - slope.y * size );
-      ctx.lineTo( midPoint.x + slope.x * size, midPoint.y + slope.y * size );
+      
+      lines.push( {
+        point: {
+          x: seed.x + Math.cos( ang ) * halfDist,
+          y: seed.y + Math.sin( ang ) * halfDist,
+        },
+        slope: {
+          x: -Math.sin( ang ),
+          y:  Math.cos( ang ) 
+        }
+      } );
     }
+  }
 
+  lines.forEach( ( line, index ) => {
+    ctx.strokeStyle = colors[ index ];
+    ctx.beginPath();
+    ctx.moveTo( line.point.x - line.slope.x * size, line.point.y - line.slope.y * size );
+    ctx.lineTo( line.point.x + line.slope.x * size, line.point.y + line.slope.y * size );
     ctx.stroke();
+
+    lines.forEach( ( other, ndx ) => {
+      const dets = getDeterminants( line, other );
+      ctx.fillStyle = colors[ ndx ];
+      ctx.fillRect( line.point.x + line.slope.x * dets.a - 2, line.point.y + line.slope.y * dets.a - 2, 4, 4 );
+    } );
+  } );
+
+  // Based on: https://www.jeffreythompson.org/collision-detection/line-line.php
+  function getDeterminants( a, b ) {
+    // const D = ( ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 ) );
+
+    // return {
+    //   x: ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D,
+    //   y: ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D,
+    // }
+
+    const D = b.slope.y * a.slope.x - b.slope.x * a.slope.y;
+
+    return {
+      a: ( b.slope.x * ( a.point.y - b.point.y ) - b.slope.y * ( a.point.x - b.point.x ) ) / D,
+      b: ( a.slope.x * ( a.point.y - b.point.y ) - a.slope.y * ( a.point.x - b.point.x ) ) / D,
+    }
   }
 
 
