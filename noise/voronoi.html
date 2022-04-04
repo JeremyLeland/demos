@@ -1,0 +1,64 @@
+<title>Voronoi</title>
+<link rel="stylesheet" href="../style.css">
+
+<body>
+  <canvas id="canvas" width="500px" height="500px"></canvas>
+</body>
+
+<script type="module">
+  const size = 128, offset = 0.8 * size, cols = 3, rows = 3;
+
+  const seeds = Array.from( 
+    Array( cols ), ( _, col ) => Array.from( 
+      Array( rows ), ( _, row ) => ( { 
+        x: ( col + 0.5 ) * size + ( Math.random() - 0.5 ) * offset, 
+        y: ( row + 0.5 ) * size + ( Math.random() - 0.5 ) * offset,
+      } ) 
+    )
+  );
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+
+  
+  ctx.strokeStyle = 'dimgray';
+  ctx.fillStyle = 'yellow';
+  for ( let row = 0; row < rows; row ++ ) {
+    for ( let col = 0; col < cols; col ++ ) {
+      const seed = seeds[ col ][ row ];
+      ctx.strokeRect( col * size, row * size, size, size );
+      ctx.fillRect( seed.x - 1, seed.y - 1, 2, 2 );
+    }
+  }
+
+  let seedCol = 1, seedRow = 1, seed = seeds[ seedCol ][ seedRow ];
+
+  ctx.strokeStyle = 'darkred';
+  ctx.beginPath();
+
+  for ( let row = Math.max( 0, seedRow - 1 ); row <= Math.min( rows - 1, seedRow + 1 ); row ++ ) {
+    for ( let col = Math.max( 0, seedCol - 1 ); col <= Math.min( rows - 1, seedCol + 1 ); col ++ ) {
+      if ( col == seedCol && row == seedRow ) {
+        continue;
+      }
+
+      const otherSeed = seeds[ col ][ row ];
+
+      const halfDist = Math.hypot( otherSeed.x - seed.x, otherSeed.y - seed.y ) / 2;
+      const ang = Math.atan2( otherSeed.y - seed.y, otherSeed.x - seed.x );
+
+      const midPoint = {
+        x: seed.x + Math.cos( ang ) * halfDist,
+        y: seed.y + Math.sin( ang ) * halfDist,
+      }
+
+      const slope = { x: -Math.sin( ang ), y: Math.cos( ang ) };
+
+      ctx.moveTo( midPoint.x - slope.x * size, midPoint.y - slope.y * size );
+      ctx.lineTo( midPoint.x + slope.x * size, midPoint.y + slope.y * size );
+    }
+
+    ctx.stroke();
+  }
+
+
+</script>
