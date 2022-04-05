@@ -34,7 +34,7 @@
 
   const colors = [ 'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'brown', 'gray' ];
 
-  const lines = [];
+  let lines = [];
 
   for ( let row = Math.max( 0, seedRow - 1 ); row <= Math.min( rows - 1, seedRow + 1 ); row ++ ) {
     for ( let col = Math.max( 0, seedCol - 1 ); col <= Math.min( rows - 1, seedCol + 1 ); col ++ ) {
@@ -48,6 +48,7 @@
       const ang = Math.atan2( otherSeed.y - seed.y, otherSeed.x - seed.x );
       
       lines.push( {
+        dist: halfDist,
         point: {
           x: seed.x + Math.cos( ang ) * halfDist,
           y: seed.y + Math.sin( ang ) * halfDist,
@@ -60,19 +61,53 @@
     }
   }
 
+  lines.sort( ( a, b ) => a.dist - b.dist );
+
   lines.forEach( ( line, index ) => {
     ctx.strokeStyle = colors[ index ];
     ctx.beginPath();
     ctx.moveTo( line.point.x - line.slope.x * size, line.point.y - line.slope.y * size );
     ctx.lineTo( line.point.x + line.slope.x * size, line.point.y + line.slope.y * size );
     ctx.stroke();
-
-    lines.forEach( ( other, ndx ) => {
-      const dets = getDeterminants( line, other );
-      ctx.fillStyle = colors[ ndx ];
-      ctx.fillRect( line.point.x + line.slope.x * dets.a - 2, line.point.y + line.slope.y * dets.a - 2, 4, 4 );
-    } );
   } );
+
+  const start = lines[ 0 ];
+  let current = start, previous = start;
+  let point = current.point;
+
+  const points = [];
+
+  let tries = 0;
+
+  do {
+    const intersections = [];
+    lines.forEach( line => {
+      if ( current != line && previous != line ) {
+        const dets = getDeterminants( { point: point, slope: current.slope }, line );
+        
+        if ( 0 < dets.a ) {
+          intersections.push( { line: line, det: dets.a } );
+        }
+      }
+    } );
+    intersections.sort( ( a, b ) => a.det - b.det );
+    const closest = intersections[ 0 ];
+
+    point = {
+      x: point.x + current.slope.x * closest.det,
+      y: point.y + current.slope.y * closest.det,
+    };
+
+    points.push( point );
+
+    previous = current;
+    current = closest.line;
+  }
+  while ( current != start && ++tries < 10 );
+
+  ctx.fillStyle = 'lime';
+  points.forEach( point => ctx.fillRect( point.x - 2, point.y - 2, 4, 4 ) );
+
 
   // Based on: https://www.jeffreythompson.org/collision-detection/line-line.php
   function getDeterminants( a, b ) {
