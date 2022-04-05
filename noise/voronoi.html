@@ -9,29 +9,28 @@
 
   const width = 500, height = 500;
 
-  const seeds = Array.from( Array( 3 ), _ => ( { 
+  const seeds = Array.from( Array( 40 ), _ => ( { 
     x: Math.random() * width, 
     y: Math.random() * height,
   } ) );
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
 
-  ctx.fillStyle = 'white';
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 4;
   seeds.forEach( seed => {
-    ctx.fillRect( seed.x - 1, seed.y - 1, 2, 2 );
+    // ctx.fillRect( seed.x - 1, seed.y - 1, 2, 2 );
+    
+    const points = getVoronoiPoints( seed, seeds.filter( s => s != seed ) );
+    
+    ctx.beginPath();
+    points.forEach( point => ctx.lineTo( point.x, point.y ) );
+    ctx.closePath();
+
+    ctx.fillStyle = `hsl( ${ Math.random() * 360 }deg, ${ Math.random() * 50 + 25 }%, ${ Math.random() * 50 + 25 }% )`;
+    ctx.fill();
+    ctx.stroke();
   } );
-
-  const points = getVoronoiPoints( seeds[ 0 ], [ seeds[ 1 ], seeds[ 2 ] ] );
-
-  ctx.strokeStyle = 'lime';
-  ctx.beginPath();
-  points.forEach( point => ctx.lineTo( point.x, point.y ) );
-  ctx.closePath();
-  ctx.stroke();
-
-  ctx.fillStyle = 'lime';
-  points.forEach( point => ctx.fillRect( point.x - 2, point.y - 2, 4, 4 ) );
-
   
   function getVoronoiPoints( seed, others ) {
     // NOTE: These assume clock-wise orientation
