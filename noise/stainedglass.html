@@ -1,0 +1,117 @@
+<title>Stained Glass</title>
+<link rel="stylesheet" href="../style.css">
+
+<body>
+  <canvas id="canvas" width="500px" height="500px"></canvas>
+</body>
+
+<script type="module">
+
+  const width = 500, height = 500;
+
+  const seeds = Array.from( Array( 40 ), _ => ( { 
+    x: Math.random() * width, 
+    y: Math.random() * height,
+  } ) );
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 4;
+  seeds.forEach( seed => {
+    // ctx.fillRect( seed.x - 1, seed.y - 1, 2, 2 );
+    
+    const points = getVoronoiPoints( seed, seeds.filter( s => s != seed ) );
+    
+    ctx.beginPath();
+    points.forEach( point => ctx.lineTo( point.x, point.y ) );
+    ctx.closePath();
+
+    ctx.fillStyle = `hsl( ${ Math.random() * 360 }deg, ${ Math.random() * 50 + 25 }%, ${ Math.random() * 50 + 25 }% )`;
+    ctx.fill();
+    ctx.stroke();
+  } );
+  
+  function getVoronoiPoints( seed, others ) {
+    // NOTE: These assume clock-wise orientation
+    const LEFT = { dist: seed.x, point: { x: 0, y: seed.y }, slope: { x: 0, y: -1 } };
+    const TOP  = { dist: seed.y, point: { x: seed.x, y: 0 }, slope: { x: 1, y: 0 } };
+    const RIGHT  = { dist: width - seed.x, point: { x: width, y: seed.y }, slope: { x: 0, y: 1 } };
+    const BOTTOM  = { dist: height - seed.y, point: { x: seed.x, y: height }, slope: { x: -1, y: 0 } };
+
+    const lines = [ LEFT, TOP, RIGHT, BOTTOM ];
+
+    others.forEach( other => {  
+      const halfDist = Math.hypot( other.x - seed.x, other.y - seed.y ) / 2;
+      const ang = Math.atan2( other.y - seed.y, other.x - seed.x );
+      
+      lines.push( {
+        dist: halfDist,
+        point: {
+          x: seed.x + Math.cos( ang ) * halfDist,
+          y: seed.y + Math.sin( ang ) * halfDist,
+        },
+        slope: {
+          x: -Math.sin( ang ),
+          y:  Math.cos( ang ) 
+        }
+      } );
+    } );
+
+    lines.sort( ( a, b ) => a.dist - b.dist );
+    
+    const points = [];
+
+    const start = lines[ 0 ];
+    let currentLine = start, previousLine = start;
+    let currentPoint = currentLine.point;
+
+    do {
+      const intersections = [];
+      lines.forEach( line => {
+        if ( line != currentLine && line != previousLine ) {
+          const dets = getDeterminants( { point: currentPoint, slope: currentLine.slope }, line );
+            
+          if ( 0 < dets.a ) {
+            intersections.push( { line: line, det: dets.a } );
+          }
+        }
+      } );
+      intersections.sort( ( a, b ) => a.det - b.det );
+      const closest = intersections[ 0 ];
+
+      currentPoint = {
+        x: currentPoint.x + currentLine.slope.x * closest.det,
+        y: currentPoint.y + currentLine.slope.y * closest.det,
+      };
+
+      points.push( currentPoint );
+
+      previousLine = currentLine;
+      currentLine = closest.line;
+    }
+    while ( currentLine != start );
+
+    return points;
+  }
+
+
+  // Based on: https://www.jeffreythompson.org/collision-detection/line-line.php
+  function getDeterminants( a, b ) {
+    // const D = ( ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 ) );
+
+    // return {
+    //   x: ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D,
+    //   y: ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D,
+    // }
+
+    const D = b.slope.y * a.slope.x - b.slope.x * a.slope.y;
+
+    return {
+      a: ( b.slope.x * ( a.point.y - b.point.y ) - b.slope.y * ( a.point.x - b.point.x ) ) / D,
+      b: ( a.slope.x * ( a.point.y - b.point.y ) - a.slope.y * ( a.point.x - b.point.x ) ) / D,
+    }
+  }
+
+
+</script>
