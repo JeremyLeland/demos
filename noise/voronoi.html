@@ -28,7 +28,7 @@
       if ( this.neighbor ) {
         ctx.beginPath();
         ctx.moveTo( ( this.start.x + this.end.x ) / 2, ( this.start.y + this.end.y ) / 2 );
-        ctx.lineTo( this.neighbor.center.x, this.neighbor.center.y );
+        ctx.lineTo( this.neighbor.seed.x, this.neighbor.seed.y );
         ctx.strokeStyle = this.linked ? 'darkgreen' : 'darkblue';
         ctx.stroke();
       }
@@ -36,14 +36,22 @@
   }
 
   class Cell {
+    seed;
     center = { x: 0, y: 0 };
     edges = [];
 
-    constructor( center ) {
-      this.center = center;
+    constructor( seed ) {
+      this.seed = seed;
     }
 
     setEdges( points, neighbors ) {
+      points.forEach( point => {
+        this.center.x += point.x;
+        this.center.y += point.y;
+      } );
+      this.center.x /= points.length;
+      this.center.y /= points.length;
+
       for ( let i = 0; i < points.length; i ++ ) {
         const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
         this.edges.push( new Edge( current, next, neighbors[ i ] ) );
@@ -78,11 +86,11 @@
     for ( let col = 0; col < cols; col ++ ) {
       const cell = cells[ col ][ row ];
       ctx.strokeRect( col * size, row * size, size, size );
-      ctx.fillRect( cell.center.x - 1, cell.center.y - 1, 2, 2 );
+      ctx.fillRect( cell.seed.x - 1, cell.seed.y - 1, 2, 2 );
     }
   }
 
-  let seedCol = 1, seedRow = 1, seed = cells[ seedCol ][ seedRow ].center;
+  let seedCol = 1, seedRow = 1, seed = cells[ seedCol ][ seedRow ].seed;
 
   
   let lines = [];
@@ -93,7 +101,7 @@
         continue;
       }
       const otherCell = cells[ col ][ row ];
-      const otherSeed = otherCell.center;
+      const otherSeed = otherCell.seed;
       
       const halfDist = Math.hypot( otherSeed.x - seed.x, otherSeed.y - seed.y ) / 2;
       const ang = Math.atan2( otherSeed.y - seed.y, otherSeed.x - seed.x );
