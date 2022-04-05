@@ -6,14 +6,66 @@
 </body>
 
 <script type="module">
+
+  class Edge {
+    start;
+    end;
+    neighbor;
+
+    constructor( start, end, neighbor ) {
+      this.start = start;
+      this.end = end;
+      this.neighbor = neighbor;
+    }
+
+    draw( ctx ) {
+      ctx.beginPath();
+      ctx.moveTo( this.start.x, this.start.y );
+      ctx.lineTo( this.end.x, this.end.y );
+      ctx.strokeStyle = 'dimgray';
+      ctx.stroke();
+
+      if ( this.neighbor ) {
+        ctx.beginPath();
+        ctx.moveTo( ( this.start.x + this.end.x ) / 2, ( this.start.y + this.end.y ) / 2 );
+        ctx.lineTo( this.neighbor.center.x, this.neighbor.center.y );
+        ctx.strokeStyle = this.linked ? 'darkgreen' : 'darkblue';
+        ctx.stroke();
+      }
+    }
+  }
+
+  class Cell {
+    center = { x: 0, y: 0 };
+    edges = [];
+
+    constructor( center ) {
+      this.center = center;
+    }
+
+    setEdges( points, neighbors ) {
+      for ( let i = 0; i < points.length; i ++ ) {
+        const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
+        this.edges.push( new Edge( current, next, neighbors[ i ] ) );
+      }
+    }
+
+    draw( ctx ) {
+      this.edges.forEach( edge => edge.draw( ctx ) );
+      
+      ctx.fillStyle = 'yellow';
+      ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
+    }
+  }
+
   const size = 128, offset = 0.8 * size, cols = 3, rows = 3;
 
-  const seeds = Array.from( 
+  const cells = Array.from( 
     Array( cols ), ( _, col ) => Array.from( 
-      Array( rows ), ( _, row ) => ( { 
+      Array( rows ), ( _, row ) => new Cell( { 
         x: ( col + 0.5 ) * size + ( Math.random() - 0.5 ) * offset, 
         y: ( row + 0.5 ) * size + ( Math.random() - 0.5 ) * offset,
-      } ) 
+      } )
     )
   );
 
@@ -24,16 +76,15 @@
   ctx.fillStyle = 'white';
   for ( let row = 0; row < rows; row ++ ) {
     for ( let col = 0; col < cols; col ++ ) {
-      const seed = seeds[ col ][ row ];
+      const cell = cells[ col ][ row ];
       ctx.strokeRect( col * size, row * size, size, size );
-      ctx.fillRect( seed.x - 1, seed.y - 1, 2, 2 );
+      ctx.fillRect( cell.center.x - 1, cell.center.y - 1, 2, 2 );
     }
   }
 
-  let seedCol = 1, seedRow = 1, seed = seeds[ seedCol ][ seedRow ];
+  let seedCol = 1, seedRow = 1, seed = cells[ seedCol ][ seedRow ].center;
 
-  const colors = [ 'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'brown', 'gray' ];
-
+  
   let lines = [];
 
   for ( let row = Math.max( 0, seedRow - 1 ); row <= Math.min( rows - 1, seedRow + 1 ); row ++ ) {
@@ -41,13 +92,14 @@
       if ( col == seedCol && row == seedRow ) {
         continue;
       }
-      
-      const otherSeed = seeds[ col ][ row ];
+      const otherCell = cells[ col ][ row ];
+      const otherSeed = otherCell.center;
       
       const halfDist = Math.hypot( otherSeed.x - seed.x, otherSeed.y - seed.y ) / 2;
       const ang = Math.atan2( otherSeed.y - seed.y, otherSeed.x - seed.x );
       
       lines.push( {
+        cell: otherCell,
         dist: halfDist,
         point: {
           x: seed.x + Math.cos( ang ) * halfDist,
@@ -60,30 +112,29 @@
       } );
     }
   }
-
+  
   lines.sort( ( a, b ) => a.dist - b.dist );
-
-  lines.forEach( ( line, index ) => {
-    ctx.strokeStyle = colors[ index ];
-    ctx.beginPath();
-    ctx.moveTo( line.point.x - line.slope.x * size, line.point.y - line.slope.y * size );
-    ctx.lineTo( line.point.x + line.slope.x * size, line.point.y + line.slope.y * size );
-    ctx.stroke();
-  } );
+  
+  // const colors = [ 'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'brown', 'gray' ];
+  // lines.forEach( ( line, index ) => {
+  //   ctx.strokeStyle = colors[ index ];
+  //   ctx.beginPath();
+  //   ctx.moveTo( line.point.x - line.slope.x * size, line.point.y - line.slope.y * size );
+  //   ctx.lineTo( line.point.x + line.slope.x * size, line.point.y + line.slope.y * size );
+  //   ctx.stroke();
+  // } );
 
   const start = lines[ 0 ];
-  let current = start, previous = start;
-  let point = current.point;
+  let currentLine = start, previousLine = start;
+  let currentPoint = currentLine.point, previousPoint;
 
-  const points = [];
-
-  let tries = 0;
+  const points = [], neighbors = [];
 
   do {
     const intersections = [];
     lines.forEach( line => {
-      if ( current != line && previous != line ) {
-        const dets = getDeterminants( { point: point, slope: current.slope }, line );
+      if ( currentLine != line && previousLine != line ) {
+        const dets = getDeterminants( { point: currentPoint, slope: currentLine.slope }, line );
         
         if ( 0 < dets.a ) {
           intersections.push( { line: line, det: dets.a } );
@@ -93,20 +144,28 @@
     intersections.sort( ( a, b ) => a.det - b.det );
     const closest = intersections[ 0 ];
 
-    point = {
-      x: point.x + current.slope.x * closest.det,
-      y: point.y + current.slope.y * closest.det,
+    currentPoint = {
+      x: currentPoint.x + currentLine.slope.x * closest.det,
+      y: currentPoint.y + currentLine.slope.y * closest.det,
     };
 
-    points.push( point );
+    points.push( currentPoint );
+    neighbors.push( closest.line.cell );
 
-    previous = current;
-    current = closest.line;
+    previousLine = currentLine;
+    currentLine = closest.line;
   }
-  while ( current != start && ++tries < 10 );
+  while ( currentLine != start );
+  neighbors.push( start.cell );
 
-  ctx.fillStyle = 'lime';
-  points.forEach( point => ctx.fillRect( point.x - 2, point.y - 2, 4, 4 ) );
+  cells[ seedCol ][ seedRow ].setEdges( points, neighbors );
+
+  // ctx.fillStyle = '#0f03';
+  // ctx.beginPath();
+  // points.forEach( point => ctx.lineTo( point.x, point.y ) );
+  // ctx.fill();
+
+  cells[ seedCol ][ seedRow ].draw( ctx );
 
 
   // Based on: https://www.jeffreythompson.org/collision-detection/line-line.php
