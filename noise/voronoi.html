@@ -7,107 +7,46 @@
 
 <script type="module">
 
-  class Edge {
-    start;
-    end;
-    neighbor;
+  const width = 500, height = 500;
 
-    constructor( start, end, neighbor ) {
-      this.start = start;
-      this.end = end;
-      this.neighbor = neighbor;
-    }
-
-    draw( ctx ) {
-      ctx.beginPath();
-      ctx.moveTo( this.start.x, this.start.y );
-      ctx.lineTo( this.end.x, this.end.y );
-      ctx.strokeStyle = 'dimgray';
-      ctx.stroke();
-
-      if ( this.neighbor ) {
-        ctx.beginPath();
-        ctx.moveTo( ( this.start.x + this.end.x ) / 2, ( this.start.y + this.end.y ) / 2 );
-        ctx.lineTo( this.neighbor.seed.x, this.neighbor.seed.y );
-        ctx.strokeStyle = this.linked ? 'darkgreen' : 'darkblue';
-        ctx.stroke();
-      }
-    }
-  }
-
-  class Cell {
-    seed;
-    center = { x: 0, y: 0 };
-    edges = [];
-
-    constructor( seed ) {
-      this.seed = seed;
-    }
-
-    setEdges( points, neighbors ) {
-      points.forEach( point => {
-        this.center.x += point.x;
-        this.center.y += point.y;
-      } );
-      this.center.x /= points.length;
-      this.center.y /= points.length;
-
-      for ( let i = 0; i < points.length; i ++ ) {
-        const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
-        this.edges.push( new Edge( current, next, neighbors[ i ] ) );
-      }
-    }
-
-    draw( ctx ) {
-      this.edges.forEach( edge => edge.draw( ctx ) );
-      
-      ctx.fillStyle = 'yellow';
-      ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
-    }
-  }
-
-  const size = 128, offset = 0.8 * size, cols = 3, rows = 3;
-
-  const cells = Array.from( 
-    Array( cols ), ( _, col ) => Array.from( 
-      Array( rows ), ( _, row ) => new Cell( { 
-        x: ( col + 0.5 ) * size + ( Math.random() - 0.5 ) * offset, 
-        y: ( row + 0.5 ) * size + ( Math.random() - 0.5 ) * offset,
-      } )
-    )
-  );
+  const seeds = Array.from( Array( 3 ), _ => ( { 
+    x: Math.random() * width, 
+    y: Math.random() * height,
+  } ) );
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
 
-  
-  ctx.strokeStyle = 'dimgray';
   ctx.fillStyle = 'white';
-  for ( let row = 0; row < rows; row ++ ) {
-    for ( let col = 0; col < cols; col ++ ) {
-      const cell = cells[ col ][ row ];
-      ctx.strokeRect( col * size, row * size, size, size );
-      ctx.fillRect( cell.seed.x - 1, cell.seed.y - 1, 2, 2 );
-    }
-  }
+  seeds.forEach( seed => {
+    ctx.fillRect( seed.x - 1, seed.y - 1, 2, 2 );
+  } );
 
-  let seedCol = 1, seedRow = 1, seed = cells[ seedCol ][ seedRow ].seed;
+  const points = getVoronoiPoints( seeds[ 0 ], [ seeds[ 1 ], seeds[ 2 ] ] );
+
+  ctx.strokeStyle = 'lime';
+  ctx.beginPath();
+  points.forEach( point => ctx.lineTo( point.x, point.y ) );
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.fillStyle = 'lime';
+  points.forEach( point => ctx.fillRect( point.x - 2, point.y - 2, 4, 4 ) );
 
   
-  let lines = [];
+  function getVoronoiPoints( seed, others ) {
+    // NOTE: These assume clock-wise orientation
+    const LEFT = { dist: seed.x, point: { x: 0, y: seed.y }, slope: { x: 0, y: -1 } };
+    const TOP  = { dist: seed.y, point: { x: seed.x, y: 0 }, slope: { x: 1, y: 0 } };
+    const RIGHT  = { dist: width - seed.x, point: { x: width, y: seed.y }, slope: { x: 0, y: 1 } };
+    const BOTTOM  = { dist: height - seed.y, point: { x: seed.x, y: height }, slope: { x: -1, y: 0 } };
 
-  for ( let row = Math.max( 0, seedRow - 1 ); row <= Math.min( rows - 1, seedRow + 1 ); row ++ ) {
-    for ( let col = Math.max( 0, seedCol - 1 ); col <= Math.min( rows - 1, seedCol + 1 ); col ++ ) {
-      if ( col == seedCol && row == seedRow ) {
-        continue;
-      }
-      const otherCell = cells[ col ][ row ];
-      const otherSeed = otherCell.seed;
-      
-      const halfDist = Math.hypot( otherSeed.x - seed.x, otherSeed.y - seed.y ) / 2;
-      const ang = Math.atan2( otherSeed.y - seed.y, otherSeed.x - seed.x );
+    const lines = [ LEFT, TOP, RIGHT, BOTTOM ];
+
+    others.forEach( other => {  
+      const halfDist = Math.hypot( other.x - seed.x, other.y - seed.y ) / 2;
+      const ang = Math.atan2( other.y - seed.y, other.x - seed.x );
       
       lines.push( {
-        cell: otherCell,
         dist: halfDist,
         point: {
           x: seed.x + Math.cos( ang ) * halfDist,
@@ -118,62 +57,44 @@
           y:  Math.cos( ang ) 
         }
       } );
-    }
-  }
-  
-  lines.sort( ( a, b ) => a.dist - b.dist );
-  
-  // const colors = [ 'red', 'orange', 'yellow', 'green', 'blue', 'purple', 'brown', 'gray' ];
-  // lines.forEach( ( line, index ) => {
-  //   ctx.strokeStyle = colors[ index ];
-  //   ctx.beginPath();
-  //   ctx.moveTo( line.point.x - line.slope.x * size, line.point.y - line.slope.y * size );
-  //   ctx.lineTo( line.point.x + line.slope.x * size, line.point.y + line.slope.y * size );
-  //   ctx.stroke();
-  // } );
-
-  const start = lines[ 0 ];
-  let currentLine = start, previousLine = start;
-  let currentPoint = currentLine.point, previousPoint;
-
-  const points = [], neighbors = [];
-
-  do {
-    const intersections = [];
-    lines.forEach( line => {
-      if ( currentLine != line && previousLine != line ) {
-        const dets = getDeterminants( { point: currentPoint, slope: currentLine.slope }, line );
-        
-        if ( 0 < dets.a ) {
-          intersections.push( { line: line, det: dets.a } );
-        }
-      }
     } );
-    intersections.sort( ( a, b ) => a.det - b.det );
-    const closest = intersections[ 0 ];
 
-    currentPoint = {
-      x: currentPoint.x + currentLine.slope.x * closest.det,
-      y: currentPoint.y + currentLine.slope.y * closest.det,
-    };
+    lines.sort( ( a, b ) => a.dist - b.dist );
+    
+    const points = [];
 
-    points.push( currentPoint );
-    neighbors.push( closest.line.cell );
+    const start = lines[ 0 ];
+    let currentLine = start, previousLine = start;
+    let currentPoint = currentLine.point;
 
-    previousLine = currentLine;
-    currentLine = closest.line;
+    do {
+      const intersections = [];
+      lines.forEach( line => {
+        if ( line != currentLine && line != previousLine ) {
+          const dets = getDeterminants( { point: currentPoint, slope: currentLine.slope }, line );
+            
+          if ( 0 < dets.a ) {
+            intersections.push( { line: line, det: dets.a } );
+          }
+        }
+      } );
+      intersections.sort( ( a, b ) => a.det - b.det );
+      const closest = intersections[ 0 ];
+
+      currentPoint = {
+        x: currentPoint.x + currentLine.slope.x * closest.det,
+        y: currentPoint.y + currentLine.slope.y * closest.det,
+      };
+
+      points.push( currentPoint );
+
+      previousLine = currentLine;
+      currentLine = closest.line;
+    }
+    while ( currentLine != start );
+
+    return points;
   }
-  while ( currentLine != start );
-  neighbors.push( start.cell );
-
-  cells[ seedCol ][ seedRow ].setEdges( points, neighbors );
-
-  // ctx.fillStyle = '#0f03';
-  // ctx.beginPath();
-  // points.forEach( point => ctx.lineTo( point.x, point.y ) );
-  // ctx.fill();
-
-  cells[ seedCol ][ seedRow ].draw( ctx );
 
 
   // Based on: https://www.jeffreythompson.org/collision-detection/line-line.php
