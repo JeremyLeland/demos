@@ -1,0 +1,125 @@
+<title>Voronoi</title>
+<link rel="stylesheet" href="../style.css">
+
+<body>
+  <canvas id="canvas" width="500px" height="500px"></canvas>
+</body>
+
+<script type="module">
+
+  const size = 64, offset = 0.8 * size, cols = 8, rows = 8;
+
+  const seeds = Array.from( 
+    Array( cols ), ( _, col ) => Array.from( 
+      Array( rows ), ( _, row ) => ( { 
+        x: ( col + 0.5 ) * size + ( Math.random() - 0.5 ) * offset, 
+        y: ( row + 0.5 ) * size + ( Math.random() - 0.5 ) * offset,
+      } )
+    )
+  );
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 2;
+  for ( let row = 1; row < rows - 1; row ++ ) {
+    for ( let col = 1; col < cols - 1; col ++ ) {
+      const seed = seeds[ col ][ row ];
+      const others = [ 
+        seeds[ col - 1 ][ row - 1 ], seeds[ col ][ row - 1 ], seeds[ col + 1 ][ row - 1 ], 
+        seeds[ col - 1 ][ row     ],                          seeds[ col + 1 ][ row     ], 
+        seeds[ col - 1 ][ row + 1 ], seeds[ col ][ row + 1 ], seeds[ col + 1 ][ row + 1 ], 
+      ];
+
+      ctx.fillStyle = 'lime';
+      ctx.fillRect( seed.x - 1, seed.y - 1, 2, 2 );
+
+      const points = getVoronoiPoints( seed, others );
+      
+      ctx.beginPath();
+      points.forEach( point => ctx.lineTo( point.x, point.y ) );
+      ctx.closePath();
+
+      ctx.fillStyle = `hsl( ${ Math.random() * 360 }deg, ${ Math.random() * 50 + 25 }%, ${ Math.random() * 50 + 25 }% )`;
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+  
+  function getVoronoiPoints( seed, others ) {
+    const lines = [];
+
+    others.forEach( other => {  
+      const halfDist = Math.hypot( other.x - seed.x, other.y - seed.y ) / 2;
+      const ang = Math.atan2( other.y - seed.y, other.x - seed.x );
+      
+      lines.push( {
+        dist: halfDist,
+        point: {
+          x: seed.x + Math.cos( ang ) * halfDist,
+          y: seed.y + Math.sin( ang ) * halfDist,
+        },
+        slope: {
+          x: -Math.sin( ang ),
+          y:  Math.cos( ang ) 
+        }
+      } );
+    } );
+
+    lines.sort( ( a, b ) => a.dist - b.dist );
+    
+    const points = [];
+
+    const start = lines[ 0 ];
+    let currentLine = start, previousLine = start;
+    let currentPoint = currentLine.point;
+
+    do {
+      const intersections = [];
+      lines.forEach( line => {
+        if ( line != currentLine && line != previousLine ) {
+          const dets = getDeterminants( { point: currentPoint, slope: currentLine.slope }, line );
+            
+          if ( 0 < dets.a ) {
+            intersections.push( { line: line, det: dets.a } );
+          }
+        }
+      } );
+      intersections.sort( ( a, b ) => a.det - b.det );
+      const closest = intersections[ 0 ];
+
+      currentPoint = {
+        x: currentPoint.x + currentLine.slope.x * closest.det,
+        y: currentPoint.y + currentLine.slope.y * closest.det,
+      };
+
+      points.push( currentPoint );
+
+      previousLine = currentLine;
+      currentLine = closest.line;
+    }
+    while ( currentLine != start );
+
+    return points;
+  }
+
+
+  // Based on: https://www.jeffreythompson.org/collision-detection/line-line.php
+  function getDeterminants( a, b ) {
+    // const D = ( ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 ) );
+
+    // return {
+    //   x: ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D,
+    //   y: ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D,
+    // }
+
+    const D = b.slope.y * a.slope.x - b.slope.x * a.slope.y;
+
+    return {
+      a: ( b.slope.x * ( a.point.y - b.point.y ) - b.slope.y * ( a.point.x - b.point.x ) ) / D,
+      b: ( a.slope.x * ( a.point.y - b.point.y ) - a.slope.y * ( a.point.x - b.point.x ) ) / D,
+    }
+  }
+
+
+</script>
