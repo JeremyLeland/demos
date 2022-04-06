@@ -47,13 +47,11 @@
   }
   
   function getVoronoiPoints( seed, others ) {
-    const lines = [];
-
-    others.forEach( other => {  
+    let lines = others.map( other => {  
       const halfDist = Math.hypot( other.x - seed.x, other.y - seed.y ) / 2;
       const ang = Math.atan2( other.y - seed.y, other.x - seed.x );
       
-      lines.push( {
+      return {
         dist: halfDist,
         point: {
           x: seed.x + Math.cos( ang ) * halfDist,
@@ -63,7 +61,7 @@
           x: -Math.sin( ang ),
           y:  Math.cos( ang ) 
         }
-      } );
+      };
     } );
 
     lines.sort( ( a, b ) => a.dist - b.dist );
