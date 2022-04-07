@@ -11,6 +11,7 @@
     start;
     end;
     neighbor;
+    linked = false;
 
     constructor( start, end, neighbor ) {
       this.start = start;
@@ -72,11 +73,18 @@
       ctx.fillStyle = 'yellow';
       ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
     }
+
+    linkTo( other ) {
+      const thisEdge = this.edges.find( edge => edge.neighbor == other );
+      const otherEdge = other.edges.find( edge => edge.neighbor == this );
+
+      thisEdge.linked = otherEdge.linked = true;
+    }
   }
 
   const width = 500, height = 500;
 
-  const seeds = Array.from( Array( 100 ), _ => new Cell(
+  const seeds = Array.from( Array( 50 ), _ => new Cell(
     Math.random() * width, 
     Math.random() * height,
   ) );
@@ -98,11 +106,16 @@
         edge.neighbor = null;
       }
     } );
-
-    seed.draw( ctx );
   } );
 
+  const cells = seeds.filter( s => s.edges.length > 0 );
+
   // TODO: Unlink edges below a certain length? (too small to use meaninfully)
+
+  cells[ 10 ].linkTo( cells[ 10 ].edges.filter( e => e.neighbor )[ 0 ].neighbor );
+
+
+  cells.forEach( seed => seed.draw( ctx ) );
 
 
   function getVoronoi( seed, others ) {
