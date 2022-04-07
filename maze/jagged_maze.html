@@ -1,0 +1,228 @@
+<title>Jagged Maze</title>
+<link rel="stylesheet" href="../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+
+  class Edge {
+    start;
+    end;
+    neighbor;
+    linked = false;
+
+    constructor( start, end, neighbor ) {
+      this.start = start;
+      this.end = end;
+      this.neighbor = neighbor;
+    }
+
+    draw( ctx ) {
+      ctx.beginPath();
+      ctx.moveTo( this.start.x, this.start.y );
+      ctx.lineTo( this.end.x, this.end.y );
+      ctx.strokeStyle = this.linked ? 'dimgray' : 'white';
+      ctx.lineWidth = this.linked ? 0.5 : 2;
+      ctx.stroke();
+
+      if ( this.neighbor ) {
+        ctx.beginPath();
+        ctx.moveTo( ( this.start.x + this.end.x ) / 2, ( this.start.y + this.end.y ) / 2 );
+        ctx.lineTo( this.neighbor.center.x, this.neighbor.center.y );
+        ctx.strokeStyle = this.linked ? 'green' : 'darkblue';
+        ctx.lineWidth = this.linked ? 1 : 0.5;
+        ctx.stroke();
+      }
+    }
+  }
+
+  class Cell {
+    x;
+    y;
+    center = { x: 0, y: 0 };
+    edges = [];
+
+    constructor( x, y ) {
+      this.x = x;
+      this.y = y;
+    }
+
+    setEdges( points, neighbors ) {
+      points.forEach( point => {
+        this.center.x += point.x;
+        this.center.y += point.y;
+      } );
+
+      if ( points.length > 0 ) {
+        this.center.x /= points.length;
+        this.center.y /= points.length;
+      }
+
+      for ( let i = 0; i < points.length; i ++ ) {
+        const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
+        this.edges.push( new Edge( current, next, neighbors[ i ] ) );
+      }
+    }
+
+    draw( ctx ) {
+      this.edges.forEach( edge => edge.draw( ctx ) );
+
+      ctx.fillStyle = this.edges.length > 0 ? 'olive' : 'darkred';
+      ctx.fillRect( this.x - 1, this.y - 1, 2, 2 );
+      
+      ctx.fillStyle = 'mustard';
+      ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
+    }
+
+    linkTo( other ) {
+      const thisEdge = this.edges.find( edge => edge.neighbor == other );
+      const otherEdge = other.edges.find( edge => edge.neighbor == this );
+
+      thisEdge.linked = otherEdge.linked = true;
+    }
+  }
+
+  const width = 800, height = 800;
+
+  const seeds = Array.from( Array( 50 ), _ => new Cell(
+    Math.random() * width, 
+    Math.random() * height,
+  ) );
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+
+  seeds.forEach( seed => {
+    const voronoi = getVoronoi( seed, seeds.filter( s => s != seed ) );
+
+    seed.setEdges( 
+      voronoi.points, 
+      voronoi.neighbors /*.map( n => ignoreList.indexOf( n ) < 0 ? n : null )*/
+    );
+  } );
+
+  seeds.forEach( seed => {
+    seed.edges.forEach( edge => {
+      if ( edge.neighbor.edges.length == 0 ) {
+        edge.neighbor = null;
+      }
+    } );
+  } );
+
+  const cells = seeds.filter( s => s.edges.length > 0 );
+
+  // TODO: Unlink edges below a certain length? (too small to use meaninfully)
+
+  function doMazeLink( current, previous ) {
+    if ( current == null || current.edges.filter( e => e.linked ).length > 0 ) {
+      return;
+    }
+
+    if ( previous ) {
+      previous.linkTo( current );
+    }
+
+    // const neighbors = Array.from( current.neighbors );
+
+    // while ( neighbors.length > 0 ) {
+    //   const ndx = Math.floor( Math.random() * neighbors.length );
+    //   const next = neighbors.splice( ndx, 1 )[ 0 ];
+    //   checkRooms( next, current );
+    // }
+
+    // TODO: Remove neighbors from room to better handle loops? (Like above?)
+
+    const neighbors = current.edges.map( e => e.neighbor ).sort( ( a, b ) => Math.random() > 0.5 ? 1 : -1 );
+    neighbors.forEach( next => doMazeLink( next, current ) );
+  }
+
+  doMazeLink( cells[ 0 ] );
+
+  // cells[ 10 ].linkTo( cells[ 10 ].edges.filter( e => e.neighbor )[ 0 ].neighbor );
+
+
+  cells.forEach( seed => seed.draw( ctx ) );
+
+
+  function getVoronoi( seed, others ) {
+    let lines = others.map( other => {  
+      const halfDist = Math.hypot( other.x - seed.x, other.y - seed.y ) / 2;
+      const ang = Math.atan2( other.y - seed.y, other.x - seed.x );
+      
+      return {
+        seed: other,
+        dist: halfDist,
+        point: {
+          x: seed.x + Math.cos( ang ) * halfDist,
+          y: seed.y + Math.sin( ang ) * halfDist,
+        },
+        slope: {
+          x: -Math.sin( ang ),
+          y:  Math.cos( ang ) 
+        }
+      };
+    } );
+    
+    const start = lines.reduce( ( a, b ) => { return a.dist < b.dist ? a : b } );
+    let currentLine = start, previousLine = start;
+    let currentPoint = currentLine.point;
+    
+    const points = [], neighbors = [];
+    do {
+      const intersections = [];
+      lines.forEach( line => {
+        if ( line != currentLine && line != previousLine ) {
+          const dets = getDeterminants( { point: currentPoint, slope: currentLine.slope }, line );
+            
+          if ( 0 < dets.a ) {
+            intersections.push( { line: line, det: dets.a } );
+          }
+        }
+      } );
+
+      if ( intersections.length == 0 ) {
+        return { points: [], neighbors: [] }; // TODO: or null?
+      }
+
+      const closest = intersections.reduce( ( a, b ) => { return a.det < b.det ? a : b } );
+
+      currentPoint = {
+        x: currentPoint.x + currentLine.slope.x * closest.det,
+        y: currentPoint.y + currentLine.slope.y * closest.det,
+      };
+
+      // Ignore points out of bounds for now
+      if ( currentPoint.x < 0 || currentPoint.y < 0 || width < currentPoint.x || height < currentPoint.y ) {
+        return { points: [], neighbors: [] }; // TODO: or null?
+      }
+
+      previousLine = currentLine;
+      currentLine = closest.line;
+
+      points.push( currentPoint );
+      neighbors.push( currentLine.seed );
+    }
+    while ( currentLine != start );
+
+    return { points: points, neighbors: neighbors };
+  }
+
+  // Based on: https://www.jeffreythompson.org/collision-detection/line-line.php
+  function getDeterminants( a, b ) {
+    // const D = ( ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 ) );
+
+    // return {
+    //   x: ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D,
+    //   y: ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D,
+    // }
+
+    const D = b.slope.y * a.slope.x - b.slope.x * a.slope.y;
+
+    return {
+      a: ( b.slope.x * ( a.point.y - b.point.y ) - b.slope.y * ( a.point.x - b.point.x ) ) / D,
+      b: ( a.slope.x * ( a.point.y - b.point.y ) - a.slope.y * ( a.point.x - b.point.x ) ) / D,
+    }
+  }
+
+</script>
