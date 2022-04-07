@@ -23,14 +23,14 @@
       ctx.beginPath();
       ctx.moveTo( this.start.x, this.start.y );
       ctx.lineTo( this.end.x, this.end.y );
-      ctx.strokeStyle = 'dimgray';
+      ctx.strokeStyle = this.linked ? 'dimgray' : 'white';
       ctx.stroke();
 
       if ( this.neighbor ) {
         ctx.beginPath();
         ctx.moveTo( ( this.start.x + this.end.x ) / 2, ( this.start.y + this.end.y ) / 2 );
         ctx.lineTo( this.neighbor.center.x, this.neighbor.center.y );
-        ctx.strokeStyle = this.linked ? 'darkgreen' : 'darkblue';
+        ctx.strokeStyle = this.linked ? 'green' : 'darkblue';
         ctx.stroke();
       }
     }
@@ -67,7 +67,7 @@
     draw( ctx ) {
       this.edges.forEach( edge => edge.draw( ctx ) );
 
-      ctx.fillStyle = this.edges.length > 0 ? 'lime' : 'darkred';
+      ctx.fillStyle = this.edges.length > 0 ? 'olive' : 'darkred';
       ctx.fillRect( this.x - 1, this.y - 1, 2, 2 );
       
       ctx.fillStyle = 'yellow';
@@ -112,7 +112,32 @@
 
   // TODO: Unlink edges below a certain length? (too small to use meaninfully)
 
-  cells[ 10 ].linkTo( cells[ 10 ].edges.filter( e => e.neighbor )[ 0 ].neighbor );
+  function doMazeLink( current, previous ) {
+    if ( current == null || current.edges.filter( e => e.linked ).length > 0 ) {
+      return;
+    }
+
+    if ( previous ) {
+      previous.linkTo( current );
+    }
+
+    // const neighbors = Array.from( current.neighbors );
+
+    // while ( neighbors.length > 0 ) {
+    //   const ndx = Math.floor( Math.random() * neighbors.length );
+    //   const next = neighbors.splice( ndx, 1 )[ 0 ];
+    //   checkRooms( next, current );
+    // }
+
+    // TODO: Remove neighbors from room to better handle loops? (Like above?)
+
+    const neighbors = current.edges.map( e => e.neighbor ).sort( ( a, b ) => Math.random() > 0.5 ? 1 : -1 );
+    neighbors.forEach( next => doMazeLink( next, current ) );
+  }
+
+  doMazeLink( cells[ 0 ] );
+
+  // cells[ 10 ].linkTo( cells[ 10 ].edges.filter( e => e.neighbor )[ 0 ].neighbor );
 
 
   cells.forEach( seed => seed.draw( ctx ) );
