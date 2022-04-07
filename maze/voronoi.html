@@ -123,16 +123,12 @@
         }
       };
     } );
-
-    // TODO: Don't sort, just get closest
-    lines.sort( ( a, b ) => a.dist - b.dist );
     
-    const points = [], neighbors = [];
-
-    const start = lines[ 0 ];
+    const start = lines.reduce( ( a, b ) => { return a.dist < b.dist ? a : b } );
     let currentLine = start, previousLine = start;
     let currentPoint = currentLine.point;
-
+    
+    const points = [], neighbors = [];
     do {
       const intersections = [];
       lines.forEach( line => {
@@ -149,9 +145,7 @@
         return { points: [], neighbors: [] }; // TODO: or null?
       }
 
-      // TODO: Don't sort, just get closest
-      intersections.sort( ( a, b ) => a.det - b.det );
-      const closest = intersections[ 0 ];
+      const closest = intersections.reduce( ( a, b ) => { return a.det < b.det ? a : b } );
 
       currentPoint = {
         x: currentPoint.x + currentLine.slope.x * closest.det,
