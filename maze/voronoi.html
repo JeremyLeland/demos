@@ -2,7 +2,7 @@
 <link rel="stylesheet" href="../style.css">
 
 <body>
-  <canvas id="canvas" width="500px" height="500px"></canvas>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
 </body>
 
 <script type="module">
@@ -24,6 +24,7 @@
       ctx.moveTo( this.start.x, this.start.y );
       ctx.lineTo( this.end.x, this.end.y );
       ctx.strokeStyle = this.linked ? 'dimgray' : 'white';
+      ctx.lineWidth = this.linked ? 0.5 : 2;
       ctx.stroke();
 
       if ( this.neighbor ) {
@@ -31,6 +32,7 @@
         ctx.moveTo( ( this.start.x + this.end.x ) / 2, ( this.start.y + this.end.y ) / 2 );
         ctx.lineTo( this.neighbor.center.x, this.neighbor.center.y );
         ctx.strokeStyle = this.linked ? 'green' : 'darkblue';
+        ctx.lineWidth = this.linked ? 1 : 0.5;
         ctx.stroke();
       }
     }
@@ -70,7 +72,7 @@
       ctx.fillStyle = this.edges.length > 0 ? 'olive' : 'darkred';
       ctx.fillRect( this.x - 1, this.y - 1, 2, 2 );
       
-      ctx.fillStyle = 'yellow';
+      ctx.fillStyle = 'mustard';
       ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
     }
 
@@ -82,7 +84,7 @@
     }
   }
 
-  const width = 500, height = 500;
+  const width = 800, height = 800;
 
   const seeds = Array.from( Array( 50 ), _ => new Cell(
     Math.random() * width, 
