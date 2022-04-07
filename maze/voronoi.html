@@ -28,7 +28,7 @@
       if ( this.neighbor ) {
         ctx.beginPath();
         ctx.moveTo( ( this.start.x + this.end.x ) / 2, ( this.start.y + this.end.y ) / 2 );
-        ctx.lineTo( this.neighbor.x, this.neighbor.y );
+        ctx.lineTo( this.neighbor.center.x, this.neighbor.center.y );
         ctx.strokeStyle = this.linked ? 'darkgreen' : 'darkblue';
         ctx.stroke();
       }
@@ -51,8 +51,11 @@
         this.center.x += point.x;
         this.center.y += point.y;
       } );
-      this.center.x /= points.length;
-      this.center.y /= points.length;
+
+      if ( points.length > 0 ) {
+        this.center.x /= points.length;
+        this.center.y /= points.length;
+      }
 
       for ( let i = 0; i < points.length; i ++ ) {
         const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
@@ -62,13 +65,16 @@
 
     draw( ctx ) {
       this.edges.forEach( edge => edge.draw( ctx ) );
+
+      ctx.fillStyle = this.edges.length > 0 ? 'lime' : 'darkred';
+      ctx.fillRect( this.x - 1, this.y - 1, 2, 2 );
       
       ctx.fillStyle = 'yellow';
       ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
     }
   }
 
-  const size = 64, offset = 0.8 * size, cols = 8, rows = 8;
+  const size = 64, offset = 0.75 * size, cols = 8, rows = 8;
 
   const seeds = Array.from( 
     Array( cols ), ( _, col ) => Array.from( 
@@ -82,13 +88,13 @@
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
 
   // Prepare blacklist of neighbors to ignore (i.e. the edges)
-  const ignoreList = [];
-  for ( let col = 0; col < cols; col ++ ) {
-    ignoreList.push( seeds[ col ][ 0 ], seeds[ col ][ rows - 1 ] );
-  }
-  for ( let row = 0; row < rows; row ++ ) {
-    ignoreList.push( seeds[ 0 ][ row ], seeds[ cols - 1 ][ row ] );
-  }
+  // const ignoreList = [];
+  // for ( let col = 0; col < cols; col ++ ) {
+  //   ignoreList.push( seeds[ col ][ 0 ], seeds[ col ][ rows - 1 ] );
+  // }
+  // for ( let row = 0; row < rows; row ++ ) {
+  //   ignoreList.push( seeds[ 0 ][ row ], seeds[ cols - 1 ][ row ] );
+  // }
 
   // Create middle cells
   for ( let row = 1; row < rows - 1; row ++ ) {
@@ -107,13 +113,25 @@
 
       seed.setEdges( 
         voronoi.points, 
-        voronoi.neighbors.map( n => ignoreList.indexOf( n ) < 0 ? n : null ) 
+        voronoi.neighbors /*.map( n => ignoreList.indexOf( n ) < 0 ? n : null )*/
       );
+    }
+  }
+
+  for ( let row = 0; row < rows; row ++ ) {
+    for ( let col = 0; col < cols; col ++ ) {
+      const seed = seeds[ col ][ row ];
+      seed.edges.forEach( edge => {
+        if ( edge.neighbor.edges.length == 0 ) {
+          edge.neighbor = null;
+        }
+      } );
+
       seed.draw( ctx );
     }
   }
 
-
+  // TODO: Unlink edges below a certain length? (too small to use meaninfully)
 
 
   function getVoronoi( seed, others ) {
@@ -135,6 +153,7 @@
       };
     } );
 
+    // TODO: Don't sort, just get closest
     lines.sort( ( a, b ) => a.dist - b.dist );
     
     const points = [], neighbors = [];
@@ -154,6 +173,12 @@
           }
         }
       } );
+
+      if ( intersections.length == 0 ) {
+        return { points: [], neighbors: [] }; // TODO: or null?
+      }
+
+      // TODO: Don't sort, just get closest
       intersections.sort( ( a, b ) => a.det - b.det );
       const closest = intersections[ 0 ];
 
