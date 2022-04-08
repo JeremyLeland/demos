@@ -62,7 +62,11 @@
 
       for ( let i = 0; i < points.length; i ++ ) {
         const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
-        this.edges.push( new Edge( current, next, neighbors[ i ] ) );
+
+        // Don't set neighbor if edge is too small
+        const edgeLength = Math.hypot( next.x - current.x, next.y - current.y );
+
+        this.edges.push( new Edge( current, next, edgeLength < 32 ? null : neighbors[ i ] ) );
       }
     }
 
@@ -110,7 +114,7 @@
 
   seeds.forEach( seed => {
     seed.edges.forEach( edge => {
-      if ( edge.neighbor.edges.length == 0 ) {
+      if ( edge.neighbor?.edges.length == 0 ) {
         edge.neighbor = null;
       }
     } );
