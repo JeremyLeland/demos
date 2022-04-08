@@ -84,11 +84,12 @@
     }
   }
 
-  const width = 800, height = 800;
+  const width = 800, height = 800, minSpacing = 1;
 
-  const seeds = Array.from( Array( 50 ), _ => new Cell(
-    Math.random() * width, 
-    Math.random() * height,
+  // TODO: Minimum spacing? (why does this cause problems if it's > 1?)
+  const seeds = Array.from( Array( 100 ), _ => new Cell(
+    Math.floor( Math.random() * width / minSpacing ) * minSpacing, 
+    Math.floor( Math.random() * height / minSpacing ) * minSpacing,
   ) );
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
@@ -101,6 +102,11 @@
       voronoi.neighbors /*.map( n => ignoreList.indexOf( n ) < 0 ? n : null )*/
     );
   } );
+
+  // Remove a few cells to make gaps
+  for ( let i = 0; i < 10; i ++ ) {
+    seeds[ Math.floor( Math.random() * seeds.length ) ].edges = [];
+  }
 
   seeds.forEach( seed => {
     seed.edges.forEach( edge => {
@@ -138,8 +144,6 @@
   }
 
   doMazeLink( cells[ 0 ] );
-
-  // cells[ 10 ].linkTo( cells[ 10 ].edges.filter( e => e.neighbor )[ 0 ].neighbor );
 
 
   cells.forEach( seed => seed.draw( ctx ) );
