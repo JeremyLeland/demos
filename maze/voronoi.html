@@ -29,7 +29,7 @@
       ctx.moveTo( this.start.x, this.start.y );
       ctx.lineTo( this.end.x, this.end.y );
       ctx.strokeStyle = this.linked ? 'dimgray' : 'white';
-      ctx.lineWidth = this.linked ? 0.5 : 2;
+      // ctx.lineWidth = this.linked ? 0.5 : 2;
       ctx.stroke();
 
       if ( this.neighbor ) {
@@ -37,7 +37,7 @@
         ctx.moveTo( ( this.start.x + this.end.x ) / 2, ( this.start.y + this.end.y ) / 2 );
         ctx.lineTo( this.neighbor.center.x, this.neighbor.center.y );
         ctx.strokeStyle = this.linked ? 'green' : 'darkblue';
-        ctx.lineWidth = this.linked ? 1 : 0.5;
+        // ctx.lineWidth = this.linked ? 1 : 0.5;
         ctx.stroke();
       }
     }
@@ -65,7 +65,7 @@
         this.center.y /= points.length;
       }
 
-      const PADDING = 0.2;
+      const PADDING = 0.1;
 
       for ( let i = 0; i < points.length; i ++ ) {
         const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
@@ -198,7 +198,7 @@
       y: edge.start.y,
     } );
 
-    if ( edge.end.x != edge.next.start.x || edge.end.y != edge.next.start.y ) {
+    if ( Math.hypot( edge.end.x - edge.next.start.x, edge.end.y - edge.next.start.y ) > 10 ) {
       points.push( {
         x: edge.end.x,
         y: edge.end.y,
@@ -212,7 +212,7 @@
   //       1) We are getting points closer to the center (so they'll be different as we round the corner)
   //       2) We generate the voronoi shapes counter-clockwise
   
-  const curves = Curve.getCurvesThroughPoints( points );
+  const curves = Curve.getLoopThroughPoints( points );
   curves.forEach( curve => curve.draw( ctx ) );
   
   ctx.fillStyle = 'lime';
@@ -247,8 +247,8 @@
       lines.forEach( line => {
         if ( line != currentLine && line != previousLine ) {
           const dets = getDeterminants( { point: currentPoint, slope: currentLine.slope }, line );
-            
-          if ( 0 < dets.a ) {
+          
+          if ( dets.a < 0 ) {
             intersections.push( { line: line, det: dets.a } );
           }
         }
@@ -258,7 +258,8 @@
         return { points: [], neighbors: [] }; // TODO: or null?
       }
 
-      const closest = intersections.reduce( ( a, b ) => { return a.det < b.det ? a : b } );
+      // Going counter-clockwise, so find closest to 0
+      const closest = intersections.reduce( ( a, b ) => { return a.det > b.det ? a : b } );
 
       currentPoint = {
         x: currentPoint.x + currentLine.slope.x * closest.det,
