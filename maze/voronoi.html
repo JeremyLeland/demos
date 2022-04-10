@@ -7,11 +7,16 @@
 
 <script type="module">
 
+  import { Curve } from '../src/Curve.js';
+
   class Edge {
     start;
     end;
     neighbor;
     linked = false;
+
+    previous;
+    next;
 
     constructor( start, end, neighbor ) {
       this.start = start;
@@ -60,13 +65,33 @@
         this.center.y /= points.length;
       }
 
+      const PADDING = 0.2;
+
       for ( let i = 0; i < points.length; i ++ ) {
         const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
 
         // Don't set neighbor if edge is too small
         const edgeLength = Math.hypot( next.x - current.x, next.y - current.y );
 
-        this.edges.push( new Edge( current, next, edgeLength < 32 ? null : neighbors[ i ] ) );
+        this.edges.push( new Edge( 
+          {
+            x: ( 1 - PADDING ) * current.x + PADDING * this.center.x,
+            y: ( 1 - PADDING ) * current.y + PADDING * this.center.y, 
+          },
+          {
+            x: ( 1 - PADDING ) * next.x + PADDING * this.center.x,
+            y: ( 1 - PADDING ) * next.y + PADDING * this.center.y, 
+          },
+          edgeLength < 32 ? null : neighbors[ i ]
+        ) );
+      }
+
+      for ( let i = 0; i < this.edges.length; i ++ ) {
+        const current = this.edges[ i ];
+        const prev = this.edges[ ( points.length + i - 1 ) % points.length ];
+        const next = this.edges[ ( i + 1 ) % points.length ];
+        current.previous = prev;
+        current.next = next;
       }
     }
 
@@ -85,13 +110,21 @@
       const otherEdge = other.edges.find( edge => edge.neighbor == this );
 
       thisEdge.linked = otherEdge.linked = true;
+
+      thisEdge.previous.next = otherEdge.next;
+      thisEdge.next.previous = otherEdge.previous;
+
+      otherEdge.previous.next = thisEdge.next;
+      otherEdge.next.previous = thisEdge.previous;
+
+      // TODO: Remove edges that we've worked around?
     }
   }
 
   const width = 800, height = 800, minSpacing = 1;
 
   // TODO: Minimum spacing? (why does this cause problems if it's > 1?)
-  const seeds = Array.from( Array( 100 ), _ => new Cell(
+  const seeds = Array.from( Array( 40 ), _ => new Cell(
     Math.floor( Math.random() * width / minSpacing ) * minSpacing, 
     Math.floor( Math.random() * height / minSpacing ) * minSpacing,
   ) );
@@ -152,6 +185,38 @@
 
   cells.forEach( seed => seed.draw( ctx ) );
 
+  const points = [];
+
+  let edge = cells[ 0 ].edges[ 0 ];
+  const visited = new Set();
+
+  while ( !visited.has( edge ) ) {
+    visited.add( edge );
+
+    points.push( {
+      x: edge.start.x,
+      y: edge.start.y,
+    } );
+
+    if ( edge.end.x != edge.next.start.x || edge.end.y != edge.next.start.y ) {
+      points.push( {
+        x: edge.end.x,
+        y: edge.end.y,
+      } );
+    }
+    
+    edge = edge.next;
+  }
+
+  // TODO: This won't make sense until:
+  //       1) We are getting points closer to the center (so they'll be different as we round the corner)
+  //       2) We generate the voronoi shapes counter-clockwise
+  
+  const curves = Curve.getCurvesThroughPoints( points );
+  curves.forEach( curve => curve.draw( ctx ) );
+  
+  ctx.fillStyle = 'lime';
+  points.forEach( point => ctx.fillRect( point.x - 2, point.y - 2, 4, 4 ) );
 
   function getVoronoi( seed, others ) {
     let lines = others.map( other => {  
