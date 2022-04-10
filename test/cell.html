@@ -8,7 +8,7 @@
 <script type="module">
   import { Cell } from '../src/Cell.js';
 
-  function getCellGrid( cols, rows, size = 128, offset = 64 ) {
+  function getCellGrid( cols, rows, size = 64, offset = 32 ) {
     const cellPoints = Array.from( 
       Array( cols + 1 ), ( _, col ) => Array.from( 
         Array( rows + 1 ), ( _, row ) => ( { 
@@ -58,7 +58,7 @@
   
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
-  ctx.translate( 50, 50 );
+  ctx.translate( 32, 32 );
 
   for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
     for ( let col = 0; col < cellGrid.length; col ++ ) {

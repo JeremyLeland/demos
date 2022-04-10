@@ -26,7 +26,7 @@ class Edge {
       ctx.beginPath();
       ctx.moveTo( ( this.start.x + this.end.x ) / 2, ( this.start.y + this.end.y ) / 2 );
       ctx.lineTo( this.neighbor.center.x, this.neighbor.center.y );
-      ctx.strokeStyle = this.linked ? 'green' : 'darkblue';
+      ctx.strokeStyle = this.linked ? 'green' : 'blue';
       ctx.lineWidth = this.linked ? 1 : 0.5;
       ctx.stroke();
     }
@@ -34,8 +34,6 @@ class Edge {
 }
 
 export class Cell {
-  x;
-  y;
   center = { x: 0, y: 0 };
   edges = [];
 
@@ -68,7 +66,7 @@ export class Cell {
     this.edges.forEach( edge => edge.draw( ctx ) );
 
     ctx.fillStyle = this.edges.length > 0 ? 'olive' : 'darkred';
-    ctx.fillRect( this.x - 1, this.y - 1, 2, 2 );
+    ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
   }
 
   linkTo( other ) {
@@ -82,5 +80,9 @@ export class Cell {
 
     otherEdge.previous.next = thisEdge.next;
     otherEdge.next.previous = thisEdge.previous;
+  }
+
+  getUnlinkedEdges() {
+    return this.edges.filter( e => e.neighbor && !e.linked );
   }
 }
