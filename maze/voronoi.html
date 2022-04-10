@@ -208,9 +208,7 @@
     edge = edge.next;
   }
 
-  // TODO: This won't make sense until:
-  //       1) We are getting points closer to the center (so they'll be different as we round the corner)
-  //       2) We generate the voronoi shapes counter-clockwise
+  // TODO: Don't get so hung up on curves, maybe just try breaking up lines and perturbing the points we have?
   
   const curves = Curve.getLoopThroughPoints( points );
   curves.forEach( curve => curve.draw( ctx ) );

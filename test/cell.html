@@ -1,0 +1,69 @@
+<title>Cell Test</title>
+<link rel="stylesheet" href="../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+  import { Cell } from '../src/Cell.js';
+
+  function getCellGrid( cols, rows, size = 128, offset = 64 ) {
+    const cellPoints = Array.from( 
+      Array( cols + 1 ), ( _, col ) => Array.from( 
+        Array( rows + 1 ), ( _, row ) => ( { 
+          x: col * size + ( Math.random() - 0.5 ) * offset, 
+          y: row * size + ( Math.random() - 0.5 ) * offset,
+        } ) 
+      )
+    );
+
+    const cellGrid = Array.from( 
+      Array( cols ), ( _, col ) => Array.from( 
+        Array( rows ), ( _, row ) => new Cell( [ 
+          cellPoints[ col ][ row ], 
+          cellPoints[ col ][ row + 1 ], 
+          cellPoints[ col + 1 ][ row + 1 ], 
+          cellPoints[ col + 1 ][ row ], 
+        ] )
+      )
+    );
+
+    for ( let row = 0; row < rows; row ++ ) {
+      for ( let col = 0; col < cols; col ++ ) {
+        const cell = cellGrid[ col ][ row ];
+
+        if ( col > 0 )  cell.edges[ 0 ].neighbor = cellGrid[ col - 1 ][ row ];
+        if ( row < rows - 1 )  cell.edges[ 1 ].neighbor = cellGrid[ col ][ row + 1 ];
+        if ( col < cols - 1 )  cell.edges[ 2 ].neighbor = cellGrid[ col + 1 ][ row ];
+        if ( row > 0 )  cell.edges[ 3 ].neighbor = cellGrid[ col ][ row - 1 ];
+      }
+    }
+
+    return cellGrid;
+  }
+
+  const cellGrid = getCellGrid( 5, 5 );
+
+  cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 1 ][ 0 ] );
+  cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 0 ][ 1 ] );
+  cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 2 ][ 1 ] );
+  cellGrid[ 1 ][ 1 ].linkTo( cellGrid[ 1 ][ 2 ] );
+
+  cellGrid[ 1 ][ 2 ].linkTo( cellGrid[ 2 ][ 2 ] );
+  cellGrid[ 2 ][ 1 ].linkTo( cellGrid[ 2 ][ 2 ] );
+
+  cellGrid[ 0 ][ 1 ].linkTo( cellGrid[ 0 ][ 2 ] );
+  cellGrid[ 0 ][ 2 ].linkTo( cellGrid[ 0 ][ 3 ] );
+  
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  ctx.translate( 50, 50 );
+
+  for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
+    for ( let col = 0; col < cellGrid.length; col ++ ) {
+      cellGrid[ col ][ row ].draw( ctx );
+    }
+  }
+
+</script>
