@@ -7,192 +7,92 @@
 
 <script type="module">
 
-  import { Curve } from '../src/Curve.js';
+  import { Cell } from '../src/Cell.js';
+  import * as Voronoi from '../src/Voronoi.js';
 
-  class Edge {
-    start;
-    end;
-    neighbor;
-    linked = false;
+  
+  const width = 800, height = 800;
+  const MIN_EDGE_LENGTH = 40;
 
-    previous;
-    next;
+  const seeds = Array.from( Array( 40 ), _ => ( {
+    x: Math.random() * width, 
+    y: Math.random() * height
+  } ) );
 
-    constructor( start, end, neighbor ) {
-      this.start = start;
-      this.end = end;
-      this.neighbor = neighbor;
-    }
+  let cells = Voronoi.getVoronoiCells( seeds );
 
-    draw( ctx ) {
-      ctx.beginPath();
-      ctx.moveTo( this.start.x, this.start.y );
-      ctx.lineTo( this.end.x, this.end.y );
-      ctx.strokeStyle = this.linked ? 'dimgray' : 'white';
-      // ctx.lineWidth = this.linked ? 0.5 : 2;
-      ctx.stroke();
-
-      if ( this.neighbor ) {
-        ctx.beginPath();
-        ctx.moveTo( ( this.start.x + this.end.x ) / 2, ( this.start.y + this.end.y ) / 2 );
-        ctx.lineTo( this.neighbor.center.x, this.neighbor.center.y );
-        ctx.strokeStyle = this.linked ? 'green' : 'darkblue';
-        // ctx.lineWidth = this.linked ? 1 : 0.5;
-        ctx.stroke();
-      }
-    }
-  }
-
-  class Cell {
-    x;
-    y;
-    center = { x: 0, y: 0 };
-    edges = [];
-
-    constructor( x, y ) {
-      this.x = x;
-      this.y = y;
-    }
-
-    setEdges( points, neighbors ) {
-      points.forEach( point => {
-        this.center.x += point.x;
-        this.center.y += point.y;
-      } );
-
-      if ( points.length > 0 ) {
-        this.center.x /= points.length;
-        this.center.y /= points.length;
+  cells.forEach( cell => {
+    cell.edges.forEach( edge => {
+      // Detach edges that are too small to fit through
+      if ( Math.hypot( edge.end.x - edge.start.x, edge.end.y - edge.start.y ) < MIN_EDGE_LENGTH ) {
+        cell.detachEdge( edge );
       }
 
-      const PADDING = 0.1;
-
-      for ( let i = 0; i < points.length; i ++ ) {
-        const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
-
-        // Don't set neighbor if edge is too small
-        const edgeLength = Math.hypot( next.x - current.x, next.y - current.y );
-
-        this.edges.push( new Edge( 
-          {
-            x: ( 1 - PADDING ) * current.x + PADDING * this.center.x,
-            y: ( 1 - PADDING ) * current.y + PADDING * this.center.y, 
-          },
-          {
-            x: ( 1 - PADDING ) * next.x + PADDING * this.center.x,
-            y: ( 1 - PADDING ) * next.y + PADDING * this.center.y, 
-          },
-          edgeLength < 32 ? null : neighbors[ i ]
-        ) );
-      }
-
-      for ( let i = 0; i < this.edges.length; i ++ ) {
-        const current = this.edges[ i ];
-        const prev = this.edges[ ( points.length + i - 1 ) % points.length ];
-        const next = this.edges[ ( i + 1 ) % points.length ];
-        current.previous = prev;
-        current.next = next;
-      }
-    }
-
-    draw( ctx ) {
-      this.edges.forEach( edge => edge.draw( ctx ) );
-
-      ctx.fillStyle = this.edges.length > 0 ? 'olive' : 'darkred';
-      ctx.fillRect( this.x - 1, this.y - 1, 2, 2 );
-      
-      ctx.fillStyle = 'mustard';
-      ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
-    }
-
-    linkTo( other ) {
-      const thisEdge = this.edges.find( edge => edge.neighbor == other );
-      const otherEdge = other.edges.find( edge => edge.neighbor == this );
-
-      thisEdge.linked = otherEdge.linked = true;
-
-      thisEdge.previous.next = otherEdge.next;
-      thisEdge.next.previous = otherEdge.previous;
-
-      otherEdge.previous.next = thisEdge.next;
-      otherEdge.next.previous = thisEdge.previous;
-
-      // TODO: Remove edges that we've worked around?
-    }
-  }
-
-  const width = 800, height = 800, minSpacing = 1;
-
-  // TODO: Minimum spacing? (why does this cause problems if it's > 1?)
-  const seeds = Array.from( Array( 40 ), _ => new Cell(
-    Math.floor( Math.random() * width / minSpacing ) * minSpacing, 
-    Math.floor( Math.random() * height / minSpacing ) * minSpacing,
-  ) );
-
-  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
-
-  seeds.forEach( seed => {
-    const voronoi = getVoronoi( seed, seeds.filter( s => s != seed ) );
-
-    seed.setEdges( 
-      voronoi.points, 
-      voronoi.neighbors /*.map( n => ignoreList.indexOf( n ) < 0 ? n : null )*/
-    );
-  } );
-
-  // Remove a few cells to make gaps
-  for ( let i = 0; i < 10; i ++ ) {
-    seeds[ Math.floor( Math.random() * seeds.length ) ].edges = [];
-  }
-
-  seeds.forEach( seed => {
-    seed.edges.forEach( edge => {
-      if ( edge.neighbor?.edges.length == 0 ) {
-        edge.neighbor = null;
+      // Flag out-of-bounds cells for removal
+      if ( edge.start.x < 0 || edge.start.y < 0 || edge.start.x > width || edge.start.y > height ) {
+        cell.flagForRemoval = true;
       }
     } );
   } );
 
-  const cells = seeds.filter( s => s.edges.length > 0 );
+  // TODO: This doesn't seem to be creating holes in the map like I want it to...
+  for ( let i = 0; i < 10; i ++ ) {
+    const cell = cells.find( e => e.getUnlinkedEdges().length > 2 );
+    if ( cell ) {
+      cell.flagForRemoval = true;
+    }
+  }
 
-  // TODO: Unlink edges below a certain length? (too small to use meaninfully)
+  cells = cells.filter( cell => { 
+    if ( cell.flagForRemoval ) {
+      cell.detachAll();
+    }
 
+    return !cell.flagForRemoval;
+  } );
+
+  
   function doMazeLink( current, previous ) {
     if ( current == null || current.edges.filter( e => e.linked ).length > 0 ) {
       return;
     }
-
+    
     if ( previous ) {
       previous.linkTo( current );
     }
-
-    // const neighbors = Array.from( current.neighbors );
-
-    // while ( neighbors.length > 0 ) {
-    //   const ndx = Math.floor( Math.random() * neighbors.length );
-    //   const next = neighbors.splice( ndx, 1 )[ 0 ];
-    //   checkRooms( next, current );
-    // }
-
-    // TODO: Remove neighbors from room to better handle loops? (Like above?)
-
+      
     const neighbors = current.edges.map( e => e.neighbor ).sort( ( a, b ) => Math.random() > 0.5 ? 1 : -1 );
     neighbors.forEach( next => doMazeLink( next, current ) );
   }
-
-  doMazeLink( cells[ 0 ] );
-
-
+    
+    doMazeLink( cells[ 0 ] );
+    
+    cells.forEach( cell => {
+      if ( cell.edges.filter( e => e.linked ).length == 0 ) {
+        cell.flagForRemoval = true;
+      }
+    } );
+    
+    // TODO: Don't do this twice
+    cells = cells.filter( cell => { 
+      if ( cell.flagForRemoval ) {
+        cell.detachAll();
+      }
+      
+    return !cell.flagForRemoval;
+  } );
+  
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
   cells.forEach( seed => seed.draw( ctx ) );
-
+  
   const points = [];
-
+  
   let edge = cells[ 0 ].edges[ 0 ];
   const visited = new Set();
-
+  
   while ( !visited.has( edge ) ) {
     visited.add( edge );
-
+    
     points.push( {
       x: edge.start.x,
       y: edge.start.y,
@@ -210,91 +110,10 @@
 
   // TODO: Don't get so hung up on curves, maybe just try breaking up lines and perturbing the points we have?
   
-  const curves = Curve.getLoopThroughPoints( points );
-  curves.forEach( curve => curve.draw( ctx ) );
+  // const curves = Curve.getLoopThroughPoints( points );
+  // curves.forEach( curve => curve.draw( ctx ) );
   
   ctx.fillStyle = 'lime';
   points.forEach( point => ctx.fillRect( point.x - 2, point.y - 2, 4, 4 ) );
-
-  function getVoronoi( seed, others ) {
-    let lines = others.map( other => {  
-      const halfDist = Math.hypot( other.x - seed.x, other.y - seed.y ) / 2;
-      const ang = Math.atan2( other.y - seed.y, other.x - seed.x );
-      
-      return {
-        seed: other,
-        dist: halfDist,
-        point: {
-          x: seed.x + Math.cos( ang ) * halfDist,
-          y: seed.y + Math.sin( ang ) * halfDist,
-        },
-        slope: {
-          x: -Math.sin( ang ),
-          y:  Math.cos( ang ) 
-        }
-      };
-    } );
-    
-    const start = lines.reduce( ( a, b ) => { return a.dist < b.dist ? a : b } );
-    let currentLine = start, previousLine = start;
-    let currentPoint = currentLine.point;
-    
-    const points = [], neighbors = [];
-    do {
-      const intersections = [];
-      lines.forEach( line => {
-        if ( line != currentLine && line != previousLine ) {
-          const dets = getDeterminants( { point: currentPoint, slope: currentLine.slope }, line );
-          
-          if ( dets.a < 0 ) {
-            intersections.push( { line: line, det: dets.a } );
-          }
-        }
-      } );
-
-      if ( intersections.length == 0 ) {
-        return { points: [], neighbors: [] }; // TODO: or null?
-      }
-
-      // Going counter-clockwise, so find closest to 0
-      const closest = intersections.reduce( ( a, b ) => { return a.det > b.det ? a : b } );
-
-      currentPoint = {
-        x: currentPoint.x + currentLine.slope.x * closest.det,
-        y: currentPoint.y + currentLine.slope.y * closest.det,
-      };
-
-      // Ignore points out of bounds for now
-      if ( currentPoint.x < 0 || currentPoint.y < 0 || width < currentPoint.x || height < currentPoint.y ) {
-        return { points: [], neighbors: [] }; // TODO: or null?
-      }
-
-      previousLine = currentLine;
-      currentLine = closest.line;
-
-      points.push( currentPoint );
-      neighbors.push( currentLine.seed );
-    }
-    while ( currentLine != start );
-
-    return { points: points, neighbors: neighbors };
-  }
-
-  // Based on: https://www.jeffreythompson.org/collision-detection/line-line.php
-  function getDeterminants( a, b ) {
-    // const D = ( ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 ) );
-
-    // return {
-    //   x: ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D,
-    //   y: ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D,
-    // }
-
-    const D = b.slope.y * a.slope.x - b.slope.x * a.slope.y;
-
-    return {
-      a: ( b.slope.x * ( a.point.y - b.point.y ) - b.slope.y * ( a.point.x - b.point.x ) ) / D,
-      b: ( a.slope.x * ( a.point.y - b.point.y ) - a.slope.y * ( a.point.x - b.point.x ) ) / D,
-    }
-  }
 
 </script>

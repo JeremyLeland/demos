@@ -69,6 +69,21 @@ export class Cell {
     ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
   }
 
+  detachEdge( edge ) {
+    if ( edge.neighbor ) {
+      const otherEdge = edge.neighbor.edges.find( e => e.neighbor == this );
+
+      edge.neighbor = otherEdge.neighbor = null;
+      edge.linked = otherEdge.linked = false;
+
+      // TODO: Fix edge prev/next
+    }
+  }
+
+  detachAll() {
+    this.edges.forEach( edge => this.detachEdge( edge ) );
+  }
+
   linkTo( other ) {
     const thisEdge = this.edges.find( edge => edge.neighbor == other );
     const otherEdge = other.edges.find( edge => edge.neighbor == this );
@@ -80,6 +95,10 @@ export class Cell {
 
     otherEdge.previous.next = thisEdge.next;
     otherEdge.next.previous = thisEdge.previous;
+  }
+
+  unlinkFrom( other ) {
+
   }
 
   getUnlinkedEdges() {
