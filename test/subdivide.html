@@ -1,0 +1,55 @@
+<title>Subdivide Lines</title>
+<link rel="stylesheet" href="../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+  
+  const points = [
+    { x: 100, y: 100 },
+    { x: 200, y: 250 },
+    { x: 500, y: 50 },
+  ];
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  
+  ctx.fillStyle = 'red';
+  points.forEach( p => ctx.fillRect( p.x - 1, p.y - 1, 2, 2 ) );
+  
+  const subpoints = subdividePoints( points, 10 );
+  ctx.fillStyle = 'green';
+  subpoints.forEach( p => ctx.fillRect( p.x - 1, p.y - 1, 2, 2 ) );
+
+  function subdividePoints( points, maxLength ) {
+    const subpoints = [];
+
+    for ( let i = 0; i < points.length - 1; i ++ ) {
+      subpoints.push( ...subdivideLine( points[ i ], points[ i + 1 ], maxLength ) );
+    }
+
+    subpoints.push( points[ points.length - 1 ] );
+
+    return subpoints;
+  }
+
+  // NOTE: This function intentionally leaves off the last point (b)
+  //       This way it is easier to string together subdivided lines
+  function subdivideLine( a, b, maxLength ) {
+    const totalLength = Math.hypot( b.x - a.x, b.y - a.y );
+    const numSegments = Math.ceil( totalLength / maxLength );
+    
+    const dx = ( b.x - a.x ) / numSegments;
+    const dy = ( b.y - a.y ) / numSegments;
+
+    const subpoints = [];
+
+    for ( let i = 0; i < numSegments; i ++ ) {
+      subpoints.push( { x: a.x + dx * i, y: a.y + dy * i } );
+    }
+
+    return subpoints;
+  }
+  
+</script>
