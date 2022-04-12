@@ -1,0 +1,61 @@
+<title>Subdivide Lines</title>
+<link rel="stylesheet" href="../../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+
+  const WIDTH = 20;
+  
+  const points = [
+    { x: 100, y: 100 },
+    { x: 200, y: 200 },
+    { x: 300, y: 100 },
+    { x: 400, y: 200 },
+    { x: 400, y: 200 },
+    { x: 300, y: 100 },
+    { x: 200, y: 200 },
+    { x: 100, y: 100 },
+  ];
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  
+  ctx.fillStyle = 'red';
+  points.forEach( p => ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) );
+  
+  ctx.fillStyle = 'gray';
+
+  for ( let i = 0; i < points.length; i ++ ) {
+    const prev = points[ i == 0 ? i : i - 1 ];
+    const curr = points[ i ];
+    const next = points[ i == points.length - 1 ? i : i + 1 ];
+
+    const angles = [];
+
+    if ( prev.y != curr.y && prev.x != curr.x ) {
+      angles.push( Math.atan2( curr.y - prev.y, curr.x - prev.x ) );
+    }
+
+    if ( next.y != curr.y && next.x != curr.x ) {
+      angles.push( Math.atan2( next.y - curr.y, next.x - curr.x ) );
+    }
+
+    const midAngle = angles.length > 1 ? angles[ 0 ] + deltaAngle( angles[ 0 ], angles[ 1 ] ) / 2 : angles[ 0 ];
+
+    const x = curr.x + WIDTH * Math.sin( midAngle );
+    const y = curr.y + WIDTH * -Math.cos( midAngle );
+
+    ctx.fillRect( x - 1, y - 1, 2, 2 );
+  }
+
+  export function fixAngle( a ) {
+    return a > Math.PI ? a - Math.PI * 2 : a < -Math.PI ? a + Math.PI * 2 : a;
+  }
+
+  export function deltaAngle( a, b ) {
+    return fixAngle( b - a );
+  }
+  
+</script>
