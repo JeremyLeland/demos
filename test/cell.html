@@ -69,8 +69,18 @@
   ctx.strokeStyle = 'yellow';
 
   const points = [];
-  cellGrid[ 0 ][ 0 ].edges.forEach( edge => points.push( ...edge.getOffsetPoints( 10 ) ) );
+  
+  let edge = cellGrid[ 0 ][ 1 ].edges[ 0 ];
+  const visited = new Set();
 
+  while ( !visited.has( edge ) ) {
+    visited.add( edge );
+
+    points.push( ...edge.getOffsetPoints( 10 ) );
+
+    edge = edge.next;
+  }
+  
   ctx.beginPath();
   points.forEach( p => ctx.lineTo( p.x, p.y ) );
   ctx.closePath();

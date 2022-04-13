@@ -19,12 +19,30 @@ class Edge {
     const prevAngle = Math.atan2( curr.y - prev.y, curr.x - prev.x );
     const currAngle = Math.atan2( next.y - curr.y, next.x - curr.x );
 
-    const midAngle = prevAngle + deltaAngle( prevAngle, currAngle ) / 2;
+    const delta = deltaAngle( prevAngle, currAngle );
     
-    return [ {
-      x: this.start.x + offset * Math.sin( midAngle ),
-      y: this.start.y + offset * -Math.cos( midAngle ),
-    } ];
+    const points = [];
+    
+    if ( delta < Math.PI ) {
+      const midAngle = prevAngle + delta * 0.5;
+      points.push( {
+        x: this.start.x + offset * Math.sin( midAngle ),
+        y: this.start.y + offset * -Math.cos( midAngle ),
+      } );
+    }
+    else {
+      const leftAngle = prevAngle + delta * 0.25;
+      const rightAngle = prevAngle + delta * 0.75;
+      points.push( {
+        x: this.start.x + offset * Math.sin( leftAngle ),
+        y: this.start.y + offset * -Math.cos( leftAngle ),
+      }, {
+        x: this.start.x + offset * Math.sin( rightAngle ),
+        y: this.start.y + offset * -Math.cos( rightAngle ),
+      } );
+    }
+
+    return points;
   }
   
 
