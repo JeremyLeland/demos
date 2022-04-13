@@ -1,0 +1,33 @@
+<title>Edge Offset Lines Test</title>
+<link rel="stylesheet" href="../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+  import { Cell } from '../src/Cell.js';
+
+  const cell = new Cell([
+    { x: 100, y: 100 },
+    { x: 100, y: 200 },
+    { x: 200, y: 200 },
+    { x: 200, y: 100 },
+  ] );
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  
+  cell.draw( ctx );
+
+  ctx.strokeStyle = 'yellow';
+  ctx.lineWidth = 1;
+
+  const points = [];
+  cell.edges.forEach( edge => points.push( ...edge.getOffsetPoints( 10 ) ) );
+
+  ctx.beginPath();
+  points.forEach( p => ctx.lineTo( p.x, p.y ) );
+  ctx.closePath();
+  ctx.stroke();
+
+</script>

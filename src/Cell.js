@@ -8,11 +8,25 @@ class Edge {
   previous;
   next;
 
-  constructor( start, end, neighbor ) {
+  constructor( start, end ) {
     this.start = start;
     this.end = end;
-    this.neighbor = neighbor;
   }
+
+  // TODO: Clearer term for this than 'offset'?
+  getOffsetPoints( offset ) {
+    const prev = this.previous.start, curr = this.start, next = this.end;
+    const prevAngle = Math.atan2( curr.y - prev.y, curr.x - prev.x );
+    const currAngle = Math.atan2( next.y - curr.y, next.x - curr.x );
+
+    const midAngle = prevAngle + deltaAngle( prevAngle, currAngle ) / 2;
+    
+    return [ {
+      x: this.start.x + offset * Math.sin( midAngle ),
+      y: this.start.y + offset * -Math.cos( midAngle ),
+    } ];
+  }
+  
 
   draw( ctx ) {
     ctx.beginPath();
@@ -31,6 +45,20 @@ class Edge {
       ctx.stroke();
     }
   }
+}
+
+function getMidAngle( prev, curr, next ) {
+  
+
+  return angles.length > 1 ? angles[ 0 ] + deltaAngle( angles[ 0 ], angles[ 1 ] ) / 2 : angles[ 0 ];
+}
+
+function fixAngle( a ) {
+  return a > Math.PI ? a - Math.PI * 2 : a < -Math.PI ? a + Math.PI * 2 : a;
+}
+
+function deltaAngle( a, b ) {
+  return fixAngle( b - a );
 }
 
 export class Cell {
