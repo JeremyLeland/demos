@@ -1,0 +1,92 @@
+<title>Voronoi Cell Test</title>
+<link rel="stylesheet" href="../../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+  import * as Voronoi from '../../src/Voronoi.js';
+  import { Curve } from '../../src/Curve.js';
+
+  const width = 800, height = 800;
+
+  const seeds = Array.from( Array( 140 ), _ => ( {
+    x: Math.random() * width, 
+    y: Math.random() * height
+  } ) );
+
+  let cells = Voronoi.getVoronoiCells( seeds );
+
+  cells.forEach( cell => {
+    cell.edges.forEach( edge => {
+      // Flag out-of-bounds cells for removal
+      if ( edge.start.x < 0 || edge.start.y < 0 || edge.start.x > width || edge.start.y > height ) {
+        cell.flagForRemoval = true;
+      }
+    } );
+  } );
+
+  cells = cells.filter( cell => { 
+    if ( cell.flagForRemoval ) {
+      cell.detachAll();
+    }
+
+    return !cell.flagForRemoval;
+  } );
+
+
+  const room = [ cells[ 0 ] ];
+
+  for ( let i = 0; i < 10; i ++ ) {
+    const cell = room[ Math.floor( Math.random() * room.length ) ];
+    const edges = cell.getUnlinkedEdges();
+
+    if ( edges.length > 0 ) {
+      const edge = edges[ Math.floor( Math.random() * edges.length ) ];
+      
+      room.forEach( c => c.linkTo( edge.neighbor ) );
+      room.push( edge.neighbor );
+    }
+  }
+  
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+
+  cells.forEach( cell => cell.draw( ctx ) );
+
+  drawEdges( room );
+
+  function drawEdges( cells ) {
+    const unvisited = new Set();
+
+    cells.forEach( 
+      cell => cell.getUnlinkedEdges().forEach( edge => unvisited.add( edge ) )
+    );
+    
+    let edge = unvisited.values().next().value;
+    const visited = new Set();
+    
+    const points = [];
+    while ( !visited.has( edge ) ) {
+      visited.add( edge );
+
+      // points.push( ...edge.getOffsetPoints( 10 ) );
+      points.push( edge.start );
+
+      edge = edge.next;
+    }
+
+    ctx.lineWidth = 2;
+
+    const curves = Curve.getLoopThroughPoints( points );
+    curves.forEach( curve => curve.draw( ctx ) );
+
+    ctx.beginPath();
+    points.forEach( p => ctx.lineTo( p.x, p.y ) );
+    ctx.closePath();
+    ctx.strokeStyle = 'red';
+    ctx.stroke();
+  }
+
+</script>
