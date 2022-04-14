@@ -18,12 +18,11 @@ class Edge {
     const prev = this.previous.start, curr = this.start, next = this.end;
     const prevAngle = Math.atan2( curr.y - prev.y, curr.x - prev.x );
     const currAngle = Math.atan2( next.y - curr.y, next.x - curr.x );
-
     const delta = deltaAngle( prevAngle, currAngle );
-    
+
     const points = [];
     
-    if ( delta < Math.PI ) {
+    if ( Math.abs( delta ) < Math.PI * 0.9 ) {
       const midAngle = prevAngle + delta * 0.5;
       points.push( {
         x: this.start.x + offset * Math.sin( midAngle ),
@@ -45,7 +44,6 @@ class Edge {
     return points;
   }
   
-
   draw( ctx ) {
     ctx.beginPath();
     ctx.moveTo( this.start.x, this.start.y );
@@ -53,6 +51,27 @@ class Edge {
     ctx.strokeStyle = this.linked ? 'dimgray' : 'white';
     ctx.lineWidth = this.linked ? 0.5 : 2;
     ctx.stroke();
+
+    // // DEBUG: Edge angles
+    // const prev = this.previous.start, curr = this.start, next = this.end;
+    // const prevAngle = Math.atan2( curr.y - prev.y, curr.x - prev.x );
+    // const currAngle = Math.atan2( next.y - curr.y, next.x - curr.x );
+    // const delta = deltaAngle( prevAngle, currAngle );
+    
+    // const midX = ( this.start.x + this.end.x ) / 2;
+    // const midY = ( this.start.y + this.end.y ) / 2;
+    // const midAngle = prevAngle + delta * 0.5;
+    // const xOff = 20 * Math.sin( midAngle );
+    // const yOff = 20 * -Math.cos( midAngle );
+    
+    // ctx.strokeStyle = 'orange';
+    // ctx.beginPath();
+    // ctx.lineTo( midX, midY );
+    // ctx.lineTo( midX + xOff, midY + yOff );
+    // ctx.stroke();
+    
+    // ctx.fillStyle = 'orange';
+    // ctx.fillText( delta.toFixed( 2 ), midX + xOff, midY + yOff ); 
 
     if ( this.neighbor ) {
       ctx.beginPath();
@@ -65,11 +84,6 @@ class Edge {
   }
 }
 
-function getMidAngle( prev, curr, next ) {
-  
-
-  return angles.length > 1 ? angles[ 0 ] + deltaAngle( angles[ 0 ], angles[ 1 ] ) / 2 : angles[ 0 ];
-}
 
 function fixAngle( a ) {
   return a > Math.PI ? a - Math.PI * 2 : a < -Math.PI ? a + Math.PI * 2 : a;
@@ -134,13 +148,20 @@ export class Cell {
     const thisEdge = this.edges.find( edge => edge.neighbor == other );
     const otherEdge = other.edges.find( edge => edge.neighbor == this );
 
-    thisEdge.linked = otherEdge.linked = true;
+    if ( thisEdge && otherEdge ) {
+      thisEdge.linked = otherEdge.linked = true;
+  
+      thisEdge.previous.next = otherEdge.next;
+      thisEdge.next.previous = otherEdge.previous;
+  
+      otherEdge.previous.next = thisEdge.next;
+      otherEdge.next.previous = thisEdge.previous;
 
-    thisEdge.previous.next = otherEdge.next;
-    thisEdge.next.previous = otherEdge.previous;
-
-    otherEdge.previous.next = thisEdge.next;
-    otherEdge.next.previous = thisEdge.previous;
+      return true;
+    }
+    else { 
+      return false;
+    }
   }
 
   unlinkFrom( other ) {

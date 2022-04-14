@@ -1,0 +1,96 @@
+<title>Grow Rooms</title>
+<link rel="stylesheet" href="../../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+  import { Cell } from '../../src/Cell.js';
+  import { Curve } from '../../src/Curve.js';
+
+  function getCellGrid( cols, rows, size = 64, offset = 32 ) {
+    const cellPoints = Array.from(
+      Array( cols + 1 ), ( _, col ) => Array.from(
+        Array( rows + 1 ), ( _, row ) => ( {
+          x: col * size + ( Math.random() - 0.5 ) * offset,
+          y: row * size + ( Math.random() - 0.5 ) * offset,
+        } )
+      )
+    );
+
+    const cellGrid = Array.from(
+      Array( cols ), ( _, col ) => Array.from(
+        Array( rows ), ( _, row ) => new Cell( [
+          cellPoints[ col ][ row ],
+          cellPoints[ col ][ row + 1 ],
+          cellPoints[ col + 1 ][ row + 1 ],
+          cellPoints[ col + 1 ][ row ],
+        ] )
+      )
+    );
+
+    for ( let row = 0; row < rows; row ++ ) {
+      for ( let col = 0; col < cols; col ++ ) {
+        const cell = cellGrid[ col ][ row ];
+
+        if ( col > 0 )  cell.edges[ 0 ].neighbor = cellGrid[ col - 1 ][ row ];
+        if ( row < rows - 1 )  cell.edges[ 1 ].neighbor = cellGrid[ col ][ row + 1 ];
+        if ( col < cols - 1 )  cell.edges[ 2 ].neighbor = cellGrid[ col + 1 ][ row ];
+        if ( row > 0 )  cell.edges[ 3 ].neighbor = cellGrid[ col ][ row - 1 ];
+      }
+    }
+
+    return cellGrid;
+  }
+
+  const cellGrid = getCellGrid( 5, 5 );
+
+  const room = [ cellGrid[ 1 ][ 1 ] ];
+
+  for ( let i = 0; i < 10; i ++ ) {
+    const cell = room[ Math.floor( Math.random() * room.length ) ];
+    const edges = cell.getUnlinkedEdges();
+
+    if ( edges.length > 0 ) {
+      const edge = edges[ Math.floor( Math.random() * edges.length ) ];
+      
+      room.forEach( c => c.linkTo( edge.neighbor ) );
+      room.push( edge.neighbor );
+    }
+  }
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  ctx.translate( 32, 32 );
+
+  for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
+    for ( let col = 0; col < cellGrid.length; col ++ ) {
+      cellGrid[ col ][ row ].draw( ctx );
+    }
+  }
+
+  const unvisited = new Set();
+
+  room.forEach( 
+    cell => cell.getUnlinkedEdges().forEach( edge => unvisited.add( edge ) )
+  );
+  
+  let edge = unvisited.values().next().value;
+  const visited = new Set();
+  
+  const points = [];
+  while ( !visited.has( edge ) ) {
+    visited.add( edge );
+
+    // points.push( ...edge.getOffsetPoints( 10 ) );
+    points.push( edge.start );
+
+    edge = edge.next;
+  }
+
+  ctx.lineWidth = 2;
+
+  const curves = Curve.getLoopThroughPoints( points );
+  curves.forEach( curve => curve.draw( ctx ) );
+
+</script>

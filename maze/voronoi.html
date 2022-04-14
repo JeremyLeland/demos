@@ -14,7 +14,7 @@
   const width = 800, height = 800;
   const MIN_EDGE_LENGTH = 40;
 
-  const seeds = Array.from( Array( 40 ), _ => ( {
+  const seeds = Array.from( Array( 20 ), _ => ( {
     x: Math.random() * width, 
     y: Math.random() * height
   } ) );
@@ -89,21 +89,13 @@
   
   let edge = cells[ 0 ].edges[ 0 ];
   const visited = new Set();
-  
+
+  const WALL_SIZE = 10;
+
   while ( !visited.has( edge ) ) {
     visited.add( edge );
-    
-    points.push( {
-      x: edge.start.x,
-      y: edge.start.y,
-    } );
 
-    if ( Math.hypot( edge.end.x - edge.next.start.x, edge.end.y - edge.next.start.y ) > 10 ) {
-      points.push( {
-        x: edge.end.x,
-        y: edge.end.y,
-      } );
-    }
+    points.push( ...edge.getOffsetPoints( WALL_SIZE ) );
     
     edge = edge.next;
   }
@@ -113,7 +105,11 @@
   // const curves = Curve.getLoopThroughPoints( points );
   // curves.forEach( curve => curve.draw( ctx ) );
   
-  ctx.fillStyle = 'lime';
-  points.forEach( point => ctx.fillRect( point.x - 2, point.y - 2, 4, 4 ) );
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#ff0';
+  ctx.beginPath();
+  points.forEach( point => ctx.lineTo( point.x, point.y ) );
+  ctx.closePath();
+  ctx.stroke();
 
 </script>
