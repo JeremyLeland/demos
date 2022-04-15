@@ -35,12 +35,12 @@ export function getSquareGrid( cols, rows, size = 64, offset = 32 ) {
   return cellGrid;
 }
 
-export function getHexGrid( cols, rows, size = 64, offset = 32 ) {
+export function getHexGrid( cols, rows, size = 64, offset = 0 ) {
   const cellPoints = Array.from(
     Array( cols * 2 + 1 ), ( _, col ) => Array.from(
       Array( rows + 2 ), ( _, row ) => ( {
-        x: ( col + ( ( col + ( row + 1 ) % 2 ) % 2 ) * 0.3 ) * size,// + ( Math.random() - 0.5 ) * offset,
-        y: row * 0.6 * size //+ ( Math.random() - 0.5 ) * offset,
+        x: ( col + ( ( col + ( row + 1 ) % 2 ) % 2 ) * 0.3 ) * size + ( Math.random() - 0.5 ) * offset,
+        y: row * 0.6 * size + ( Math.random() - 0.5 ) * offset,
       } )
     )
   );
