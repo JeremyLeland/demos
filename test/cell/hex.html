@@ -9,7 +9,7 @@
   import { Cell } from '../../src/Cell.js';
   import { Curve } from '../../src/Curve.js';
 
-  const cols = 2, rows = 3, size = 64, offset = 32;
+  const cols = 4, rows = 7, size = 64, offset = 32;
 
   // function getCellHexGrid( cols, rows, size = 64, offset = 32 ) {
     const cellPoints = Array.from(
@@ -41,55 +41,18 @@
       for ( let col = 0; col < cols; col ++ ) {
         const cell = cellGrid[ col ][ row ];
 
-        // if ( col > 0 )  cell.edges[ 0 ].neighbor = cellGrid[ col - 1 ][ row ];
-        if ( row < rows - 2 )  cell.edges[ 2 ].neighbor = cellGrid[ col ][ row + 2 ];
-        // if ( col < cols - 1 )  cell.edges[ 2 ].neighbor = cellGrid[ col + 1 ][ row ];
-        if ( row > 1 )  cell.edges[ 5 ].neighbor = cellGrid[ col ][ row - 2 ];
+        if ( col > -1 * row % 2 ) {
+          if ( row > 0 )        cell.edges[ 0 ].neighbor = cellGrid[ col - 1 * ( row - 1 ) % 2 ][ row - 1 ];
+          if ( row < rows - 1 ) cell.edges[ 1 ].neighbor = cellGrid[ col - 1 * ( row + 1 ) % 2 ][ row + 1 ];
+        }
+        if ( row < rows - 2 )   cell.edges[ 2 ].neighbor = cellGrid[ col ][ row + 2 ];
+        if ( col < cols - 1 * row % 2 ) {
+          if ( row < rows - 1 ) cell.edges[ 3 ].neighbor = cellGrid[ col + 1 * row % 2 ][ row + 1 ];
+          if ( row > 0 )        cell.edges[ 4 ].neighbor = cellGrid[ col + 1 * row % 2 ][ row - 1 ];
+        }
+        if ( row > 1 )          cell.edges[ 5 ].neighbor = cellGrid[ col ][ row - 2 ];
       }
     }
-
-  //   return cellGrid;
-  // }
-
-  // TODO: Make a hex grid instead of rectangle grid, just for kicks
-
-  // function getHexRooms( cols, rows ) {
-  //   const roomHex = Array( cols ).fill().map( x => Array( rows ).fill() );
-  //   const rooms = [];
-
-  //   for ( let row = 0; row < roomHex[ 0 ].length; row ++ ) {
-  //     for ( let col = 0; col < roomHex.length; col ++ ) {
-  //       const room = new Room( ( col + ( row % 2 == 0 ? 1 : 0.5 ) ) * SIZE, ( row + 0.5 ) * SIZE );
-  //       roomHex[ col ][ row ] = room;
-  //       rooms.push( room );
-
-  //       // TODO: Make sure links are added in clockwise order (like for grid above)
-
-  //       if ( col > 0 ) {
-  //         const left = roomHex[ col - 1 ][ row ];
-  //         room.neighbors.push( left );
-  //         left.neighbors.push( room );
-  //       }
-  //       if ( row > 0 )  {
-  //         const leftCol = col - ( row % 2 );
-  //         const rightCol = leftCol + 1;
-
-  //         if ( leftCol >= 0 ) {
-  //           const topLeft = roomHex[ leftCol ][ row - 1 ];
-  //           room.neighbors.push( topLeft );
-  //           topLeft.neighbors.push( room );
-  //         }
-  //         if ( rightCol < roomHex.length ) {
-  //           const topRight = roomHex[ rightCol ][ row - 1 ];
-  //           room.neighbors.push( topRight );
-  //           topRight.neighbors.push( room );
-  //         }
-  //       }
-  //     }
-  //   }
-
-  //   return rooms;
-  // }
 
   // const cellGrid = getCellHexGrid( 2, 2 );
 
