@@ -9,14 +9,13 @@
   import { Cell } from '../../src/Cell.js';
   import { Curve } from '../../src/Curve.js';
 
-  const cols = 4, rows = 7, size = 64, offset = 32;
-
-  // function getCellHexGrid( cols, rows, size = 64, offset = 32 ) {
+  
+  function getCellHexGrid( cols, rows, size = 64, offset = 32 ) {
     const cellPoints = Array.from(
       Array( cols * 2 + 1 ), ( _, col ) => Array.from(
         Array( rows + 2 ), ( _, row ) => ( {
-          x: ( col + ( ( col + ( ( row + 1 ) % 2 ) ) % 2 ) * 0.3 ) * size,// + ( Math.random() - 0.5 ) * offset,
-          y: row * 0.6 * size,// + ( Math.random() - 0.5 ) * offset,
+          x: ( col + ( ( col + ( row + 1 ) % 2 ) % 2 ) * 0.3 ) * size + ( Math.random() - 0.5 ) * offset,
+          y: row * 0.6 * size + ( Math.random() - 0.5 ) * offset,
         } )
       )
     );
@@ -54,8 +53,10 @@
       }
     }
 
-  // const cellGrid = getCellHexGrid( 2, 2 );
+    return cellGrid;
+  }
 
+  const cellGrid = getCellHexGrid( 5, 18 );
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
   ctx.translate( 32, 32 );
@@ -63,14 +64,6 @@
   for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
     for ( let col = 0; col < cellGrid.length; col ++ ) {
       cellGrid[ col ][ row ].draw( ctx );
-    }
-  }
-
-  ctx.fillStyle = 'red';
-  for ( let row = 0; row < cellPoints[ 0 ].length; row ++ ) {
-    for ( let col = 0; col < cellPoints.length; col ++ ) {
-      const point = cellPoints[ col ][ row ];
-      ctx.fillRect( point.x - 1, point.y - 1, 2, 2 );
     }
   }
 
