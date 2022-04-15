@@ -22,7 +22,7 @@ class Edge {
 
     const points = [];
     
-    if ( Math.abs( delta ) < Math.PI ) {
+    if ( Math.abs( delta ) < Math.PI - 1e-6 ) {
       const midAngle = prevAngle + delta * 0.5;
       points.push( {
         x: this.start.x + offset * Math.sin( midAngle ),
@@ -30,8 +30,8 @@ class Edge {
       } );
     }
     else {
-      const leftAngle = prevAngle + delta * 0.25;
-      const rightAngle = prevAngle + delta * 0.75;
+      const leftAngle = prevAngle + Math.PI * 0.25;
+      const rightAngle = prevAngle + Math.PI * 0.75;
       points.push( {
         x: this.start.x + offset * Math.sin( leftAngle ),
         y: this.start.y + offset * -Math.cos( leftAngle ),
@@ -64,14 +64,17 @@ class Edge {
     // const xOff = 20 * Math.sin( midAngle );
     // const yOff = 20 * -Math.cos( midAngle );
     
-    // ctx.strokeStyle = 'orange';
-    // ctx.beginPath();
-    // ctx.lineTo( midX, midY );
-    // ctx.lineTo( midX + xOff, midY + yOff );
-    // ctx.stroke();
-    
-    // ctx.fillStyle = 'orange';
-    // ctx.fillText( delta.toFixed( 2 ), midX + xOff, midY + yOff ); 
+    // if ( !this.linked ) {
+
+    //   ctx.strokeStyle = 'orange';
+    //   ctx.beginPath();
+    //   ctx.lineTo( this.start.x, this.start.y );
+    //   ctx.lineTo( this.start.x + xOff, this.start.y + yOff );
+    //   ctx.stroke();
+      
+    //   ctx.fillStyle = 'orange';
+    //   ctx.fillText( delta.toFixed( 4 ), this.start.x + xOff, this.start.y + yOff ); 
+    // }
 
     if ( this.neighbor ) {
       ctx.beginPath();

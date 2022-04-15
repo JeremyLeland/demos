@@ -14,7 +14,7 @@
   const width = 800, height = 800;
   const MIN_EDGE_LENGTH = 40;
 
-  const seeds = Array.from( Array( 20 ), _ => ( {
+  const seeds = Array.from( Array( 120 ), _ => ( {
     x: Math.random() * width, 
     y: Math.random() * height
   } ) );
@@ -94,6 +94,8 @@
 
   while ( !visited.has( edge ) ) {
     visited.add( edge );
+
+    // TODO: Don't add point if edge is less than MIN_EDGE_LENGTH?
 
     points.push( ...edge.getOffsetPoints( WALL_SIZE ) );
     

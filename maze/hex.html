@@ -2,7 +2,7 @@
 <link rel="stylesheet" href="../style.css">
 
 <body>
-  <canvas id="canvas" width="800px" height="800px"></canvas>
+  <canvas id="canvas" width="900px" height="900px"></canvas>
 </body>
 
 <script type="module">
@@ -11,10 +11,10 @@
   import { Curve } from '../src/Curve.js';
   import * as CellGrid from '../src/CellGrid.js';
   
-  const width = 800, height = 800;
+  const width = 900, height = 900;
   const MIN_EDGE_LENGTH = 40;
 
-  const cellGrid = CellGrid.getHexGrid( 3, 12, 96, 32 );
+  const cellGrid = CellGrid.getHexGrid( 4, 12, 96, 32 );
 
   
   function doMazeLink( current, previous ) {
@@ -56,8 +56,6 @@
     edge = edge.next;
   }
 
-  // TODO: Don't get so hung up on curves, maybe just try breaking up lines and perturbing the points we have?
-  
   ctx.lineWidth = 1;
   const curves = Curve.getLoopThroughPoints( points );
   curves.forEach( curve => curve.draw( ctx ) );
