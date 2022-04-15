@@ -22,7 +22,7 @@ class Edge {
 
     const points = [];
     
-    if ( Math.abs( delta ) < Math.PI * 0.9 ) {
+    if ( -Math.PI <= delta && delta <= Math.PI ) {
       const midAngle = prevAngle + delta * 0.5;
       points.push( {
         x: this.start.x + offset * Math.sin( midAngle ),
@@ -86,7 +86,7 @@ class Edge {
 
 
 function fixAngle( a ) {
-  return a > Math.PI ? a - Math.PI * 2 : a < -Math.PI ? a + Math.PI * 2 : a;
+  return a > Math.PI ? a - Math.PI * 2 : a <= -Math.PI ? a + Math.PI * 2 : a;
 }
 
 function deltaAngle( a, b ) {

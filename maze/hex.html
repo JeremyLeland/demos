@@ -1,0 +1,71 @@
+<title>Hex Maze</title>
+<link rel="stylesheet" href="../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+
+  import { Cell } from '../src/Cell.js';
+  import { Curve } from '../src/Curve.js';
+  import * as CellGrid from '../src/CellGrid.js';
+  
+  const width = 800, height = 800;
+  const MIN_EDGE_LENGTH = 40;
+
+  const cellGrid = CellGrid.getHexGrid( 5, 15 );
+
+  
+  function doMazeLink( current, previous ) {
+    if ( current == null || current.edges.filter( e => e.linked ).length > 0 ) {
+      return;
+    }
+    
+    if ( previous ) {
+      previous.linkTo( current );
+    }
+      
+    const neighbors = current.edges.map( e => e.neighbor ).sort( ( a, b ) => Math.random() > 0.5 ? 1 : -1 );
+    neighbors.forEach( next => doMazeLink( next, current ) );
+  }
+    
+  doMazeLink( cellGrid[ 0 ][ 0 ] );
+    
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+
+  for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
+    for ( let col = 0; col < cellGrid.length; col ++ ) {
+      cellGrid[ col ][ row ].draw( ctx );
+    }
+  }
+  
+  const points = [];
+  
+  let edge = cellGrid[ 0 ][ 0 ].edges[ 0 ];
+  const visited = new Set();
+
+  const WALL_SIZE = 10;
+
+  while ( !visited.has( edge ) ) {
+    visited.add( edge );
+
+    points.push( ...edge.getOffsetPoints( WALL_SIZE ) );
+    
+    edge = edge.next;
+  }
+
+  // TODO: Don't get so hung up on curves, maybe just try breaking up lines and perturbing the points we have?
+  
+  // ctx.lineWidth = 1;
+  // const curves = Curve.getLoopThroughPoints( points );
+  // curves.forEach( curve => curve.draw( ctx ) );
+  
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#f00';
+  ctx.beginPath();
+  points.forEach( point => ctx.lineTo( point.x, point.y ) );
+  ctx.closePath();
+  ctx.stroke();
+
+</script>
