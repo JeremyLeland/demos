@@ -8,13 +8,14 @@
 <script type="module">
 
   import { Cell } from '../src/Cell.js';
+  import { Curve } from '../src/Curve.js';
   import * as Voronoi from '../src/Voronoi.js';
 
   
   const width = 800, height = 800;
   const MIN_EDGE_LENGTH = 40;
 
-  const seeds = Array.from( Array( 120 ), _ => ( {
+  const seeds = Array.from( Array( 100 ), _ => ( {
     x: Math.random() * width, 
     y: Math.random() * height
   } ) );
@@ -90,28 +91,69 @@
   let edge = cells[ 0 ].edges[ 0 ];
   const visited = new Set();
 
-  const WALL_SIZE = 10;
+  const WALL_SIZE = 15;
 
   while ( !visited.has( edge ) ) {
     visited.add( edge );
 
     // TODO: Don't add point if edge is less than MIN_EDGE_LENGTH?
 
-    points.push( ...edge.getOffsetPoints( WALL_SIZE ) );
+    points.push( ...edge.getOffsetPoints( ( Math.random() + 0.5 ) * WALL_SIZE ) );
     
     edge = edge.next;
   }
 
   // TODO: Don't get so hung up on curves, maybe just try breaking up lines and perturbing the points we have?
-  
+  // ctx.lineWidth = 1;
   // const curves = Curve.getLoopThroughPoints( points );
   // curves.forEach( curve => curve.draw( ctx ) );
+
+  const subpoints = [];
+
+  for ( let i = 0; i < points.length; i ++ ) {
+    const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
+    subpoints.push( ...subdivideLine( current, next, 20 ) );
+  }
+
+  const offset = 8;
+  subpoints.forEach( s => {
+    s.x += ( Math.random() - 0.5 ) * offset;
+    s.y += ( Math.random() - 0.5 ) * offset;
+  })
   
   ctx.lineWidth = 1;
   ctx.strokeStyle = '#ff0';
   ctx.beginPath();
-  points.forEach( point => ctx.lineTo( point.x, point.y ) );
+  subpoints.forEach( p => ctx.lineTo( p.x, p.y ) );
   ctx.closePath();
   ctx.stroke();
+
+  ctx.fillStyle = '#4208';
+  ctx.fill();
+
+  // ctx.fillStyle = 'red';
+  // points.forEach( p => ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) );
+
+  // ctx.fillStyle = 'green';
+  // subpoints.forEach( p => ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) );
+
+  
+  // NOTE: This function intentionally leaves off the last point (b)
+  //       This way it is easier to string together subdivided lines
+  function subdivideLine( a, b, maxLength ) {
+    const totalLength = Math.hypot( b.x - a.x, b.y - a.y );
+    const numSegments = Math.ceil( totalLength / maxLength );
+    
+    const dx = ( b.x - a.x ) / numSegments;
+    const dy = ( b.y - a.y ) / numSegments;
+
+    const subpoints = [];
+
+    for ( let i = 0; i < numSegments; i ++ ) {
+      subpoints.push( { x: a.x + dx * i, y: a.y + dy * i } );
+    }
+
+    return subpoints;
+  }
 
 </script>
