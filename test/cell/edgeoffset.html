@@ -1,21 +1,29 @@
 <title>Edge Offset Lines Test</title>
-<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../../style.css">
 
 <body>
   <canvas id="canvas" width="800px" height="800px"></canvas>
 </body>
 
 <script type="module">
-  import { Cell } from '../src/Cell.js';
+  import { Cell } from '../../src/Cell.js';
 
-  const cell = new Cell([
+  // const cell = new Cell([
+  //   { x: 100, y: 100 },
+  //   { x: 100, y: 300 },
+  //   { x: 200, y: 300 },
+  //   { x: 200, y: 200 },
+  //   { x: 200, y: 300 },
+  //   { x: 300, y: 300 },
+  //   { x: 300, y: 100 },
+  // ] );
+
+  const cell = new Cell( [
     { x: 100, y: 100 },
-    { x: 100, y: 300 },
-    { x: 200, y: 300 },
-    { x: 200, y: 200 },
-    { x: 200, y: 300 },
-    { x: 300, y: 300 },
+    { x: 200, y: 160 },
+    { x: 220, y: 140 },
     { x: 300, y: 100 },
+    { x: 200, y: 80 },
   ] );
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );

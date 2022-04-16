@@ -2,15 +2,17 @@ class Edge {
   start;
   end;
 
+  parent;
   neighbor;
   linked = false;
 
   previous;
   next;
 
-  constructor( start, end ) {
+  constructor( start, end, parent ) {
     this.start = start;
     this.end = end;
+    this.parent = parent;
   }
 
   getLength() {
@@ -19,29 +21,49 @@ class Edge {
 
   // TODO: Clearer term for this than 'offset'?
   getOffsetPoints( offset ) {
-    const prev = this.previous.start, curr = this.start, next = this.end;
-    const prevAngle = Math.atan2( curr.y - prev.y, curr.x - prev.x );
-    const currAngle = Math.atan2( next.y - curr.y, next.x - curr.x );
-    const delta = deltaAngle( prevAngle, currAngle );
+    
+    const points = [];
+    
+    const startAngle = Math.atan2( this.parent.center.y - this.start.y, this.parent.center.x - this.start.x );
+    points.push( {
+      x: this.start.x + Math.cos( startAngle ) * offset,
+      y: this.start.y + Math.sin( startAngle ) * offset,
+    } );
 
-    if ( Math.abs( delta ) < Math.PI - 1e-6 ) {
-      const midAngle = prevAngle + delta * 0.5;
-      return [ {
-        x: this.start.x + offset * Math.sin( midAngle ),
-        y: this.start.y + offset * -Math.cos( midAngle ),
-      } ];
+    if ( this.next.parent != this.parent ) {
+      const endAngle = Math.atan2( this.parent.center.y - this.end.y, this.parent.center.x - this.end.x );
+
+      points.push( {
+        x: this.end.x + Math.cos( endAngle ) * offset,
+        y: this.end.y + Math.sin( endAngle ) * offset,
+      } );
     }
-    else {
-      const leftAngle = prevAngle + Math.PI * 0.25;
-      const rightAngle = prevAngle + Math.PI * 0.75;
-      return [ {
-        x: this.start.x + offset * Math.sin( leftAngle ),
-        y: this.start.y + offset * -Math.cos( leftAngle ),
-      }, {
-        x: this.start.x + offset * Math.sin( rightAngle ),
-        y: this.start.y + offset * -Math.cos( rightAngle ),
-      } ];
-    }
+
+    return points;
+
+    // const prev = this.previous.start, curr = this.start, next = this.end;
+    // const prevAngle = Math.atan2( curr.y - prev.y, curr.x - prev.x );
+    // const currAngle = Math.atan2( next.y - curr.y, next.x - curr.x );
+    // const delta = deltaAngle( prevAngle, currAngle );
+
+    // if ( Math.abs( delta ) < Math.PI - 1e-6 ) {
+    //   const midAngle = prevAngle + delta * 0.5;
+    //   return [ {
+    //     x: this.start.x + offset * Math.sin( midAngle ),
+    //     y: this.start.y + offset * -Math.cos( midAngle ),
+    //   } ];
+    // }
+    // else {
+    //   const leftAngle = prevAngle + Math.PI * 0.25;
+    //   const rightAngle = prevAngle + Math.PI * 0.75;
+    //   return [ {
+    //     x: this.start.x + offset * Math.sin( leftAngle ),
+    //     y: this.start.y + offset * -Math.cos( leftAngle ),
+    //   }, {
+    //     x: this.start.x + offset * Math.sin( rightAngle ),
+    //     y: this.start.y + offset * -Math.cos( rightAngle ),
+    //   } ];
+    // }
   }
   
   draw( ctx ) {
@@ -112,7 +134,7 @@ export class Cell {
 
     for ( let i = 0; i < points.length; i ++ ) {
       const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
-      this.edges.push( new Edge( current, next ) );
+      this.edges.push( new Edge( current, next, this ) );
     }
 
     for ( let i = 0; i < this.edges.length; i ++ ) {

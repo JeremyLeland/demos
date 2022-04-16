@@ -87,9 +87,9 @@
   while ( !visited.has( edge ) ) {
     visited.add( edge );
 
-    if ( edge.getLength() > WALL_SIZE ) {
+    // if ( edge.getLength() > WALL_SIZE ) {
       points.push( ...edge.getOffsetPoints( ( Math.random() + 0.5 ) * WALL_SIZE ) );
-    }
+    // }
     
     edge = edge.next;
   }
@@ -107,11 +107,11 @@
     subpoints.push( ...subdivideLine( current, next, 20 ) );
   }
 
-  const offset = 8;
-  subpoints.forEach( s => {
-    s.x += ( Math.random() - 0.5 ) * offset;
-    s.y += ( Math.random() - 0.5 ) * offset;
-  })
+  // const offset = 8;
+  // subpoints.forEach( s => {
+  //   s.x += ( Math.random() - 0.5 ) * offset;
+  //   s.y += ( Math.random() - 0.5 ) * offset;
+  // })
   
   ctx.lineWidth = 2;
   ctx.strokeStyle = '#ff0';
@@ -123,12 +123,12 @@
   ctx.fillStyle = '#420a';
   ctx.fill();
 
-  // ctx.fillStyle = 'red';
-  // points.forEach( p => ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) );
-
-  // ctx.fillStyle = 'green';
-  // subpoints.forEach( p => ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) );
-
+  
+  ctx.fillStyle = 'green';
+  subpoints.forEach( p => ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) );
+  
+  ctx.fillStyle = 'red';
+  points.forEach( p => ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) );
   
   // NOTE: This function intentionally leaves off the last point (b)
   //       This way it is easier to string together subdivided lines
