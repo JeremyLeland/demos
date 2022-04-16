@@ -13,6 +13,10 @@ class Edge {
     this.end = end;
   }
 
+  getLength() {
+    return Math.hypot( this.end.x - this.start.x, this.end.y - this.start.y );
+  }
+
   // TODO: Clearer term for this than 'offset'?
   getOffsetPoints( offset ) {
     const prev = this.previous.start, curr = this.start, next = this.end;

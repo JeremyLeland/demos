@@ -24,7 +24,7 @@
   cells.forEach( cell => {
     cell.edges.forEach( edge => {
       // Detach edges that are too small to fit through
-      if ( Math.hypot( edge.end.x - edge.start.x, edge.end.y - edge.start.y ) < MIN_EDGE_LENGTH ) {
+      if ( edge.getLength() < MIN_EDGE_LENGTH ) {
         cell.detachEdge( edge );
       }
 
@@ -38,10 +38,7 @@
   cells = cells.filter( cell => cell.getUnlinkedEdges().length > 0 );
 
   for ( let i = 0; i < 10; i ++ ) {
-    const cell = cells.find( e => e.getUnlinkedEdges().length > 4 );
-    if ( cell ) {
-      cell.detachAll();
-    }
+    cells.find( e => e.getUnlinkedEdges().length > 4 )?.detachAll();
   }
 
   cells = cells.filter( cell => cell.getUnlinkedEdges().length > 0 );
@@ -78,7 +75,7 @@
   // } );
   
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
-  // cells.forEach( seed => seed.draw( ctx ) );
+  cells.forEach( seed => seed.draw( ctx ) );
   
   const points = [];
   
@@ -90,15 +87,18 @@
   while ( !visited.has( edge ) ) {
     visited.add( edge );
 
-    // TODO: Don't add point if edge is less than MIN_EDGE_LENGTH?
-
-    points.push( ...edge.getOffsetPoints( ( Math.random() + 0.5 ) * WALL_SIZE ) );
+    if ( edge.getLength() > WALL_SIZE ) {
+      points.push( ...edge.getOffsetPoints( ( Math.random() + 0.5 ) * WALL_SIZE ) );
+    }
     
     edge = edge.next;
   }
 
   // TODO: Do this part in edge, so we know our normals and whatnot
   //       That way, we can guarentee points fall within given allowable offset
+
+  // TODO: Alternatively, make the offset part of the subdivision step, 
+  //       so we can at least move along normal of larger line
 
   const subpoints = [];
 
