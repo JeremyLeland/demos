@@ -8,7 +8,6 @@
 <script type="module">
 
   import { Cell } from '../src/Cell.js';
-  import { Curve } from '../src/Curve.js';
   import * as Voronoi from '../src/Voronoi.js';
 
   
@@ -31,26 +30,21 @@
 
       // Flag out-of-bounds cells for removal
       if ( edge.start.x < 0 || edge.start.y < 0 || edge.start.x > width || edge.start.y > height ) {
-        cell.flagForRemoval = true;
+        cell.detachAll();
       }
     } );
   } );
 
-  // TODO: This doesn't seem to be creating holes in the map like I want it to...
+  cells = cells.filter( cell => cell.getUnlinkedEdges().length > 0 );
+
   for ( let i = 0; i < 10; i ++ ) {
-    const cell = cells.find( e => e.getUnlinkedEdges().length > 2 );
+    const cell = cells.find( e => e.getUnlinkedEdges().length > 4 );
     if ( cell ) {
-      cell.flagForRemoval = true;
+      cell.detachAll();
     }
   }
 
-  cells = cells.filter( cell => { 
-    if ( cell.flagForRemoval ) {
-      cell.detachAll();
-    }
-
-    return !cell.flagForRemoval;
-  } );
+  cells = cells.filter( cell => cell.getUnlinkedEdges().length > 0 );
 
   
   function doMazeLink( current, previous ) {
@@ -68,23 +62,23 @@
     
     doMazeLink( cells[ 0 ] );
     
-    cells.forEach( cell => {
-      if ( cell.edges.filter( e => e.linked ).length == 0 ) {
-        cell.flagForRemoval = true;
-      }
-    } );
+  //   cells.forEach( cell => {
+  //     if ( cell.edges.filter( e => e.linked ).length == 0 ) {
+  //       cell.flagForRemoval = true;
+  //     }
+  //   } );
     
-    // TODO: Don't do this twice
-    cells = cells.filter( cell => { 
-      if ( cell.flagForRemoval ) {
-        cell.detachAll();
-      }
+  //   // TODO: Don't do this twice
+  //   cells = cells.filter( cell => { 
+  //     if ( cell.flagForRemoval ) {
+  //       cell.detachAll();
+  //     }
       
-    return !cell.flagForRemoval;
-  } );
+  //   return !cell.flagForRemoval;
+  // } );
   
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
-  cells.forEach( seed => seed.draw( ctx ) );
+  // cells.forEach( seed => seed.draw( ctx ) );
   
   const points = [];
   
@@ -103,10 +97,8 @@
     edge = edge.next;
   }
 
-  // TODO: Don't get so hung up on curves, maybe just try breaking up lines and perturbing the points we have?
-  // ctx.lineWidth = 1;
-  // const curves = Curve.getLoopThroughPoints( points );
-  // curves.forEach( curve => curve.draw( ctx ) );
+  // TODO: Do this part in edge, so we know our normals and whatnot
+  //       That way, we can guarentee points fall within given allowable offset
 
   const subpoints = [];
 
@@ -121,14 +113,14 @@
     s.y += ( Math.random() - 0.5 ) * offset;
   })
   
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 2;
   ctx.strokeStyle = '#ff0';
   ctx.beginPath();
   subpoints.forEach( p => ctx.lineTo( p.x, p.y ) );
   ctx.closePath();
   ctx.stroke();
 
-  ctx.fillStyle = '#4208';
+  ctx.fillStyle = '#420a';
   ctx.fill();
 
   // ctx.fillStyle = 'red';
