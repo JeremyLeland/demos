@@ -24,14 +24,14 @@ class Edge {
     
     const points = [];
     
-    const startAngle = Math.atan2( this.parent.center.y - this.start.y, this.parent.center.x - this.start.x );
+    const startAngle = Math.atan2( this.parent.y - this.start.y, this.parent.x - this.start.x );
     points.push( {
       x: this.start.x + Math.cos( startAngle ) * offset,
       y: this.start.y + Math.sin( startAngle ) * offset,
     } );
 
     if ( this.next.parent != this.parent ) {
-      const endAngle = Math.atan2( this.parent.center.y - this.end.y, this.parent.center.x - this.end.x );
+      const endAngle = Math.atan2( this.parent.y - this.end.y, this.parent.x - this.end.x );
 
       points.push( {
         x: this.end.x + Math.cos( endAngle ) * offset,
@@ -101,7 +101,7 @@ class Edge {
     if ( this.neighbor ) {
       ctx.beginPath();
       ctx.moveTo( ( this.start.x + this.end.x ) / 2, ( this.start.y + this.end.y ) / 2 );
-      ctx.lineTo( this.neighbor.center.x, this.neighbor.center.y );
+      ctx.lineTo( this.neighbor.x, this.neighbor.y );
       ctx.strokeStyle = this.linked ? 'green' : 'blue';
       ctx.lineWidth = this.linked ? 1 : 0.5;
       ctx.stroke();
@@ -118,18 +118,22 @@ function deltaAngle( a, b ) {
 }
 
 export class Cell {
-  center = { x: 0, y: 0 };
   edges = [];
+
+  // Node info for pathfinding
+  x = 0;
+  y = 0;
+  links = new Set();
 
   constructor( points ) {
     points.forEach( point => {
-      this.center.x += point.x;
-      this.center.y += point.y;
+      this.x += point.x;
+      this.y += point.y;
     } );
 
     if ( points.length > 0 ) {
-      this.center.x /= points.length;
-      this.center.y /= points.length;
+      this.x /= points.length;
+      this.y /= points.length;
     }
 
     for ( let i = 0; i < points.length; i ++ ) {
@@ -150,7 +154,7 @@ export class Cell {
     this.edges.forEach( edge => edge.draw( ctx ) );
 
     ctx.fillStyle = this.edges.length > 0 ? 'olive' : 'darkred';
-    ctx.fillRect( this.center.x - 1, this.center.y - 1, 2, 2 );
+    ctx.fillRect( this.x - 1, this.y - 1, 2, 2 );
   }
 
   detachEdge( edge ) {
@@ -159,6 +163,8 @@ export class Cell {
 
       edge.neighbor = otherEdge.neighbor = null;
       edge.linked = otherEdge.linked = false;
+
+      this.links.delete( edge.neighbor );
 
       // TODO: Fix edge prev/next
     }
@@ -181,6 +187,8 @@ export class Cell {
       otherEdge.previous.next = thisEdge.next;
       otherEdge.next.previous = thisEdge.previous;
 
+      this.links.add( other );
+
       return true;
     }
     else { 
@@ -189,7 +197,9 @@ export class Cell {
   }
 
   unlinkFrom( other ) {
+    // TODO: Fix other links
 
+    this.links.delete( other );
   }
 
   getUnlinkedEdges() {

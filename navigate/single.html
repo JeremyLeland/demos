@@ -9,6 +9,7 @@
 
   import { Cell } from '../src/Cell.js';
   import * as CellGrid from '../src/CellGrid.js';
+  import * as Pathfinding from '../src/Pathfinding.js';
   
   const width = 900, height = 900;
 
@@ -38,8 +39,8 @@
 
       // TODO: Pick random spot on random edge, 
       //       random distance between that spot and center?
-      this.x = cell.center.x;
-      this.y = cell.center.y;
+      this.x = cell.x;
+      this.y = cell.y;
     }
 
     draw( ctx ) {
@@ -54,7 +55,7 @@
 
       ctx.beginPath();
       ctx.lineTo( this.x, this.y );
-      ctx.lineTo( this.goalCell.center.x, this.goalCell.center.y );
+      ctx.lineTo( this.goalCell.x, this.goalCell.y );
       ctx.lineWidth = 2;
       ctx.strokeStyle = 'yellow';
       ctx.setLineDash( [ 4, 2 ] );
@@ -66,6 +67,11 @@
   const actor = new Actor();
   actor.spawnInCell( cellGrid[ 0 ][ 0 ] );
   actor.goalCell = cellGrid[ 0 ][ 1 ];
+
+  const path = Pathfinding.getPath( actor.currentCell, actor.goalCell );
+
+  ctx.strokeStyle = 'orange';
+  ctx.stroke( Pathfinding.getDrawPath( path ) );
 
   actor.draw( ctx );
 
