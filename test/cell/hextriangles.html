@@ -1,0 +1,88 @@
+<title>Cell Test</title>
+<link rel="stylesheet" href="../../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+  import { Cell } from '../../src/Cell.js';
+  import { Curve } from '../../src/Curve.js';
+ 
+  function getCellHexTriangleGrid( cols, rows, size = 64, offset = 32 ) {
+    const cellPoints = Array.from(
+      Array( cols + 1 ), ( _, col ) => Array.from(
+        Array( rows + 1 ), ( _, row ) => ( {
+          x: ( col + ( ( /*col +*/ ( row + 1 ) % 2 ) /*% 2*/ ) * 0.5 ) * size + ( Math.random() - 0.5 ) * offset,
+          y: row * size + ( Math.random() - 0.5 ) * offset,
+        } )
+      )
+    );
+
+    const cellGrid = Array.from( Array( cols * 2 ), _ => Array.from( Array( rows ).fill() ) );
+
+    for ( let row = 0; row < rows; row ++ ) {
+      for ( let col = 0; col < cols; col ++ ) {
+        let c = col, r = row;
+        cellGrid[ col * 2 ][ row ] = new Cell( [
+          cellPoints[ c ][ r ],
+          cellPoints[ c ][ r + 1 ],
+          cellPoints[ c + 1 ][ r + 1 ],
+        ] );
+        cellGrid[ col * 2 + 1 ][ row ] = new Cell( [
+          cellPoints[ c ][ r ],
+          cellPoints[ c + 1 ][ r + 1 ],
+          cellPoints[ c + 1 ][ r ],
+        ] );
+      }
+      
+      row ++;
+
+      for ( let col = 0; col < cols; col ++ ) {
+        let c = col, r = row;
+        cellGrid[ col * 2 ][ row ] = new Cell( [
+          cellPoints[ c ][ r ],
+          cellPoints[ c ][ r + 1 ],
+          cellPoints[ c + 1 ][ r ],
+        ] );
+        cellGrid[ col * 2 + 1 ][ row ] = new Cell( [
+          cellPoints[ c + 1 ][ r ],
+          cellPoints[ c ][ r + 1 ],
+          cellPoints[ c + 1 ][ r + 1 ],
+        ] );
+      }
+    }
+
+    // for ( let row = 0; row < rows; row ++ ) {
+    //   for ( let col = 0; col < cols; col ++ ) {
+    //     const cell = cellGrid[ col ][ row ];
+
+    //     if ( col > -1 * row % 2 ) {
+    //       if ( row > 0 )        cell.edges[ 0 ].neighbor = cellGrid[ col - 1 * ( row - 1 ) % 2 ][ row - 1 ];
+    //       if ( row < rows - 1 ) cell.edges[ 1 ].neighbor = cellGrid[ col - 1 * ( row + 1 ) % 2 ][ row + 1 ];
+    //     }
+    //     if ( row < rows - 2 )   cell.edges[ 2 ].neighbor = cellGrid[ col ][ row + 2 ];
+    //     if ( col < cols - 1 * row % 2 ) {
+    //       if ( row < rows - 1 ) cell.edges[ 3 ].neighbor = cellGrid[ col + 1 * row % 2 ][ row + 1 ];
+    //       if ( row > 0 )        cell.edges[ 4 ].neighbor = cellGrid[ col + 1 * row % 2 ][ row - 1 ];
+    //     }
+    //     if ( row > 1 )          cell.edges[ 5 ].neighbor = cellGrid[ col ][ row - 2 ];
+    //   }
+    // }
+
+    return cellGrid;
+  }
+
+  const cellGrid = getCellHexTriangleGrid( 10, 10, 64, 32 );
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  ctx.translate( 32, 32 );
+
+  for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
+    for ( let col = 0; col < cellGrid.length; col ++ ) {
+      cellGrid[ col ][ row ].draw( ctx );
+    }
+  }
+
+
+</script>
