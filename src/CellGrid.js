@@ -80,3 +80,17 @@ export function getHexGrid( cols, rows, size = 64, offset = 0 ) {
 
   return cellGrid;
 }
+
+// TODO: Better name for this?
+export function doMazeLink( current, previous ) {
+  if ( current == null || current.edges.filter( e => e.linked ).length > 0 ) {
+    return;
+  }
+  
+  if ( previous ) {
+    previous.linkTo( current );
+  }
+    
+  const neighbors = current.edges.map( e => e.neighbor ).sort( ( a, b ) => Math.random() > 0.5 ? 1 : -1 );
+  neighbors.forEach( next => doMazeLink( next, current ) );
+}

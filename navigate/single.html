@@ -1,0 +1,72 @@
+<title>Single Actor Navigating Hex Maze</title>
+<link rel="stylesheet" href="../style.css">
+
+<body>
+  <canvas id="canvas" width="900px" height="900px"></canvas>
+</body>
+
+<script type="module">
+
+  import { Cell } from '../src/Cell.js';
+  import * as CellGrid from '../src/CellGrid.js';
+  
+  const width = 900, height = 900;
+
+  const cellGrid = CellGrid.getHexGrid( 2, 4, 128, 64 );
+  CellGrid.doMazeLink( cellGrid[ 0 ][ 0 ] );
+    
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  ctx.translate( 32, 32 );
+
+  for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
+    for ( let col = 0; col < cellGrid.length; col ++ ) {
+      cellGrid[ col ][ row ].draw( ctx );
+    }
+  }
+
+  class Actor {
+    x = 0;
+    y = 0;
+    angle = 0;
+    size = 10;
+
+    currentCell;
+    goalCell;
+
+    spawnInCell( cell ) {
+      this.currentCell = cell;
+
+      // TODO: Pick random spot on random edge, 
+      //       random distance between that spot and center?
+      this.x = cell.center.x;
+      this.y = cell.center.y;
+    }
+
+    draw( ctx ) {
+      ctx.save();
+      ctx.translate( this.x, this.y );
+      ctx.rotate( this.angle );
+      ctx.fillStyle = 'red';
+      ctx.strokeStyle = 'black';
+      ctx.fillRect( -this.size, -this.size, this.size * 2, this.size * 2 );
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.lineTo( this.x, this.y );
+      ctx.lineTo( this.goalCell.center.x, this.goalCell.center.y );
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'yellow';
+      ctx.setLineDash( [ 4, 2 ] );
+      ctx.stroke();
+      ctx.setLineDash( [] );
+    }
+  }
+
+  const actor = new Actor();
+  actor.spawnInCell( cellGrid[ 0 ][ 0 ] );
+  actor.goalCell = cellGrid[ 0 ][ 1 ];
+
+  actor.draw( ctx );
+
+</script>
