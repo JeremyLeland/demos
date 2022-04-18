@@ -61,7 +61,7 @@ export function getPath( start, goal ) {
 
 export function getDrawPath( path ) {
   const drawPath = new Path2D();
-  path.forEach( e => drawPath.lineTo( e.x, e.y ) );
+  path?.forEach( e => drawPath.lineTo( e.x, e.y ) );
   return drawPath;
 }
 
