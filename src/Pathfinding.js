@@ -59,12 +59,6 @@ export function getPath( start, goal ) {
   return null;
 }
 
-export function getDrawPath( path ) {
-  const drawPath = new Path2D();
-  path?.forEach( e => drawPath.lineTo( e.x, e.y ) );
-  return drawPath;
-}
-
 function reconstruct_path( cameFrom, current ) {
   const total_path = [ current ];
 

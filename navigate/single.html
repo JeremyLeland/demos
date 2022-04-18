@@ -31,7 +31,7 @@
     }
 
     update( dt ) {
-      if ( this.waypoint && Math.hypot( this.waypoint.x - this.x, this.waypoint.y - this.y ) < this.size ) {
+      if ( this.waypoint && Math.hypot( this.waypoint.x - this.x, this.waypoint.y - this.y ) < this.speed * dt ) {
         this.waypoint = null;
       }
 
@@ -55,6 +55,8 @@
             x: this.goalCell.x,
             y: this.goalCell.y,
           };
+
+          this.goalCell = null;
         }
       }
 
@@ -78,18 +80,19 @@
     draw( ctx ) {
       super.draw( ctx );
 
-      if ( this.waypoint ) {
+      if ( this.goalCell ) {
         ctx.beginPath();
-        ctx.lineTo( this.waypoint.x, this.waypoint.y );
         ctx.lineTo( this.x, this.y );
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = 'yellow';
-        ctx.stroke();
-      }
-      
-      if ( this.path ) {
+        
+        if ( this.path ) {  
+          ctx.lineTo( this.waypoint.x, this.waypoint.y );
+          this.path.forEach( p => ctx.lineTo( p.x, p.y ) );
+        }
+        
+        ctx.lineTo( this.goalCell.x, this.goalCell.y );
+        
         ctx.strokeStyle = 'orange';
-        ctx.stroke( Pathfinding.getDrawPath( this.path ) );
+        ctx.stroke();
       }
     }
   }
