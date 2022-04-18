@@ -6,16 +6,15 @@
 <script type="module">
 
   import { Game } from '../src/Game.js';
-  import { Entity } from '../src/Entity.js';
+  import { Actor } from '../src/Actor.js';
   import { Cell } from '../src/Cell.js';
   import * as CellGrid from '../src/CellGrid.js';
   import * as Pathfinding from '../src/Pathfinding.js';
   
-  class Actor extends Entity {
+  class PathfindingActor extends Actor {
     size = 10;
     speed = 0.1;
-
-    goal = { x: 0, y: 0, angle: 0 };
+    turnSpeed = 0.008;
 
     currentCell;
     goalCell;
@@ -47,20 +46,14 @@
         }
       }
 
-      if ( this.waypoint) {
-        this.goal.x = this.waypoint.x;
-        this.goal.y = this.waypoint.y;
+      if ( this.waypoint ) {
+        this.goalAngle = Math.atan2( this.waypoint.y - this.y, this.waypoint.x - this.x );
+      }
+      else {
+        this.speed = 0;
       }
 
-      this.goal.angle = Math.atan2( this.goal.y - this.y, this.goal.x - this.x );
-
-      this.angle = this.goal.angle;
-      this.dx = this.speed * Math.cos( this.angle );
-      this.dy = this.speed * Math.sin( this.angle );
-
-      super.update( dt );
-
-      
+      super.update( dt );      
     }
 
     drawEntity( ctx ) {
@@ -73,15 +66,6 @@
     draw( ctx ) {
       super.draw( ctx );
 
-      ctx.beginPath();
-      ctx.lineTo( this.goalCell.x, this.goalCell.y );
-      ctx.lineTo( this.x, this.y );
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'yellow';
-      ctx.setLineDash( [ 4, 2 ] );
-      ctx.stroke();
-      ctx.setLineDash( [] );
-
       ctx.strokeStyle = 'orange';
       ctx.stroke( Pathfinding.getDrawPath( this.path ) );
     }
@@ -93,18 +77,18 @@
   
   
 
-  const actor = new Actor();
-  actor.spawnInCell( cellGrid[ 0 ][ 0 ] );
-  actor.goalCell = cellGrid[ 0 ][ 1 ];
+  const player = new PathfindingActor();
+  player.spawnInCell( cellGrid[ 0 ][ 0 ] );
+  player.goalCell = cellGrid[ 1 ][ 2 ];
 
-  actor.path = Pathfinding.getPath( actor.currentCell, actor.goalCell );
+  player.path = Pathfinding.getPath( player.currentCell, player.goalCell );
   
 
   const game = new Game();
   game.scroll = { x: 32, y: 32 };
 
   game.update = ( dt ) => {
-    actor.update( dt );
+    player.update( dt );
   };
 
   game.draw = ( ctx ) => {
@@ -114,7 +98,7 @@
       }
     }
 
-    actor.draw( ctx );
+    player.draw( ctx );
   };
 
 
