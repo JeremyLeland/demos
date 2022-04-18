@@ -1,35 +1,21 @@
 <title>Single Actor Navigating Hex Maze</title>
 <link rel="stylesheet" href="../style.css">
 
-<body>
-  <canvas id="canvas" width="900px" height="900px"></canvas>
-</body>
+<body></body>
 
 <script type="module">
 
+  import { Game } from '../src/Game.js';
+  import { Entity } from '../src/Entity.js';
   import { Cell } from '../src/Cell.js';
   import * as CellGrid from '../src/CellGrid.js';
   import * as Pathfinding from '../src/Pathfinding.js';
   
-  const width = 900, height = 900;
-
-  const cellGrid = CellGrid.getHexGrid( 2, 4, 128, 64 );
-  CellGrid.doMazeLink( cellGrid[ 0 ][ 0 ] );
-    
-  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
-  ctx.translate( 32, 32 );
-
-  for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
-    for ( let col = 0; col < cellGrid.length; col ++ ) {
-      cellGrid[ col ][ row ].draw( ctx );
-    }
-  }
-
-  class Actor {
-    x = 0;
-    y = 0;
-    angle = 0;
+  class Actor extends Entity {
     size = 10;
+    speed = 0.1;
+
+    goal = { x: 0, y: 0, angle: 0 };
 
     currentCell;
     goalCell;
@@ -43,19 +29,29 @@
       this.y = cell.y;
     }
 
-    draw( ctx ) {
-      ctx.save();
-      ctx.translate( this.x, this.y );
-      ctx.rotate( this.angle );
+    update( dt ) {
+      this.goal.angle = Math.atan2( this.goal.y - this.y, this.goal.x - this.x );
+
+      this.angle = this.goal.angle;
+      this.dx = this.speed * Math.cos( this.angle );
+      this.dy = this.speed * Math.sin( this.angle );
+
+      super.update( dt );
+    }
+
+    drawEntity( ctx ) {
       ctx.fillStyle = 'red';
-      ctx.strokeStyle = 'black';
+      ctx.strokeStyle = 'white';
       ctx.fillRect( -this.size, -this.size, this.size * 2, this.size * 2 );
-      ctx.stroke();
-      ctx.restore();
+      ctx.strokeRect( -this.size, -this.size, this.size * 2, this.size * 2 );
+    }
+
+    draw( ctx ) {
+      super.draw( ctx );
 
       ctx.beginPath();
-      ctx.lineTo( this.x, this.y );
       ctx.lineTo( this.goalCell.x, this.goalCell.y );
+      ctx.lineTo( this.x, this.y );
       ctx.lineWidth = 2;
       ctx.strokeStyle = 'yellow';
       ctx.setLineDash( [ 4, 2 ] );
@@ -64,15 +60,39 @@
     }
   }
 
+
+  const cellGrid = CellGrid.getHexGrid( 2, 4, 128, 64 );
+  CellGrid.doMazeLink( cellGrid[ 0 ][ 0 ] );
+  
+  
+
   const actor = new Actor();
   actor.spawnInCell( cellGrid[ 0 ][ 0 ] );
   actor.goalCell = cellGrid[ 0 ][ 1 ];
 
   const path = Pathfinding.getPath( actor.currentCell, actor.goalCell );
+  actor.goal.x = path[ 1 ].x;
+  actor.goal.y = path[ 1 ].y;
 
-  ctx.strokeStyle = 'orange';
-  ctx.stroke( Pathfinding.getDrawPath( path ) );
+  const game = new Game();
+  game.scroll = { x: 32, y: 32 };
 
-  actor.draw( ctx );
+  game.update = ( dt ) => {
+    actor.update( dt );
+  };
+
+  game.draw = ( ctx ) => {
+    for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
+      for ( let col = 0; col < cellGrid.length; col ++ ) {
+        cellGrid[ col ][ row ].draw( ctx );
+      }
+    }
+
+    ctx.strokeStyle = 'orange';
+    ctx.stroke( Pathfinding.getDrawPath( path ) );
+    
+    actor.draw( ctx );
+  };
+
 
 </script>
