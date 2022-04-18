@@ -36,13 +36,25 @@
       }
 
       if ( this.path && !this.waypoint ) {
-        this.path.shift();
+        this.currentCell = this.path.shift();
 
         if ( this.path.length > 0 ) {
-          this.waypoint = { x: this.path[ 0 ].x, y: this.path[ 0 ].y };
+          // TODO: Nearest point on edge (instead of middle)
+          const nextEdge = this.path[ 0 ].edges.find( edge => edge.neighbor == this.currentCell );
+
+          this.waypoint = {
+            x: ( nextEdge.start.x + nextEdge.end.x ) / 2,
+            y: ( nextEdge.start.y + nextEdge.end.y ) / 2,
+          };
         }
         else {
           this.path = null;
+
+          // TODO: Eventually, we'll get a goal position and figure out the path and waypoints to get there?
+          this.waypoint = {
+            x: this.goalCell.x,
+            y: this.goalCell.y,
+          };
         }
       }
 
@@ -66,8 +78,19 @@
     draw( ctx ) {
       super.draw( ctx );
 
-      ctx.strokeStyle = 'orange';
-      ctx.stroke( Pathfinding.getDrawPath( this.path ) );
+      if ( this.waypoint ) {
+        ctx.beginPath();
+        ctx.lineTo( this.waypoint.x, this.waypoint.y );
+        ctx.lineTo( this.x, this.y );
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'yellow';
+        ctx.stroke();
+      }
+      
+      if ( this.path ) {
+        ctx.strokeStyle = 'orange';
+        ctx.stroke( Pathfinding.getDrawPath( this.path ) );
+      }
     }
   }
 
