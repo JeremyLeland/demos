@@ -7,74 +7,93 @@
 
 <script type="module">
   import { Cell } from '../../src/Cell.js';
+  import * as CellGrid from '../../src/CellGrid.js';
+
   import { Line } from '../../src/Line.js';
   import { Curve } from '../../src/Curve.js';
 
-  // const cell = new Cell([
+  // const cell = new Cell( [
   //   { x: 100, y: 100 },
-  //   { x: 100, y: 300 },
-  //   { x: 200, y: 300 },
-  //   { x: 200, y: 200 },
-  //   { x: 200, y: 300 },
-  //   { x: 300, y: 300 },
+  //   { x: 200, y: 160 },
+  //   { x: 210, y: 155 },
+  //   { x: 220, y: 140 },
   //   { x: 300, y: 100 },
+  //   { x: 200, y: 80 },
   // ] );
 
-  const cell = new Cell( [
-    { x: 100, y: 100 },
-    { x: 200, y: 160 },
-    { x: 210, y: 155 },
-    { x: 220, y: 140 },
-    { x: 300, y: 100 },
-    { x: 200, y: 80 },
-  ] );
+  const cellGrid = CellGrid.getHexGrid( 2, 4, 128, 64 );
+  CellGrid.doMazeLink( cellGrid[ 0 ][ 0 ] );
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
-  
-  cell.draw( ctx );
+  ctx.translate( 32, 32 );
 
-  ctx.strokeStyle = 'yellow';
-  ctx.lineWidth = 1;
+  const edgePoints = new Map();
 
-  const edge = cell.edges[ 0 ];
-  const line = new Line( edge.start.x, edge.start.y, edge.end.x, edge.end.y );
+  for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
+    for ( let col = 0; col < cellGrid.length; col ++ ) {
+      const cell = cellGrid[ col ][ row ];
+      cell.draw( ctx );
 
-  const numPoints = 28;
-  const points = [];
-  for ( let i = 0; i < numPoints; i ++ ) {
-    const angle = Math.PI * 2 * -i / numPoints;
-    const dx = Math.cos( angle );
-    const dy = Math.sin( angle );
+      ctx.strokeStyle = 'yellow';
+      ctx.lineWidth = 1;
 
-    let closest = Infinity;
-    cell.edges.forEach( edge => {
-      const line = new Line( edge.start.x, edge.start.y, edge.end.x, edge.end.y );
-      const dist = line.getTimeToHit( cell.x, cell.y, dx, dy, 10 );
+      const numPoints = 32;
+      for ( let i = 0; i < numPoints; i ++ ) {
+        const angle = Math.PI * 2 * -i / numPoints;
+        const dx = Math.cos( angle );
+        const dy = Math.sin( angle );
 
-      if ( 0 < dist && dist < closest ) {
-        closest = dist;
+        let closestDist = Infinity, closestEdge = null;
+        cell.edges.forEach( edge => {
+          const line = new Line( edge.start.x, edge.start.y, edge.end.x, edge.end.y );
+          const dist = line.getTimeToHit( cell.x, cell.y, dx, dy, 10 );
+
+          if ( 0 < dist && dist < closestDist ) {
+            closestDist = dist;
+            closestEdge = edge;
+          }
+        } );
+
+        if ( closestEdge ) {
+          if ( !edgePoints.has( closestEdge ) ) {
+            edgePoints.set( closestEdge, [] );
+          }
+          edgePoints.get( closestEdge ).push( {
+            x: cell.x + dx * closestDist,
+            y: cell.y + dy * closestDist,
+          } );
+        }
       }
-    } );
+      // cell.edges.forEach( edge => points.push( ...edge.getOffsetPoints( 10 ) ) );
 
-    if ( closest < Infinity ) {
-      points.push( {
-        x: cell.x + dx * closest,
-        y: cell.y + dy * closest,
-      } );
+      // Cast points from middle to nearest edge, then back off set amount?
+      // const curves = Curve.getLoopThroughPoints( points );
+      // curves.forEach( curve => curve.draw( ctx, 0.2 ) );
+
+      // ctx.fillStyle = 'lime';
+      // points.forEach( p => ctx.fillRect( p.x - 1, p.y - 1, 2, 2 ) );
     }
   }
-  // cell.edges.forEach( edge => points.push( ...edge.getOffsetPoints( 10 ) ) );
 
-  // Cast points from middle to nearest edge, then back off set amount?
+  const points = [];
+
+  let edge = cellGrid[ 0 ][ 0 ].edges[ 0 ];
+  const visited = new Set();
+
+  while ( !visited.has( edge ) ) {
+    visited.add( edge );
+
+    points.push( ...edgePoints.get( edge ) );
+
+    if ( edge.parent != edge.next.parent ) {
+      points.push( edge.end );
+    }
+    
+    edge = edge.next;
+  }
+
+  ctx.lineWidth = 1;
   const curves = Curve.getLoopThroughPoints( points );
-  curves.forEach( curve => curve.draw( ctx ) );
-
-  ctx.fillStyle = 'lime';
-  // ctx.beginPath();
-  // points.forEach( p => ctx.lineTo( p.x, p.y ) );
-  points.forEach( p => ctx.fillRect( p.x - 1, p.y - 1, 2, 2 ) );
-  // ctx.closePath();
-  // ctx.stroke();
-
+  curves.forEach( curve => curve.draw( ctx, 0.2 ) );
 
 </script>
