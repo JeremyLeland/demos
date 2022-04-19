@@ -1,0 +1,29 @@
+<title>Hex Maze</title>
+<link rel="stylesheet" href="../style.css">
+
+<body>
+  <canvas id="canvas" width="900px" height="900px"></canvas>
+</body>
+
+<script type="module">
+
+  import { Cell } from '../src/Cell.js';
+  import * as CellGrid from '../src/CellGrid.js';
+  
+  const width = 900, height = 900;
+  const MIN_EDGE_LENGTH = 40;
+
+  const cellGrid = CellGrid.getHexTriangleGrid( 10, 10, 64, 32 );
+  CellGrid.doMazeLink( cellGrid[ 0 ][ 0 ] );
+    
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  ctx.translate( 32, 32 );
+
+  for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
+    for ( let col = 0; col < cellGrid.length; col ++ ) {
+      cellGrid[ col ][ row ].draw( ctx );
+    }
+  }
+  
+
+</script>
