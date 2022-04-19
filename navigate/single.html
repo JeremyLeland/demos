@@ -62,12 +62,8 @@
 
       if ( this.waypoint ) {
         this.goalAngle = Math.atan2( this.waypoint.y - this.y, this.waypoint.x - this.x );
+        super.update( dt );     
       }
-      else {
-        this.speed = 0;
-      }
-
-      super.update( dt );      
     }
 
     drawEntity( ctx ) {
@@ -114,6 +110,14 @@
   game.scroll = { x: 32, y: 32 };
 
   game.update = ( dt ) => {
+    if ( game.mouse.down ) {
+      const cell = cellUnder( game.mouse.x - game.scroll.x, game.mouse.y - game.scroll.y );
+      if ( cell ) {
+        player.goalCell = cell;
+        player.path = Pathfinding.getPath( player.currentCell, player.goalCell );
+      }
+    }
+
     player.update( dt );
   };
 
@@ -126,6 +130,17 @@
 
     player.draw( ctx );
   };
+
+  function cellUnder( x, y ) {
+    for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
+      for ( let col = 0; col < cellGrid.length; col ++ ) {
+        const cell = cellGrid[ col ][ row ];
+        if ( cell.contains( x, y ) ) {
+          return cell;
+        }
+      }
+    }
+  }
 
 
 </script>

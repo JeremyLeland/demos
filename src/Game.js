@@ -1,11 +1,6 @@
 export class Game {
-  mouseX = 0;
-  mouseY = 0;
-  mouseDown = false;
-  mouseMovementX = 0;
-  mouseMovementY = 0;
-
   keysPressed = new Set();
+  mouse = { x: 0, y: 0, down: false, move: { x: 0, y: 0 } };
 
   scroll = { x: 0, y: 0 };
 
@@ -27,22 +22,21 @@ export class Game {
     window.onkeyup   = ( e ) => this.keysPressed.delete( e.key );
 
     const inputStart = ( e ) => {
-      this.mouseDown = true;
+      this.mouse.down = true;
     }
     const inputMove = ( e ) => {
       const event = e.touches ? e.touches[ 0 ] : e;
 
-      this.mouseX = event.clientX;
-      this.mouseY = event.clientY;
-      this.mouseMovementX = this.#lastX ? this.mouseX - this.#lastX : 0;
-      this.mouseMovementY = this.#lastY ? this.mouseY - this.#lastY : 0;
-      this.#lastX = this.mouseX;
-      this.#lastY = this.mouseY;
+      this.mouse.x = event.clientX;
+      this.mouse.y = event.clientY;
+      this.mouse.move.x = this.#lastX ? this.mouseX - this.#lastX : 0;
+      this.mouse.move.y = this.#lastY ? this.mouseY - this.#lastY : 0;
+      this.#lastX = this.mouse.x;
+      this.#lastY = this.mouse.y;
     }
     const inputStop = ( e ) => {
-      this.mouseDown = false;
-      this.#lastX = undefined;
-      this.#lastY = undefined;
+      this.mouse.down = false;
+      this.#lastX = this.#lastY = undefined;
     }
     document.addEventListener( 'mousedown',  inputStart );
     document.addEventListener( 'touchstart', inputStart );

@@ -165,9 +165,9 @@ export class Cell {
     ctx.fillRect( this.x - 1, this.y - 1, 2, 2 );
   }
 
-  contains( point ) {
+  contains( x, y ) {
     return this.edges.every( edge =>
-      0 < ( point.x - edge.start.x ) * edge.normal.x + ( point.y - edge.start.y ) * edge.normal.y
+      0 < ( x - edge.start.x ) * edge.normal.x + ( y - edge.start.y ) * edge.normal.y
     );
   }
 
@@ -202,6 +202,7 @@ export class Cell {
       otherEdge.next.previous = thisEdge.previous;
 
       this.links.add( other );
+      other.links.add( this );
 
       return true;
     }

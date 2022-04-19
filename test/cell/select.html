@@ -22,8 +22,8 @@
     ctx.clearRect( 0, 0, ctx.canvas.width, ctx.canvas.height );
     
     cell.draw( ctx );
-    
-    if ( cell.contains( { x: e.clientX, y: e.clientY } ) ) {
+
+    if ( cell.contains( e.clientX, e.clientY ) ) {
       ctx.beginPath();
       cell.edges.forEach( e => ctx.lineTo( e.start.x, e.start.y ) );
       ctx.closePath();
