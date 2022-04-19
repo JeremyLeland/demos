@@ -16,6 +16,8 @@
     speed = 0.1;
     turnSpeed = 0.008;
 
+    target;
+
     currentCell;
     goalCell;
     path;
@@ -31,6 +33,14 @@
     }
 
     update( dt ) {
+      if ( this.target ) {
+        if ( !this.goalCell || this.target.currentCell != this.goalCell ) {
+          this.goalCell = this.target.currentCell;
+          this.path = Pathfinding.getPath( this.currentCell, this.goalCell );
+          this.waypoint = null;
+        }
+      }
+
       if ( this.waypoint && Math.hypot( this.waypoint.x - this.x, this.waypoint.y - this.y ) < this.speed * dt ) {
         this.waypoint = null;
       }
@@ -52,11 +62,12 @@
 
           // TODO: Eventually, we'll get a goal position and figure out the path and waypoints to get there?
           this.waypoint = {
-            x: this.goalCell.x,
-            y: this.goalCell.y,
+            x: this.target.x,
+            y: this.target.y,
           };
 
           this.goalCell = null;
+          this.target = null;
         }
       }
 
@@ -85,7 +96,7 @@
           this.path.forEach( p => ctx.lineTo( p.x, p.y ) );
         }
         
-        ctx.lineTo( this.goalCell.x, this.goalCell.y );
+        ctx.lineTo( this.target.x, this.target.y );
         
         ctx.strokeStyle = 'orange';
         ctx.stroke();
@@ -97,24 +108,19 @@
   const cellGrid = CellGrid.getHexGrid( 2, 4, 128, 64 );
   CellGrid.doMazeLink( cellGrid[ 0 ][ 0 ] );
   
-  
-
   const player = new PathfindingActor();
   player.spawnInCell( cellGrid[ 0 ][ 0 ] );
-  player.goalCell = cellGrid[ 1 ][ 2 ];
-
-  player.path = Pathfinding.getPath( player.currentCell, player.goalCell );
-  
 
   const game = new Game();
   game.scroll = { x: 32, y: 32 };
 
   game.update = ( dt ) => {
     if ( game.mouse.down ) {
-      const cell = cellUnder( game.mouse.x - game.scroll.x, game.mouse.y - game.scroll.y );
+      const x = game.mouse.x - game.scroll.x;
+      const y = game.mouse.y - game.scroll.y;
+      const cell = cellUnder( x, y );
       if ( cell ) {
-        player.goalCell = cell;
-        player.path = Pathfinding.getPath( player.currentCell, player.goalCell );
+        player.target = { x: x, y: y, currentCell: cell }
       }
     }
 
