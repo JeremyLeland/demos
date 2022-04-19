@@ -37,7 +37,7 @@
   function draw() {
     ctx.clearRect( 0, 0, ctx.canvas.width, ctx.canvas.height );
 
-    let dist = other.getDistance( point.x, point.y, slope.x, slope.y );
+    let dist = other.getTimeToHit( point.x, point.y, slope.x, slope.y, 10 );
     ctx.fillStyle = 'white';
     ctx.fillText( dist, 10, 10 );
 

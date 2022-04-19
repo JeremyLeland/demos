@@ -38,12 +38,15 @@ export class Line {
   }
 
   // Based on: https://www.jeffreythompson.org/collision-detection/line-line.php
-  getDistance( x, y, dx, dy ) {
+  getTimeToHit( x, y, dx, dy, radius = 0 ) {
     const D = ( dy * ( this.x2 - this.x1 ) - dx * ( this.y2 - this.y1 ) );
 
-    const us = ( dx * ( this.y1 - y ) - dy * ( this.x1 - x ) ) / D;
+    const ux = this.x1 - x + this.normal.x * radius;
+    const uy = this.y1 - y + this.normal.y * radius;
+
+    const us = ( dx * uy - dy * ux ) / D;
     if ( 0 <= us && us <= 1 ) {
-      const them = ( ( this.x2 - this.x1 ) * ( this.y1 - y ) - ( this.y2 - this.y1 ) * ( this.x1 - x ) ) / D;
+      const them = ( ( this.x2 - this.x1 ) * uy - ( this.y2 - this.y1 ) * ux ) / D;
       return them;
     }
     else {

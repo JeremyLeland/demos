@@ -23,6 +23,7 @@
   const cell = new Cell( [
     { x: 100, y: 100 },
     { x: 200, y: 160 },
+    { x: 210, y: 155 },
     { x: 220, y: 140 },
     { x: 300, y: 100 },
     { x: 200, y: 80 },
@@ -48,7 +49,7 @@
     let closest = Infinity;
     cell.edges.forEach( edge => {
       const line = new Line( edge.start.x, edge.start.y, edge.end.x, edge.end.y );
-      const dist = line.getDistance( cell.x, cell.y, dx, dy );
+      const dist = line.getTimeToHit( cell.x, cell.y, dx, dy, 10 );
 
       if ( 0 < dist && dist < closest ) {
         closest = dist;
@@ -57,8 +58,8 @@
 
     if ( closest < Infinity ) {
       points.push( {
-        x: cell.x + ( dx * closest ),
-        y: cell.y + ( dy * closest ),
+        x: cell.x + dx * closest,
+        y: cell.y + dy * closest,
       } );
     }
   }
