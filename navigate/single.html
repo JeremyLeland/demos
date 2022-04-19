@@ -18,13 +18,12 @@
 
     target;
 
-    currentCell;
-    goalCell;
+    cell;
     path;
     waypoint;
 
     spawnInCell( cell ) {
-      this.currentCell = cell;
+      this.cell = cell;
 
       // TODO: Pick random spot on random edge, 
       //       random distance between that spot and center?
@@ -34,9 +33,8 @@
 
     update( dt ) {
       if ( this.target ) {
-        if ( !this.goalCell || this.target.currentCell != this.goalCell ) {
-          this.goalCell = this.target.currentCell;
-          this.path = Pathfinding.getPath( this.currentCell, this.goalCell );
+        if ( !this.path || this.target.cell != this.path[ this.path.length - 1 ] ) {
+          this.path = Pathfinding.getPath( this.cell, this.target.cell );
           this.waypoint = null;
         }
       }
@@ -46,11 +44,11 @@
       }
 
       if ( this.path && !this.waypoint ) {
-        this.currentCell = this.path.shift();
+        this.cell = this.path.shift();
 
         if ( this.path.length > 0 ) {
           // TODO: Nearest point on edge (instead of middle)
-          const nextEdge = this.path[ 0 ].edges.find( edge => edge.neighbor == this.currentCell );
+          const nextEdge = this.path[ 0 ].edges.find( edge => edge.neighbor == this.cell );
 
           this.waypoint = {
             x: ( nextEdge.start.x + nextEdge.end.x ) / 2,
@@ -60,13 +58,11 @@
         else {
           this.path = null;
 
-          // TODO: Eventually, we'll get a goal position and figure out the path and waypoints to get there?
           this.waypoint = {
             x: this.target.x,
             y: this.target.y,
           };
 
-          this.goalCell = null;
           this.target = null;
         }
       }
@@ -86,21 +82,29 @@
 
     draw( ctx ) {
       super.draw( ctx );
+      
+      ctx.beginPath();
 
-      if ( this.goalCell ) {
-        ctx.beginPath();
-        ctx.lineTo( this.x, this.y );
-        
-        if ( this.path ) {  
-          ctx.lineTo( this.waypoint.x, this.waypoint.y );
-          this.path.forEach( p => ctx.lineTo( p.x, p.y ) );
-        }
-        
+      if ( this.target ) {
         ctx.lineTo( this.target.x, this.target.y );
-        
-        ctx.strokeStyle = 'orange';
-        ctx.stroke();
       }
+        
+      if ( this.path ) {
+        for ( let i = this.path.length - 2; i > 0; i -- ) {
+          const cell = this.path[ i ];
+          ctx.lineTo( cell.x, cell.y );
+        }
+      }
+      
+      if ( this.waypoint ) {
+        ctx.lineTo( this.waypoint.x, this.waypoint.y );
+        ctx.lineTo( this.x, this.y );
+      }
+
+      ctx.strokeStyle = 'orange';
+      ctx.setLineDash( [ 4, 2 ] );
+      ctx.stroke();
+      ctx.setLineDash( [] );
     }
   }
 
@@ -120,7 +124,7 @@
       const y = game.mouse.y - game.scroll.y;
       const cell = cellUnder( x, y );
       if ( cell ) {
-        player.target = { x: x, y: y, currentCell: cell }
+        player.target = { x: x, y: y, cell: cell }
       }
     }
 
