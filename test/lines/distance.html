@@ -1,0 +1,60 @@
+<title>Subdivide Lines</title>
+<link rel="stylesheet" href="../../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+  
+  import { Line } from '../../src/Line.js';
+
+  let point = { x: 100, y: 100 };
+  let slope = { x: 1, y: 0 };
+
+  let other = new Line( 200, 200, 200, 100 );
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  draw();
+  
+  document.addEventListener( 'mousedown', ( e ) => {
+    if ( e.button == 0 ) {
+      point = { x: e.clientX, y: e.clientY };
+    }
+    if ( e.button == 1 ) {
+      other = new Line( 200, 200, e.clientX, e.clientY );
+    }
+    draw();
+  } );
+
+  document.addEventListener( 'mousemove', ( e ) => {
+    const angle = Math.atan2( e.clientY - point.y, e.clientX - point.x );
+    slope = { x: Math.cos( angle ), y: Math.sin( angle ) };
+
+    draw();
+  } );
+
+  function draw() {
+    ctx.clearRect( 0, 0, ctx.canvas.width, ctx.canvas.height );
+
+    let dist = other.getDistance( point.x, point.y, slope.x, slope.y );
+    ctx.fillStyle = 'white';
+    ctx.fillText( dist, 10, 10 );
+
+    if ( dist == Infinity ) {
+      dist = 10000; // for drawing purposes
+    }
+
+    ctx.strokeStyle = 'orange';
+    other.draw( ctx );
+
+    ctx.beginPath();
+    ctx.moveTo( point.x, point.y );
+    ctx.lineTo( point.x + slope.x * dist, point.y + slope.y * dist );
+
+    ctx.strokeStyle = 'yellow';
+    ctx.stroke();
+
+  }
+  
+</script>
