@@ -1,0 +1,36 @@
+<title>Detect Hover of Cell</title>
+<link rel="stylesheet" href="../../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+  import { Cell } from '../../src/Cell.js';
+
+  const cell = new Cell( [
+    { x: 100, y: 100 },
+    { x: 200, y: 160 },
+    { x: 300, y: 100 },
+    { x: 200, y: 80 },
+  ] );
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  
+  
+  document.addEventListener( 'mousemove', ( e ) => {
+    ctx.clearRect( 0, 0, ctx.canvas.width, ctx.canvas.height );
+    
+    cell.draw( ctx );
+    
+    if ( cell.contains( { x: e.clientX, y: e.clientY } ) ) {
+      ctx.beginPath();
+      cell.edges.forEach( e => ctx.lineTo( e.start.x, e.start.y ) );
+      ctx.closePath();
+      ctx.fillStyle = 'red';
+      ctx.fill();
+    }
+  } );
+
+
+</script>
