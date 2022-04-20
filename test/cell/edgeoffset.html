@@ -12,88 +12,102 @@
   import { Line } from '../../src/Line.js';
   import { Curve } from '../../src/Curve.js';
 
-  // const cell = new Cell( [
-  //   { x: 100, y: 100 },
-  //   { x: 200, y: 160 },
-  //   { x: 210, y: 155 },
-  //   { x: 220, y: 140 },
-  //   { x: 300, y: 100 },
-  //   { x: 200, y: 80 },
-  // ] );
 
-  const cellGrid = CellGrid.getHexGrid( 2, 4, 128, 64 );
+  const cellGrid = CellGrid.getHexGrid( 2, 3, 128, 0 );
   CellGrid.doMazeLink( cellGrid[ 0 ][ 0 ] );
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
   ctx.translate( 32, 32 );
 
-  const edgePoints = new Map();
-
   for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
     for ( let col = 0; col < cellGrid.length; col ++ ) {
-      const cell = cellGrid[ col ][ row ];
-      cell.draw( ctx );
-
-      ctx.strokeStyle = 'yellow';
-      ctx.lineWidth = 1;
-
-      const numPoints = 32;
-      for ( let i = 0; i < numPoints; i ++ ) {
-        const angle = Math.PI * 2 * -i / numPoints;
-        const dx = Math.cos( angle );
-        const dy = Math.sin( angle );
-
-        let closestDist = Infinity, closestEdge = null;
-        cell.edges.forEach( edge => {
-          const line = new Line( edge.start.x, edge.start.y, edge.end.x, edge.end.y );
-          const dist = line.getTimeToHit( cell.x, cell.y, dx, dy, 10 );
-
-          if ( 0 < dist && dist < closestDist ) {
-            closestDist = dist;
-            closestEdge = edge;
-          }
-        } );
-
-        if ( closestEdge ) {
-          if ( !edgePoints.has( closestEdge ) ) {
-            edgePoints.set( closestEdge, [] );
-          }
-          edgePoints.get( closestEdge ).push( {
-            x: cell.x + dx * closestDist,
-            y: cell.y + dy * closestDist,
-          } );
-        }
-      }
-      // cell.edges.forEach( edge => points.push( ...edge.getOffsetPoints( 10 ) ) );
-
-      // Cast points from middle to nearest edge, then back off set amount?
-      // const curves = Curve.getLoopThroughPoints( points );
-      // curves.forEach( curve => curve.draw( ctx, 0.2 ) );
-
-      // ctx.fillStyle = 'lime';
-      // points.forEach( p => ctx.fillRect( p.x - 1, p.y - 1, 2, 2 ) );
+      cellGrid[ col ][ row ].draw( ctx );
     }
   }
+
 
   const points = [];
 
-  let edge = cellGrid[ 0 ][ 0 ].edges[ 0 ];
-  const visited = new Set();
+  const start = cellGrid[ 0 ][ 0 ];
+  let cell = start;
+  let angle = 0;
+  const dAngle = Math.PI * 2 / -20;
 
-  while ( !visited.has( edge ) ) {
-    visited.add( edge );
+  for ( let i = 0; i < 300; i ++ ) {
+    let dx = Math.cos( angle );
+    let dy = Math.sin( angle );
 
-    points.push( ...edgePoints.get( edge ) );
+    let closestDist = Infinity, closestEdge = null;
+    cell.edges.forEach( edge => {
+      const line = new Line( edge.start.x, edge.start.y, edge.end.x, edge.end.y );
+      const dist = line.getTimeToHit( cell.x, cell.y, dx, dy, 10 );
 
-    if ( edge.parent != edge.next.parent ) {
-      points.push( edge.end );
+      if ( 0 < dist && dist < closestDist ) {
+        closestDist = dist;
+        closestEdge = edge;
+      }
+    } );
+
+    if ( !closestEdge.linked ) {
+      points.push( {
+        x: cell.x + dx * closestDist,
+        y: cell.y + dy * closestDist,
+      } );
+      angle += dAngle;
     }
-    
-    edge = edge.next;
-  }
+    else {
+      let slopeX = closestEdge.end.x - closestEdge.start.x;
+      let slopeY = closestEdge.end.y - closestEdge.start.y;
+      const len = Math.hypot( slopeX, slopeY );
+      slopeX /= len;
+      slopeY /= len;
+      points.push( {
+        x: closestEdge.start.x + slopeX * 10,
+        y: closestEdge.start.y + slopeY * 10,
+      } );
+      cell = closestEdge.neighbor;
 
-  ctx.lineWidth = 1;
-  const curves = Curve.getLoopThroughPoints( points );
-  curves.forEach( curve => curve.draw( ctx, 0.2 ) );
+      // TODO: Finish off the cell, get back to angle we started at
+      if ( cell == start ) {
+        break;
+      }
+
+      angle = Math.atan2( closestEdge.start.y - cell.y, closestEdge.start.x - cell.x );
+      angle += dAngle / 2;
+    }
+  }
+      
+      ctx.lineWidth = 1;
+      const curves = Curve.getLoopThroughPoints( points );
+      curves.forEach( curve => curve.draw( ctx, 0.2 ) );
+
+      ctx.fillStyle = 'lime';
+      points.forEach( p => ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) );
+  //   }
+  // }
+
+  // const points = [];
+
+  // let edge = cellGrid[ 0 ][ 0 ].edges[ 0 ];
+  // const visited = new Set();
+
+  // while ( !visited.has( edge ) ) {
+  //   visited.add( edge );
+
+  //   points.push( ...edgePoints.get( edge ) );
+
+  //   if ( edge.parent != edge.next.parent ) {
+  //     points.push( edge.end );
+  //   }
+    
+  //   edge = edge.next;
+  // }
+
+  // ctx.lineWidth = 1;
+  // const curves = Curve.getLoopThroughPoints( points );
+  // curves.forEach( curve => curve.draw( ctx, 0.2 ) );
+
+  // ctx.fillStyle = 'lime';
+  // points.forEach( p => ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) );
 
 </script>

@@ -5,6 +5,7 @@ export class Line {
   y2;
 
   length;
+  slope;
   normal;
 
   constructor( x1, y1, x2, y2 ) {
@@ -14,9 +15,13 @@ export class Line {
     this.y2 = y2;
 
     this.length = Math.hypot( x2 - x1, y2 - y1 );
+    this.slope = {
+      x: ( x2 - x1 ) / this.length,
+      y: ( y2 - y1 ) / this.length,
+    }
     this.normal = {
-      x: ( y2 - y1 ) / this.length,
-      y: ( x1 - x2 ) / this.length,
+      x: this.slope.y,
+      y: -this.slope.x,
     }
   }
 
