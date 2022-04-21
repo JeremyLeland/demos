@@ -1,10 +1,10 @@
 import { Cell } from "./Cell.js";
 
-export function getVoronoiCells( seeds ) {
+export function getVoronoiCells( seeds, minX, minY, maxX, maxY ) {
   const infoMap = new Map();
   
   seeds.forEach( seed => {
-    const info = getVoronoiInfo( seed, seeds.filter( s => s != seed ) );
+    const info = getVoronoiInfo( seed, seeds.filter( s => s != seed ), minX, minY, maxX, maxY );
     if ( info ) {
       infoMap.set( seed, { 
         cell: new Cell( info.points ), 
@@ -28,7 +28,7 @@ export function getVoronoiCells( seeds ) {
   return cells;
 }
 
-function getVoronoiInfo( seed, others ) {
+function getVoronoiInfo( seed, others, minX, minY, maxX, maxY ) {
   let lines = others.map( other => {  
     const halfDist = Math.hypot( other.x - seed.x, other.y - seed.y ) / 2;
     const ang = Math.atan2( other.y - seed.y, other.x - seed.x );
@@ -76,10 +76,10 @@ function getVoronoiInfo( seed, others ) {
       y: currentPoint.y + currentLine.slope.y * closest.det,
     };
 
-    // // Ignore points out of bounds for now
-    // if ( currentPoint.x < 0 || currentPoint.y < 0 || width < currentPoint.x || height < currentPoint.y ) {
-    //   return null;
-    // }
+    // Ignore points out of bounds for now
+    if ( currentPoint.x < minX || currentPoint.y < minY || maxX < currentPoint.x || maxY < currentPoint.y ) {
+      return null;
+    }
 
     previousLine = currentLine;
     currentLine = closest.line;

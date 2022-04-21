@@ -19,24 +19,18 @@
     y: Math.random() * height
   } ) );
 
-  let cells = Voronoi.getVoronoiCells( seeds );
-
+  let cells = Voronoi.getVoronoiCells( seeds, 0, 0, width, height );
+  
+  // Detach edges that are too small to fit through
   cells.forEach( cell => {
     cell.edges.forEach( edge => {
-      // Detach edges that are too small to fit through
       if ( edge.getLength() < MIN_EDGE_LENGTH ) {
         cell.detachEdge( edge );
-      }
-
-      // Flag out-of-bounds cells for removal
-      if ( edge.start.x < 0 || edge.start.y < 0 || edge.start.x > width || edge.start.y > height ) {
-        cell.detachAll();
       }
     } );
   } );
 
-  cells = cells.filter( cell => cell.getUnlinkedEdges().length > 0 );
-
+  // Remove some well-connected cells
   for ( let i = 0; i < 10; i ++ ) {
     cells.find( e => e.getUnlinkedEdges().length > 4 )?.detachAll();
   }

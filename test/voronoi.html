@@ -15,13 +15,12 @@
     y: Math.random() * height
   } ) );
 
-  const cells = Voronoi.getVoronoiCells( seeds );
+  const cells = Voronoi.getVoronoiCells( seeds, 0, 0, width, height );
 
   cells[ 0 ].linkTo( cells[ 0 ].getUnlinkedEdges()[ 0 ].neighbor );
   
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
-  ctx.translate( 50, 50 );
 
   cells.forEach( cell => cell.draw( ctx ) );
 
