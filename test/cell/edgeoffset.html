@@ -13,7 +13,7 @@
   import { Curve } from '../../src/Curve.js';
 
 
-  const cellGrid = CellGrid.getHexGrid( 2, 3, 128, 0 );
+  const cellGrid = CellGrid.getHexGrid( 2, 5, 128, 32 );
   CellGrid.doMazeLink( cellGrid[ 0 ][ 0 ] );
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
@@ -28,12 +28,14 @@
 
   const points = [];
 
-  const start = cellGrid[ 0 ][ 0 ];
+  const start = cellGrid[ 1 ][ 1 ];
   let cell = start;
-  let angle = 0;
-  const dAngle = Math.PI * 2 / -20;
+  let angle = Math.PI;
+  const dAngle = Math.PI * 2 / -32;
 
-  for ( let i = 0; i < 300; i ++ ) {
+  let firstLink;    // keep track of how we first left start cell
+
+  for ( let timeout = 0; timeout < 1000; timeout ++ ) {
     let dx = Math.cos( angle );
     let dy = Math.sin( angle );
 
@@ -65,15 +67,28 @@
         x: closestEdge.start.x + slopeX * 10,
         y: closestEdge.start.y + slopeY * 10,
       } );
+
       cell = closestEdge.neighbor;
 
-      // TODO: Finish off the cell, get back to angle we started at
-      if ( cell == start ) {
-        break;
+      if ( firstLink ) {
+        if ( firstLink == closestEdge ) {
+          break;
+        }
+      }
+      else {
+        firstLink = closestEdge;
       }
 
       angle = Math.atan2( closestEdge.start.y - cell.y, closestEdge.start.x - cell.x );
       angle += dAngle / 2;
+    }
+
+    ctx.fillStyle = '#0f05';
+    const p = points[ points.length - 1 ];
+    ctx.fillRect( p.x - 2, p.y - 2, 4, 4 );
+
+    if ( cell == start && angle < -Math.PI ) {
+      break;
     }
   }
       
@@ -81,8 +96,8 @@
       const curves = Curve.getLoopThroughPoints( points );
       curves.forEach( curve => curve.draw( ctx, 0.2 ) );
 
-      ctx.fillStyle = 'lime';
-      points.forEach( p => ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) );
+      // ctx.fillStyle = 'lime';
+      // points.forEach( p => ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) );
   //   }
   // }
 
