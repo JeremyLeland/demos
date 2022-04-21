@@ -8,27 +8,53 @@
 <script type="module">
   import { Cell } from '../../src/Cell.js';
   import * as CellGrid from '../../src/CellGrid.js';
+  import * as Voronoi from '../../src/Voronoi.js';
 
   import { Line } from '../../src/Line.js';
   import { Curve } from '../../src/Curve.js';
 
 
-  const cellGrid = CellGrid.getHexGrid( 2, 5, 128, 32 );
-  CellGrid.doMazeLink( cellGrid[ 0 ][ 0 ] );
+  // const cellGrid = CellGrid.getHexGrid( 2, 5, 128, 32 );
+  // CellGrid.doMazeLink( cellGrid[ 0 ][ 0 ] );
+
+  const width = 800, height = 800;
+  const MIN_EDGE_LENGTH = 40;
+
+  const seeds = Array.from( Array( 20 ), _ => ( {
+    x: Math.random() * width, 
+    y: Math.random() * height
+  } ) );
+
+  let cells = Voronoi.getVoronoiCells( seeds, 0, 0, width, height );
+  
+  // Detach edges that are too small to fit through
+  cells.forEach( cell => {
+    cell.edges.forEach( edge => {
+      if ( edge.getLength() < MIN_EDGE_LENGTH ) {
+        cell.detachEdge( edge );
+      }
+    } );
+  } );
+
+  // Remove some well-connected cells
+  for ( let i = 0; i < 10; i ++ ) {
+    cells.find( e => e.getUnlinkedEdges().length > 4 )?.detachAll();
+  }
+
+  cells = cells.filter( cell => cell.getUnlinkedEdges().length > 0 );
+
+  CellGrid.doMazeLink( cells[ 0 ] );
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
-  ctx.translate( 32, 32 );
+  // ctx.translate( 32, 32 );
 
-  for ( let row = 0; row < cellGrid[ 0 ].length; row ++ ) {
-    for ( let col = 0; col < cellGrid.length; col ++ ) {
-      cellGrid[ col ][ row ].draw( ctx );
-    }
-  }
+  cells.forEach( cell => cell.draw( ctx ) );
 
 
   const points = [];
 
-  const start = cellGrid[ 1 ][ 1 ];
+  // const start = cellGrid[ 1 ][ 1 ];
+  const start = cells[ 0 ];
   let cell = start;
   let angle = Math.PI;
   const dAngle = Math.PI * 2 / -32;
@@ -58,15 +84,15 @@
       angle += dAngle;
     }
     else {
-      let slopeX = closestEdge.end.x - closestEdge.start.x;
-      let slopeY = closestEdge.end.y - closestEdge.start.y;
-      const len = Math.hypot( slopeX, slopeY );
-      slopeX /= len;
-      slopeY /= len;
-      points.push( {
-        x: closestEdge.start.x + slopeX * 10,
-        y: closestEdge.start.y + slopeY * 10,
-      } );
+      // let slopeX = closestEdge.end.x - closestEdge.start.x;
+      // let slopeY = closestEdge.end.y - closestEdge.start.y;
+      // const len = Math.hypot( slopeX, slopeY );
+      // slopeX /= len;
+      // slopeY /= len;
+      // points.push( {
+      //   x: closestEdge.start.x + slopeX * 10,
+      //   y: closestEdge.start.y + slopeY * 10,
+      // } );
 
       cell = closestEdge.neighbor;
 
