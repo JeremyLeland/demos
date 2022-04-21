@@ -1,0 +1,92 @@
+<title>Edge Offset Lines Test</title>
+<link rel="stylesheet" href="../../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+  import { Cell } from '../../src/Cell.js';
+  import * as CellGrid from '../../src/CellGrid.js';
+  import * as Voronoi from '../../src/Voronoi.js';
+
+  import { Line } from '../../src/Line.js';
+  import { Curve } from '../../src/Curve.js';
+
+
+  const width = 800, height = 800;
+  const MIN_EDGE_LENGTH = 40;
+
+  const seeds = Array.from( Array( 20 ), _ => ( {
+    x: Math.random() * width, 
+    y: Math.random() * height
+  } ) );
+
+  let cells = Voronoi.getVoronoiCells( seeds, 0, 0, width, height );
+  
+  CellGrid.doMazeLink( cells[ 0 ] );
+  cells[ 0 ].linkTo( cells[ 0 ].getUnlinkedEdges()[ 0 ]?.neighbor );
+  cells[ 1 ].linkTo( cells[ 1 ].getUnlinkedEdges()[ 0 ]?.neighbor );
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  // ctx.translate( 32, 32 );
+
+  cells.forEach( cell => cell.draw( ctx ) );
+
+
+  const cellPoints = new Map();
+
+  cells.forEach( cell => {
+    const points = [];
+
+    for ( let angle = Math.PI; angle > -Math.PI; angle -= Math.PI * 2 / 32 ) {
+      let dx = Math.cos( angle );
+      let dy = Math.sin( angle );
+
+      let closestDist = Infinity, closestEdge = null;
+      cell.edges.forEach( edge => {
+        const line = new Line( edge.start.x, edge.start.y, edge.end.x, edge.end.y );
+        const dist = line.getTimeToHit( cell.x, cell.y, dx, dy, 10 );
+
+        if ( 0 < dist && dist < closestDist ) {
+          closestDist = dist;
+          closestEdge = edge;
+        }
+      } );
+
+      if ( !closestEdge.linked ) {
+        points.push( {
+          angle: angle,
+          x: cell.x + dx * closestDist,
+          y: cell.y + dy * closestDist,
+        } );
+      }
+      else {
+        let slopeX = closestEdge.end.x - closestEdge.start.x;
+        let slopeY = closestEdge.end.y - closestEdge.start.y;
+        const len = Math.hypot( slopeX, slopeY );
+        slopeX /= len;
+        slopeY /= len;
+        points.push( {
+          angle: angle,
+          x: closestEdge.start.x + slopeX * 10,
+          y: closestEdge.start.y + slopeY * 10,
+          link: closestEdge.neighbor,
+        } );
+      }
+    }
+
+    points.forEach( p => {
+      ctx.fillStyle = `hsl( ${ p.angle }rad, 50%, 50% )`;
+      ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) 
+    } );
+
+    cellPoints.set( cell, points );
+  } );
+  
+  // ctx.lineWidth = 1;
+  // const curves = Curve.getLoopThroughPoints( points );
+  // curves.forEach( curve => curve.draw( ctx, 0.2 ) );
+
+
+</script>
