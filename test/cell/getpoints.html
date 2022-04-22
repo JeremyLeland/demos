@@ -17,12 +17,27 @@
   const width = 800, height = 800;
   const MIN_EDGE_LENGTH = 40;
 
-  const seeds = Array.from( Array( 20 ), _ => ( {
+  const seeds = Array.from( Array( 120 ), _ => ( {
     x: Math.random() * width, 
     y: Math.random() * height
   } ) );
 
   let cells = Voronoi.getVoronoiCells( seeds, 0, 0, width, height );
+
+  // Detach edges that are too small to fit through
+  cells.forEach( cell => {
+    cell.edges.forEach( edge => {
+      if ( edge.getLength() < MIN_EDGE_LENGTH ) {
+        cell.detachEdge( edge );
+      }
+    } );
+  } );
+
+  // Remove some well-connected cells
+  for ( let i = 0; i < 10; i ++ ) {
+    cells.find( e => e.getUnlinkedEdges().length > 4 )?.detachAll();
+  }
+  cells = cells.filter( cell => cell.getUnlinkedEdges().length > 0 );
   
   CellGrid.doMazeLink( cells[ 0 ] );
 
@@ -56,25 +71,27 @@
         }
       } );
 
-      if ( !closestEdge.linked ) {
-        points.push( {
-          angle: angle,
-          x: cell.x + dx * closestDist,
-          y: cell.y + dy * closestDist,
-        } );
-      }
-      else {
-        let slopeX = closestEdge.end.x - closestEdge.start.x;
-        let slopeY = closestEdge.end.y - closestEdge.start.y;
-        const len = Math.hypot( slopeX, slopeY );
-        slopeX /= len;
-        slopeY /= len;
-        points.push( {
-          angle: angle,
-          x: closestEdge.start.x + slopeX * 10,
-          y: closestEdge.start.y + slopeY * 10,
-          link: closestEdge.neighbor,
-        } );
+      if ( closestEdge ) {
+        if ( !closestEdge.linked ) {
+          points.push( {
+            angle: angle,
+            x: cell.x + dx * closestDist,
+            y: cell.y + dy * closestDist,
+          } );
+        }
+        else {
+          let slopeX = closestEdge.end.x - closestEdge.start.x;
+          let slopeY = closestEdge.end.y - closestEdge.start.y;
+          const len = Math.hypot( slopeX, slopeY );
+          slopeX /= len;
+          slopeY /= len;
+          points.push( {
+            angle: angle,
+            x: closestEdge.start.x + slopeX * 10,
+            y: closestEdge.start.y + slopeY * 10,
+            link: closestEdge.neighbor,
+          } );
+        }
       }
     }
 
@@ -96,7 +113,7 @@
   let currentPoints = cellPoints.get( cell );
 
   let index = 0;
-  for ( let timeout = 0; timeout < 1000; timeout ++ ) {
+  for ( let timeout = 0; timeout < 10000; timeout ++ ) {
     const currentPoint = currentPoints[ index % currentPoints.length ];
 
     if ( !currentPoint ) {
@@ -139,6 +156,14 @@
   ctx.lineWidth = 1;
   const curves = Curve.getCurvesThroughPoints( points );
   curves.forEach( curve => curve.draw( ctx, 0.2 ) );
+
+  ctx.beginPath();
+  points.forEach( p => ctx.lineTo( p.x, p.y ) );
+  ctx.closePath();
+  ctx.stroke();
+
+  ctx.fillStyle = '#420a';
+  ctx.fill();
 
 
 </script>
