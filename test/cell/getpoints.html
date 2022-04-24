@@ -11,163 +11,31 @@
   import * as Voronoi from '../../src/Voronoi.js';
 
   import { Line } from '../../src/Line.js';
-  import { Curve } from '../../src/Curve.js';
 
 
-  const width = 900, height = 900;
+  const width = 500, height = 500;
   const MIN_EDGE_LENGTH = 40;
 
-  const seeds = Array.from( Array( 30 ), _ => ( {
-    x: Math.random() * width, 
-    y: Math.random() * height
-  } ) );
-
-  let cells = Voronoi.getVoronoiCells( seeds, 0, 0, width, height );
-
-  // Detach edges that are too small to fit through
-  cells.forEach( cell => {
-    cell.edges.forEach( edge => {
-      if ( edge.getLength() < MIN_EDGE_LENGTH ) {
-        cell.detachEdge( edge );
-      }
-    } );
+  const numPoints = 7;
+  const shapePoints = Array.from( Array( numPoints ), ( _, index ) => {
+    const angle = ( 0.5 * Math.random() - index ) * Math.PI * 2 / numPoints;
+    return {
+      x: width  * ( 0.5 + 0.25 * Math.cos( angle ) * ( 0.25 + Math.random() ) ), 
+      y: height * ( 0.5 + 0.25 * Math.sin( angle ) * ( 0.25 + Math.random() ) ),
+    };
   } );
 
-  // Remove some well-connected cells
-  for ( let i = 0; i < 10; i ++ ) {
-    cells.find( e => e.getUnlinkedEdges().length > 4 )?.detachAll();
-  }
-  cells = cells.filter( cell => cell.getUnlinkedEdges().length > 0 );
-  
-  CellGrid.doMazeLink( cells[ 0 ] );
-
-  // Make some cycles
-  // cells[ 0 ].linkTo( cells[ 0 ].getUnlinkedEdges()[ 0 ]?.neighbor );
-  // cells[ 1 ].linkTo( cells[ 1 ].getUnlinkedEdges()[ 0 ]?.neighbor );
+  const cell = new Cell( shapePoints );
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
-  // ctx.translate( 32, 32 );
+  cell.draw( ctx );
 
-  cells.forEach( cell => cell.draw( ctx ) );
+  const points = cell.getEdgePoints( { edgeWidth: 10 } );
 
-
-  const cellPoints = new Map();
-
-  cells.forEach( cell => {
-    const points = [];
-
-    for ( let angle = Math.PI; angle > -Math.PI; angle -= Math.PI * 2 / 32 ) {
-      let dx = Math.cos( angle );
-      let dy = Math.sin( angle );
-
-      let closestDist = Infinity, closestEdge = null;
-      cell.edges.forEach( edge => {
-        const line = new Line( edge.start.x, edge.start.y, edge.end.x, edge.end.y );
-        const dist = line.getTimeToHit( cell.x, cell.y, dx, dy, 10 );
-
-        if ( 0 < dist && dist < closestDist ) {
-          closestDist = dist;
-          closestEdge = edge;
-        }
-      } );
-
-      if ( closestEdge ) {
-        // if ( !closestEdge.linked ) {
-          points.push( {
-            angle: angle,
-            x: cell.x + dx * closestDist,
-            y: cell.y + dy * closestDist,
-            link: closestEdge.linked ? closestEdge.neighbor : null,
-          } );
-        // }
-        // else {
-        //   let slopeX = closestEdge.end.x - closestEdge.start.x;
-        //   let slopeY = closestEdge.end.y - closestEdge.start.y;
-        //   const len = Math.hypot( slopeX, slopeY );
-        //   slopeX /= len;
-        //   slopeY /= len;
-        //   points.push( {
-        //     angle: angle,
-        //     x: closestEdge.start.x + slopeX * 10,
-        //     y: closestEdge.start.y + slopeY * 10,
-        //     link: closestEdge.neighbor,
-        //   } );
-        // }
-      }
-    }
-
-    points.forEach( p => {
-      ctx.fillStyle = `hsl( ${ p.angle }rad, 50%, 50% )`;
-      ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) 
-    } );
-
-    cellPoints.set( cell, points );
+  points.forEach( p => {
+    ctx.fillStyle = p.linked ? '#f005' : '#0f05';
+    ctx.fillRect( p.x - 2, p.y - 2, 4, 4 ) 
   } );
-
-  const points = [];
-
-  const start = cells[ 0 ];
-  let cell = start;
-
-  const visited = new Set();
-
-  let currentPoints = cellPoints.get( cell );
-
-  let index = 0;
-  for ( let timeout = 0; timeout < 10000; timeout ++ ) {
-    const currentPoint = currentPoints[ index % currentPoints.length ];
-
-    if ( !currentPoint ) {
-      break;
-    }
-
-    if ( visited.has( currentPoint ) ) {
-      break;
-    }
-
-    // points.push( currentPoint );
-    // visited.add( currentPoint );
-    
-    if ( currentPoint.link ) {
-      currentPoints = cellPoints.get( currentPoint.link );
-
-      if ( currentPoints[ 0 ].link == cell ) {
-        for ( index = 0; index < currentPoints.length; index ++ ) {
-          if ( currentPoints[ index ].link != cell ) {
-            break;
-          }
-        }
-      }
-      else {
-        for ( index = currentPoints.length - 1; index >= 0; index -- ) {
-          if ( currentPoints[ index ].link == cell ) {
-            break;
-          }
-        }
-        index ++;
-      }
-      
-      cell = currentPoint.link;
-    }
-    else {
-      points.push( currentPoint );
-    visited.add( currentPoint );
-    
-      index ++;
-    }
-  }
-  
-  ctx.lineWidth = 1;
-  const curves = Curve.getCurvesThroughPoints( points );
-  curves.forEach( curve => curve.draw( ctx, 0.2 ) );
-
-  ctx.beginPath();
-  points.forEach( p => ctx.lineTo( p.x, p.y ) );
-  ctx.closePath();
-  ctx.stroke();
-
-  // ctx.fillStyle = '#420a';
-  // ctx.fill();
 
 
 </script>

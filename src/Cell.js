@@ -1,3 +1,5 @@
+import { Line } from './Line.js';
+
 class Edge {
   start;
   end;
@@ -75,8 +77,8 @@ class Edge {
     ctx.beginPath();
     ctx.moveTo( this.start.x, this.start.y );
     ctx.lineTo( this.end.x, this.end.y );
-    ctx.strokeStyle = this.linked ? 'dimgray' : 'white';
-    ctx.lineWidth = this.linked ? 0.5 : 2;
+    ctx.strokeStyle = 'dimgray';//this.linked ? 'dimgray' : 'white';
+    ctx.lineWidth = 1;//this.linked ? 0.5 : 2;
     ctx.stroke();
 
     const midX = ( this.start.x + this.end.x ) / 2;
@@ -156,6 +158,42 @@ export class Cell {
       current.previous = prev;
       current.next = next;
     }
+  }
+
+  getEdgePoints( { edgeWidth = 0, detail = 64, minDistBetweenPoints = 10 } = {} ) {
+    const points = [];
+    let lastPoint;
+  
+    for ( let angle = Math.PI; angle > -Math.PI; angle -= Math.PI * 2 / detail ) {
+      let dx = Math.cos( angle );
+      let dy = Math.sin( angle );
+  
+      let closestDist = Infinity, closestEdge = null;
+      this.edges.forEach( edge => {
+        const line = new Line( edge.start.x, edge.start.y, edge.end.x, edge.end.y );
+        const dist = line.getTimeToHit( this.x, this.y, dx, dy, edgeWidth );
+  
+        if ( 0 < dist && dist < closestDist ) {
+          closestDist = dist;
+          closestEdge = edge;
+        }
+      } );
+  
+      if ( closestEdge ) {
+        const point = {
+          x: this.x + dx * closestDist,
+          y: this.y + dy * closestDist,
+          link: closestEdge.linked ? closestEdge.neighbor : null,
+        }
+  
+        if ( !lastPoint || Math.hypot( point.x - lastPoint.x, point.y - lastPoint.y ) > minDistBetweenPoints ) {
+          points.push( point );
+          lastPoint = point;
+        }
+      }
+    }
+
+    return points;
   }
 
   draw( ctx ) {
