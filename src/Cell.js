@@ -213,8 +213,14 @@ export class Cell {
     if ( edge.neighbor ) {
       const otherEdge = edge.neighbor.edges.find( e => e.neighbor == this );
 
-      edge.neighbor = otherEdge.neighbor = null;
-      edge.linked = otherEdge.linked = false;
+      // TODO: What invalid state are we getting in here? We have a neighbor, but the neighbor doesn't have us???
+      if ( otherEdge ) {
+        otherEdge.neighbor = null;
+        otherEdge.linked = false;
+      }
+
+      edge.neighbor = null;
+      edge.linked = false;
 
       this.links.delete( edge.neighbor );
 

@@ -98,8 +98,10 @@ export class Curve {
       normPath.lineTo( pos.x + norm.x * 10, pos.y + norm.y * 10 );
     }
 
+    ctx.lineWidth = 1;
     ctx.strokeStyle = 'yellow';
     ctx.stroke( posPath );
+    ctx.lineWidth = 0.5;
     ctx.strokeStyle = 'gray';
     ctx.stroke( normPath );
   }

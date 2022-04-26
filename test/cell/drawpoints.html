@@ -17,10 +17,21 @@
   const width = 900, height = 900;
   const MIN_EDGE_LENGTH = 40;
 
-  const seeds = Array.from( Array( 30 ), _ => ( {
-    x: Math.random() * width, 
-    y: Math.random() * height
-  } ) );
+  const spacing = 20;
+
+  const seeds = [];
+  
+  // Prevent duplicate seeds, maybe this causes problems?
+  for ( let i = 0; i < 60; i ++ ) {
+    const seed = {
+      x: Math.floor( Math.random() * width / spacing ) * spacing, 
+      y: Math.floor( Math.random() * height / spacing ) * spacing,
+    };
+
+    if ( seeds.findIndex( s => s.x == seed.x && s.y == seed.y ) < 0 ) {
+      seeds.push( seed );
+    }
+  }
 
   let cells = Voronoi.getVoronoiCells( seeds, 0, 0, width, height );
 
@@ -109,14 +120,14 @@
     }
     else {
       points.push( currentPoint );
-    visited.add( currentPoint );
+      visited.add( currentPoint );
     
       index ++;
     }
   }
   
   ctx.lineWidth = 1;
-  const curves = Curve.getCurvesThroughPoints( points );
+  const curves = Curve.getLoopThroughPoints( points );
   curves.forEach( curve => curve.draw( ctx, 0.2 ) );
 
   ctx.beginPath();
