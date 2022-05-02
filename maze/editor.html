@@ -13,20 +13,32 @@
   const width = 900, height = 900;
   const MIN_EDGE_LENGTH = 40;
 
-  const cellMap = CellMap.fromCellGrid( CellGrid.getHexTriangleGrid( 10, 10, 64, 48 ) );
+  const cellMap = CellMap.fromCellGrid( CellGrid.getHexTriangleGrid( 10, 10, 64, 32 ) );
   cellMap.fullyLink();
     
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
 
   draw();
 
+  let mouseDown = false;
   document.addEventListener( 'mousedown', ( e ) => {
-    const cell = cellUnder( e.clientX, e.clientY );
+    mouseDown = true;
+    removeUnder( e.clientX, e.clientY );
+  } );
+  document.addEventListener( 'mousemove', ( e ) => {
+    if ( mouseDown ) {
+      removeUnder( e.clientX, e.clientY );
+    }
+  } );
+  document.addEventListener( 'mouseup', ( e ) => mouseDown = false );
+
+  function removeUnder( x, y ) {
+    const cell = cellMap.cells.find( cell => cell.contains( x, y ) );
     if ( cell ) {
       cellMap.removeCell( cell );
       draw();
     }
-  } );
+  }
 
   function draw() {
     ctx.clearRect( 0, 0, ctx.canvas.width, ctx.canvas.height );
@@ -34,8 +46,5 @@
     cellMap.cells.forEach( cell => cell.draw( ctx ) );
   }
 
-  function cellUnder( x, y ) {
-    return cellMap.cells.find( cell => cell.contains( x, y ) );
-  }
 
 </script>
