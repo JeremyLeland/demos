@@ -77,7 +77,7 @@ class Edge {
     ctx.beginPath();
     ctx.moveTo( this.start.x, this.start.y );
     ctx.lineTo( this.end.x, this.end.y );
-    ctx.strokeStyle = 'dimgray';//this.linked ? 'dimgray' : 'white';
+    ctx.strokeStyle = this.linked ? 'dimgray' : 'white';
     ctx.lineWidth = 1;//this.linked ? 0.5 : 2;
     ctx.stroke();
 
