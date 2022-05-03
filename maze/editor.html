@@ -9,13 +9,26 @@
   import { Cell } from '../src/Cell.js';
   import { CellMap } from '../src/CellMap.js';
   import * as CellGrid from '../src/CellGrid.js';
+  import * as Voronoi from '../src/Voronoi.js';
 
   import { Curve } from '../src/Curve.js';
   
-  const width = 900, height = 900;
+  const width = 800, height = 800;
   const MIN_EDGE_LENGTH = 40;
 
-  const cellMap = CellMap.fromCellGrid( CellGrid.getHexTriangleGrid( 20, 20, 32, 20 ) );
+  const seeds = [], spacing = 128;
+  
+  for ( let row = 0; row < 10; row ++ ) {
+    for ( let col = 0; col < 10; col ++ ) {
+      seeds.push( {
+        x: spacing * col * ( 0.25 + 0.5 * Math.random() ),
+        y: spacing * row * ( 0.25 + 0.5 * Math.random() ),
+      } );
+    }
+  }
+  
+  const cellMap = new CellMap( Voronoi.getVoronoiCells( seeds, 0, 0, width, height ) );
+  // const cellMap = CellMap.fromCellGrid( CellGrid.getHexTriangleGrid( 10, 20, 32, 20 ) );
   cellMap.fullyLink();
     
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
