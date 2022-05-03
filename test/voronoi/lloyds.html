@@ -1,0 +1,37 @@
+<title>Cell Maze Editor</title>
+<link rel="stylesheet" href="../../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+  import { Cell } from '../../src/Cell.js';
+  import * as Voronoi from '../../src/Voronoi.js';
+  
+  const width = 800, height = 800;
+
+  const seeds = Array.from( Array( 100 ), _ => ( {
+    x: Math.random() * width, 
+    y: Math.random() * height
+  } ) );
+  
+  let cells = Voronoi.getVoronoiCells( seeds, 0, 0, width, height );
+    
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+
+  draw();
+
+  document.addEventListener( 'mousedown', ( e ) => {
+    const centerSeeds = cells.map( cell => ( { x: cell.x, y: cell.y } ) );
+    cells = Voronoi.getVoronoiCells( centerSeeds, 0, 0, width, height );
+    draw();    
+  } );
+
+  function draw() {
+    ctx.clearRect( 0, 0, ctx.canvas.width, ctx.canvas.height );
+    cells.forEach( cell => cell.draw( ctx ) );
+  }
+
+
+</script>

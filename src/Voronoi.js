@@ -29,11 +29,19 @@ export function getVoronoiCells( seeds, minX, minY, maxX, maxY ) {
 }
 
 function getVoronoiInfo( seed, others, minX, minY, maxX, maxY ) {
-  let lines = others.map( other => {  
+
+  const LEFT   = { dist: seed.x - minX, point: { x: minX, y: seed.y }, slope: { x:  0, y: -1 } };
+  const BOTTOM = { dist: maxY - seed.y, point: { x: seed.x, y: maxY }, slope: { x: -1, y:  0 } };
+  const RIGHT  = { dist: maxX - seed.x, point: { x: maxX, y: seed.y }, slope: { x:  0, y:  1 } };
+  const TOP    = { dist: seed.y - minY, point: { x: seed.x, y: minY }, slope: { x:  1, y:  0 } };
+
+  const lines = [ LEFT, BOTTOM, RIGHT, TOP ];
+
+  others.forEach( other => {  
     const halfDist = Math.hypot( other.x - seed.x, other.y - seed.y ) / 2;
     const ang = Math.atan2( other.y - seed.y, other.x - seed.x );
     
-    return {
+    lines.push( {
       seed: other,
       dist: halfDist,
       point: {
@@ -44,7 +52,7 @@ function getVoronoiInfo( seed, others, minX, minY, maxX, maxY ) {
         x: -Math.sin( ang ),
         y:  Math.cos( ang ) 
       }
-    };
+    } );
   } );
   
   const start = lines.reduce( ( a, b ) => { return a.dist < b.dist ? a : b } );
@@ -77,9 +85,9 @@ function getVoronoiInfo( seed, others, minX, minY, maxX, maxY ) {
     };
 
     // Ignore points out of bounds for now
-    if ( currentPoint.x < minX || currentPoint.y < minY || maxX < currentPoint.x || maxY < currentPoint.y ) {
-      return null;
-    }
+    // if ( currentPoint.x < minX || currentPoint.y < minY || maxX < currentPoint.x || maxY < currentPoint.y ) {
+    //   return null;
+    // }
 
     previousLine = currentLine;
     currentLine = closest.line;
