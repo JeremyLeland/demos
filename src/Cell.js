@@ -256,12 +256,34 @@ export class Cell {
   }
 
   unlinkFrom( other ) {
-    // TODO: Fix other links
+    const thisEdge = this.edges.find( edge => edge.neighbor == other );
+    const otherEdge = other.edges.find( edge => edge.neighbor == this );
 
-    this.links.delete( other );
+    if ( thisEdge && otherEdge ) {
+      thisEdge.linked = otherEdge.linked = false;
+  
+      // TODO: Make sure this is correct
+      thisEdge.previous.next = thisEdge;
+      thisEdge.next.previous = thisEdge;
+  
+      otherEdge.previous.next = otherEdge;
+      otherEdge.next.previous = otherEdge;
+
+      this.links.delete( other );
+      other.links.delete( this );
+
+      return true;
+    }
+    else { 
+      return false;
+    }
   }
 
   getUnlinkedEdges() {
     return this.edges.filter( e => e.neighbor && !e.linked );
+  }
+
+  getSolidEdges() {
+    return this.edges.filter( e => !e.linked );
   }
 }

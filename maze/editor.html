@@ -9,31 +9,34 @@
   import { Cell } from '../src/Cell.js';
   import { CellMap } from '../src/CellMap.js';
   import * as CellGrid from '../src/CellGrid.js';
+
+  import { Curve } from '../src/Curve.js';
   
   const width = 900, height = 900;
   const MIN_EDGE_LENGTH = 40;
 
-  const cellMap = CellMap.fromCellGrid( CellGrid.getHexTriangleGrid( 10, 10, 64, 32 ) );
+  const cellMap = CellMap.fromCellGrid( CellGrid.getHexGrid( 2, 4, 64, 32 ) );
   cellMap.fullyLink();
     
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+  ctx.translate( 32, 32 );
 
   draw();
 
   let mouseDown = false;
   document.addEventListener( 'mousedown', ( e ) => {
     mouseDown = true;
-    removeUnder( e.clientX, e.clientY );
+    removeUnderMouse( e );
   } );
   document.addEventListener( 'mousemove', ( e ) => {
     if ( mouseDown ) {
-      removeUnder( e.clientX, e.clientY );
+      removeUnderMouse( e );
     }
   } );
   document.addEventListener( 'mouseup', ( e ) => mouseDown = false );
 
-  function removeUnder( x, y ) {
-    const cell = cellMap.cells.find( cell => cell.contains( x, y ) );
+  function removeUnderMouse( e ) {
+    const cell = cellMap.cells.find( cell => cell.contains( e.clientX - 32, e.clientY - 32 ) );
     if ( cell ) {
       cellMap.removeCell( cell );
       draw();
@@ -41,9 +44,32 @@
   }
 
   function draw() {
-    ctx.clearRect( 0, 0, ctx.canvas.width, ctx.canvas.height );
+    ctx.clearRect( -32, -32, ctx.canvas.width, ctx.canvas.height );
 
     cellMap.cells.forEach( cell => cell.draw( ctx ) );
+
+    const unvisited = new Set( cellMap.getSolidEdges() );
+    const visited = new Set();
+    
+    while ( unvisited.size > 0 ) {
+      const points = [];
+      let [ edge ] = unvisited;
+
+      while ( !visited.has( edge ) ) {
+        visited.add( edge );
+        unvisited.delete( edge );
+
+        points.push( edge.start );
+
+        edge = edge.next;
+      }
+
+      ctx.lineWidth = 1;
+      const curves = Curve.getLoopThroughPoints( points );
+      curves.forEach( curve => {
+        curve.draw( ctx, 0.2 )
+      } );
+    }
   }
 
 

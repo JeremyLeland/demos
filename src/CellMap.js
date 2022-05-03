@@ -27,4 +27,10 @@ export class CellMap {
     cell.detachAll();
     this.cells = this.cells.filter( c => c != cell );
   }
+
+  getSolidEdges() {
+    const edges = [];
+    this.cells.forEach( cell => edges.push( ...cell.getSolidEdges() ) );
+    return edges;
+  }
 }
