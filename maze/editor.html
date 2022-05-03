@@ -15,7 +15,7 @@
   const width = 900, height = 900;
   const MIN_EDGE_LENGTH = 40;
 
-  const cellMap = CellMap.fromCellGrid( CellGrid.getHexGrid( 2, 4, 64, 32 ) );
+  const cellMap = CellMap.fromCellGrid( CellGrid.getHexGrid( 4, 8, 64, 32 ) );
   cellMap.fullyLink();
     
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
@@ -55,13 +55,24 @@
       const points = [];
       let [ edge ] = unvisited;
 
+      let currentCell = edge.parent;
+      let edgeIndex = currentCell.edges.indexOf( edge );
+
       while ( !visited.has( edge ) ) {
         visited.add( edge );
         unvisited.delete( edge );
 
         points.push( edge.start );
 
-        edge = edge.next;
+        edgeIndex = ( edgeIndex + 1 ) % currentCell.edges.length;
+        edge = currentCell.edges[ edgeIndex ];
+
+        if ( edge.linked ) {
+          edgeIndex = edge.neighbor.edges.findIndex( edge => edge.neighbor == currentCell );
+          currentCell = edge.neighbor;
+          edgeIndex = ( edgeIndex + 1 ) % currentCell.edges.length;
+          edge = currentCell.edges[ edgeIndex ];
+        }
       }
 
       ctx.lineWidth = 1;
