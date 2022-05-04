@@ -1,0 +1,44 @@
+<title>Delaunay library usage</title>
+<link rel="stylesheet" href="../../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+  // import Delaunator from 'https://cdn.skypack.dev/delaunator@5.0.0';
+  import Delaunator from '../../lib/delaunay/delaunator.js';
+
+  const width = 800, height = 800;
+  const seeds = Array.from( Array( 100 ), _ => ( {
+    x: Math.random() * width, 
+    y: Math.random() * height
+  } ) );
+
+  const delaunay = Delaunator.from( seeds, ( e ) => e.x, ( e ) => e.y );
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+
+  ctx.beginPath();
+  for ( let t = 0; t < delaunay.triangles.length / 3; t ++ ) {
+    const a = seeds[ delaunay.triangles[ 3 * t ] ];
+    const b = seeds[ delaunay.triangles[ 3 * t + 1 ] ];
+    const c = seeds[ delaunay.triangles[ 3 * t + 2 ] ];
+
+    ctx.moveTo( a.x, a.y );
+    ctx.lineTo( b.x, b.y );
+    ctx.lineTo( c.x, c.y );
+    ctx.lineTo( a.x, a.y );
+  }
+  ctx.strokeStyle = 'gray';
+  ctx.stroke();
+
+  ctx.beginPath();
+  seeds.forEach( seed => {
+    ctx.moveTo( seed.x, seed.y );
+    ctx.arc( seed.x, seed.y, 3, 0, Math.PI * 2 );
+  } );
+  ctx.fillStyle = 'red';
+  ctx.fill();
+
+</script>

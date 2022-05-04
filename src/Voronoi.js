@@ -30,10 +30,10 @@ export function getVoronoiCells( seeds, minX, minY, maxX, maxY ) {
 
 function getVoronoiInfo( seed, others, minX, minY, maxX, maxY ) {
 
-  const LEFT   = { dist: seed.x - minX, point: { x: minX, y: seed.y }, slope: { x:  0, y: -1 } };
-  const BOTTOM = { dist: maxY - seed.y, point: { x: seed.x, y: maxY }, slope: { x: -1, y:  0 } };
-  const RIGHT  = { dist: maxX - seed.x, point: { x: maxX, y: seed.y }, slope: { x:  0, y:  1 } };
-  const TOP    = { dist: seed.y - minY, point: { x: seed.x, y: minY }, slope: { x:  1, y:  0 } };
+  const LEFT   = { seed: { x: minX, y: seed.y }, dist: seed.x - minX, point: { x: minX, y: seed.y }, slope: { x:  0, y: -1 } };
+  const BOTTOM = { seed: { x: seed.x, y: maxY }, dist: maxY - seed.y, point: { x: seed.x, y: maxY }, slope: { x: -1, y:  0 } };
+  const RIGHT  = { seed: { x: maxX, y: seed.y }, dist: maxX - seed.x, point: { x: maxX, y: seed.y }, slope: { x:  0, y:  1 } };
+  const TOP    = { seed: { x: seed.x, y: minY }, dist: seed.y - minY, point: { x: seed.x, y: minY }, slope: { x:  1, y:  0 } };
 
   const lines = [ LEFT, BOTTOM, RIGHT, TOP ];
 
@@ -92,7 +92,7 @@ function getVoronoiInfo( seed, others, minX, minY, maxX, maxY ) {
     previousLine = currentLine;
     currentLine = closest.line;
 
-    if ( previousLine.seed && currentLine.seed ) {
+    if ( currentLine.seed ) {
       points.push( {
         x: ( seed.x + previousLine.seed.x + currentLine.seed.x ) / 3,
         y: ( seed.y + previousLine.seed.y + currentLine.seed.y ) / 3,
