@@ -32,7 +32,6 @@
   cellMap.fullyLink();
     
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
-  ctx.translate( 32, 32 );
 
   draw();
 
@@ -49,7 +48,7 @@
   document.addEventListener( 'mouseup', ( e ) => mouseDown = false );
 
   function removeUnderMouse( e ) {
-    const cell = cellMap.cells.find( cell => cell.contains( e.clientX - 32, e.clientY - 32 ) );
+    const cell = cellMap.cells.find( cell => cell.contains( e.clientX, e.clientY ) );
     if ( cell ) {
       cellMap.removeCell( cell );
       draw();
@@ -57,7 +56,7 @@
   }
 
   function draw() {
-    ctx.clearRect( -32, -32, ctx.canvas.width, ctx.canvas.height );
+    ctx.clearRect( 0, 0, ctx.canvas.width, ctx.canvas.height );
 
     cellMap.cells.forEach( cell => cell.draw( ctx ) );
 
