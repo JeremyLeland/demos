@@ -42,15 +42,17 @@ export function getPath( start, goal ) {
     }
 
     current.links.forEach( link => {
-      // d(current,neighbor) is the weight of the edge from current to neighbor
-      // tentative_gScore is the distance from start to the neighbor through current
-      const tentative_gScore = gScore.get( current ) + estimateCost( current, link );
-      if ( tentative_gScore < ( gScore.get( link ) ?? Infinity ) ) {
-        // This path to neighbor is better than any previous one. Record it!
-        cameFrom.set( link, current );
-        gScore.set( link, tentative_gScore );
-        fScore.set( link,  gScore.get( link ) + estimateCost( link, goal ) );
-        openSet.insert( link, tentative_gScore );
+      if ( link ) {
+        // d(current,neighbor) is the weight of the edge from current to neighbor
+        // tentative_gScore is the distance from start to the neighbor through current
+        const tentative_gScore = gScore.get( current ) + estimateCost( current, link );
+        if ( tentative_gScore < ( gScore.get( link ) ?? Infinity ) ) {
+          // This path to neighbor is better than any previous one. Record it!
+          cameFrom.set( link, current );
+          gScore.set( link, tentative_gScore );
+          fScore.set( link,  gScore.get( link ) + estimateCost( link, goal ) );
+          openSet.insert( link, tentative_gScore );
+        }
       }
     } );
   }

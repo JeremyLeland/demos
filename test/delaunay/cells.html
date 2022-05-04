@@ -1,0 +1,92 @@
+<title>Delaunay library usage</title>
+<link rel="stylesheet" href="../../style.css">
+
+<body>
+  <canvas id="canvas" width="800px" height="800px"></canvas>
+</body>
+
+<script type="module">
+  // import Delaunator from 'https://cdn.skypack.dev/delaunator@5.0.0';
+  import Delaunator from '../../lib/delaunay/delaunator.js';
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+
+  const width = 800, height = 800;
+  const seeds = Array.from( Array( 100 ), _ => ( {
+    x: Math.random() * width, 
+    y: Math.random() * height
+  } ) );
+
+  const delaunay = Delaunator.from( seeds, ( e ) => e.x, ( e ) => e.y );
+
+  class Cell {
+    edges = [];
+    links = [];
+  }
+
+  const cells = Array.from( seeds, _ => new Cell() );
+  
+  delaunay.triangles.forEach( ( seedIndex, halfEdgeId ) => {
+    const oppositeId = delaunay.halfedges[ halfEdgeId ];
+
+    if ( oppositeId > -1 ) {   
+      const leftTriIndex = Math.floor( halfEdgeId / 3 );
+      const rightTriIndex = Math.floor( oppositeId / 3 );
+
+      const us = seeds[ seedIndex ];
+
+      ctx.beginPath();
+      ctx.arc( us.x, us.y, 3, 0, Math.PI * 2 );
+      ctx.fillStyle = 'red';
+      ctx.fill();
+
+      const them = seeds[ delaunay.triangles[ oppositeId ] ];
+      
+      ctx.beginPath();
+      ctx.moveTo( us.x, us.y );
+      ctx.lineTo( them.x, them.y );
+      ctx.strokeStyle = 'green';
+      ctx.stroke();
+      
+      const leftIndices = delaunay.triangles.slice( 3 * leftTriIndex, 3 * leftTriIndex + 3 );
+      const rightIndices = delaunay.triangles.slice( 3 * rightTriIndex, 3 * rightTriIndex + 3 );
+
+      const leftPoints = Array.from( leftIndices, index => seeds[ index ] );
+      const rightPoints = Array.from( rightIndices, index => seeds[ index ] );
+
+      // ctx.beginPath();
+      // leftPoints.forEach( p => ctx.lineTo( p.x, p.y ) );
+      // ctx.fillStyle = 'orange';
+      // ctx.fill();
+
+      // ctx.beginPath();
+      // rightPoints.forEach( p => ctx.lineTo( p.x, p.y ) );
+      // ctx.fillStyle = 'purple';
+      // ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(
+        ( leftPoints[ 0 ].x + leftPoints[ 1 ].x + leftPoints[ 2 ].x ) / 3,
+        ( leftPoints[ 0 ].y + leftPoints[ 1 ].y + leftPoints[ 2 ].y ) / 3,
+      );
+      ctx.lineTo(
+        ( rightPoints[ 0 ].x + rightPoints[ 1 ].x + rightPoints[ 2 ].x ) / 3,
+        ( rightPoints[ 0 ].y + rightPoints[ 1 ].y + rightPoints[ 2 ].y ) / 3,
+      );
+      ctx.strokeStyle = 'cyan';
+      ctx.stroke();
+      
+      cells[ seedIndex ].links.push( them );
+    }
+  } );
+  
+  
+  // ctx.beginPath();
+  // seeds.forEach( seed => {
+  //   ctx.moveTo( seed.x, seed.y );
+  //   ctx.arc( seed.x, seed.y, 3, 0, Math.PI * 2 );
+  // } );
+  // ctx.fillStyle = 'red';
+  // ctx.fill();
+
+</script>
