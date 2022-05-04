@@ -81,15 +81,24 @@ class Edge {
     ctx.lineWidth = 1;//this.linked ? 0.5 : 2;
     ctx.stroke();
 
-    const midX = ( this.start.x + this.end.x ) / 2;
-    const midY = ( this.start.y + this.end.y ) / 2;
+    if ( this.neighbor ) {
+      ctx.beginPath();
+      ctx.moveTo( this.parent.x, this.parent.y );
+      ctx.lineTo( this.neighbor.x, this.neighbor.y );
+      ctx.strokeStyle = 'gray';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
 
-    ctx.beginPath();
-    ctx.moveTo( midX, midY );
-    ctx.lineTo( midX + this.normal.x * 10, midY + this.normal.y * 10 );
-    ctx.strokeStyle = 'dimgray';
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    // const midX = ( this.start.x + this.end.x ) / 2;
+    // const midY = ( this.start.y + this.end.y ) / 2;
+
+    // ctx.beginPath();
+    // ctx.moveTo( midX, midY );
+    // ctx.lineTo( midX + this.normal.x * 10, midY + this.normal.y * 10 );
+    // ctx.strokeStyle = 'dimgray';
+    // ctx.lineWidth = 1;
+    // ctx.stroke();
 
     // // DEBUG: Edge angles
     // const prev = this.previous.start, curr = this.start, next = this.end;
@@ -115,14 +124,14 @@ class Edge {
     //   ctx.fillText( delta.toFixed( 4 ), this.start.x + xOff, this.start.y + yOff ); 
     // }
 
-    if ( this.neighbor ) {
-      ctx.beginPath();
-      ctx.moveTo( midX, midY );
-      ctx.lineTo( this.neighbor.x, this.neighbor.y );
-      ctx.strokeStyle = this.linked ? 'green' : 'blue';
-      ctx.lineWidth = this.linked ? 1 : 0.5;
-      ctx.stroke();
-    }
+    // if ( this.neighbor ) {
+    //   ctx.beginPath();
+    //   ctx.moveTo( midX, midY );
+    //   ctx.lineTo( this.neighbor.x, this.neighbor.y );
+    //   ctx.strokeStyle = this.linked ? 'green' : 'blue';
+    //   ctx.lineWidth = this.linked ? 1 : 0.5;
+    //   ctx.stroke();
+    // }
   }
 }
 
@@ -199,8 +208,10 @@ export class Cell {
   draw( ctx ) {
     this.edges.forEach( edge => edge.draw( ctx ) );
 
-    ctx.fillStyle = this.edges.length > 0 ? 'olive' : 'darkred';
-    ctx.fillRect( this.x - 1, this.y - 1, 2, 2 );
+    ctx.beginPath();
+    ctx.arc( this.x, this.y, 3, 0, Math.PI * 2 );
+    ctx.fillStyle = 'red';
+    ctx.fill();
   }
 
   contains( x, y ) {
