@@ -4,13 +4,22 @@
 
 <body>
   <svg width="100%" height="100%">
-    <path id="test" stroke="yellow" fill="transparent"/>
+    <path id="test" transform="translate(100, 100)" stroke="yellow" fill="transparent"/>
   </svg>
 </body>
 
 <script type="module">
   import { Curve } from '../src/Curve.js';
 
+  const left = [
+    { x:   0, y:   0 },
+    { x: -10, y:  75 },
+    { x:  30, y:  70 },
+    { x:  50, y: 100 },
+    { x:  30, y: 130 },
+    { x: -10, y: 125 },
+    { x:   0, y: 200 },
+  ];
   const bottom = [
     { x:   0, y: 200 },
     { x:  75, y: 210 },
@@ -20,18 +29,46 @@
     { x: 125, y: 210 },
     { x: 200, y: 200 },
   ];
+  const right = [
+    { x: 200, y: 200 },
+    { x: 210, y: 125 },
+    { x: 170, y: 130 },
+    { x: 150, y: 100 },
+    { x: 170, y:  70 },
+    { x: 210, y:  75 },
+    { x: 200, y:   0 },
+  ];
+  const top = [
+    { x: 200, y: 0 },
+    { x: 125, y: -10 },
+    { x: 130, y: 30 },
+    { x: 100, y: 50 },
+    { x:  70, y: 30 },
+    { x:  75, y: -10 },
+    { x:   0, y: 0 },
+  ];
 
-  const curves = Curve.getCurvesThroughPoints( bottom );
+  const leftCurves = Curve.getCurvesThroughPoints( left );
+  const bottomCurves = Curve.getCurvesThroughPoints( bottom );
+  const rightCurves = Curve.getCurvesThroughPoints( right );
+  const topCurves = Curve.getCurvesThroughPoints( top );
 
   const path = document.getElementById( 'test' );
 
   path.setAttribute( 'd', 
-    `M ${ print( curves[ 0 ].start ) } ` + 
-    curves.map( 
-      curve => `C ${ print( curve.control1 ) } ${ print( curve.control2 ) } ${ print( curve.end ) } `
-    ).join('')
+    'M ' + printPoint( leftCurves[ 0 ].start ) + 
+    printCurves( leftCurves ) +
+    printCurves( bottomCurves ) +
+    printCurves( rightCurves ) +
+    printCurves( topCurves )
   );
 
-  function print( point ) { return `${ point.x },${ point.y }` }
+  function printCurves( curves ) {
+    return curves.map( 
+      c => `C ${ printPoint( c.control1 ) } ${ printPoint( c.control2 ) } ${ printPoint( c.end ) } `
+    ).join('')
+  }
+
+  function printPoint( p ) { return `${ p.x },${ p.y }` }
 
 </script>
