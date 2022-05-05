@@ -1,74 +1,98 @@
 <title>Jigsaw-style curves</title>
 <link rel="stylesheet" href="../style.css">
 
+<style>
+  .piece {
+    position: absolute;
+  }
+</style>
 
 <body>
-  <svg width="100%" height="100%">
-    <path id="test" transform="translate(100, 100)" stroke="yellow" fill="transparent"/>
-  </svg>
+  <!-- <svg width="100%" height="100%">
+    <defs>
+      <pattern id="picture" patternUnits="userSpaceOnUse" x="0" y="0" width="800" height="500">
+        <image x="0" y="0" width="800" height="500" href="https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg"></image>
+      </pattern>
+    </defs>
+    <path id="test" transform="translate( 100, 100 )" stroke="yellow" fill="url( #picture )"/>
+  </svg> -->
+  <img class="piece" id="test2" src="https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg"></image>
+  <img class="piece" id="test3" src="https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg"></image>
 </body>
 
 <script type="module">
   import { Curve } from '../src/Curve.js';
 
-  const left = [
-    { x:   0, y:   0 },
-    { x: -10, y:  75 },
-    { x:  30, y:  70 },
-    { x:  50, y: 100 },
-    { x:  30, y: 130 },
-    { x: -10, y: 125 },
-    { x:   0, y: 200 },
-  ];
-  const bottom = [
-    { x:   0, y: 200 },
-    { x:  75, y: 210 },
-    { x:  70, y: 170 },
-    { x: 100, y: 150 },
-    { x: 130, y: 170 },
-    { x: 125, y: 210 },
-    { x: 200, y: 200 },
-  ];
-  const right = [
-    { x: 200, y: 200 },
-    { x: 210, y: 125 },
-    { x: 170, y: 130 },
-    { x: 150, y: 100 },
-    { x: 170, y:  70 },
-    { x: 210, y:  75 },
-    { x: 200, y:   0 },
-  ];
-  const top = [
-    { x: 200, y: 0 },
-    { x: 125, y: -10 },
-    { x: 130, y: 30 },
-    { x: 100, y: 50 },
-    { x:  70, y: 30 },
-    { x:  75, y: -10 },
-    { x:   0, y: 0 },
+  // TODO: Make these an array of vertical and horizontal edges, build pieces from that
+  const rows = [
+    [
+      { x:   0, y:   0 },
+      { x:  75, y:  10 },
+      { x:  70, y: -30 },
+      { x: 100, y: -50 },
+      { x: 130, y: -30 },
+      { x: 125, y:  10 },
+      { x: 200, y:   0 },
+    ],
+    [
+      { x:   0, y:   0 },
+      { x:  75, y: -10 },
+      { x:  70, y:  30 },
+      { x: 100, y:  50 },
+      { x: 130, y:  30 },
+      { x: 125, y: -10 },
+      { x: 200, y:   0 },
+    ],
   ];
 
-  const leftCurves = Curve.getCurvesThroughPoints( left );
-  const bottomCurves = Curve.getCurvesThroughPoints( bottom );
-  const rightCurves = Curve.getCurvesThroughPoints( right );
-  const topCurves = Curve.getCurvesThroughPoints( top );
+  const cols = [
+    [
+      { x:   0, y:   0 },
+      { x:  10, y:  75 },
+      { x: -30, y:  70 },
+      { x: -50, y: 100 },
+      { x: -30, y: 130 },
+      { x:  10, y: 125 },
+      { x:   0, y: 200 },
+    ],
+    [
+      { x:   0, y:   0 },
+      { x: -10, y:  75 },
+      { x:  30, y:  70 },
+      { x:  50, y: 100 },
+      { x:  30, y: 130 },
+      { x: -10, y: 125 },
+      { x:   0, y: 200 },
+    ],
+  ];
 
-  const path = document.getElementById( 'test' );
+  const leftCurves = Curve.getCurvesThroughPoints( cols[ 0 ] );
+  const bottomCurves = Curve.getCurvesThroughPoints( rows[ 1 ] );
+  const rightCurves = Curve.getCurvesThroughPoints( cols[ 1 ].reverse() );
+  const topCurves = Curve.getCurvesThroughPoints( rows[ 0 ].reverse() );
 
-  path.setAttribute( 'd', 
-    'M ' + printPoint( leftCurves[ 0 ].start ) + 
-    printCurves( leftCurves ) +
-    printCurves( bottomCurves ) +
-    printCurves( rightCurves ) +
-    printCurves( topCurves )
-  );
+  const path2 = document.getElementById( 'test2' );
 
-  function printCurves( curves ) {
+  path2.style.clipPath = 'path( \'M ' + printPoint( leftCurves[ 0 ].start, 0, 0 ) + 
+    printCurves( leftCurves, 0, 0 ) +
+    printCurves( bottomCurves, 0, 200 ) +
+    printCurves( rightCurves, 200, 0 ) +
+    printCurves( topCurves, 0, 0 ) + '\')';
+
+  const path3 = document.getElementById( 'test3' );
+
+  path3.style.clipPath = 'path( \'M ' + printPoint( leftCurves[ 0 ].start, 200, 200 ) + 
+    printCurves( leftCurves, 200, 200 ) +
+    printCurves( bottomCurves, 200, 400 ) +
+    printCurves( rightCurves, 400, 200 ) +
+    printCurves( topCurves, 200, 200 ) + '\')';
+
+  function printCurves( curves, x, y ) {
     return curves.map( 
-      c => `C ${ printPoint( c.control1 ) } ${ printPoint( c.control2 ) } ${ printPoint( c.end ) } `
+      c => `C ${ printPoint( c.control1, x, y ) } ${ printPoint( c.control2, x, y ) } ${ printPoint( c.end, x, y ) } `
     ).join('')
   }
 
-  function printPoint( p ) { return `${ p.x },${ p.y }` }
+  function printPoint( p, x, y ) { return `${ x + p.x },${ y + p.y }` }
 
 </script>
