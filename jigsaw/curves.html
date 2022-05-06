@@ -7,92 +7,94 @@
   }
 </style>
 
-<body>
-  <!-- <svg width="100%" height="100%">
-    <defs>
-      <pattern id="picture" patternUnits="userSpaceOnUse" x="0" y="0" width="800" height="500">
-        <image x="0" y="0" width="800" height="500" href="https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg"></image>
-      </pattern>
-    </defs>
-    <path id="test" transform="translate( 100, 100 )" stroke="yellow" fill="url( #picture )"/>
-  </svg> -->
-  <img class="piece" id="test2" src="https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg"></image>
-  <img class="piece" id="test3" src="https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg"></image>
-</body>
-
 <script type="module">
   import { Curve } from '../src/Curve.js';
 
-  // TODO: Make these an array of vertical and horizontal edges, build pieces from that
-  const rows = [
-    [
-      { x:   0, y:   0 },
-      { x:  75, y:  10 },
-      { x:  70, y: -30 },
-      { x: 100, y: -50 },
-      { x: 130, y: -30 },
-      { x: 125, y:  10 },
-      { x: 200, y:   0 },
-    ],
-    [
-      { x:   0, y:   0 },
-      { x:  75, y: -10 },
-      { x:  70, y:  30 },
-      { x: 100, y:  50 },
-      { x: 130, y:  30 },
-      { x: 125, y: -10 },
-      { x: 200, y:   0 },
-    ],
-  ];
+  //const imageSrc = 'https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg';
+  const imageSrc = 'https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F10%2F22%2Fpink-camellias.jpg';
 
-  const cols = [
-    [
-      { x:   0, y:   0 },
-      { x:  10, y:  75 },
-      { x: -30, y:  70 },
-      { x: -50, y: 100 },
-      { x: -30, y: 130 },
-      { x:  10, y: 125 },
-      { x:   0, y: 200 },
-    ],
-    [
-      { x:   0, y:   0 },
-      { x: -10, y:  75 },
-      { x:  30, y:  70 },
-      { x:  50, y: 100 },
-      { x:  30, y: 130 },
-      { x: -10, y: 125 },
-      { x:   0, y: 200 },
-    ],
-  ];
+  const POINTS_PER_SIDE = 6;
+  const size = 200;
 
-  const leftCurves = Curve.getCurvesThroughPoints( cols[ 0 ] );
-  const bottomCurves = Curve.getCurvesThroughPoints( rows[ 1 ] );
-  const rightCurves = Curve.getCurvesThroughPoints( cols[ 1 ].reverse() );
-  const topCurves = Curve.getCurvesThroughPoints( rows[ 0 ].reverse() );
+  // TODO: Randomize these for variety
+  const NECK_WIDTH = 50, NECK_DEPTH = -10, HEAD_WIDTH = 60, HEAD_DEPTH = 30, TIP_DEPTH = 50;
+  const NOTCH_OFFSET = 100;
 
-  const path2 = document.getElementById( 'test2' );
+  const cols = [], rows = [];
+  const NUM_COLS = 4, NUM_ROWS = 3;
 
-  path2.style.clipPath = 'path( \'M ' + printPoint( leftCurves[ 0 ].start, 0, 0 ) + 
-    printCurves( leftCurves, 0, 0 ) +
-    printCurves( bottomCurves, 0, 200 ) +
-    printCurves( rightCurves, 200, 0 ) +
-    printCurves( topCurves, 0, 0 ) + '\')';
+  for ( let col = 1; col < NUM_COLS; col ++ ) {
+    const colPoints = [];
 
-  const path3 = document.getElementById( 'test3' );
+    for ( let row = 0; row < NUM_ROWS; row ++ ) {
+      colPoints.push(
+        { x: size * col, y: size * row },
+        { x: size * col + NECK_DEPTH, y: size * row + NOTCH_OFFSET - NECK_WIDTH / 2 },
+        { x: size * col + HEAD_DEPTH, y: size * row + NOTCH_OFFSET - HEAD_WIDTH / 2 },
+        { x: size * col + TIP_DEPTH , y: size * row + NOTCH_OFFSET                  },
+        { x: size * col + HEAD_DEPTH, y: size * row + NOTCH_OFFSET + HEAD_WIDTH / 2 },
+        { x: size * col + NECK_DEPTH, y: size * row + NOTCH_OFFSET + NECK_WIDTH / 2 },
+      );
+    }
 
-  path3.style.clipPath = 'path( \'M ' + printPoint( leftCurves[ 0 ].start, 200, 200 ) + 
-    printCurves( leftCurves, 200, 200 ) +
-    printCurves( bottomCurves, 200, 400 ) +
-    printCurves( rightCurves, 400, 200 ) +
-    printCurves( topCurves, 200, 200 ) + '\')';
+    colPoints.push( { x: size * col, y: size * NUM_ROWS } );
 
-  function printCurves( curves, x, y ) {
-    return curves.map( 
-      c => `C ${ printPoint( c.control1, x, y ) } ${ printPoint( c.control2, x, y ) } ${ printPoint( c.end, x, y ) } `
-    ).join('')
+    cols.push( colPoints );
   }
 
-  function printPoint( p, x, y ) { return `${ x + p.x },${ y + p.y }` }
+  for ( let row = 1; row < NUM_ROWS; row ++ ) {
+    const rowPoints = [];
+
+    for ( let col = 0; col < NUM_COLS; col ++ ) {
+      rowPoints.push(
+        { x: size * col, y: size * row },
+        { x: size * col + NOTCH_OFFSET - NECK_WIDTH / 2, y: size * row + NECK_DEPTH },
+        { x: size * col + NOTCH_OFFSET - HEAD_WIDTH / 2, y: size * row + HEAD_DEPTH },
+        { x: size * col + NOTCH_OFFSET                 , y: size * row + TIP_DEPTH  },
+        { x: size * col + NOTCH_OFFSET + HEAD_WIDTH / 2, y: size * row + HEAD_DEPTH },
+        { x: size * col + NOTCH_OFFSET + NECK_WIDTH / 2, y: size * row + NECK_DEPTH },
+      );
+    }
+
+    rowPoints.push( { x: size * NUM_COLS, y: size * row } );
+
+    rows.push( rowPoints );
+  }
+
+  for ( let row = 0; row < NUM_ROWS; row ++ ) {
+    for ( let col = 0; col < NUM_COLS; col ++ ) {
+      addPiece( col, row );
+    }
+  }
+  
+  function addPiece( col, row ) {
+    const left   = col == 0            ? printLine( col    , row + 1 ) : printCurves( cols[ col - 1 ].slice( POINTS_PER_SIDE * row, 1 + POINTS_PER_SIDE * ( row + 1 ) ) );
+    const bottom = row == NUM_ROWS - 1 ? printLine( col + 1, row + 1 ) : printCurves( rows[ row     ].slice( POINTS_PER_SIDE * col, 1 + POINTS_PER_SIDE * ( col + 1 ) ) );
+    const right  = col == NUM_COLS - 1 ? printLine( col + 1, row     ) : printCurves( cols[ col     ].slice( POINTS_PER_SIDE * row, 1 + POINTS_PER_SIDE * ( row + 1 ) ).reverse() );
+    const top    = row == 0            ? printLine( col    , row     ) : printCurves( rows[ row - 1 ].slice( POINTS_PER_SIDE * col, 1 + POINTS_PER_SIDE * ( col + 1 ) ).reverse() );
+    
+    const piece = document.createElement( 'img' );
+    piece.className = 'piece';
+    piece.src = imageSrc;
+    piece.style.clipPath = 'path( \'' +
+      `M ${ col * size },${ row * size } ` + 
+      left + bottom + right + top +
+    '\')';
+    document.body.appendChild( piece );
+  }
+
+  function printLine( col, row ) {
+    return `L ${ col * size },${ row * size } `;
+  }
+
+  function printCurves( points ) {
+    const curves = Curve.getCurvesThroughPoints( points );
+
+    return curves.map( 
+      c => `C ${ printPoint( c.control1 ) } ${ printPoint( c.control2 ) } ${ printPoint( c.end ) }`
+    ).join(' ');
+  }
+
+  function printPoint( p ) { return `${ p.x },${ p.y }`; }
 
 </script>
