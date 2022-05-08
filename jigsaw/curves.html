@@ -24,39 +24,26 @@
   const cols = [], rows = [];
   const NUM_COLS = 8, NUM_ROWS = 6;
 
-  // TODO: Randomize whether 'innie' or 'outie'
-  function getWidths() {
+  function getOffsets() {
+    const dir = Math.random() < 0.5 ? -1 : 1;
     return [
-      0,
-      NOTCH_OFFSET - NECK_WIDTH / 2,
-      NOTCH_OFFSET - HEAD_WIDTH / 2,
-      NOTCH_OFFSET,
-      NOTCH_OFFSET + HEAD_WIDTH / 2,
-      NOTCH_OFFSET + NECK_WIDTH / 2,
-    ];
-  }
-
-  function getDepths() {
-    return [
-      0,
-      NECK_DEPTH,
-      HEAD_DEPTH,
-      TIP_DEPTH,
-      HEAD_DEPTH,
-      NECK_DEPTH,
-    ];
+      { width: 0                            , depth: 0          },
+      { width: NOTCH_OFFSET - NECK_WIDTH / 2, depth: NECK_DEPTH },
+      { width: NOTCH_OFFSET - HEAD_WIDTH / 2, depth: HEAD_DEPTH },
+      { width: NOTCH_OFFSET                 , depth: TIP_DEPTH  },
+      { width: NOTCH_OFFSET + HEAD_WIDTH / 2, depth: HEAD_DEPTH },
+      { width: NOTCH_OFFSET + NECK_WIDTH / 2, depth: NECK_DEPTH },
+    ].map( o => ( { width: o.width, depth: dir * o.depth } ) );
   }
 
   for ( let col = 1; col < NUM_COLS; col ++ ) {
     const colPoints = [];
 
     for ( let row = 0; row < NUM_ROWS; row ++ ) {
-      const widths = getWidths();
-      const depths = getDepths();
-      
-      for ( let i = 0; i < POINTS_PER_SIDE; i ++ ) {
-        colPoints.push( { x: size * ( col + depths[ i ] ), y: size * ( row + widths[ i ] ) } );
-      }
+      colPoints.push(...getOffsets().map( o => ( {
+        x: size * ( col + o.depth ), 
+        y: size * ( row + o.width ),
+      } ) ) );
     }
 
     colPoints.push( { x: size * col, y: size * NUM_ROWS } );
@@ -68,12 +55,10 @@
     const rowPoints = [];
 
     for ( let col = 0; col < NUM_COLS; col ++ ) {
-      const widths = getWidths();
-      const depths = getDepths();
-      
-      for ( let i = 0; i < POINTS_PER_SIDE; i ++ ) {
-        rowPoints.push( { x: size * ( col + widths[ i ] ), y: size * ( row + depths[ i ] ) } );
-      }
+      rowPoints.push(...getOffsets().map( o => ( {
+        x: size * ( col + o.width ), 
+        y: size * ( row + o.depth ),
+      } ) ) );
     }
 
     rowPoints.push( { x: size * NUM_COLS, y: size * row } );
