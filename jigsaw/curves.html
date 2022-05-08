@@ -14,27 +14,49 @@
   const imageSrc = 'https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F10%2F22%2Fpink-camellias.jpg';
 
   const POINTS_PER_SIDE = 6;
-  const size = 200;
+  const size = 100;
 
   // TODO: Randomize these for variety
-  const NECK_WIDTH = 50, NECK_DEPTH = -10, HEAD_WIDTH = 60, HEAD_DEPTH = 30, TIP_DEPTH = 50;
-  const NOTCH_OFFSET = 100;
+  // TODO: Make these percentage (for 'size * ( col + VAL )')
+  const NECK_WIDTH = 0.25, NECK_DEPTH = -0.05, HEAD_WIDTH = 0.3, HEAD_DEPTH = 0.15, TIP_DEPTH = 0.25;
+  const NOTCH_OFFSET = 0.5;
 
   const cols = [], rows = [];
-  const NUM_COLS = 4, NUM_ROWS = 3;
+  const NUM_COLS = 8, NUM_ROWS = 6;
+
+  // TODO: Randomize whether 'innie' or 'outie'
+  function getWidths() {
+    return [
+      0,
+      NOTCH_OFFSET - NECK_WIDTH / 2,
+      NOTCH_OFFSET - HEAD_WIDTH / 2,
+      NOTCH_OFFSET,
+      NOTCH_OFFSET + HEAD_WIDTH / 2,
+      NOTCH_OFFSET + NECK_WIDTH / 2,
+    ];
+  }
+
+  function getDepths() {
+    return [
+      0,
+      NECK_DEPTH,
+      HEAD_DEPTH,
+      TIP_DEPTH,
+      HEAD_DEPTH,
+      NECK_DEPTH,
+    ];
+  }
 
   for ( let col = 1; col < NUM_COLS; col ++ ) {
     const colPoints = [];
 
     for ( let row = 0; row < NUM_ROWS; row ++ ) {
-      colPoints.push(
-        { x: size * col, y: size * row },
-        { x: size * col + NECK_DEPTH, y: size * row + NOTCH_OFFSET - NECK_WIDTH / 2 },
-        { x: size * col + HEAD_DEPTH, y: size * row + NOTCH_OFFSET - HEAD_WIDTH / 2 },
-        { x: size * col + TIP_DEPTH , y: size * row + NOTCH_OFFSET                  },
-        { x: size * col + HEAD_DEPTH, y: size * row + NOTCH_OFFSET + HEAD_WIDTH / 2 },
-        { x: size * col + NECK_DEPTH, y: size * row + NOTCH_OFFSET + NECK_WIDTH / 2 },
-      );
+      const widths = getWidths();
+      const depths = getDepths();
+      
+      for ( let i = 0; i < POINTS_PER_SIDE; i ++ ) {
+        colPoints.push( { x: size * ( col + depths[ i ] ), y: size * ( row + widths[ i ] ) } );
+      }
     }
 
     colPoints.push( { x: size * col, y: size * NUM_ROWS } );
@@ -46,14 +68,12 @@
     const rowPoints = [];
 
     for ( let col = 0; col < NUM_COLS; col ++ ) {
-      rowPoints.push(
-        { x: size * col, y: size * row },
-        { x: size * col + NOTCH_OFFSET - NECK_WIDTH / 2, y: size * row + NECK_DEPTH },
-        { x: size * col + NOTCH_OFFSET - HEAD_WIDTH / 2, y: size * row + HEAD_DEPTH },
-        { x: size * col + NOTCH_OFFSET                 , y: size * row + TIP_DEPTH  },
-        { x: size * col + NOTCH_OFFSET + HEAD_WIDTH / 2, y: size * row + HEAD_DEPTH },
-        { x: size * col + NOTCH_OFFSET + NECK_WIDTH / 2, y: size * row + NECK_DEPTH },
-      );
+      const widths = getWidths();
+      const depths = getDepths();
+      
+      for ( let i = 0; i < POINTS_PER_SIDE; i ++ ) {
+        rowPoints.push( { x: size * ( col + widths[ i ] ), y: size * ( row + depths[ i ] ) } );
+      }
     }
 
     rowPoints.push( { x: size * NUM_COLS, y: size * row } );
@@ -80,6 +100,7 @@
       `M ${ col * size },${ row * size } ` + 
       left + bottom + right + top +
     '\')';
+    piece.style.transform = `translate( ${ col * 10 }px, ${ row * 10 }px )`;
     document.body.appendChild( piece );
   }
 
