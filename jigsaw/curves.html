@@ -2,8 +2,20 @@
 <link rel="stylesheet" href="../style.css">
 
 <style>
+  body { background-color: brown;}
   .piece {
     position: absolute;
+  }
+  .outline {
+    position: absolute;
+    filter: drop-shadow(1px 0px 0px black)
+          drop-shadow(-1px 0px 0px black)
+          drop-shadow(0px 1px 0px black)
+          drop-shadow(0px -1px 0px black)
+          drop-shadow(1px 1px 0px black)
+          drop-shadow(-1px -1px 0px black)
+          drop-shadow(-1px 1px 0px black)
+          drop-shadow(1px -1px 0px black);
   }
 </style>
 
@@ -11,7 +23,8 @@
   import { Curve } from '../src/Curve.js';
 
   //const imageSrc = 'https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg';
-  const imageSrc = 'https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F10%2F22%2Fpink-camellias.jpg';
+  //const imageSrc = 'https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F10%2F22%2Fpink-camellias.jpg';
+  const imageSrc = 'https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F08%2F24%2Ffire-halo-orange-garden-mum.jpeg&q=60';
 
   const POINTS_PER_SIDE = 6;
   const size = 100;
@@ -22,7 +35,7 @@
   const NOTCH_OFFSET = 0.5;
 
   const cols = [], rows = [];
-  const NUM_COLS = 8, NUM_ROWS = 6;
+  const NUM_COLS = 6, NUM_ROWS = 6;
 
   function getOffsets() {
     const dir = Math.random() < 0.5 ? -1 : 1;
@@ -78,6 +91,7 @@
     const right  = col == NUM_COLS - 1 ? printLine( col + 1, row     ) : printCurves( cols[ col     ].slice( POINTS_PER_SIDE * row, 1 + POINTS_PER_SIDE * ( row + 1 ) ).reverse() );
     const top    = row == 0            ? printLine( col    , row     ) : printCurves( rows[ row - 1 ].slice( POINTS_PER_SIDE * col, 1 + POINTS_PER_SIDE * ( col + 1 ) ).reverse() );
     
+
     const piece = document.createElement( 'img' );
     piece.className = 'piece';
     piece.src = imageSrc;
@@ -85,8 +99,13 @@
       `M ${ col * size },${ row * size } ` + 
       left + bottom + right + top +
     '\')';
-    piece.style.transform = `translate( ${ col * 10 }px, ${ row * 10 }px )`;
-    document.body.appendChild( piece );
+    // piece.style.transform = `translate( ${ col * 10 }px, ${ row * 10 }px )`;
+
+    const outline = document.createElement( 'div' );
+    outline.className = 'outline';
+    outline.appendChild( piece );
+
+    document.body.appendChild( outline );
   }
 
   function printLine( col, row ) {
