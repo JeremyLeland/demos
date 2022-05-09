@@ -12,41 +12,46 @@
           drop-shadow(-1px 0px 0px black)
           drop-shadow(0px 1px 0px black)
           drop-shadow(0px -1px 0px black)
-          drop-shadow(1px 1px 0px black)
+          /* drop-shadow(1px 1px 0px black)
           drop-shadow(-1px -1px 0px black)
           drop-shadow(-1px 1px 0px black)
-          drop-shadow(1px -1px 0px black);
+          drop-shadow(1px -1px 0px black); */
   }
 </style>
 
 <script type="module">
   import { Curve } from '../src/Curve.js';
 
-  //const imageSrc = 'https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg';
-  //const imageSrc = 'https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F10%2F22%2Fpink-camellias.jpg';
-  const imageSrc = 'https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F08%2F24%2Ffire-halo-orange-garden-mum.jpeg&q=60';
+  // const imageSrc = 'https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg';
+  const imageSrc = 'https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F10%2F22%2Fpink-camellias.jpg';
+  // const imageSrc = 'https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F08%2F24%2Ffire-halo-orange-garden-mum.jpeg&q=60';
 
   const POINTS_PER_SIDE = 6;
   const size = 100;
 
   // TODO: Randomize these for variety
   // TODO: Make these percentage (for 'size * ( col + VAL )')
-  const NECK_WIDTH = 0.25, NECK_DEPTH = -0.05, HEAD_WIDTH = 0.3, HEAD_DEPTH = 0.15, TIP_DEPTH = 0.25;
-  const NOTCH_OFFSET = 0.5;
-
+  
   const cols = [], rows = [];
   const NUM_COLS = 6, NUM_ROWS = 6;
-
+  
   function getOffsets() {
+    const neckWidth = 0.1 + 0.1 * Math.random();
+    const neckDepth = -0.05 - 0.1 * Math.random();
+    const headWidth = neckWidth + 0.1 + 0.1 * Math.random(); 
+    const headDepth = 0.1 + 0.1 * Math.random();
+    const tipDepth  = headDepth + 0.1 + 0.05 * Math.random();
+    const notchOffset = 0.3 + 0.4 * Math.random();
     const dir = Math.random() < 0.5 ? -1 : 1;
+
     return [
-      { width: 0                            , depth: 0          },
-      { width: NOTCH_OFFSET - NECK_WIDTH / 2, depth: NECK_DEPTH },
-      { width: NOTCH_OFFSET - HEAD_WIDTH / 2, depth: HEAD_DEPTH },
-      { width: NOTCH_OFFSET                 , depth: TIP_DEPTH  },
-      { width: NOTCH_OFFSET + HEAD_WIDTH / 2, depth: HEAD_DEPTH },
-      { width: NOTCH_OFFSET + NECK_WIDTH / 2, depth: NECK_DEPTH },
-    ].map( o => ( { width: o.width, depth: dir * o.depth } ) );
+      { width: 0                          , depth: 0               },
+      { width: notchOffset - neckWidth / 2, depth: dir * neckDepth },
+      { width: notchOffset - headWidth / 2, depth: dir * headDepth },
+      { width: notchOffset                , depth: dir * tipDepth  },
+      { width: notchOffset + headWidth / 2, depth: dir * headDepth },
+      { width: notchOffset + neckWidth / 2, depth: dir * neckDepth },
+    ];
   }
 
   for ( let col = 1; col < NUM_COLS; col ++ ) {
