@@ -36,12 +36,14 @@
   const NUM_COLS = 6, NUM_ROWS = 6;
   
   function getOffsets() {
-    const neckWidth = 0.1 + 0.1 * Math.random();
-    const neckDepth = -0.05 - 0.1 * Math.random();
-    const headWidth = neckWidth + 0.1 + 0.1 * Math.random(); 
-    const headDepth = 0.1 + 0.1 * Math.random();
-    const tipDepth  = headDepth + 0.1 + 0.05 * Math.random();
-    const notchOffset = 0.3 + 0.4 * Math.random();
+    const neckWidth = 0.25, neckDepth = -0.05, headWidth = 0.3, headDepth = 0.15, tipDepth = 0.25;
+    const notchOffset = 0.4 + 0.2 * Math.random();
+    // const neckWidth = 0.1 + 0.1 * Math.random();
+    // const neckDepth = -0.05 - 0.1 * Math.random();
+    // const headWidth = neckWidth + 0.1 + 0.1 * Math.random(); 
+    // const headDepth = 0.1 + 0.1 * Math.random();
+    // const tipDepth  = headDepth + 0.1 + 0.05 * Math.random();
+    // const notchOffset = 0.3 + 0.4 * Math.random();
     const dir = Math.random() < 0.5 ? -1 : 1;
 
     return [
@@ -99,18 +101,20 @@
 
     const piece = document.createElement( 'img' );
     piece.className = 'piece';
+    piece.draggable = false;
     piece.src = imageSrc;
     piece.style.clipPath = 'path( \'' +
       `M ${ col * size },${ row * size } ` + 
       left + bottom + right + top +
     '\')';
-    // piece.style.transform = `translate( ${ col * 10 }px, ${ row * 10 }px )`;
+    piece.onmousedown = mouseDown;
+    document.body.appendChild( piece );
 
-    const outline = document.createElement( 'div' );
-    outline.className = 'outline';
-    outline.appendChild( piece );
+    // const outline = document.createElement( 'div' );
+    // outline.className = 'outline';
+    // outline.appendChild( piece );
 
-    document.body.appendChild( outline );
+    // document.body.appendChild( outline );
   }
 
   function printLine( col, row ) {
@@ -126,5 +130,25 @@
   }
 
   function printPoint( p ) { return `${ p.x },${ p.y }`; }
+
+  let active, offset;
+  function mouseDown( e ) {
+    active = e.currentTarget;
+    active.style.zIndex = 1;
+    offset = { x: e.clientX, y: e.clientY };
+  }
+  document.onmouseup = ( e ) => {
+    if ( active ) {
+      active.style.zIndex = 0;
+      active = offset = null; 
+    }
+  }
+  document.onmousemove = ( e ) => {
+    if ( active ) {
+      active.style.left = e.clientX - offset.x;
+      active.style.top = e.clientY - offset.y;
+    }
+  }
+
 
 </script>
