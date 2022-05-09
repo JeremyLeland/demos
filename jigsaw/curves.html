@@ -2,7 +2,10 @@
 <link rel="stylesheet" href="../style.css">
 
 <style>
-  body { background-color: brown;}
+  body {
+    background-color: brown;
+    overflow: hidden;
+  }
   .piece {
     position: absolute;
   }
@@ -29,12 +32,10 @@
   const POINTS_PER_SIDE = 6;
   const size = 100;
 
-  // TODO: Randomize these for variety
-  // TODO: Make these percentage (for 'size * ( col + VAL )')
-  
   const cols = [], rows = [];
   const NUM_COLS = 6, NUM_ROWS = 6;
-  
+
+  // TODO: Randomize these for variety  
   function getOffsets() {
     const neckWidth = 0.25, neckDepth = -0.05, headWidth = 0.3, headDepth = 0.15, tipDepth = 0.25;
     const notchOffset = 0.4 + 0.2 * Math.random();
@@ -107,14 +108,14 @@
       `M ${ col * size },${ row * size } ` + 
       left + bottom + right + top +
     '\')';
+    piece.style.left = piece.style.top = 0;
     piece.onmousedown = mouseDown;
-    document.body.appendChild( piece );
 
-    // const outline = document.createElement( 'div' );
-    // outline.className = 'outline';
-    // outline.appendChild( piece );
+    const outline = document.createElement( 'div' );
+    outline.className = 'outline';
+    outline.appendChild( piece );
 
-    // document.body.appendChild( outline );
+    document.body.appendChild( outline );
   }
 
   function printLine( col, row ) {
@@ -131,22 +132,20 @@
 
   function printPoint( p ) { return `${ p.x },${ p.y }`; }
 
-  let active, offset;
+  let active, offset, nextZ = 1;
   function mouseDown( e ) {
     active = e.currentTarget;
-    active.style.zIndex = 1;
-    offset = { x: e.clientX, y: e.clientY };
+    active.parentElement.style.zIndex = nextZ ++;
+    offset = { 
+      x: parseInt( active.style.left ) - e.clientX,
+      y: parseInt( active.style.top ) - e.clientY,
+    };
   }
-  document.onmouseup = ( e ) => {
-    if ( active ) {
-      active.style.zIndex = 0;
-      active = offset = null; 
-    }
-  }
+  document.onmouseup = ( e ) => { active = offset = null; }
   document.onmousemove = ( e ) => {
     if ( active ) {
-      active.style.left = e.clientX - offset.x;
-      active.style.top = e.clientY - offset.y;
+      active.style.left = e.clientX + offset.x;
+      active.style.top = e.clientY + offset.y;
     }
   }
 
