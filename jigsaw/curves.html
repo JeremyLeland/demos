@@ -87,6 +87,8 @@
     rows.push( rowPoints );
   }
 
+  const pieces = [];
+
   for ( let row = 0; row < NUM_ROWS; row ++ ) {
     for ( let col = 0; col < NUM_COLS; col ++ ) {
       addPiece( col, row );
@@ -108,15 +110,29 @@
       `M ${ col * size },${ row * size } ` + 
       left + bottom + right + top +
     '\')';
-    piece.style.left = piece.style.top = 0;
-    piece.onmousedown = mouseDown;
-
+    
+    
+    pieces.push( piece );
+    
     const outline = document.createElement( 'div' );
     outline.className = 'outline';
+    outline.style.left = col * size / 2;
+    outline.style.top = row * size / 2;
+    outline.onmousedown = mouseDown;
     outline.appendChild( piece );
 
     document.body.appendChild( outline );
   }
+
+  function combinePieces( a, b ) {
+    b.childNodes.forEach( 
+      child => a.appendChild( b.removeChild( child ) ) 
+    );
+
+    b.parentElement.removeChild( b );
+  }
+
+  //#region printing
 
   function printLine( col, row ) {
     return `L ${ col * size },${ row * size } `;
@@ -132,16 +148,31 @@
 
   function printPoint( p ) { return `${ p.x },${ p.y }`; }
 
+  //#endregion
+
+  // TODO: Interact with container instead of piece? (active point to parent?)
+
   let active, offset, nextZ = 1;
   function mouseDown( e ) {
     active = e.currentTarget;
-    active.parentElement.style.zIndex = nextZ ++;
+    active.style.zIndex = nextZ ++;
     offset = { 
       x: parseInt( active.style.left ) - e.clientX,
       y: parseInt( active.style.top ) - e.clientY,
     };
   }
-  document.onmouseup = ( e ) => { active = offset = null; }
+  document.onmouseup = ( e ) => {
+    pieces.forEach( p => {
+      if ( p.parentElement != active ) {
+        const cx = parseInt( p.parentElement.style.left ) - parseInt( active.style.left ); 
+        const cy = parseInt( p.parentElement.style.top ) - parseInt( active.style.top ); 
+        if ( Math.hypot( cx, cy ) < 5 ) {
+          combinePieces( p.parentElement, active );
+        }
+      }
+    } );
+    active = offset = null;
+  }
   document.onmousemove = ( e ) => {
     if ( active ) {
       active.style.left = e.clientX + offset.x;
