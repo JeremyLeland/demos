@@ -1,0 +1,29 @@
+<title>Jigsaw-style curves</title>
+<link rel="stylesheet" href="../style.css">
+
+<style>
+  .piece {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    /* background-image: url("https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg"); */
+    background-image: url("https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F10%2F22%2Fpink-camellias.jpg");
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+</style>
+
+<script type="module">
+  // const imageSrc = 'https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg';
+  
+  const clipPath = 'path("M 300 400 C 299.125 405.331 292.375 425.567 295 430.46 C 297.625 435.353 309.75 425.773 315 427.96 C 320.25 430.148 325 437.71 325 442.96 C 325 448.21 320.25 455.773 315 457.96 C 309.75 460.148 297.625 448.103 295 455.46 C 292.375 462.817 299.125 492.206 300 500 L 400 500 C 400.875 492.245 407.625 463.004 405 455.687 C 402.375 448.369 390.25 460.374 385 458.187 C 379.75 455.999 375 448.437 375 443.187 C 375 437.937 379.75 430.374 385 428.187 C 390.25 425.999 402.375 435.619 405 430.687 C 407.625 425.754 400.875 405.37 400 400 C 392.497 400.875 364.193 407.625 357.128 405 C 350.063 402.375 361.815 390.25 359.628 385 C 357.44 379.75 349.878 375 344.628 375 C 339.378 375 331.815 379.75 329.628 385 C 327.44 390.25 337.313 402.375 332.128 405 C 326.943 407.625 305.622 400.875 300 400")';
+
+  const piece = document.createElement( 'div' );
+  piece.className = 'piece';
+  piece.draggable = false;
+  // piece.src = imageSrc;
+  piece.style.clipPath = clipPath;
+
+  document.body.appendChild( piece );
+
+</script>
