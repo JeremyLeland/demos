@@ -162,6 +162,10 @@
             Array.from( otherGroup.childNodes ).forEach(
               child => activeGroup.appendChild( otherGroup.removeChild( child ) )
             );
+
+            // Move active pieces to match others (less jarring)
+            activeGroup.style.left = otherGroup.style.left;
+            activeGroup.style.top = otherGroup.style.top;
               
             otherGroup.parentElement.removeChild( otherGroup );
           }
