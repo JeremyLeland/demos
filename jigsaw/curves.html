@@ -25,8 +25,8 @@
 <script type="module">
   import { Curve } from '../src/Curve.js';
 
-  // const imageSrc = 'https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg';
-  const imageSrc = 'https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F10%2F22%2Fpink-camellias.jpg';
+  const imageSrc = 'https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg';
+  // const imageSrc = 'https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F10%2F22%2Fpink-camellias.jpg';
   // const imageSrc = 'https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F08%2F24%2Ffire-halo-orange-garden-mum.jpeg&q=60';
 
   const POINTS_PER_SIDE = 6;
@@ -87,46 +87,41 @@
     rows.push( rowPoints );
   }
 
-  let pieces = [], groups = [];
+  let groups = [];
+
+  const destinations = Array.from( Array( NUM_COLS * NUM_ROWS ), ( _, index ) => (
+    { col: index % NUM_ROWS, row: Math.floor( index / NUM_ROWS ) }
+  ) );
 
   for ( let row = 0; row < NUM_ROWS; row ++ ) {
     for ( let col = 0; col < NUM_COLS; col ++ ) {
-      addPiece( col, row );
+      const left   = col == 0            ? printLine( col    , row + 1 ) : printCurves( cols[ col - 1 ].slice( POINTS_PER_SIDE * row, 1 + POINTS_PER_SIDE * ( row + 1 ) ) );
+      const bottom = row == NUM_ROWS - 1 ? printLine( col + 1, row + 1 ) : printCurves( rows[ row     ].slice( POINTS_PER_SIDE * col, 1 + POINTS_PER_SIDE * ( col + 1 ) ) );
+      const right  = col == NUM_COLS - 1 ? printLine( col + 1, row     ) : printCurves( cols[ col     ].slice( POINTS_PER_SIDE * row, 1 + POINTS_PER_SIDE * ( row + 1 ) ).reverse() );
+      const top    = row == 0            ? printLine( col    , row     ) : printCurves( rows[ row - 1 ].slice( POINTS_PER_SIDE * col, 1 + POINTS_PER_SIDE * ( col + 1 ) ).reverse() );
+      
+      const piece = document.createElement( 'img' );
+      piece.className = 'piece';
+      piece.draggable = false;
+      piece.src = imageSrc;
+      piece.style.clipPath = 'path( \'' +
+        `M ${ col * size },${ row * size } ` + 
+        left + bottom + right + top +
+      '\')';
+
+      const dest = destinations.splice( Math.floor( Math.random() * destinations.length ), 1 )[ 0 ];
+      
+      const group = document.createElement( 'div' );
+      group.className = 'group';
+      group.style.left = size / 3 + dest.col * size * 5/3 - col * size;
+      group.style.top  = size / 3 + dest.row * size * 5/3 - row * size;
+      group.onmousedown = mouseDown;
+      group.appendChild( piece );
+
+      groups.push( group );
+
+      document.body.appendChild( group );
     }
-  }
-  
-  function addPiece( col, row ) {
-    const left   = col == 0            ? printLine( col    , row + 1 ) : printCurves( cols[ col - 1 ].slice( POINTS_PER_SIDE * row, 1 + POINTS_PER_SIDE * ( row + 1 ) ) );
-    const bottom = row == NUM_ROWS - 1 ? printLine( col + 1, row + 1 ) : printCurves( rows[ row     ].slice( POINTS_PER_SIDE * col, 1 + POINTS_PER_SIDE * ( col + 1 ) ) );
-    const right  = col == NUM_COLS - 1 ? printLine( col + 1, row     ) : printCurves( cols[ col     ].slice( POINTS_PER_SIDE * row, 1 + POINTS_PER_SIDE * ( row + 1 ) ).reverse() );
-    const top    = row == 0            ? printLine( col    , row     ) : printCurves( rows[ row - 1 ].slice( POINTS_PER_SIDE * col, 1 + POINTS_PER_SIDE * ( col + 1 ) ).reverse() );
-    
-
-    const piece = document.createElement( 'img' );
-    piece.className = 'piece';
-    piece.draggable = false;
-    piece.src = imageSrc;
-    piece.style.clipPath = 'path( \'' +
-      `M ${ col * size },${ row * size } ` + 
-      left + bottom + right + top +
-    '\')';
-    
-    pieces.push( piece );
-    
-    const group = document.createElement( 'div' );
-    group.className = 'group';
-    group.style.left = col * size / 2;
-    group.style.top = row * size / 2;
-    group.onmousedown = mouseDown;
-    group.appendChild( piece );
-
-    groups.push( group );
-
-    document.body.appendChild( group );
-  }
-
-  function combinePieces( a, b ) {
-    
   }
 
   //#region printing
