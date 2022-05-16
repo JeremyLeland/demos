@@ -2,14 +2,32 @@
 <link rel="stylesheet" href="../style.css">
 
 <style>
+  body {
+    background-image: linear-gradient(sienna, saddlebrown);
+    overflow: hidden;
+  }
   .piece {
     position: absolute;
     width: 100%;
     height: 100%;
     /* background-image: url("https://w0.peakpx.com/wallpaper/962/451/HD-wallpaper-red-poppies-painted-flowers-drawing-red-flowers-wild-flowers.jpg"); */
-    background-image: url("https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F10%2F22%2Fpink-camellias.jpg");
+    /* background-image: url("https://imagesvc.meredithcorp.io/v3/mm/image?url=https%3A%2F%2Fstatic.onecms.io%2Fwp-content%2Fuploads%2Fsites%2F37%2F2021%2F10%2F22%2Fpink-camellias.jpg"); */
+    background-image: linear-gradient( red, blue );
     background-size: contain;
     background-repeat: no-repeat;
+  }
+  .group {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(1px 0px 0px black)
+          drop-shadow(-1px 0px 0px black)
+          drop-shadow(0px 1px 0px black)
+          drop-shadow(0px -1px 0px black)
+          /* drop-shadow(1px 1px 0px black)
+          drop-shadow(-1px -1px 0px black)
+          drop-shadow(-1px 1px 0px black)
+          drop-shadow(1px -1px 0px black); */
   }
 </style>
 
@@ -22,8 +40,36 @@
   piece.className = 'piece';
   piece.draggable = false;
   // piece.src = imageSrc;
+  piece.onmousedown = mouseDown;
   piece.style.clipPath = clipPath;
 
-  document.body.appendChild( piece );
+  const group = document.createElement( 'div' );
+  group.className = 'group';
+  group.style.left = 50;
+  group.style.top  = 50;
+  // group.onmousedown = mouseDown;
+  group.appendChild( piece );
+
+  document.body.appendChild( group );
+
+  let activeGroup, offset, nextZ = 1;
+  function mouseDown( e ) {
+    activeGroup = e.currentTarget.parentElement;
+    activeGroup.style.zIndex = nextZ ++;
+    offset = { 
+      x: parseInt( activeGroup.style.left ) - e.clientX,
+      y: parseInt( activeGroup.style.top ) - e.clientY,
+    };
+  }
+
+  document.onmouseup = ( e ) => {
+    activeGroup = offset = null;
+  }
+  document.onmousemove = ( e ) => {
+    if ( activeGroup ) {
+      activeGroup.style.left = e.clientX + offset.x;
+      activeGroup.style.top = e.clientY + offset.y;
+    }
+  }
 
 </script>
