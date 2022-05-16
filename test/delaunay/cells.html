@@ -20,6 +20,9 @@
 
   const delaunay = Delaunator.from( seeds, ( e ) => e.x, ( e ) => e.y );
 
+  // TODO: Complete cells for outer edges with lines to border
+  // TODO: Make sure edges are in sorted order (maybe sort links first?)
+
   class Cell {
     x = 0;
     y = 0;
@@ -50,18 +53,11 @@
   const cells = Array.from( seeds, _ => new Cell() );
   
   delaunay.triangles.forEach( ( seedIndex, halfEdgeId ) => {
-    const cell = cells[ seedIndex ];
     const oppositeId = delaunay.halfedges[ halfEdgeId ];
 
     if ( oppositeId > -1 ) {   
       const leftTriIndex = Math.floor( halfEdgeId / 3 );
       const rightTriIndex = Math.floor( oppositeId / 3 );
-
-      const us = seeds[ seedIndex ];
-
-      // TODO: Set as centroid after edges are found
-      cell.x = us.x;
-      cell.y = us.y;
 
       const linkCell = cells[ delaunay.triangles[ oppositeId ] ];
       
@@ -70,6 +66,8 @@
 
       const leftPoints = Array.from( leftIndices, index => seeds[ index ] );
       const rightPoints = Array.from( rightIndices, index => seeds[ index ] );
+
+      const cell = cells[ seedIndex ];
 
       // Right-to-left so that normals point inward
       cell.edges.push( new Line(
@@ -83,7 +81,16 @@
     }
   } );
 
+  cells.forEach( cell => {
+    cell.edges.forEach( edge => {
+      cell.x += edge.x1;
+      cell.y += edge.y1;
+    } );
+    cell.x /= cell.edges.length;
+    cell.y /= cell.edges.length;
+
+  } );
+  
   cells.forEach( cell => cell.draw( ctx ) );
-  // cells[ 0 ].draw( ctx );
 
 </script>
