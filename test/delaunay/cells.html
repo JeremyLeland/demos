@@ -8,6 +8,7 @@
 <script type="module">
   // import Delaunator from 'https://cdn.skypack.dev/delaunator@5.0.0';
   import Delaunator from '../../lib/delaunay/delaunator.js';
+  import { Line } from '../../src/Line.js';
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
 
@@ -20,13 +21,36 @@
   const delaunay = Delaunator.from( seeds, ( e ) => e.x, ( e ) => e.y );
 
   class Cell {
+    x = 0;
+    y = 0;
     edges = [];
     links = [];
+
+    draw( ctx ) {
+      ctx.beginPath();
+      ctx.arc( this.x, this.y, 3, 0, Math.PI * 2 );
+      ctx.fillStyle = 'red';
+      ctx.fill();
+      
+      this.links.forEach( link => {
+        ctx.beginPath();
+        ctx.moveTo( this.x, this.y );
+        ctx.lineTo( link.x, link.y );
+        ctx.strokeStyle = 'green';
+        ctx.stroke();
+      } );
+
+      this.edges.forEach( edge => {
+        ctx.strokeStyle = 'cyan';
+        edge.draw( ctx )
+      } );
+    }
   }
 
   const cells = Array.from( seeds, _ => new Cell() );
   
   delaunay.triangles.forEach( ( seedIndex, halfEdgeId ) => {
+    const cell = cells[ seedIndex ];
     const oppositeId = delaunay.halfedges[ halfEdgeId ];
 
     if ( oppositeId > -1 ) {   
@@ -35,18 +59,11 @@
 
       const us = seeds[ seedIndex ];
 
-      ctx.beginPath();
-      ctx.arc( us.x, us.y, 3, 0, Math.PI * 2 );
-      ctx.fillStyle = 'red';
-      ctx.fill();
+      // TODO: Set as centroid after edges are found
+      cell.x = us.x;
+      cell.y = us.y;
 
-      const them = seeds[ delaunay.triangles[ oppositeId ] ];
-      
-      ctx.beginPath();
-      ctx.moveTo( us.x, us.y );
-      ctx.lineTo( them.x, them.y );
-      ctx.strokeStyle = 'green';
-      ctx.stroke();
+      const linkCell = cells[ delaunay.triangles[ oppositeId ] ];
       
       const leftIndices = delaunay.triangles.slice( 3 * leftTriIndex, 3 * leftTriIndex + 3 );
       const rightIndices = delaunay.triangles.slice( 3 * rightTriIndex, 3 * rightTriIndex + 3 );
@@ -54,39 +71,19 @@
       const leftPoints = Array.from( leftIndices, index => seeds[ index ] );
       const rightPoints = Array.from( rightIndices, index => seeds[ index ] );
 
-      // ctx.beginPath();
-      // leftPoints.forEach( p => ctx.lineTo( p.x, p.y ) );
-      // ctx.fillStyle = 'orange';
-      // ctx.fill();
-
-      // ctx.beginPath();
-      // rightPoints.forEach( p => ctx.lineTo( p.x, p.y ) );
-      // ctx.fillStyle = 'purple';
-      // ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(
-        ( leftPoints[ 0 ].x + leftPoints[ 1 ].x + leftPoints[ 2 ].x ) / 3,
-        ( leftPoints[ 0 ].y + leftPoints[ 1 ].y + leftPoints[ 2 ].y ) / 3,
-      );
-      ctx.lineTo(
+      // Right-to-left so that normals point inward
+      cell.edges.push( new Line(
         ( rightPoints[ 0 ].x + rightPoints[ 1 ].x + rightPoints[ 2 ].x ) / 3,
         ( rightPoints[ 0 ].y + rightPoints[ 1 ].y + rightPoints[ 2 ].y ) / 3,
-      );
-      ctx.strokeStyle = 'cyan';
-      ctx.stroke();
+        ( leftPoints[ 0 ].x + leftPoints[ 1 ].x + leftPoints[ 2 ].x ) / 3,
+        ( leftPoints[ 0 ].y + leftPoints[ 1 ].y + leftPoints[ 2 ].y ) / 3,
+      ) );
       
-      cells[ seedIndex ].links.push( them );
+      cell.links.push( linkCell );
     }
   } );
-  
-  
-  // ctx.beginPath();
-  // seeds.forEach( seed => {
-  //   ctx.moveTo( seed.x, seed.y );
-  //   ctx.arc( seed.x, seed.y, 3, 0, Math.PI * 2 );
-  // } );
-  // ctx.fillStyle = 'red';
-  // ctx.fill();
+
+  cells.forEach( cell => cell.draw( ctx ) );
+  // cells[ 0 ].draw( ctx );
 
 </script>
