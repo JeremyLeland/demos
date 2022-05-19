@@ -142,7 +142,7 @@ export class Cell {
   // Node info for pathfinding
   x = 0;
   y = 0;
-  links = new Set();
+  links = [];
 
   constructor( points ) {
     points.forEach( point => {
@@ -233,7 +233,7 @@ export class Cell {
       edge.neighbor = null;
       edge.linked = false;
 
-      this.links.delete( edge.neighbor );
+      this.links = this.links.filter( e => e != edge.neighbor );
 
       // TODO: Fix edge prev/next
     }
@@ -256,8 +256,8 @@ export class Cell {
       otherEdge.previous.next = thisEdge.next;
       otherEdge.next.previous = thisEdge.previous;
 
-      this.links.add( other );
-      other.links.add( this );
+      this.links.push( other );
+      other.links.push( this );
 
       return true;
     }
@@ -280,8 +280,8 @@ export class Cell {
       otherEdge.previous.next = otherEdge;
       otherEdge.next.previous = otherEdge;
 
-      this.links.delete( other );
-      other.links.delete( this );
+      this.links = this.links.filter( e => e != other );
+      other.links = other.links.filter( e => e != this );
 
       return true;
     }

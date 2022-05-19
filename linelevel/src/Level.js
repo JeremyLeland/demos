@@ -7,12 +7,7 @@ export class Level {
   static fromJson( json ) {
     const level = new Level();
 
-    level.loops = Array.from( json.loops, points =>
-      Array.from( points, ( _, i ) => {
-        const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
-        return new Line( current[ 0 ], current[ 1 ], next[ 0 ], next[ 1 ] );
-      } )
-    );
+    level.loops = Array.from( json.loops, points => Line.getLoopThroughPoints( points ) );
     
     level.nodes = Array.from( json.nodes );
     level.nodes.forEach( node => 
@@ -52,11 +47,13 @@ export class Level {
       ctx.fill();
       
       node.links.forEach( link => {
-        ctx.beginPath();
-        ctx.moveTo( node.x, node.y );
-        ctx.lineTo( link.x, link.y );
-        ctx.strokeStyle = 'green';
-        ctx.stroke();
+        if ( link ) {
+          ctx.beginPath();
+          ctx.moveTo( node.x, node.y );
+          ctx.lineTo( link.x, link.y );
+          ctx.strokeStyle = 'green';
+          ctx.stroke();
+        }
       } );
     } );
   }

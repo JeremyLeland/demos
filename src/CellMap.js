@@ -51,7 +51,8 @@ export class CellMap {
         visited.add( edge );
         unvisited.delete( edge );
 
-        points.push( edge.start );
+        // TODO: Someday change all the .x/.y stuff to [0]/[1] ?
+        points.push( [ edge.start.x, edge.start.y ] );
 
         edgeIndex = ( edgeIndex + 1 ) % currentCell.edges.length;
         edge = currentCell.edges[ edgeIndex ];

@@ -8,6 +8,13 @@ export class Line {
   slope;
   normal;
 
+  static getLoopThroughPoints( points ) {
+    return Array.from( points, ( _, i ) => {
+      const current = points[ i ], next = points[ ( i + 1 ) % points.length ];
+      return new Line( current[ 0 ], current[ 1 ], next[ 0 ], next[ 1 ] );
+    } )
+  }
+
   constructor( x1, y1, x2, y2 ) {
     this.x1 = x1;
     this.y1 = y1;
