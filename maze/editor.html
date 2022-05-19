@@ -58,41 +58,14 @@
   function draw() {
     ctx.clearRect( 0, 0, ctx.canvas.width, ctx.canvas.height );
 
-    cellMap.cells.forEach( cell => cell.draw( ctx ) );
+    // cellMap.cells.forEach( cell => cell.draw( ctx ) );
 
-    const unvisited = new Set( cellMap.getSolidEdges() );
-    const visited = new Set();
-    
-    while ( unvisited.size > 0 ) {
-      const points = [];
-      let [ edge ] = unvisited;
-
-      let currentCell = edge.parent;
-      let edgeIndex = currentCell.edges.indexOf( edge );
-
-      while ( !visited.has( edge ) ) {
-        visited.add( edge );
-        unvisited.delete( edge );
-
-        points.push( edge.start );
-
-        edgeIndex = ( edgeIndex + 1 ) % currentCell.edges.length;
-        edge = currentCell.edges[ edgeIndex ];
-
-        while ( edge.linked ) {
-          edgeIndex = edge.neighbor.edges.findIndex( edge => edge.neighbor == currentCell );
-          currentCell = edge.neighbor;
-          edgeIndex = ( edgeIndex + 1 ) % currentCell.edges.length;
-          edge = currentCell.edges[ edgeIndex ];
-        }
-      }
-
-      ctx.lineWidth = 1;
-      const curves = Curve.getLoopThroughPoints( points );
-      curves.forEach( curve => {
+    ctx.lineWidth = 1;
+    cellMap.getLoops().forEach( points => {
+      Curve.getLoopThroughPoints( points ).forEach( curve => {
         curve.draw( ctx, 0.2 )
       } );
-    }
+    } );
   }
 
 
