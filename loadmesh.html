@@ -17,19 +17,29 @@
 
   import { ThreeGame } from './src/ThreeGame.js';
 
-  class Monster {
-    mesh;
+  class Actor {
+    x = 0;
+    y = 0;
+    z = 0;
+    angle = 0;
 
-    constructor( type ) {
-      const texture = new THREE.TextureLoader().load( `./textures/${ type }_Texture.png` );
+    actorInfoKey;
+
+    mesh;
+    mixer;
+
+    constructor( values ) {
+      Object.assign( this, values );
+
+      const texture = new THREE.TextureLoader().load( `./textures/${ this.actorInfoKey }_Texture.png` );
 
       const loader = new FBXLoader();
       loader.load(
-        `./models/${ type }.fbx`,
+        `./models/${ this.actorInfoKey }.fbx`,
         ( object ) => {
-          mixer = new THREE.AnimationMixer( object );
+          this.mixer = new THREE.AnimationMixer( object );
 
-          const action = mixer.clipAction( object.animations[ 0 ] );
+          const action = this.mixer.clipAction( object.animations[ 0 ] );
           action.play();
 
           object.traverse( ( child ) => {
@@ -46,6 +56,16 @@
         ( xhr )    => console.log( ( xhr.loaded / xhr.total ) * 100 + '% loaded' ),
         ( error )  => console.log( error ),
       );
+    }
+
+    update( dt ) {
+      if ( this.mesh ) {
+        this.mesh.position.x = this.x;
+        this.mesh.position.y = this.y;
+        this.mesh.position.z = this.z;
+      }
+
+      this.mixer?.update( dt / 1000 );
     }
   }
 
@@ -78,14 +98,14 @@
   controls.update();
 
   // game.camera.lookAt( 0, 0, 0 );
-
-  let mixer;
-
   
-  const monster = new Monster( 'Bat' );
+  const monsters = Array.from(
+    [ 'Alien', 'Bat', 'Cactus', 'Cyclops', 'Ghost' ],
+    ( name, index ) => new Actor( { x: index * 2, actorInfoKey: name } )
+  );
 
   game.start( ( dt ) => {
-    mixer?.update( dt / 1000 );
+    monsters.forEach( m => m.update( dt ) );
   } );
 
 
