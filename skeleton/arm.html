@@ -3,18 +3,35 @@
 <canvas id="canvas" width="500" height="500"></canvas>
 
 <script>
+
+  const segments = [
+    { x: 100, y: 100, angle: 0.5, width: 100, height: 20, fillStyle: 'blue' },
+    { x: 100, y:   0, angle: 1.0, width:  50, height: 20, fillStyle: 'green' },
+  ]
+
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
 
-  ctx.translate( 100, 100 );
-  ctx.rotate( 0.5 );
+  draw();
 
-  ctx.fillStyle = 'blue';
-  ctx.fillRect( 0, -10, 100, 20 );
+  function draw() {
+    ctx.clearRect( 0, 0, ctx.canvas.width, ctx.canvas.height );
 
-  ctx.translate( 100, 0 );
-  ctx.rotate( 1 );
+    ctx.save();
 
-  ctx.fillStyle = 'green';
-  ctx.fillRect( 0, -10, 50, 20 );
+    segments.forEach( segment => {
+      ctx.translate( segment.x, segment.y );
+      ctx.rotate( segment.angle );
+      
+      ctx.fillStyle = segment.fillStyle;
+      ctx.fillRect( 0, -segment.height / 2, segment.width, segment.height );
+    } );
+
+    ctx.restore();
+  }
+
+  document.onwheel = ( e ) => {
+    segments[ 1 ].angle += e.wheelDelta * 0.001;
+    draw();
+  };
 
 </script>
