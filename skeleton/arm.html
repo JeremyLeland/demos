@@ -1,23 +1,29 @@
 <link rel="stylesheet" href="../grid.css">
 
 <style>
+  .limb {
+    position: absolute;
+    transform-origin: left;
+  }
   .upper {
     background-color: blue;
     width: 100;
     height: 20;
-    transform-origin: left;
-    transform: translate( 10px, 10px ) rotate( 10deg );
   }
 
   .lower {
     background-color: green;
     width: 50;
     height: 20;
-    transform-origin: left;
-    transform: translate( 100px, 0px ) rotate( 45deg );
   }
 </style>
 
-<div class="upper">
-  <div class="lower"></div>
+<div class="upper limb" style="transform: translate( 200px, 100px ) rotate( 10deg )">
+  <div class="lower limb" style="transform: translate( 100px, 0px ) rotate( 45deg )"></div>
 </div>
+<div class="upper limb" style="transform: translate( 150px, 100px ) rotate( 170deg )">
+  <div class="lower limb" style="transform: translate( 100px, 0px ) rotate( -45deg )"></div>
+</div>
+
+<script>
+</script>
