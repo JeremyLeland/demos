@@ -1,0 +1,140 @@
+<link rel='stylesheet' href='../style.css'>
+<style>
+  body {
+    background-color: black;
+    color: white;
+  }
+</style>
+
+<body>
+</body>
+
+<script type='module'>
+
+  import * as THREE from '../lib/three.module.js';
+  import { FBXLoader } from '../lib/loaders/FBXLoader.js';
+  import { OrbitControls } from '../lib/controls/OrbitControls.js';
+
+  import { ThreeGame } from '../src/ThreeGame.js';
+
+  class Actor {
+    x = 0;
+    y = 0;
+    z = 0;
+    angle = 0;
+
+    actorInfoKey;
+
+    mesh;
+    mixer;
+
+    constructor( values ) {
+      Object.assign( this, values );
+
+      const texture = new THREE.TextureLoader().load( `../textures/${ this.actorInfoKey }_Texture.png` );
+
+      const loader = new FBXLoader();
+      loader.load(
+        `../models/${ this.actorInfoKey }.fbx`,
+        ( object ) => {
+          this.mixer = new THREE.AnimationMixer( object );
+
+          const action = this.mixer.clipAction( object.animations[ 0 ] );
+          action.play();
+
+          object.traverse( ( child ) => {
+            if ( child.isMesh ) {
+              child.material.map = texture;
+            }
+          } );
+
+          object.scale.set( 0.01, 0.01, 0.01 );
+          scene.add( object );
+
+          this.mesh = object;
+        },
+        ( xhr )    => console.log( ( xhr.loaded / xhr.total ) * 100 + '% loaded' ),
+        ( error )  => console.log( error ),
+      );
+    }
+
+    update( dt ) {
+      if ( this.mesh ) {
+        this.mesh.position.x = this.x;
+        this.mesh.position.y = this.y;
+        this.mesh.position.z = this.z;
+      }
+
+      this.mixer?.update( dt / 1000 );
+    }
+  }
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color( 0x010101 );
+
+  scene.add( new THREE.AxesHelper( 5 ) );
+
+  const grid = new THREE.GridHelper( 10, 10 );
+  grid.material.opacity = 0.2;
+  grid.material.transparent = true;
+  scene.add( grid );
+
+  scene.add( new THREE.AmbientLight( 0xffffff, 0.4 ) );
+
+  const light = new THREE.DirectionalLight( 0xffffff, 0.8 );
+  light.position.set( 0, 1, 1 );
+  light.target.position.set( 0, 0, 0 );
+  scene.add( light );
+
+  const game = new ThreeGame();
+  game.scene = scene;
+  
+  game.camera.position.set( 2, 2, 4 );
+
+  const controls = new OrbitControls( game.camera, game.renderer.domElement );
+  controls.target.set( 0, 0, 0 );
+  // controls.minDistance = 1;
+  // controls.maxDistance = 10;
+  controls.update();
+
+  // game.camera.lookAt( 0, 0, 0 );
+  
+  const monsters = Array.from(
+    [ 'Alien', 'Bat', 'Cactus', 'Cyclops', 'Ghost' ],
+    ( name, index ) => new Actor( { x: index * 2, actorInfoKey: name } )
+  );
+
+  game.start( ( dt ) => {
+    monsters.forEach( m => m.update( dt ) );
+  } );
+
+
+  //
+  // Drag and drop to load mesh
+  //
+  // window.ondragover = ( event ) => {
+  //   event.preventDefault();
+  // }
+  // window.ondrop = ( event ) => {
+  //   event.preventDefault();
+
+  //   if ( event.dataTransfer.items ) {
+  //     for ( let i = 0; i < event.dataTransfer.items.length; i ++ ) {
+  //       if ( event.dataTransfer.items[ i ].kind === 'file' ) {
+  //         const file = event.dataTransfer.items[ i ].getAsFile();
+  //         const reader = new FileReader();
+  //         reader.onloadend = () => {
+  //           setLevel( { src: reader.result } );
+  //         };
+  //         reader.readAsDataURL( file );
+  //       }
+  //     }
+  //   }
+  //   else {
+  //     for ( let i = 0; i < event.dataTransfer.files.length; i ++ ) {
+  //       setLevel( { src: event.dataTransfer.files[ i ].name } );
+  //     }
+  //   }
+  // }
+
+</script>
