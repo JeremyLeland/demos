@@ -1,19 +1,51 @@
-Function getCol(ByVal index As Integer)
+Function getCol(ByVal index As Integer) As String
     getCol = Split(Columns(index).Address, "$")(2)
+End Function
+
+Function createChart(ByVal sheet As Worksheet, ByVal left As Integer, ByVal top As Integer, ByVal yAxis As String, ByVal rows As Integer, ByVal xCol As String, ByVal seriesCol1 As String, ByVal seriesCol2 As String)
+    Set cht = sheet.ChartObjects.Add(left:=left, width:=288, top:=top, Height:=216)
+    cht.Chart.ChartType = xlXYScatterLines
+    
+    With cht.Chart
+        .HasTitle = True
+        .charttitle.Text = "card"
+        .HasLegend = True
+        .Legend.Position = xlLegendPositionBottom
+    End With
+        
+    With cht.Chart.Axes(xlCategory)
+        .HasTitle = True
+        .AxisTitle.Caption = "Time (hours)"
+    End With
+    
+    With cht.Chart.Axes(xlValue)
+        .HasTitle = True
+        .AxisTitle.Caption = yAxis
+    End With
+    
+    startRow = 4
+    lastRow = startRow + rows
+    
+    With cht.Chart.SeriesCollection.NewSeries
+        .Name = "WT"
+        .XValues = sheet.Range(xCol & startRow & ":" & xCol & lastRow)
+        .Values = sheet.Range(seriesCol1 & startRow & ":" & seriesCol1 & lastRow)
+    End With
+    
+    With cht.Chart.SeriesCollection.NewSeries
+        .Name = "rad51" & ChrW(&H394)    ' 0394 = delta symbol
+        .XValues = sheet.Range(xCol & startRow & ":" & xCol & lastRow)
+        .Values = sheet.Range(seriesCol2 & startRow & ":" & seriesCol2 & lastRow)
+    End With
 End Function
 
 Sub createAnalysisSheet()
 
 Call OptimizeCode_Begin
 
-Dim sheet
-Dim reduced
-
 Set reduced = Sheets("Reduced")
 
-Dim datapoints As Integer
-datapoints = Cells(Sheets("Reduced").Rows.Count, 1).End(xlUp).Row
-
+datapoints = Cells(Sheets("Reduced").rows.Count, 1).End(xlUp).Row - 1   ' exclude header row
 
 Set sheet = Sheets.Add(After:=Sheets(Sheets.Count))
 sheet.Name = "Analysis"
@@ -76,8 +108,9 @@ With sheet
             .Cells(r, col4 + part + 3).Value = "=STDEV(" & leftCol & r & ":" & rightCol & r & ")"
         Next part
     Next i
-
 End With
+
+Chart = createChart(sheet:=sheet, left:=100, top:=100, yAxis:="%reduction aB", rows:=datapoints, xCol:="BC", seriesCol1:="BD", seriesCol2:="BE")
 
 Call OptimizeCode_End
 
