@@ -1,6 +1,10 @@
 <link rel="stylesheet" href="../grid.css">
 
 <style>
+  #item {
+    stroke: brown;
+    stroke-width: 2;
+  }
   svg {
     width: 100%;
     height: 100%;
@@ -9,7 +13,12 @@
 
 <div id="item">
   <svg>
-    <circle cx="250" cy="150" r="50" fill="green"/>
+    <line x1="200" y1="100" x2="200" y2="200"/>
+    <line x1="220" y1="100" x2="220" y2="200"/>
+    <line x1="200" y1="125" x2="220" y2="125"/>
+    <line x1="200" y1="150" x2="220" y2="150"/>
+    <line x1="200" y1="175" x2="220" y2="175"/>
+    <!-- <circle cx="250" cy="150" r="50" fill="green"/> -->
   </svg>
 </div>
 
@@ -17,9 +26,11 @@
   const item = document.getElementById( 'item' );
 
   document.onmousemove = ( e ) => {
-    const x = 250 - e.clientX;
+    const x = 210 - e.clientX;
     const y = 150 - e.clientY;
 
-    item.style.filter = `drop-shadow( ${ x }px ${ y }px 4px blue )`;
+    const dist = Math.hypot( x, y ) / 10;
+
+    item.style.filter = `drop-shadow( ${ x }px ${ y }px ${ dist }px black )`;
   }
 </script>
