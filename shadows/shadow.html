@@ -1,0 +1,25 @@
+<link rel="stylesheet" href="../grid.css">
+
+<style>
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+</style>
+
+<div id="item">
+  <svg>
+    <circle cx="250" cy="150" r="50" fill="green"/>
+  </svg>
+</div>
+
+<script>
+  const item = document.getElementById( 'item' );
+
+  document.onmousemove = ( e ) => {
+    const x = 250 - e.clientX;
+    const y = 150 - e.clientY;
+
+    item.style.filter = `drop-shadow( ${ x }px ${ y }px 4px blue )`;
+  }
+</script>
