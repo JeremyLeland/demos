@@ -1,0 +1,46 @@
+<link rel="stylesheet" href="../grid.css">
+<script type="module">
+  import * as THREE from '../lib/three.module.js';
+  import { OrbitControls } from '../lib/controls/OrbitControls.js';
+  import { ThreeGame } from '../src/ThreeGame.js';
+  
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color( 0x010101 );
+
+  scene.add( new THREE.AxesHelper( 5 ) );
+
+  const grid = new THREE.GridHelper( 10, 10 );
+  grid.material.opacity = 0.2;
+  grid.material.transparent = true;
+  scene.add( grid );
+
+  const game = new ThreeGame();
+  game.scene = scene;
+  
+  game.camera.position.set( 1, 1, 1 );
+
+  const controls = new OrbitControls( game.camera, game.renderer.domElement );
+  controls.target.set( 0, 0, 0 );
+  controls.update();
+
+
+  const geometry = new THREE.BoxBufferGeometry();
+
+  const shader = new THREE.ShaderMaterial( {
+    uniforms: {
+    },
+    vertexShader: await ( await fetch( './vert.vs' ) ).text(),
+    fragmentShader: await ( await fetch( './frag.fs' ) ).text(),
+    glslVersion: THREE.GLSL3,
+  } );
+
+  const mesh = new THREE.Mesh( geometry, shader );
+
+  scene.add( mesh );
+
+  game.start( ( dt ) => {
+  } );
+
+
+</script>
