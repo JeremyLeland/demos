@@ -1,0 +1,85 @@
+<link rel='stylesheet' href='../grid.css'>
+
+<style>
+  .block {
+    position: absolute;
+    background-color: red;
+    width: calc( 32px * 4 );
+    height: 32;
+  }
+</style>
+
+<body></body>
+
+<script>
+  document.addEventListener( 'mousedown',  inputStart );
+  document.addEventListener( 'touchstart', inputStart );
+  document.addEventListener( 'mousemove', inputMove );
+  document.addEventListener( 'touchmove', inputMove );
+  document.addEventListener( 'mouseup',  inputStop );
+  document.addEventListener( 'touchend', inputStop );
+
+  class Block {
+    x = 0;
+    y = 0;
+    angle = 0;
+    
+    #div;
+
+    constructor( x, y, angle ) {
+      this.x = x;
+      this.y = y;
+      this.angle = angle;
+
+      this.#div = document.createElement( 'div' );
+      this.#div.className = 'block';
+      this.#div.owner = this;
+      
+      this.#updateDiv();
+
+      document.body.appendChild( this.#div );
+    }
+
+    moveBy( x, y ) {
+      this.x += Math.cos( this.angle ) * x;
+      this.y += Math.sin( this.angle ) * y;
+
+      this.#updateDiv();
+    }
+
+    #updateDiv() {
+      this.#div.style.transform = `translate( ${ this.x }px,${ this.y }px ) rotate( ${ this.angle }rad )`;
+    }
+  }
+
+  new Block( 100, 100, 0 );
+  new Block( 200, 100, Math.PI / 2 );
+
+  let activeBlock, lastX, lastY;
+  function inputStart( e ) {
+    if ( e.target.owner ) {
+      activeBlock = e.target.owner;
+
+      const pos = e.touches?.[ 0 ] ?? e;
+      lastX = pos.pageX;
+      lastY = pos.pageY;
+    }
+  }
+
+  function inputMove( e ) {
+    if ( activeBlock ) {
+      const pos = e.touches?.[ 0 ] ?? e;
+      const dx = pos.pageX - lastX;
+      const dy = pos.pageY - lastY;
+      lastX = pos.pageX;
+      lastY = pos.pageY;
+
+      activeBlock.moveBy( dx, dy );
+    }
+  }
+
+  function inputStop( e ) {
+    activeBlock = null;
+  }
+
+</script>
