@@ -3,10 +3,25 @@
 <style>
   .block {
     position: absolute;
+    border-style: outset;
+    border-width: 6;
+    border-color: #0006;
+    box-sizing: border-box;   /* keep border inside div */
+  }
+  #victory {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    text-align: center;
+    font-family: sans-serif;
+    font-size: 50;
+    visibility: hidden;
   }
 </style>
 
-<body></body>
+<body>
+  <div id="victory">Victory!</div>
+</body>
 
 <script>
   document.addEventListener( 'mousedown',  inputStart );
@@ -17,6 +32,7 @@
   document.addEventListener( 'touchend', inputStop );
 
   const ARENA_SIZE = 6;
+  const EXIT_ROW = 2;
   const BLOCK_SIZE = 32;
   const Direction = { Horizontal: { x: 1, y: 0 }, Vertical: { x: 0, y: 1 } };
 
@@ -64,16 +80,22 @@
   }
 
   const level = [
-    { col: 1, row: 3, type: 'Primary' },
+    { col: 1, row: 2, type: 'Primary' },
     { col: 0, row: 0, type: 'Horizontal2' },
     { col: 2, row: 0, type: 'Vertical2' },
     { col: 5, row: 1, type: 'Vertical3' },
     { col: 2, row: 4, type: 'Horizontal3' },
-  ]
+  ];
+
+  const victoryDiv = document.getElementById( 'victory' );
 
   const blocks = Array.from( level, e => 
     new Block( Object.assign( { x: e.col * BLOCK_SIZE, y: e.row * BLOCK_SIZE }, BlockType[ e.type ] ) )
   );
+
+  function victory() {
+    victoryDiv.style.visibility = 'visible';
+  }
 
   let active, lastX, lastY;
   function inputStart( e ) {
@@ -96,7 +118,7 @@
 
       let minX = 0;
       let minY = 0;
-      let maxX = ARENA_SIZE * BLOCK_SIZE - active.width;
+      let maxX = Math.floor( active.y / BLOCK_SIZE ) == EXIT_ROW ? Infinity : ARENA_SIZE * BLOCK_SIZE - active.width;
       let maxY = ARENA_SIZE * BLOCK_SIZE - active.height;
 
       blocks.filter( e => e != active ).forEach( other => {
@@ -127,12 +149,17 @@
   }
 
   function inputStop( e ) {
-    active.x = Math.round( active.x / BLOCK_SIZE ) * BLOCK_SIZE;
-    active.y = Math.round( active.y / BLOCK_SIZE ) * BLOCK_SIZE;
-
-    active.updateDiv();
-
-    active = null;
+    if ( active ) {
+      active.x = Math.round( active.x / BLOCK_SIZE ) * BLOCK_SIZE;
+      active.y = Math.round( active.y / BLOCK_SIZE ) * BLOCK_SIZE;
+      active.updateDiv();
+  
+      if ( active.x > ARENA_SIZE * BLOCK_SIZE ) {
+        victory();
+      }
+  
+      active = null;
+    }
   }
 
 </script>
