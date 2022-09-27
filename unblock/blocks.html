@@ -3,7 +3,6 @@
 <style>
   .block {
     position: absolute;
-    background-color: red;
   }
 </style>
 
@@ -21,12 +20,21 @@
   const BLOCK_SIZE = 32;
   const Direction = { Horizontal: { x: 1, y: 0 }, Vertical: { x: 0, y: 1 } };
 
+  const BlockType = {
+    Primary:     { width: 2 * BLOCK_SIZE, height: 1 * BLOCK_SIZE, direction: Direction.Horizontal, color: 'red'    },
+    Horizontal2: { width: 2 * BLOCK_SIZE, height: 1 * BLOCK_SIZE, direction: Direction.Horizontal, color: 'yellow' },
+    Horizontal3: { width: 3 * BLOCK_SIZE, height: 1 * BLOCK_SIZE, direction: Direction.Horizontal, color: 'pink'   },
+    Vertical2:   { width: 1 * BLOCK_SIZE, height: 2 * BLOCK_SIZE, direction: Direction.Vertical,   color: 'cyan'   },
+    Vertical3:   { width: 1 * BLOCK_SIZE, height: 3 * BLOCK_SIZE, direction: Direction.Vertical,   color: 'green'  },
+  }
+
   class Block {
     x = 0;
     y = 0;
     width = 0;
     height = 0;
     direction = Direction.Horizontal;
+    color = 'white';
     
     #div;
 
@@ -37,6 +45,7 @@
       this.#div.className = 'block';
       this.#div.style.width = this.width;
       this.#div.style.height = this.height;
+      this.#div.style.backgroundColor = this.color;
       this.#div.owner = this;
       
       this.updateDiv();
@@ -54,10 +63,17 @@
     }
   }
 
-  const blocks = [
-    new Block( { x: BLOCK_SIZE * 1, y: BLOCK_SIZE * 3, width: BLOCK_SIZE * 2, height: BLOCK_SIZE * 1, direction: Direction.Horizontal } ),
-    new Block( { x: BLOCK_SIZE * 5, y: BLOCK_SIZE * 2, width: BLOCK_SIZE * 1, height: BLOCK_SIZE * 2, direction: Direction.Vertical } ),
-  ];
+  const level = [
+    { col: 1, row: 3, type: 'Primary' },
+    { col: 0, row: 0, type: 'Horizontal2' },
+    { col: 2, row: 0, type: 'Vertical2' },
+    { col: 5, row: 1, type: 'Vertical3' },
+    { col: 2, row: 4, type: 'Horizontal3' },
+  ]
+
+  const blocks = Array.from( level, e => 
+    new Block( Object.assign( { x: e.col * BLOCK_SIZE, y: e.row * BLOCK_SIZE }, BlockType[ e.type ] ) )
+  );
 
   let active, lastX, lastY;
   function inputStart( e ) {
@@ -111,6 +127,11 @@
   }
 
   function inputStop( e ) {
+    active.x = Math.round( active.x / BLOCK_SIZE ) * BLOCK_SIZE;
+    active.y = Math.round( active.y / BLOCK_SIZE ) * BLOCK_SIZE;
+
+    active.updateDiv();
+
     active = null;
   }
 
