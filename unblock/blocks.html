@@ -17,7 +17,8 @@
   document.addEventListener( 'mouseup',  inputStop );
   document.addEventListener( 'touchend', inputStop );
 
-  const SIZE = 32;
+  const ARENA_SIZE = 6;
+  const BLOCK_SIZE = 32;
   const Direction = { Horizontal: { x: 1, y: 0 }, Vertical: { x: 0, y: 1 } };
 
   class Block {
@@ -38,32 +39,30 @@
       this.#div.style.height = this.height;
       this.#div.owner = this;
       
-      this.#updateDiv();
+      this.updateDiv();
 
       document.body.appendChild( this.#div );
     }
 
-    moveBy( x, y ) {
-      this.x += this.direction.x * x;
-      this.y += this.direction.y * y;
+    get left()    { return this.x; }
+    get right()   { return this.x + this.width; }
+    get top()     { return this.y; }
+    get bottom()  { return this.y + this.height; }
 
-      this.#updateDiv();
-    }
-
-    #updateDiv() {
+    updateDiv() {
       this.#div.style.transform = `translate( ${ this.x }px,${ this.y }px )`;
     }
   }
 
   const blocks = [
-    new Block( { x: SIZE * 1, y: SIZE * 3, width: SIZE * 3, height: SIZE * 1, direction: Direction.Horizontal } ),
-    new Block( { x: SIZE * 5, y: SIZE * 2, width: SIZE * 1, height: SIZE * 4, direction: Direction.Vertical } ),
+    new Block( { x: BLOCK_SIZE * 1, y: BLOCK_SIZE * 3, width: BLOCK_SIZE * 2, height: BLOCK_SIZE * 1, direction: Direction.Horizontal } ),
+    new Block( { x: BLOCK_SIZE * 5, y: BLOCK_SIZE * 2, width: BLOCK_SIZE * 1, height: BLOCK_SIZE * 2, direction: Direction.Vertical } ),
   ];
 
-  let activeBlock, lastX, lastY;
+  let active, lastX, lastY;
   function inputStart( e ) {
     if ( e.target.owner ) {
-      activeBlock = e.target.owner;
+      active = e.target.owner;
 
       const pos = e.touches?.[ 0 ] ?? e;
       lastX = pos.pageX;
@@ -72,19 +71,47 @@
   }
 
   function inputMove( e ) {
-    if ( activeBlock ) {
+    if ( active ) {
       const pos = e.touches?.[ 0 ] ?? e;
       const dx = pos.pageX - lastX;
       const dy = pos.pageY - lastY;
       lastX = pos.pageX;
       lastY = pos.pageY;
 
-      activeBlock.moveBy( dx, dy );
+      let minX = 0;
+      let minY = 0;
+      let maxX = ARENA_SIZE * BLOCK_SIZE - active.width;
+      let maxY = ARENA_SIZE * BLOCK_SIZE - active.height;
+
+      blocks.filter( e => e != active ).forEach( other => {
+        if ( ( other.top < active.top && active.top < other.bottom ) ||
+             ( other.top < active.bottom && active.bottom < other.bottom ) ) {
+          const left = other.x + other.width;
+          if ( left <= active.x )   minX = Math.max( left, minX );
+
+          const right  = other.x - active.width;
+          if ( active.x <= right  ) maxX = Math.min( right,  maxX );
+        }
+
+        if ( ( other.left < active.left && active.left < other.right ) ||
+             ( other.left < active.right && active.right < other.right ) ) {
+          const top  = other.y + other.height;
+          if ( top  <= active.y )   minY = Math.max( top,  minY );
+
+          const bottom = other.y - active.height;
+          if ( active.y <= bottom ) maxY = Math.min( bottom, maxY );
+        }
+      } );
+
+      active.x = Math.max( minX, Math.min( maxX, active.x + active.direction.x * dx ) );
+      active.y = Math.max( minY, Math.min( maxY, active.y + active.direction.y * dy ) );
+
+      active.updateDiv();
     }
   }
 
   function inputStop( e ) {
-    activeBlock = null;
+    active = null;
   }
 
 </script>
