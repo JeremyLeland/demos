@@ -4,8 +4,6 @@
   .block {
     position: absolute;
     background-color: red;
-    width: calc( 32px * 4 );
-    height: 32;
   }
 </style>
 
@@ -19,20 +17,25 @@
   document.addEventListener( 'mouseup',  inputStop );
   document.addEventListener( 'touchend', inputStop );
 
+  const SIZE = 32;
+  const Direction = { Horizontal: { x: 1, y: 0 }, Vertical: { x: 0, y: 1 } };
+
   class Block {
     x = 0;
     y = 0;
-    angle = 0;
+    width = 0;
+    height = 0;
+    direction = Direction.Horizontal;
     
     #div;
 
-    constructor( x, y, angle ) {
-      this.x = x;
-      this.y = y;
-      this.angle = angle;
+    constructor( values ) {
+      Object.assign( this, values );
 
       this.#div = document.createElement( 'div' );
       this.#div.className = 'block';
+      this.#div.style.width = this.width;
+      this.#div.style.height = this.height;
       this.#div.owner = this;
       
       this.#updateDiv();
@@ -41,19 +44,21 @@
     }
 
     moveBy( x, y ) {
-      this.x += Math.cos( this.angle ) * x;
-      this.y += Math.sin( this.angle ) * y;
+      this.x += this.direction.x * x;
+      this.y += this.direction.y * y;
 
       this.#updateDiv();
     }
 
     #updateDiv() {
-      this.#div.style.transform = `translate( ${ this.x }px,${ this.y }px ) rotate( ${ this.angle }rad )`;
+      this.#div.style.transform = `translate( ${ this.x }px,${ this.y }px )`;
     }
   }
 
-  new Block( 100, 100, 0 );
-  new Block( 200, 100, Math.PI / 2 );
+  const blocks = [
+    new Block( { x: SIZE * 1, y: SIZE * 3, width: SIZE * 3, height: SIZE * 1, direction: Direction.Horizontal } ),
+    new Block( { x: SIZE * 5, y: SIZE * 2, width: SIZE * 1, height: SIZE * 4, direction: Direction.Vertical } ),
+  ];
 
   let activeBlock, lastX, lastY;
   function inputStart( e ) {
