@@ -56,7 +56,7 @@
       this.#svg.setAttribute( 'href', isPrimary ? '#primary' : `#cols${ cols }rows${ rows }` );
       this.#svg.owner = this;
       
-      this.updateSvg();
+      this.#updateSvg();
 
       blocksSvg.appendChild( this.#svg );
     }
@@ -68,7 +68,56 @@
       };
     }
 
-    updateSvg() {
+    getMoveBounds( others ) {
+      const bounds = {
+        minX: 0, 
+        minY: 0,
+        maxX: Math.floor( this.y ) == EXIT_ROW ? Infinity : ARENA_SIZE - this.width,
+        maxY: ARENA_SIZE - this.height,
+      }
+      
+      const thisCenter = this.center();
+      others.filter( e => e != this ).forEach( other => {
+        const otherCenter = other.center();
+
+        if ( Math.abs( otherCenter.y - thisCenter.y ) < ( this.height + other.height ) / 2 ) {
+          const left = other.x + other.width;
+          if ( left <= this.x )   bounds.minX = Math.max( left, bounds.minX );
+
+          const right = other.x - this.width;
+          if ( this.x <= right  ) bounds.maxX = Math.min( right, bounds.maxX );
+        }
+
+        if ( Math.abs( otherCenter.x - thisCenter.x ) < ( this.width + other.width ) / 2 ) {
+          const top = other.y + other.height;
+          if ( top  <= this.y )   bounds.minY = Math.max( top, bounds.minY );
+
+          const bottom = other.y - this.height;
+          if ( this.y <= bottom ) bounds.maxY = Math.min( bottom, bounds.maxY );
+        }
+      } );
+
+      return bounds;
+    }
+
+    move( dx, dy, moveBounds ) {
+      if ( this.height == 1 ) {
+        this.x = Math.max( moveBounds.minX, Math.min( moveBounds.maxX, this.x + dx ) );
+      }
+      if ( this.width == 1 ) {
+        this.y = Math.max( moveBounds.minY, Math.min( moveBounds.maxY, this.y + dy ) );
+      }
+
+      this.#updateSvg();
+    }
+
+    stopMove() {
+      this.x = Math.round( this.x );
+      this.y = Math.round( this.y );
+      this.#updateSvg();
+    }
+
+    #updateSvg() {
       this.#svg.style.transform = `translate( ${ this.x }px,${ this.y }px )`;
     }
   }
@@ -81,11 +130,20 @@
     { col: 5, row: 4, cols: 1, rows: 2 },
   ].map( e => new Block( e ) );
 
-  let active, lastPos;
+  function checkVictory() {
+    if ( active.x >= ARENA_SIZE ) {
+      console.log( 'victory!' );    
+    }
+  }
+
+
+  let active, moveBounds, lastPos;
   function inputStart( e ) {
     if ( e.target.owner ) {
-      active = e.target.owner;
       lastPos = getSVGPoint( e );
+
+      active = e.target.owner;
+      moveBounds = active.getMoveBounds( blocks );
     }
   }
 
@@ -96,53 +154,16 @@
       const dy = pos.y - lastPos.y;
       lastPos = pos;
 
-      let minX = 0;
-      let minY = 0;
-      let maxX = Math.floor( active.y ) == EXIT_ROW ? Infinity : ARENA_SIZE  - active.width;
-      let maxY = ARENA_SIZE - active.height;
-
-      const activeCenter = active.center();
-      blocks.filter( e => e != active ).forEach( other => {
-        const otherCenter = other.center();
-
-        if ( Math.abs( otherCenter.y - activeCenter.y ) < ( active.height + other.height ) / 2 ) {
-          const left = other.x + other.width;
-          if ( left <= active.x )   minX = Math.max( left, minX );
-
-          const right  = other.x - active.width;
-          if ( active.x <= right  ) maxX = Math.min( right,  maxX );
-        }
-
-        if ( Math.abs( otherCenter.x - activeCenter.x ) < ( active.width + other.width ) / 2 ) {
-          const top  = other.y + other.height;
-          if ( top  <= active.y )   minY = Math.max( top,  minY );
-
-          const bottom = other.y - active.height;
-          if ( active.y <= bottom ) maxY = Math.min( bottom, maxY );
-        }
-      } );
-
-      if ( active.height == 1 ) {
-        active.x = Math.max( minX, Math.min( maxX, active.x + dx ) );
-      }
-      if ( active.width == 1 ) {
-        active.y = Math.max( minY, Math.min( maxY, active.y + dy ) );
-      }
-
-      active.updateSvg();
+      active.move( dx, dy, moveBounds );      
     }
   }
 
   function inputStop( e ) {
     if ( active ) {
-      active.x = Math.round( active.x );
-      active.y = Math.round( active.y );
-      active.updateSvg();
-  
-      if ( active.x >= ARENA_SIZE ) {
-        victory();
-      }
-  
+      active.stopMove();
+      
+      checkVictory();
+
       active = null;
     }
   }
