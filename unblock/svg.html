@@ -1,0 +1,155 @@
+<style>
+  body {
+    margin: 0;
+    overscroll-behavior: none; /* Disable Chrome two fingers back/forward swipe */
+    user-select: none;  /* Prevent accidental selection while dragging mouse */
+  }
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+
+</style>
+
+<svg id="main" viewBox="0 0 6 6" preserveAspectRatio="xMidYMin">
+  <defs id="defs">
+    <rect id="primary" width="2" height="1" fill="red"></rect>
+    <rect id="cols2rows1" width="2" height="1" fill="yellow"></rect>
+    <rect id="cols3rows1" width="3" height="1" fill="pink"></rect>
+    <rect id="cols1rows2" width="1" height="2" fill="cyan"></rect>
+    <rect id="cols1rows3" width="1" height="3" fill="green"></rect>
+  </defs>
+  <filter id="shadow">
+    <feDropShadow dx="0.04" dy="0.04" stdDeviation="0"/>
+  </filter>
+  <rect id="arena" x="0" y="0" width="6" height="6" fill="darkslategray"></rect>
+  <g id="blocks" filter="url(#shadow)">
+    <!-- <use href="#primary" x="1" y="2"></use>
+    <use href="#cols2rows1" x="3" y="3"></use>
+    <use href="#cols2rows1" x="2" y="4"></use>
+    <use href="#cols1rows3" x="0" y="0"></use>
+    <use href="#cols3rows1" x="1" y="0"></use> -->
+  </g>
+</svg>
+
+<script>
+  const ARENA_SIZE = 6;
+  const EXIT_ROW = 2;
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const svg = document.getElementById( 'main' );
+  const blocksSvg = document.getElementById( 'blocks' );
+
+  class Block {
+    x = 0;
+    y = 0;
+    width = 1;
+    height = 1;
+
+    #svg;
+
+    constructor( { col, row, cols, rows } ) {
+      this.x = col;
+      this.y = row;
+      this.width = cols;
+      this.height = rows;
+
+      this.#svg = document.createElementNS( SVG_NS, 'use' );
+      this.#svg.setAttribute( 'href', `#cols${ cols }rows${ rows }` );
+      this.#svg.owner = this;
+      
+      this.updateSvg();
+
+      blocksSvg.appendChild( this.#svg );
+    }
+
+    updateSvg() {
+      this.#svg.style.transform = `translate( ${ this.x }px,${ this.y }px )`;
+    }
+  }
+
+  new Block( { col: 0, row: 3, cols: 2, rows: 1 } );
+  new Block( { col: 2, row: 1, cols: 3, rows: 1 } );
+  new Block( { col: 0, row: 0, cols: 1, rows: 3 } );
+  new Block( { col: 5, row: 4, cols: 1, rows: 2 } );
+
+  let active, lastPos;
+  function inputStart( e ) {
+    if ( e.target.owner ) {
+      active = e.target.owner;
+      lastPos = getSVGPoint( e );
+    }
+  }
+
+  function inputMove( e ) {
+    if ( active ) {
+      const pos = getSVGPoint( e );
+      const dx = pos.x - lastPos.x;
+      const dy = pos.y - lastPos.y;
+      lastPos = pos;
+
+      let minX = 0;
+      let minY = 0;
+      let maxX = Math.floor( active.y ) == EXIT_ROW ? Infinity : ARENA_SIZE  - active.width;
+      let maxY = ARENA_SIZE - active.height;
+
+      // blocks.filter( e => e != active ).forEach( other => {
+      //   if ( ( other.top < active.top && active.top < other.bottom ) ||
+      //        ( other.top < active.bottom && active.bottom < other.bottom ) ) {
+      //     const left = other.x + other.width;
+      //     if ( left <= active.x )   minX = Math.max( left, minX );
+
+      //     const right  = other.x - active.width;
+      //     if ( active.x <= right  ) maxX = Math.min( right,  maxX );
+      //   }
+
+      //   if ( ( other.left < active.left && active.left < other.right ) ||
+      //        ( other.left < active.right && active.right < other.right ) ) {
+      //     const top  = other.y + other.height;
+      //     if ( top  <= active.y )   minY = Math.max( top,  minY );
+
+      //     const bottom = other.y - active.height;
+      //     if ( active.y <= bottom ) maxY = Math.min( bottom, maxY );
+      //   }
+      // } );
+
+      // active.x = Math.max( minX, Math.min( maxX, active.x + active.direction.x * dx ) );
+      // active.y = Math.max( minY, Math.min( maxY, active.y + active.direction.y * dy ) );
+
+      active.x += dx;
+      active.y += dy;
+
+      active.updateSvg();
+    }
+  }
+
+  function inputStop( e ) {
+    if ( active ) {
+      active.x = Math.round( active.x );
+      active.y = Math.round( active.y );
+      active.updateSvg();
+  
+      if ( active.x >= ARENA_SIZE ) {
+        victory();
+      }
+  
+      active = null;
+    }
+  }
+
+  function getSVGPoint( e ) {
+    const pos = e.touches?.[ 0 ] ?? e;
+    const pt = svg.createSVGPoint();
+    pt.x = pos.pageX;
+    pt.y = pos.pageY;
+    return pt.matrixTransform( svg.getScreenCTM().inverse() );
+  }
+
+  document.addEventListener( 'mousedown',  inputStart );
+  document.addEventListener( 'touchstart', inputStart );
+  document.addEventListener( 'mousemove', inputMove );
+  document.addEventListener( 'touchmove', inputMove );
+  document.addEventListener( 'mouseup',  inputStop );
+  document.addEventListener( 'touchend', inputStop );
+</script>
