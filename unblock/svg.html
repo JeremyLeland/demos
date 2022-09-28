@@ -14,7 +14,7 @@
 
 <svg id="main" viewBox="0 0 6 6" preserveAspectRatio="xMidYMin">
   <defs id="defs">
-    <rect id="primary" width="2" height="1" fill="red"></rect>
+    <rect id="primary"    width="2" height="1" fill="red"></rect>
     <rect id="cols2rows1" width="2" height="1" fill="yellow"></rect>
     <rect id="cols3rows1" width="3" height="1" fill="pink"></rect>
     <rect id="cols1rows2" width="1" height="2" fill="cyan"></rect>
@@ -25,11 +25,6 @@
   </filter>
   <rect id="arena" x="0" y="0" width="6" height="6" fill="darkslategray"></rect>
   <g id="blocks" filter="url(#shadow)">
-    <!-- <use href="#primary" x="1" y="2"></use>
-    <use href="#cols2rows1" x="3" y="3"></use>
-    <use href="#cols2rows1" x="2" y="4"></use>
-    <use href="#cols1rows3" x="0" y="0"></use>
-    <use href="#cols3rows1" x="1" y="0"></use> -->
   </g>
 </svg>
 
@@ -55,8 +50,10 @@
       this.width = cols;
       this.height = rows;
 
+      const isPrimary = row == EXIT_ROW && rows == 1;
+
       this.#svg = document.createElementNS( SVG_NS, 'use' );
-      this.#svg.setAttribute( 'href', `#cols${ cols }rows${ rows }` );
+      this.#svg.setAttribute( 'href', isPrimary ? '#primary' : `#cols${ cols }rows${ rows }` );
       this.#svg.owner = this;
       
       this.updateSvg();
@@ -64,15 +61,25 @@
       blocksSvg.appendChild( this.#svg );
     }
 
+    center() { 
+      return {
+        x: this.x + this.width / 2, 
+        y: this.y + this.height / 2, 
+      };
+    }
+
     updateSvg() {
       this.#svg.style.transform = `translate( ${ this.x }px,${ this.y }px )`;
     }
   }
 
-  new Block( { col: 0, row: 3, cols: 2, rows: 1 } );
-  new Block( { col: 2, row: 1, cols: 3, rows: 1 } );
-  new Block( { col: 0, row: 0, cols: 1, rows: 3 } );
-  new Block( { col: 5, row: 4, cols: 1, rows: 2 } );
+  const blocks = [
+    { col: 1, row: 2, cols: 2, rows: 1 },
+    { col: 0, row: 3, cols: 2, rows: 1 },
+    { col: 2, row: 1, cols: 3, rows: 1 },
+    { col: 0, row: 0, cols: 1, rows: 3 },
+    { col: 5, row: 4, cols: 1, rows: 2 },
+  ].map( e => new Block( e ) );
 
   let active, lastPos;
   function inputStart( e ) {
@@ -94,31 +101,33 @@
       let maxX = Math.floor( active.y ) == EXIT_ROW ? Infinity : ARENA_SIZE  - active.width;
       let maxY = ARENA_SIZE - active.height;
 
-      // blocks.filter( e => e != active ).forEach( other => {
-      //   if ( ( other.top < active.top && active.top < other.bottom ) ||
-      //        ( other.top < active.bottom && active.bottom < other.bottom ) ) {
-      //     const left = other.x + other.width;
-      //     if ( left <= active.x )   minX = Math.max( left, minX );
+      const activeCenter = active.center();
+      blocks.filter( e => e != active ).forEach( other => {
+        const otherCenter = other.center();
 
-      //     const right  = other.x - active.width;
-      //     if ( active.x <= right  ) maxX = Math.min( right,  maxX );
-      //   }
+        if ( Math.abs( otherCenter.y - activeCenter.y ) < ( active.height + other.height ) / 2 ) {
+          const left = other.x + other.width;
+          if ( left <= active.x )   minX = Math.max( left, minX );
 
-      //   if ( ( other.left < active.left && active.left < other.right ) ||
-      //        ( other.left < active.right && active.right < other.right ) ) {
-      //     const top  = other.y + other.height;
-      //     if ( top  <= active.y )   minY = Math.max( top,  minY );
+          const right  = other.x - active.width;
+          if ( active.x <= right  ) maxX = Math.min( right,  maxX );
+        }
 
-      //     const bottom = other.y - active.height;
-      //     if ( active.y <= bottom ) maxY = Math.min( bottom, maxY );
-      //   }
-      // } );
+        if ( Math.abs( otherCenter.x - activeCenter.x ) < ( active.width + other.width ) / 2 ) {
+          const top  = other.y + other.height;
+          if ( top  <= active.y )   minY = Math.max( top,  minY );
 
-      // active.x = Math.max( minX, Math.min( maxX, active.x + active.direction.x * dx ) );
-      // active.y = Math.max( minY, Math.min( maxY, active.y + active.direction.y * dy ) );
+          const bottom = other.y - active.height;
+          if ( active.y <= bottom ) maxY = Math.min( bottom, maxY );
+        }
+      } );
 
-      active.x += dx;
-      active.y += dy;
+      if ( active.height == 1 ) {
+        active.x = Math.max( minX, Math.min( maxX, active.x + dx ) );
+      }
+      if ( active.width == 1 ) {
+        active.y = Math.max( minY, Math.min( maxY, active.y + dy ) );
+      }
 
       active.updateSvg();
     }
