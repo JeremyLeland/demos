@@ -1,17 +1,30 @@
-<link rel='stylesheet' href='../grid.css'>
+<title>Unblock v0.5</title>
+<meta name="viewport" content="width=device-width, user-scalable=no">
 
 <style>
-  .block {
-    position: absolute;
-    border-style: outset;
-    border-width: 6;
-    border-color: #0006;
-    box-sizing: border-box;   /* keep border inside div */
+  body {
+    margin: 0;
+    overscroll-behavior: none; /* Disable Chrome two fingers back/forward swipe */
+    user-select: none;  /* Prevent accidental selection while dragging mouse */
+    touch-action: none;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
   }
+  
   #arena {
-    position: absolute;
+    margin-left: auto;
+    margin-right: auto;
     background-color: darkslategrey;
+
+    width: 6;
+    height: 6;
+    /* scale: 100; */
+    /* transform-origin: top center; */
   }
+
   #victory {
     position: absolute;
     top: 50%;
@@ -20,6 +33,14 @@
     font-family: sans-serif;
     font-size: 50;
     visibility: hidden;
+  }
+
+  .block {
+    position: absolute;
+    /* border-style: outset;
+    border-width: 0.009;
+    border-color: #0006;
+    box-sizing: border-box;   keep border inside div */
   }
 </style>
 
@@ -38,23 +59,18 @@
 
   const ARENA_SIZE = 6;
   const EXIT_ROW = 2;
-  const BLOCK_SIZE = 32;
 
   const victoryDiv = document.getElementById( 'victory' );
 
   const arenaDiv = document.getElementById( 'arena' );
-  arenaDiv.style.left = 320;
-  arenaDiv.style.top = 96;
-  arenaDiv.style.width  = ARENA_SIZE * BLOCK_SIZE;
-  arenaDiv.style.height = ARENA_SIZE * BLOCK_SIZE;
 
   const Direction = { Horizontal: { x: 1, y: 0 }, Vertical: { x: 0, y: 1 } };
   const BlockType = {
-    Primary:     { width: 2 * BLOCK_SIZE, height: 1 * BLOCK_SIZE, direction: Direction.Horizontal, color: 'red'    },
-    Horizontal2: { width: 2 * BLOCK_SIZE, height: 1 * BLOCK_SIZE, direction: Direction.Horizontal, color: 'yellow' },
-    Horizontal3: { width: 3 * BLOCK_SIZE, height: 1 * BLOCK_SIZE, direction: Direction.Horizontal, color: 'pink'   },
-    Vertical2:   { width: 1 * BLOCK_SIZE, height: 2 * BLOCK_SIZE, direction: Direction.Vertical,   color: 'cyan'   },
-    Vertical3:   { width: 1 * BLOCK_SIZE, height: 3 * BLOCK_SIZE, direction: Direction.Vertical,   color: 'green'  },
+    Primary:     { width: 2, height: 1, direction: Direction.Horizontal, color: 'red'    },
+    Horizontal2: { width: 2, height: 1, direction: Direction.Horizontal, color: 'yellow' },
+    Horizontal3: { width: 3, height: 1, direction: Direction.Horizontal, color: 'pink'   },
+    Vertical2:   { width: 1, height: 2, direction: Direction.Vertical,   color: 'cyan'   },
+    Vertical3:   { width: 1, height: 3, direction: Direction.Vertical,   color: 'green'  },
   }
 
   class Block {
@@ -103,7 +119,7 @@
   
 
   const blocks = Array.from( level, e => 
-    new Block( Object.assign( { x: e.col * BLOCK_SIZE, y: e.row * BLOCK_SIZE }, BlockType[ e.type ] ) )
+    new Block( Object.assign( { x: e.col, y: e.row }, BlockType[ e.type ] ) )
   );
 
   function newGame() {
@@ -114,7 +130,7 @@
     victoryDiv.style.visibility = 'visible';
   }
 
-  let active, lastX, lastY;
+  let active, lastX, lastY, scale;
   function inputStart( e ) {
     if ( e.target.owner ) {
       active = e.target.owner;
@@ -128,15 +144,15 @@
   function inputMove( e ) {
     if ( active ) {
       const pos = e.touches?.[ 0 ] ?? e;
-      const dx = pos.pageX - lastX;
-      const dy = pos.pageY - lastY;
+      const dx = ( pos.pageX - lastX ) / scale;
+      const dy = ( pos.pageY - lastY ) / scale;
       lastX = pos.pageX;
       lastY = pos.pageY;
 
       let minX = 0;
       let minY = 0;
-      let maxX = Math.floor( active.y / BLOCK_SIZE ) == EXIT_ROW ? Infinity : ARENA_SIZE * BLOCK_SIZE - active.width;
-      let maxY = ARENA_SIZE * BLOCK_SIZE - active.height;
+      let maxX = Math.floor( active.y ) == EXIT_ROW ? Infinity : ARENA_SIZE - active.width;
+      let maxY = ARENA_SIZE - active.height;
 
       blocks.filter( e => e != active ).forEach( other => {
         if ( ( other.top < active.top && active.top < other.bottom ) ||
@@ -167,16 +183,22 @@
 
   function inputStop( e ) {
     if ( active ) {
-      active.x = Math.round( active.x / BLOCK_SIZE ) * BLOCK_SIZE;
-      active.y = Math.round( active.y / BLOCK_SIZE ) * BLOCK_SIZE;
+      active.x = Math.round( active.x );
+      active.y = Math.round( active.y );
       active.updateDiv();
   
-      if ( active.x >= ARENA_SIZE * BLOCK_SIZE ) {
+      if ( active.x >= ARENA_SIZE ) {
         victory();
       }
   
       active = null;
     }
   }
+
+  window.onresize = () => {
+    scale = Math.min( window.innerWidth, window.innerHeight ) / 6;
+    arenaDiv.style.scale = scale;
+  }
+  window.onresize();
 
 </script>
