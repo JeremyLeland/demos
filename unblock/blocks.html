@@ -8,6 +8,10 @@
     border-color: #0006;
     box-sizing: border-box;   /* keep border inside div */
   }
+  #arena {
+    position: absolute;
+    background-color: darkslategrey;
+  }
   #victory {
     position: absolute;
     top: 50%;
@@ -20,6 +24,7 @@
 </style>
 
 <body>
+  <div id="arena"></div>
   <div id="victory">Victory!</div>
 </body>
 
@@ -34,8 +39,16 @@
   const ARENA_SIZE = 6;
   const EXIT_ROW = 2;
   const BLOCK_SIZE = 32;
-  const Direction = { Horizontal: { x: 1, y: 0 }, Vertical: { x: 0, y: 1 } };
 
+  const victoryDiv = document.getElementById( 'victory' );
+
+  const arenaDiv = document.getElementById( 'arena' );
+  arenaDiv.style.left = 320;
+  arenaDiv.style.top = 96;
+  arenaDiv.style.width  = ARENA_SIZE * BLOCK_SIZE;
+  arenaDiv.style.height = ARENA_SIZE * BLOCK_SIZE;
+
+  const Direction = { Horizontal: { x: 1, y: 0 }, Vertical: { x: 0, y: 1 } };
   const BlockType = {
     Primary:     { width: 2 * BLOCK_SIZE, height: 1 * BLOCK_SIZE, direction: Direction.Horizontal, color: 'red'    },
     Horizontal2: { width: 2 * BLOCK_SIZE, height: 1 * BLOCK_SIZE, direction: Direction.Horizontal, color: 'yellow' },
@@ -66,7 +79,7 @@
       
       this.updateDiv();
 
-      document.body.appendChild( this.#div );
+      arenaDiv.appendChild( this.#div );
     }
 
     get left()    { return this.x; }
@@ -87,11 +100,15 @@
     { col: 2, row: 4, type: 'Horizontal3' },
   ];
 
-  const victoryDiv = document.getElementById( 'victory' );
+  
 
   const blocks = Array.from( level, e => 
     new Block( Object.assign( { x: e.col * BLOCK_SIZE, y: e.row * BLOCK_SIZE }, BlockType[ e.type ] ) )
   );
+
+  function newGame() {
+    victoryDiv.style.visibility = 'hidden';
+  }
 
   function victory() {
     victoryDiv.style.visibility = 'visible';
@@ -154,7 +171,7 @@
       active.y = Math.round( active.y / BLOCK_SIZE ) * BLOCK_SIZE;
       active.updateDiv();
   
-      if ( active.x > ARENA_SIZE * BLOCK_SIZE ) {
+      if ( active.x >= ARENA_SIZE * BLOCK_SIZE ) {
         victory();
       }
   
