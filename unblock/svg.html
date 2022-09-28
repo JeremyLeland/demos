@@ -1,8 +1,13 @@
+<title>Unblock v0.5</title>
+<meta name="viewport" content="width=device-width, user-scalable=no">
+
 <style>
   body {
     margin: 0;
+    background-color: black;
     overscroll-behavior: none; /* Disable Chrome two fingers back/forward swipe */
     user-select: none;  /* Prevent accidental selection while dragging mouse */
+    touch-action: none;
   }
 
   svg {
@@ -23,7 +28,7 @@
 
 </style>
 
-<svg id="main" viewBox="0 0 6 6" preserveAspectRatio="xMidYMin">
+<svg id="main" viewBox="0 0 6 6" preserveAspectRatio="xMidYMid">
   <defs id="defs">
     <rect id="primary"    width="2" height="1" fill="red"></rect>
     <rect id="cols2rows1" width="2" height="1" fill="yellow"></rect>
@@ -137,14 +142,15 @@
 
   const blocks = [
     { col: 1, row: 2, cols: 2, rows: 1 },
+    { col: 5, row: 0, cols: 1, rows: 3 },
     { col: 0, row: 3, cols: 2, rows: 1 },
     { col: 2, row: 1, cols: 3, rows: 1 },
-    { col: 0, row: 0, cols: 1, rows: 3 },
-    { col: 5, row: 4, cols: 1, rows: 2 },
+    { col: 3, row: 4, cols: 3, rows: 1 },
+    { col: 4, row: 2, cols: 1, rows: 2 },
   ].map( e => new Block( e ) );
 
   function checkVictory() {
-    if ( active.x >= ARENA_SIZE ) {
+    if ( active.y == EXIT_ROW && active.height == 1 && active.x >= ARENA_SIZE - 2 ) {
       victorySvg.style.visibility = 'visible';
     }
   }
