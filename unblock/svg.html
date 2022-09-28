@@ -10,6 +10,17 @@
     height: 100%;
   }
 
+  #victory {
+    font-family: sans-serif;
+    font-weight: bold;
+    font-size: 1;
+    fill: white;
+    text-shadow: black 4px 4px;
+    text-anchor: middle;
+    /* dominant-baseline: middle; */  /* valid CSS, but I'm tired of the VS Code warning */
+    visibility: hidden;
+  }
+
 </style>
 
 <svg id="main" viewBox="0 0 6 6" preserveAspectRatio="xMidYMin">
@@ -26,6 +37,7 @@
   <rect id="arena" x="0" y="0" width="6" height="6" fill="darkslategray"></rect>
   <g id="blocks" filter="url(#shadow)">
   </g>
+  <text id="victory" x="3" y="3" dominant-baseline="middle">Victory!</text>
 </svg>
 
 <script>
@@ -35,6 +47,7 @@
   const SVG_NS = 'http://www.w3.org/2000/svg';
   const svg = document.getElementById( 'main' );
   const blocksSvg = document.getElementById( 'blocks' );
+  const victorySvg = document.getElementById( 'victory' );
 
   class Block {
     x = 0;
@@ -132,7 +145,7 @@
 
   function checkVictory() {
     if ( active.x >= ARENA_SIZE ) {
-      console.log( 'victory!' );    
+      victorySvg.style.visibility = 'visible';
     }
   }
 
