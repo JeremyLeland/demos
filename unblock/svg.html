@@ -30,11 +30,31 @@
 
 <svg id="main" viewBox="0 0 6 6" preserveAspectRatio="xMidYMid">
   <defs id="defs">
-    <rect id="primary"    width="2" height="1" fill="red"></rect>
-    <rect id="cols2rows1" width="2" height="1" fill="yellow"></rect>
-    <rect id="cols3rows1" width="3" height="1" fill="pink"></rect>
-    <rect id="cols1rows2" width="1" height="2" fill="cyan"></rect>
-    <rect id="cols1rows3" width="1" height="3" fill="green"></rect>
+    <linearGradient id="redGrad" x1="0" y1="0" x2="0" y2="2">
+      <stop offset="0%" stop-color="red"/>
+      <stop offset="100%" stop-color="black"/>
+    </linearGradient>
+    <linearGradient id="yellowGrad" x1="0" y1="0" x2="0" y2="2">
+      <stop offset="0%" stop-color="yellow"/>
+      <stop offset="100%" stop-color="black"/>
+    </linearGradient>
+    <linearGradient id="pinkGrad" x1="0" y1="0" x2="0" y2="2">
+      <stop offset="0%" stop-color="pink"/>
+      <stop offset="100%" stop-color="black"/>
+    </linearGradient>
+    <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="2">
+      <stop offset="0%" stop-color="cyan"/>
+      <stop offset="100%" stop-color="black"/>
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="2">
+      <stop offset="0%" stop-color="green"/>
+      <stop offset="100%" stop-color="black"/>
+    </linearGradient>
+    <rect id="primary"    width="2" height="1" fill="url(#redGrad)"></rect>
+    <rect id="cols2rows1" width="2" height="1" fill="url(#yellowGrad)"></rect>
+    <rect id="cols3rows1" width="3" height="1" fill="url(#pinkGrad)"></rect>
+    <rect id="cols1rows2" width="1" height="2" fill="url(#cyanGrad)"></rect>
+    <rect id="cols1rows3" width="1" height="3" fill="url(#greenGrad)"></rect>
   </defs>
   <rect id="arena" x="0" y="0" width="6" height="6" fill="darkslategray"></rect>
   <g id="blocks">
