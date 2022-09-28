@@ -105,10 +105,11 @@
 
     getMoveBounds( others ) {
       const bounds = {
-        minX: 0, 
-        minY: 0,
-        maxX: Math.floor( this.y ) == EXIT_ROW ? Infinity : ARENA_SIZE - this.width,
-        maxY: ARENA_SIZE - this.height,
+        block: this,
+        minX: this.width == 1 ? this.x : 0,
+        minY: this.height == 1 ? this.y : 0,
+        maxX: this.width == 1 ? this.x : ( Math.floor( this.y ) == EXIT_ROW ? Infinity : ARENA_SIZE - this.width ),
+        maxY: this.height == 1 ? this.y : ARENA_SIZE - this.height,
       }
       
       const thisCenter = this.center();
@@ -135,21 +136,22 @@
       return bounds;
     }
 
-    move( dx, dy, moveBounds ) {
-      if ( this.height == 1 ) {
-        this.x = Math.max( moveBounds.minX, Math.min( moveBounds.maxX, this.x + dx ) );
-      }
-      if ( this.width == 1 ) {
-        this.y = Math.max( moveBounds.minY, Math.min( moveBounds.maxY, this.y + dy ) );
-      }
+    moveTo( x, y ) {
+      this.x = x;
+      this.y = y;
 
       this.#updateSvg();
     }
 
+    moveBy( dx, dy, moveBounds ) {
+      const x = Math.max( moveBounds.minX, Math.min( moveBounds.maxX, this.x + dx ) );
+      const y = Math.max( moveBounds.minY, Math.min( moveBounds.maxY, this.y + dy ) );
+      
+      this.moveTo( x, y );
+    }
+
     stopMove() {
-      this.x = Math.round( this.x );
-      this.y = Math.round( this.y );
-      this.#updateSvg();
+      this.moveTo( Math.round( this.x ), Math.round( this.y ) );
     }
 
     #updateSvg() {
@@ -190,7 +192,7 @@
       const dy = pos.y - lastPos.y;
       lastPos = pos;
 
-      active.move( dx, dy, moveBounds );      
+      active.moveBy( dx, dy, moveBounds );      
     }
   }
 
@@ -218,4 +220,33 @@
   document.addEventListener( 'touchmove', inputMove );
   document.addEventListener( 'mouseup',  inputStop );
   document.addEventListener( 'touchend', inputStop );
+
+  document.addEventListener( 'keydown', ( e ) => {
+    const allMoves = Array.from( blocks, block => block.getMoveBounds( blocks ) );
+
+    let move;
+    do {
+      move = allMoves[ Math.floor( Math.random() * allMoves.length ) ];
+    }
+    while ( move.minX == move.maxX && move.minY == move.maxY );
+
+    const block = move.block;
+
+    const left =  { dx: move.minX - block.x, dy: 0 };
+    const right = { dx: move.maxX - block.x, dy: 0 };
+    const up =    { dx: 0, dy: move.minY - block.y };
+    const down =  { dx: 0, dy: move.maxY - block.y };
+
+    const biggestMoves = [ left, right, up, down ].sort( ( a, b ) => {
+      const amountA = Math.max( Math.abs( a.dx ), Math.abs( a.dy ) );
+      const amountB = Math.max( Math.abs( b.dx ), Math.abs( b.dy ) );
+
+      return amountB - amountA;
+    } );
+
+    const biggest = biggestMoves[ 0 ];
+
+    move.block.moveTo( block.x + biggest.dx, block.y + biggest.dy );
+  } );
+
 </script>
