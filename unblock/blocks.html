@@ -1,6 +1,13 @@
 <title>Unblock v0.5</title>
 <meta name="viewport" content="width=device-width, user-scalable=no">
 
+<!--
+  NOTE: The 'border-style: outset' that I use for the block effect
+        doesn't work well with small values. To get around this, I 
+        am giving everything a size of 10 (instead of just using 1
+        for everything, which would be cleaner).
+-->
+
 <style>
   body {
     margin: 0;
@@ -19,10 +26,8 @@
     margin-right: auto;
     background-color: darkslategrey;
 
-    width: 6;
-    height: 6;
-    /* scale: 100; */
-    /* transform-origin: top center; */
+    width: 60;
+    height: 60;
   }
 
   #victory {
@@ -37,11 +42,12 @@
 
   .block {
     position: absolute;
-    /* border-style: outset;
-    border-width: 0.009;
+    border-style: outset;
+    border-width: 1;
     border-color: #0006;
-    box-sizing: border-box;   keep border inside div */
+    box-sizing: border-box;  /* keep border inside div */
   }
+
 </style>
 
 <body>
@@ -86,10 +92,12 @@
     constructor( values ) {
       Object.assign( this, values );
 
+      const isPrimary = this.y == EXIT_ROW && this.height == 1;
+
       this.#div = document.createElement( 'div' );
-      this.#div.className = 'block';
-      this.#div.style.width = this.width;
-      this.#div.style.height = this.height;
+      this.#div.className = 'block';// + ( isPrimary ? 'primary' : `cols${ this.width }rows${ this.height }` );
+      this.#div.style.width = this.width * 10;
+      this.#div.style.height = this.height * 10;
       this.#div.style.backgroundColor = this.color;
       this.#div.owner = this;
       
@@ -104,7 +112,7 @@
     get bottom()  { return this.y + this.height; }
 
     updateDiv() {
-      this.#div.style.transform = `translate( ${ this.x }px,${ this.y }px )`;
+      this.#div.style.transform = `translate( ${ this.x * 10 }px,${ this.y * 10 }px )`;
     }
   }
 
@@ -144,8 +152,8 @@
   function inputMove( e ) {
     if ( active ) {
       const pos = e.touches?.[ 0 ] ?? e;
-      const dx = ( pos.pageX - lastX ) / scale;
-      const dy = ( pos.pageY - lastY ) / scale;
+      const dx = ( pos.pageX - lastX ) / 10 / scale;
+      const dy = ( pos.pageY - lastY ) / 10 / scale;
       lastX = pos.pageX;
       lastY = pos.pageY;
 
@@ -196,7 +204,7 @@
   }
 
   window.onresize = () => {
-    scale = Math.min( window.innerWidth, window.innerHeight ) / 6;
+    scale = Math.min( window.innerWidth, window.innerHeight ) / 60;
     arenaDiv.style.scale = scale;
   }
   window.onresize();
