@@ -39,25 +39,27 @@
 
   const blocks = Array.from( level, e => new Block( e ) );
 
-  let active, moveBounds, lastX, lastY, scale;
+  let active, moveBounds, lastPos;
+  let startCol, startRow;
   function inputStart( e ) {
-    if ( e.target.owner ) {
-      const pos = e.touches?.[ 0 ] ?? e;
-      lastX = pos.pageX;
-      lastY = pos.pageY;
+    lastPos = getPos( e );
 
+    if ( e.target.owner ) {
       active = e.target.owner;
       moveBounds = active.getMoveBounds( blocks );
+    }
+    else {
+      startCol = Math.floor( e.offsetX / 10 );
+      startRow = Math.floor( e.offsetY / 10 );
     }
   }
 
   function inputMove( e ) {
     if ( active ) {
-      const pos = e.touches?.[ 0 ] ?? e;
-      const dx = ( pos.pageX - lastX ) / 10 / scale;
-      const dy = ( pos.pageY - lastY ) / 10 / scale;
-      lastX = pos.pageX;
-      lastY = pos.pageY;
+      const pos = getPos( e );
+      const dx = pos.x - lastPos.x;
+      const dy = pos.y - lastPos.y;
+      lastPos = pos;
 
       active.moveBy( dx, dy, moveBounds );
     }
@@ -73,8 +75,27 @@
   
       active = null;
     }
+    else {
+      const endCol = Math.floor( e.offsetX / 10 );
+      const endRow = Math.floor( e.offsetY / 10 );
+
+      blocks.push( new Block( {
+        x: Math.min( startCol, endCol ), 
+        y: Math.min( startRow, endRow ), 
+        width: Math.abs( endCol - startCol ) + 1,
+        height: Math.abs( endRow - startRow ) + 1,
+      } ) );
+    }
   }
 
+  let scale;
+  function getPos( e ) {
+    const pos = e.touches?.[ 0 ] ?? e;
+    return {
+      x: pos.pageX / 10 / scale,
+      y: pos.pageY / 10 / scale,
+    }
+  }
   window.onresize = () => {
     scale = Math.min( window.innerWidth, window.innerHeight ) / 60;
     arenaDiv.style.scale = scale;
