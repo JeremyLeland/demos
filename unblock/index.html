@@ -1,0 +1,84 @@
+<title>Unblock v0.5</title>
+<meta name="viewport" content="width=device-width, user-scalable=no">
+
+<link rel='stylesheet' href='./style.css'>
+
+<!--
+  NOTE: The 'border-style: outset' that I use for the block effect
+        doesn't work well with small values. To get around this, I 
+        am giving everything a size of 10 (instead of just using 1
+        for everything, which would be cleaner).
+-->
+
+<body>
+  <div id="arena"></div>
+  <div id="victory">Victory!</div>
+</body>
+
+<script type="module">
+  import { Block } from './Block.js'
+
+  document.addEventListener( 'mousedown',  inputStart );
+  document.addEventListener( 'touchstart', inputStart );
+  document.addEventListener( 'mousemove', inputMove );
+  document.addEventListener( 'touchmove', inputMove );
+  document.addEventListener( 'mouseup',  inputStop );
+  document.addEventListener( 'touchend', inputStop );
+
+  const arenaDiv = document.getElementById( 'arena' );
+  const victoryDiv = document.getElementById( 'victory' );  
+
+  const level = [
+    { x: 1, y: 2, width: 2, height: 1 },
+    { x: 5, y: 0, width: 1, height: 3 },
+    { x: 0, y: 3, width: 2, height: 1 },
+    { x: 2, y: 1, width: 3, height: 1 },
+    { x: 3, y: 4, width: 3, height: 1 },
+    { x: 4, y: 2, width: 1, height: 2 },
+  ];
+
+  const blocks = Array.from( level, e => new Block( e ) );
+
+  let active, moveBounds, lastX, lastY, scale;
+  function inputStart( e ) {
+    if ( e.target.owner ) {
+      const pos = e.touches?.[ 0 ] ?? e;
+      lastX = pos.pageX;
+      lastY = pos.pageY;
+
+      active = e.target.owner;
+      moveBounds = active.getMoveBounds( blocks );
+    }
+  }
+
+  function inputMove( e ) {
+    if ( active ) {
+      const pos = e.touches?.[ 0 ] ?? e;
+      const dx = ( pos.pageX - lastX ) / 10 / scale;
+      const dy = ( pos.pageY - lastY ) / 10 / scale;
+      lastX = pos.pageX;
+      lastY = pos.pageY;
+
+      active.moveBy( dx, dy, moveBounds );
+    }
+  }
+
+  function inputStop( e ) {
+    if ( active ) {
+      active.stopMove();
+  
+      if ( active.isWinningBlock() ) {
+        victoryDiv.style.visibility = 'visible';
+      }
+  
+      active = null;
+    }
+  }
+
+  window.onresize = () => {
+    scale = Math.min( window.innerWidth, window.innerHeight ) / 60;
+    arenaDiv.style.scale = scale;
+  }
+  window.onresize();
+
+</script>
