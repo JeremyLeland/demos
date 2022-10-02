@@ -16,39 +16,46 @@
 </body>
 
 <script type="module">
-  import { Block } from './Block.js'
-
-  document.addEventListener( 'mousedown',  inputStart );
-  document.addEventListener( 'touchstart', inputStart );
-  document.addEventListener( 'mousemove', inputMove );
-  document.addEventListener( 'touchmove', inputMove );
-  document.addEventListener( 'mouseup',  inputStop );
-  document.addEventListener( 'touchend', inputStop );
+  import { Block } from './Block.js';
+  import { Levels } from './Levels.js';
 
   const arenaDiv = document.getElementById( 'arena' );
   const victoryDiv = document.getElementById( 'victory' );  
 
-  const level = [
-    { x: 1, y: 2, width: 2, height: 1 },
-    { x: 5, y: 0, width: 1, height: 3 },
-    { x: 0, y: 3, width: 2, height: 1 },
-    { x: 2, y: 1, width: 3, height: 1 },
-    { x: 3, y: 4, width: 3, height: 1 },
-    { x: 4, y: 2, width: 1, height: 2 },
-  ];
+  const EmptyLevel = [ { x: 4, y: 2, width: 2, height: 1 } ];
 
-  const blocks = Array.from( level, e => new Block( e ) );
+  let blocks = [];
+  
+  loadLevel( Levels[ 0 ] );
+
+  function loadLevel( level ) {
+    victoryDiv.style.visibility = 'hidden';
+
+    blocks.forEach( block => block.remove() );
+    blocks = Array.from( level, e => new Block( e ) );
+  }
+
+  function removeBlock( block ) {
+    block.remove();
+    blocks = blocks.filter( b => b != block );
+  }
 
   let active, moveBounds, lastPos;
-  let startCol, startRow;
+  let addingBlock = false, startCol, startRow;
   function inputStart( e ) {
     lastPos = getPos( e );
 
     if ( e.target.owner ) {
-      active = e.target.owner;
-      moveBounds = active.getMoveBounds( blocks );
+      if ( e.ctrlKey ) {
+        removeBlock( e.target.owner );
+      }
+      else {
+        active = e.target.owner;
+        moveBounds = active.getMoveBounds( blocks );
+      }
     }
     else {
+      addingBlock = true;
       startCol = Math.floor( e.offsetX / 10 );
       startRow = Math.floor( e.offsetY / 10 );
     }
@@ -75,18 +82,69 @@
   
       active = null;
     }
-    else {
+    else if ( addingBlock ) {
       const endCol = Math.floor( e.offsetX / 10 );
       const endRow = Math.floor( e.offsetY / 10 );
 
-      blocks.push( new Block( {
-        x: Math.min( startCol, endCol ), 
-        y: Math.min( startRow, endRow ), 
-        width: Math.abs( endCol - startCol ) + 1,
-        height: Math.abs( endRow - startRow ) + 1,
-      } ) );
+      const x = Math.min( startCol, endCol ); 
+      const y = Math.min( startRow, endRow );
+      let width = Math.min( 3, Math.abs( endCol - startCol ) + 1 );
+      let height = Math.min( 3, Math.abs( endRow - startRow ) + 1 );
+
+      if ( height >= width )   width = 1;
+      if ( width >= height )   height = 1;
+
+      if ( width != height ) { 
+        blocks.push( new Block( { x: x, y: y, width: width, height: height } ) );
+      }
+
+      addingBlock = false;
     }
   }
+
+  document.addEventListener( 'mousedown',  inputStart );
+  document.addEventListener( 'touchstart', inputStart );
+  document.addEventListener( 'mousemove', inputMove );
+  document.addEventListener( 'touchmove', inputMove );
+  document.addEventListener( 'mouseup',  inputStop );
+  document.addEventListener( 'touchend', inputStop );
+
+  document.addEventListener( 'keydown', ( e ) => {
+    if ( e.code == 'KeyC' ) {
+      loadLevel( EmptyLevel );
+    }
+    if ( e.code == 'KeyE' ) {
+      console.log( JSON.stringify( blocks ) );
+    }
+    if ( e.code == 'Space' ) {
+      const allMoves = Array.from( blocks, block => block.getMoveBounds( blocks ) );
+
+      let move;
+      do {
+        move = allMoves[ Math.floor( Math.random() * allMoves.length ) ];
+      }
+      while ( move.minX == move.maxX && move.minY == move.maxY );
+
+      const block = move.block;
+
+      const left =  { dx: move.minX - block.x, dy: 0 };
+      const right = { dx: move.maxX - block.x, dy: 0 };
+      const up =    { dx: 0, dy: move.minY - block.y };
+      const down =  { dx: 0, dy: move.maxY - block.y };
+
+      const biggestMoves = [ left, right, up, down ].sort( ( a, b ) => {
+        const amountA = Math.max( Math.abs( a.dx ), Math.abs( a.dy ) );
+        const amountB = Math.max( Math.abs( b.dx ), Math.abs( b.dy ) );
+
+        return amountB - amountA;
+      } );
+
+      const biggest = biggestMoves[ 0 ];
+
+      move.block.moveTo( block.x + biggest.dx, block.y + biggest.dy );
+    }
+    
+  } );
 
   let scale;
   function getPos( e ) {

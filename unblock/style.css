@@ -3,6 +3,7 @@ body {
   overscroll-behavior: none; /* Disable Chrome two fingers back/forward swipe */
   user-select: none;  /* Prevent accidental selection while dragging mouse */
   touch-action: none;
+  overflow: hidden;
 
   background-color: black;
   color: white;

@@ -25,6 +25,10 @@ export class Block {
     arenaDiv.appendChild( this.#div );
   }
 
+  remove() {
+    arenaDiv.removeChild( this.#div );
+  }
+
   center() { 
     return {
       x: this.x + this.width / 2, 
