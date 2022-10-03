@@ -1256,7 +1256,7 @@ Sub createAnalysisSheet()
 
   Set reduced = Sheets("Reduced")
 
-  datapoints = Cells(Sheets("Reduced").rows.Count, 1).End(xlUp).Row - 1   ' exclude header row
+  datapoints = Cells(Sheets("Reduced").rows.Count, 1).SpecialCells(xlCellTypeLastCell).Row - 1   ' exclude header row
 
   Set sheet = Sheets.Add(After:=Sheets(Sheets.Count))
   sheet.Name = "Analysis"
