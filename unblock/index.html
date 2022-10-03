@@ -1,0 +1,193 @@
+<title>Unblock v0.5</title>
+<meta name="viewport" content="width=device-width, user-scalable=no">
+
+<link rel='stylesheet' href='./style.css'>
+
+<!--
+  NOTE: The 'border-style: outset' that I use for the block effect
+        doesn't work well with small values. To get around this, I 
+        am giving everything a size of 10 (instead of just using 1
+        for everything, which would be cleaner).
+-->
+
+<body>
+  <div id="arena"></div>
+  <div id="victory">Victory!</div>
+</body>
+
+<script type="module">
+  import { Block } from './Block.js';
+  import { Levels } from './Levels.js';
+
+  const arenaDiv = document.getElementById( 'arena' );
+  const victoryDiv = document.getElementById( 'victory' );  
+
+  const EmptyLevel = [ { x: 4, y: 2, width: 2, height: 1 } ];
+
+  let blocks = [];
+
+  let levelIndex = 0, readyForNextLevel = false;
+  
+
+  function loadLevel( level ) {
+    victoryDiv.style.visibility = 'hidden';
+    readyForNextLevel = false;
+
+    active = moveBounds = lastPos = null;
+    blocks.forEach( block => block.remove() );
+    blocks = Array.from( level, e => new Block( e ) );
+  }
+
+  function victory() {
+    victoryDiv.style.visibility = 'visible';
+    readyForNextLevel = true;
+  }
+
+  function previousLevel() {
+    levelIndex = Math.max( 0, levelIndex - 1 );
+    loadLevel( Levels[ levelIndex ] );
+  }
+  
+  function nextLevel() {
+    levelIndex = Math.min( Levels.length - 1, levelIndex + 1 );
+    loadLevel( Levels[ levelIndex ] );
+  }
+
+  function removeBlock( block ) {
+    block.remove();
+    blocks = blocks.filter( b => b != block );
+  }
+
+  let active, moveBounds, lastPos;
+  let addingBlock = false, startCol, startRow;
+  function inputStart( e ) {
+    if ( readyForNextLevel ) {
+      nextLevel();
+    }
+
+    lastPos = getPos( e );
+
+    if ( e.target.owner ) {
+      if ( e.ctrlKey ) {
+        removeBlock( e.target.owner );
+      }
+      else {
+        active = e.target.owner;
+        moveBounds = active.getMoveBounds( blocks );
+      }
+    }
+    else if ( e.shiftKey ) {
+      addingBlock = true;
+      startCol = Math.floor( e.offsetX / 10 );
+      startRow = Math.floor( e.offsetY / 10 );
+    }
+  }
+
+  function inputMove( e ) {
+    if ( active ) {
+      const pos = getPos( e );
+      const dx = pos.x - lastPos.x;
+      const dy = pos.y - lastPos.y;
+      lastPos = pos;
+
+      active.moveBy( dx, dy, moveBounds );
+    }
+  }
+
+  function inputStop( e ) {
+    if ( active ) {
+      active.stopMove();
+  
+      if ( active.isWinningBlock() ) {
+        victory();
+      }
+  
+      active = null;
+    }
+    else if ( addingBlock ) {
+      const endCol = Math.floor( e.offsetX / 10 );
+      const endRow = Math.floor( e.offsetY / 10 );
+
+      const x = Math.min( startCol, endCol ); 
+      const y = Math.min( startRow, endRow );
+      let width = Math.min( 3, Math.abs( endCol - startCol ) + 1 );
+      let height = Math.min( 3, Math.abs( endRow - startRow ) + 1 );
+
+      if ( height >= width )   width = 1;
+      if ( width >= height )   height = 1;
+
+      if ( width != height ) { 
+        blocks.push( new Block( { x: x, y: y, width: width, height: height } ) );
+      }
+
+      addingBlock = false;
+    }
+  }
+
+  document.addEventListener( 'mousedown',  inputStart );
+  document.addEventListener( 'touchstart', inputStart );
+  document.addEventListener( 'mousemove', inputMove );
+  document.addEventListener( 'touchmove', inputMove );
+  document.addEventListener( 'mouseup',  inputStop );
+  document.addEventListener( 'touchend', inputStop );
+
+  document.addEventListener( 'keydown', ( e ) => {
+    if ( e.code == 'KeyC' ) {
+      loadLevel( EmptyLevel );
+    }
+    if ( e.code == 'KeyP' ) {
+      previousLevel();
+    }
+    if ( e.code == 'KeyN' ) {
+      nextLevel();
+    }
+    if ( e.code == 'KeyE' ) {
+      console.log( JSON.stringify( blocks ) );
+    }
+    if ( e.code == 'Space' ) {
+      const allMoves = Array.from( blocks, block => block.getMoveBounds( blocks ) );
+
+      let move;
+      do {
+        move = allMoves[ Math.floor( Math.random() * allMoves.length ) ];
+      }
+      while ( move.minX == move.maxX && move.minY == move.maxY );
+
+      const block = move.block;
+
+      const left =  { dx: move.minX - block.x, dy: 0 };
+      const right = { dx: move.maxX - block.x, dy: 0 };
+      const up =    { dx: 0, dy: move.minY - block.y };
+      const down =  { dx: 0, dy: move.maxY - block.y };
+
+      const biggestMoves = [ left, right, up, down ].sort( ( a, b ) => {
+        const amountA = Math.max( Math.abs( a.dx ), Math.abs( a.dy ) );
+        const amountB = Math.max( Math.abs( b.dx ), Math.abs( b.dy ) );
+
+        return amountB - amountA;
+      } );
+
+      const biggest = biggestMoves[ 0 ];
+
+      move.block.moveTo( block.x + biggest.dx, block.y + biggest.dy );
+    }
+    
+  } );
+
+  let scale;
+  function getPos( e ) {
+    const pos = e.touches?.[ 0 ] ?? e;
+    return {
+      x: pos.pageX / 10 / scale,
+      y: pos.pageY / 10 / scale,
+    }
+  }
+  window.onresize = () => {
+    scale = Math.min( window.innerWidth, window.innerHeight ) / 60;
+    arenaDiv.style.scale = scale;
+  }
+  window.onresize();
+
+  loadLevel( Levels[ levelIndex ] );
+
+</script>

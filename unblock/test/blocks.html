@@ -1,0 +1,246 @@
+<title>Unblock v0.5</title>
+<meta name="viewport" content="width=device-width, user-scalable=no">
+
+<!--
+  NOTE: The 'border-style: outset' that I use for the block effect
+        doesn't work well with small values. To get around this, I 
+        am giving everything a size of 10 (instead of just using 1
+        for everything, which would be cleaner).
+-->
+
+<style>
+  body {
+    margin: 0;
+    overscroll-behavior: none; /* Disable Chrome two fingers back/forward swipe */
+    user-select: none;  /* Prevent accidental selection while dragging mouse */
+    touch-action: none;
+
+    background-color: black;
+    color: white;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+
+  div { position: absolute; }
+  
+  #arena {
+    margin-left: auto;
+    margin-right: auto;
+    background-color: darkslategrey;
+
+    width: 60;
+    height: 60;
+  }
+
+  #victory {
+    font-family: sans-serif;
+    font-size: 50;
+    text-shadow: black 4px 4px;
+    visibility: hidden; 
+  }
+
+  .block {
+    border-style: outset;
+    border-width: 1;
+    border-color: #0006;
+    box-sizing: border-box;  /* keep border inside div */
+  }
+
+  .primary {
+    background-color: red;
+    width: 20;
+    height: 10;
+  }
+
+  .cols2rows1 {
+    background-color: yellow;
+    width: 20;
+    height: 10;
+  }
+
+  .cols3rows1 {
+    background-color: pink;
+    width: 30;
+    height: 10;
+  }
+
+  .cols1rows2 {
+    background-color: cyan;
+    width: 10;
+    height: 20;
+  }
+
+  .cols1rows3 {
+    background-color: green;
+    width: 10;
+    height: 30;
+  }
+
+
+</style>
+
+<body>
+  <div id="arena"></div>
+  <div id="victory">Victory!</div>
+</body>
+
+<script>
+  document.addEventListener( 'mousedown',  inputStart );
+  document.addEventListener( 'touchstart', inputStart );
+  document.addEventListener( 'mousemove', inputMove );
+  document.addEventListener( 'touchmove', inputMove );
+  document.addEventListener( 'mouseup',  inputStop );
+  document.addEventListener( 'touchend', inputStop );
+
+  const ARENA_SIZE = 6;
+  const EXIT_ROW = 2;
+
+  const victoryDiv = document.getElementById( 'victory' );
+  const arenaDiv = document.getElementById( 'arena' );
+
+  class Block {
+    x = 0;
+    y = 0;
+    width = 0;
+    height = 0;
+    
+    #div;
+
+    constructor( values ) {
+      Object.assign( this, values );
+
+      const isPrimary = this.y == EXIT_ROW && this.height == 1;
+
+      this.#div = document.createElement( 'div' );
+      this.#div.className = 'block ' + ( isPrimary ? 'primary' : `cols${ this.width }rows${ this.height }` );
+      this.#div.owner = this;
+      
+      this.#updateDiv();
+
+      arenaDiv.appendChild( this.#div );
+    }
+
+    center() { 
+      return {
+        x: this.x + this.width / 2, 
+        y: this.y + this.height / 2, 
+      };
+    }
+
+    getMoveBounds( others ) {
+      const bounds = {
+        block: this,
+        minX: this.width == 1 ? this.x : 0,
+        minY: this.height == 1 ? this.y : 0,
+        maxX: this.width == 1 ? this.x : ( Math.floor( this.y ) == EXIT_ROW ? Infinity : ARENA_SIZE - this.width ),
+        maxY: this.height == 1 ? this.y : ARENA_SIZE - this.height,
+      }
+      
+      const thisCenter = this.center();
+      others.filter( e => e != this ).forEach( other => {
+        const otherCenter = other.center();
+
+        if ( Math.abs( otherCenter.y - thisCenter.y ) < ( this.height + other.height ) / 2 ) {
+          const left = other.x + other.width;
+          if ( left <= this.x )   bounds.minX = Math.max( left, bounds.minX );
+
+          const right = other.x - this.width;
+          if ( this.x <= right  ) bounds.maxX = Math.min( right, bounds.maxX );
+        }
+
+        if ( Math.abs( otherCenter.x - thisCenter.x ) < ( this.width + other.width ) / 2 ) {
+          const top = other.y + other.height;
+          if ( top  <= this.y )   bounds.minY = Math.max( top, bounds.minY );
+
+          const bottom = other.y - this.height;
+          if ( this.y <= bottom ) bounds.maxY = Math.min( bottom, bounds.maxY );
+        }
+      } );
+
+      return bounds;
+    }
+
+    moveTo( x, y ) {
+      this.x = x;
+      this.y = y;
+
+      this.#updateDiv();
+    }
+
+    moveBy( dx, dy, moveBounds ) {
+      const x = Math.max( moveBounds.minX, Math.min( moveBounds.maxX, this.x + dx ) );
+      const y = Math.max( moveBounds.minY, Math.min( moveBounds.maxY, this.y + dy ) );
+      
+      this.moveTo( x, y );
+    }
+
+    stopMove() {
+      this.moveTo( Math.round( this.x ), Math.round( this.y ) );
+    }
+
+    #updateDiv() {
+      this.#div.style.transform = `translate( ${ this.x * 10 }px,${ this.y * 10 }px )`;
+    }
+  }
+
+  const level = [
+    { x: 1, y: 2, width: 2, height: 1 },
+    { x: 5, y: 0, width: 1, height: 3 },
+    { x: 0, y: 3, width: 2, height: 1 },
+    { x: 2, y: 1, width: 3, height: 1 },
+    { x: 3, y: 4, width: 3, height: 1 },
+    { x: 4, y: 2, width: 1, height: 2 },
+  ];
+
+  const blocks = Array.from( level, e => new Block( e ) );
+
+  function checkVictory() {
+    if ( active.y == EXIT_ROW && active.height == 1 && active.x >= ARENA_SIZE - 2 ) {
+      victoryDiv.style.visibility = 'visible';
+    }
+  }
+
+  let active, lastX, lastY, scale;
+  function inputStart( e ) {
+    if ( e.target.owner ) {
+      const pos = e.touches?.[ 0 ] ?? e;
+      lastX = pos.pageX;
+      lastY = pos.pageY;
+
+      active = e.target.owner;
+      moveBounds = active.getMoveBounds( blocks );
+    }
+  }
+
+  function inputMove( e ) {
+    if ( active ) {
+      const pos = e.touches?.[ 0 ] ?? e;
+      const dx = ( pos.pageX - lastX ) / 10 / scale;
+      const dy = ( pos.pageY - lastY ) / 10 / scale;
+      lastX = pos.pageX;
+      lastY = pos.pageY;
+
+      active.moveBy( dx, dy, moveBounds );
+    }
+  }
+
+  function inputStop( e ) {
+    if ( active ) {
+      active.stopMove();
+  
+      checkVictory();
+  
+      active = null;
+    }
+  }
+
+  window.onresize = () => {
+    scale = Math.min( window.innerWidth, window.innerHeight ) / 60;
+    arenaDiv.style.scale = scale;
+  }
+  window.onresize();
+
+</script>

@@ -1,0 +1,70 @@
+body {
+  margin: 0;
+  overscroll-behavior: none; /* Disable Chrome two fingers back/forward swipe */
+  user-select: none;  /* Prevent accidental selection while dragging mouse */
+  touch-action: none;
+  overflow: hidden;
+
+  background-color: black;
+  color: white;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+div { position: absolute; }
+
+#arena {
+  margin-left: auto;
+  margin-right: auto;
+  background-color: darkslategrey;
+
+  width: 60;
+  height: 60;
+}
+
+#victory {
+  font-family: sans-serif;
+  font-size: 50;
+  text-shadow: black 4px 4px;
+  visibility: hidden; 
+}
+
+.block {
+  border-style: outset;
+  border-width: 1;
+  border-color: #0006;
+  box-sizing: border-box;  /* keep border inside div */
+}
+
+.primary {
+  background-color: red;
+  width: 20;
+  height: 10;
+}
+
+.cols2rows1 {
+  background-color: yellow;
+  width: 20;
+  height: 10;
+}
+
+.cols3rows1 {
+  background-color: pink;
+  width: 30;
+  height: 10;
+}
+
+.cols1rows2 {
+  background-color: cyan;
+  width: 10;
+  height: 20;
+}
+
+.cols1rows3 {
+  background-color: green;
+  width: 10;
+  height: 30;
+}
