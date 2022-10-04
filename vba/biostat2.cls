@@ -1256,7 +1256,7 @@ Sub createAnalysisSheet()
 
   Set reduced = Sheets("Reduced")
 
-  datapoints = Cells(Sheets("Reduced").rows.Count, 1).SpecialCells(xlCellTypeLastCell).Row - 1   ' exclude header row
+  numPoints = Cells(Sheets("Reduced").rows.Count, 1).SpecialCells(xlCellTypeLastCell).Row - 1   ' exclude header row
 
   Set sheet = Sheets.Add(After:=Sheets(Sheets.Count))
   sheet.Name = "Analysis"
@@ -1266,6 +1266,7 @@ Sub createAnalysisSheet()
       col2 = col1 + 18    ' 16 well columns + some padding
       col3 = col2 + 18
       col4 = col3 + 18
+      col5 = col4 + 5
       
       ' Top row labels
       .Cells(1, col1).Value = "Concentration of Blue"
@@ -1275,11 +1276,17 @@ Sub createAnalysisSheet()
       .Cells(1, col4 + 1).Value = "Averages"
       .Cells(1, col4 + 3).Value = "Std. Dev."
       
+      .Cells(1, col5 + 1).Value = "Well Control Panel"
+      
       ' 2nd row lables (wells and averages)
       For well = 1 To 16
           .Cells(2, well + col1).Value = "Well " & well
           .Cells(2, well + col2).Value = "Well " & well
           .Cells(2, well + col3).Value = "Well " & well
+          
+          .Cells(2, well + col5).Value = well
+          .Cells(3, well + col5).Value = IIf(well <> 5, 1, 0)
+          .Cells(3, well + col5).ColumnWidth = 4
       Next well
       
       .Cells(2, col4 + 1).Value = "WT"
@@ -1288,7 +1295,7 @@ Sub createAnalysisSheet()
       .Cells(2, col4 + 4).Value = "rad51" & ChrW(&H394)    ' 0394 = delta symbol
       
       ' Rows of datapoints
-      For i = 1 To datapoints
+      For i = 1 To numPoints
           r = i + 2
           
           ' Times
@@ -1311,24 +1318,27 @@ Sub createAnalysisSheet()
               .Cells(r, well + col3).Value = "=100-" & col & r
           Next well
           
-          ' WT is first 8 wells (excluding well 5), rad51 is last 8 wells
-          rangeWT = getCol(col3 + 1) & r & ":" & getCol(col3 + 4) & r & "," & getCol(col3 + 6) & r & ":" & getCol(col3 + 8) & r
+          ' WT is first 8 wells, rad51 is last 8 wells
+          rangeWT = getCol(col3 + 1) & r & ":" & getCol(col3 + 8) & r
           rangeRad51 = getCol(col3 + 9) & r & ":" & getCol(col3 + 16) & r
-        
-          .Cells(r, col4 + 1).Value = "=AVERAGE(" & rangeWT & ")"
-          .Cells(r, col4 + 2).Value = "=AVERAGE(" & rangeRad51 & ")"
-          .Cells(r, col4 + 3).Value = "=STDEV(" & rangeWT & ")"
-          .Cells(r, col4 + 4).Value = "=STDEV(" & rangeRad51 & ")"
+          
+          controlWT = getCol(col5 + 1) & 3 & ":" & getCol(col5 + 8) & 3
+          controlRad51 = getCol(col5 + 9) & 3 & ":" & getCol(col5 + 16) & 3
+          
+          .Cells(r, col4 + 1).FormulaArray = "=AVERAGE(IF(" & controlWT & "=1," & rangeWT & "))"
+          .Cells(r, col4 + 2).FormulaArray = "=AVERAGE(IF(" & controlRad51 & "=1," & rangeRad51 & "))"
+          .Cells(r, col4 + 3).FormulaArray = "=STDEV(IF(" & controlWT & "=1," & rangeWT & "))"
+          .Cells(r, col4 + 4).FormulaArray = "=STDEV(IF(" & controlRad51 & "=1," & rangeRad51 & "))"
       Next i
   End With
 
-  Chart = createChart(sheet:=sheet, left:=100, top:=100, yAxis:="%reduction aB", rows:=datapoints, xCol:="BC", seriesCol1:="BD", seriesCol2:="BE")
+  Chart = createChart(sheet:=sheet, left:=3200, top:=100, yAxis:="%reduction aB", rows:=numPoints, xCol:="BC", seriesCol1:="BD", seriesCol2:="BE")
 
   Call OptimizeCode_End
 
 End Sub
 
-Sub doEverything
+Sub doEverything()
 
   Call flexAbs
   Call createAnalysisSheet
