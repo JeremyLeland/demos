@@ -1254,9 +1254,7 @@ Sub createAnalysisSheet()
 
   Call OptimizeCode_Begin
 
-  Set reduced = Sheets("Reduced")
-
-  numPoints = Cells(Sheets("Reduced").rows.Count, 1).SpecialCells(xlCellTypeLastCell).Row - 1   ' exclude header row
+  numPoints = Sheets("Reduced").UsedRange.Rows.Count - 1   ' exclude header row
 
   Set sheet = Sheets.Add(After:=Sheets(Sheets.Count))
   sheet.Name = "Analysis"
