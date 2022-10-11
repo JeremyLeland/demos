@@ -1,0 +1,13 @@
+<script type="module">
+  import { Board } from '../Board.js';
+  import { Levels } from '../Levels.js';
+
+  const board = new Board( Levels[ 0 ] );
+
+  board.blocks.forEach( block => {
+    console.log( board.getMoveBounds( block ) );
+  } );
+
+  console.log( board.getAvailableMoves() );
+
+</script>

@@ -1,0 +1,21 @@
+<link rel='stylesheet' href='../style.css'>
+
+<body></body>
+
+<script type="module">
+  import { Arena } from '../Arena.js';
+  import { Board } from '../Board.js';
+  import { Levels } from '../Levels.js';
+
+  const board = new Board( Levels[ 0 ] );
+  const arena = new Arena( board );
+
+  document.body.appendChild( arena.div );
+
+  board.blocks.forEach( block => {
+    console.log( board.getMoveBounds( block ) );
+  } );
+
+  console.log( board.getAvailableMoves() );
+
+</script>
