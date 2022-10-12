@@ -1336,6 +1336,84 @@ Sub createAnalysisSheet()
 
 End Sub
 
+Sub createGrowthSheet()
+    Call OptimizeCode_Begin
+
+    numPoints = Sheets("Reduced").UsedRange.rows.Count - 1   ' exclude header row
+    
+    Set sheet = Sheets.Add(After:=Sheets(Sheets.Count))
+    sheet.Name = "Growth"
+
+    With sheet
+        col1 = 1
+        col2 = col1 + 18    ' 16 well columns + some padding
+        
+        ' Top row labels
+        .Cells(1, col1).Value = "Growth"
+        
+        ' 2nd row lables (wells and growth)
+        For well = 1 To 16
+            .Cells(2, well + col1).Value = "Well " & well
+        Next well
+        
+        ' Rows of datapoints
+        For i = 1 To numPoints
+            r = i + 2
+            
+            ' Times
+            .Cells(r, col1).Value = "=Reduced!A" & i + 1
+        
+            ' Wells
+            For well = 1 To 16
+                ' Growth
+                .Cells(r, well + col1).Value = "='Well " & well & "'!I" & i + 1
+            Next well
+        Next i
+    End With
+    
+    For r = 1 To 4
+        For c = 1 To 4
+        
+            wellNum = (r - 1) * 4 + c
+    
+            Set cht = sheet.ChartObjects.Add(left:=900 + (c - 1) * 255, width:=250, top:=5 + (r - 1) * 155, height:=150)
+            cht.Chart.ChartType = xlXYScatterLines
+            
+            With cht.Chart
+                .HasTitle = True
+                .charttitle.Text = "Well " & wellNum
+                .HasLegend = False
+            End With
+                
+            With cht.Chart.Axes(xlCategory)
+                .HasTitle = True
+                .AxisTitle.Caption = "Time (hours)"
+            End With
+            
+            With cht.Chart.Axes(xlValue)
+                .HasTitle = True
+                .AxisTitle.Caption = yAxis
+                .MinimumScale = 0
+                .MaximumScale = 1.5
+            End With
+            
+            startRow = 3
+            lastRow = startRow + numPoints
+            
+            wellCol = getCol(col1 + wellNum)
+            
+            With cht.Chart.SeriesCollection.NewSeries
+                .Name = "Growth"
+                .XValues = sheet.Range("A" & startRow & ":" & "A" & lastRow)
+                .Values = sheet.Range(wellCol & startRow & ":" & wellCol & lastRow)
+            End With
+    
+        Next c
+    Next r
+    
+    Call OptimizeCode_End
+End Sub
+
 Sub fixGround()
 
     Call OptimizeCode_Begin
@@ -1371,6 +1449,7 @@ End Sub
 Sub doEverything()
 
   Call flexAbs
+  Call createGrowthSheet
   Call createAnalysisSheet
 
 End Sub
