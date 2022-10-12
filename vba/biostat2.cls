@@ -1336,6 +1336,38 @@ Sub createAnalysisSheet()
 
 End Sub
 
+Sub fixGround()
+
+    Call OptimizeCode_Begin
+
+    Set srcSheet = Sheets(1)
+    
+    srcSheet.Copy Before:=srcSheet       ' place it before so flexAbs() can find it
+    Set fixedSheet = Sheets(1)
+    fixedSheet.Name = "Fixed"
+    
+    fixedSheet.Range("G1").EntireColumn.Insert  ' extra column for time
+    
+    numPoints = fixedSheet.UsedRange.rows.Count - 1    ' exclude header row
+    
+    colMax = 16 * 3 + 7
+    
+    For i = 1 To numPoints
+        r = i + 1
+        
+        For col = 8 To colMax
+            oldVal = fixedSheet.Cells(r, col).Value
+            If oldVal > 0 Then
+                newVal = 128000000 / oldVal
+                fixedSheet.Cells(r, col).Value = newVal
+            End If
+        Next col
+    Next i
+    
+    Call OptimizeCode_End
+    
+End Sub
+
 Sub doEverything()
 
   Call flexAbs
