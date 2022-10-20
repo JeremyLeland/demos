@@ -1369,6 +1369,12 @@ Sub createGrowthSheet()
                 .Cells(r, well + col1).Value = "='Well " & well & "'!I" & i + 1
             Next well
         Next i
+        
+        ' Threshold control
+        .Cells(1, col2).Value = "Threshold Slope"
+        .Cells(1, col2 + 1).Value = 0.05
+        .Cells(1, col2 + 2).Value = -0.05
+        
     End With
     
     For r = 1 To 4
@@ -1376,7 +1382,8 @@ Sub createGrowthSheet()
         
             wellNum = (r - 1) * 4 + c
     
-            Set cht = sheet.ChartObjects.Add(left:=900 + (c - 1) * 255, width:=250, top:=5 + (r - 1) * 155, height:=150)
+            'Chart
+            Set cht = sheet.ChartObjects.Add(left:=950 + (c - 1) * 265, width:=260, top:=20 + (r - 1) * 185, height:=150)
             cht.Chart.ChartType = xlXYScatterLines
             
             With cht.Chart
@@ -1402,10 +1409,53 @@ Sub createGrowthSheet()
             
             wellCol = getCol(col1 + wellNum)
             
+            timeRange = "A" & startRow & ":" & "A" & lastRow
+            valueRange = wellCol & startRow & ":" & wellCol & lastRow
+            
             With cht.Chart.SeriesCollection.NewSeries
                 .Name = "Growth"
-                .XValues = sheet.Range("A" & startRow & ":" & "A" & lastRow)
-                .Values = sheet.Range(wellCol & startRow & ":" & wellCol & lastRow)
+                .XValues = sheet.Range(timeRange)
+                .Values = sheet.Range(valueRange)
+            End With
+            
+            ' Growth start/stop
+            xRange = "A" & startRow + 1 & ":" & "A" & lastRow & "-" & "A" & startRow & ":" & "A" & lastRow - 1
+            
+            With sheet
+                textRow = r * 12
+                textCol = (c - 1) * 5 + col2
+                .Cells(textRow, textCol).Value = "Start"
+                
+                yRange = wellCol & startRow + 1 & ":" & wellCol & lastRow & "-" & wellCol & startRow & ":" & wellCol & lastRow - 1
+                
+                .Cells(textRow, textCol + 1).FormulaArray = "=MATCH(1, IF(T1 < (" & yRange & ")/(" & xRange & "), 1, 0),0)"
+                .Cells(textRow, textCol + 2).FormulaArray = "=INDEX(" & timeRange & "," & getCol(textCol + 1) & textRow & ")"
+                .Cells(textRow, textCol + 3).FormulaArray = "=INDEX(" & valueRange & "," & getCol(textCol + 1) & textRow & ")"
+                
+                startTimeRange = getCol(textCol + 2) & textRow
+                startValueRange = getCol(textCol + 3) & textRow
+                
+                textRow = textRow + 1
+                .Cells(textRow, textCol).Value = "Stop"
+                
+                .Cells(textRow, textCol + 1).FormulaArray = "=MATCH(1, IF(U1 > (" & yRange & ")/(" & xRange & "), 1, 0),0)"
+                .Cells(textRow, textCol + 2).FormulaArray = "=INDEX(" & timeRange & "," & getCol(textCol + 1) & textRow & ")"
+                .Cells(textRow, textCol + 3).FormulaArray = "=INDEX(" & valueRange & "," & getCol(textCol + 1) & textRow & ")"
+                
+                stopTimeRange = getCol(textCol + 2) & textRow
+                stopValueRange = getCol(textCol + 3) & textRow
+            End With
+            
+            With cht.Chart.SeriesCollection.NewSeries
+                .Name = "Start"
+                .XValues = sheet.Range(startTimeRange)
+                .Values = sheet.Range(startValueRange)
+            End With
+            
+            With cht.Chart.SeriesCollection.NewSeries
+                .Name = "Stop"
+                .XValues = sheet.Range(stopTimeRange)
+                .Values = sheet.Range(stopValueRange)
             End With
     
         Next c
