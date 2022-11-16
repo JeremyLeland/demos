@@ -1,0 +1,1491 @@
+{
+  "data": {
+    "purchaseHistoryDetails": [
+      {
+        "costSummary": {
+          "total": 289.28,
+          "totalTax": 7.9,
+          "itemSalesAndCouponSavings": 35.33,
+          "feeOriginal": 4.95,
+          "feePaid": 0,
+          "feeSavings": 4.95,
+          "coupons": [],
+          "couponTotal": 0,
+          "otherFees": [],
+          "otherFeeTotal": 0,
+          "subTotal": 316.71,
+          "savings": 40.28,
+          "boostSavings": 0,
+          "alcoholSubTotal": "USD 0.00"
+        },
+        "items": [
+          {
+            "purchasedData": {
+              "upc": "0085718300500",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Banza® Chickpea Penne Pasta",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0085718300500",
+                "customerFacingSize": "8 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 3.99,
+                "unitPricePaid": 3.99,
+                "totalPricePaid": 7.98,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 7.98"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2,
+                "qtyRefunded": 0,
+                "qtyRefundable": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0085718300500"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001600012593",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Big G Cereal Original Cinnamon Toast Crunch Breakfast Cereal",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001600012593",
+                "customerFacingSize": "16.8 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 5.49,
+                "unitPricePaid": 2.49,
+                "totalPricePaid": 4.98,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -2,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -2,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -1,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 6,
+                "originalTotalPricePaid": "USD 10.98"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2,
+                "qtyRefunded": 0,
+                "qtyRefundable": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0001600012593"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0002410059475",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Cheez-It Grooves Sharp White Cheddar Cheese Crackers",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0002410059475",
+                "customerFacingSize": "9.0 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 3.79,
+                "unitPricePaid": 2.49,
+                "totalPricePaid": 2.49,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.8,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 1.3,
+                "originalTotalPricePaid": "USD 3.79"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0002410059475"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0002392333011",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Earth's Best Organic® Sesame Street® Peach Banana Fruit Yogurt Smoothie Stage 4",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0002392333011",
+                "customerFacingSize": "4.2 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 1.79,
+                "unitPricePaid": 1.79,
+                "totalPricePaid": 3.58,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 3.58"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2,
+                "qtyRefunded": 0,
+                "qtyRefundable": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0002392333011"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111040147",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Fred Meyer Vitamin D Whole Milk",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111040147",
+                "customerFacingSize": "1/2 gallon"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 2.39,
+                "unitPricePaid": 2.39,
+                "totalPricePaid": 4.78,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 4.78"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2,
+                "qtyRefunded": 0,
+                "qtyRefundable": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0001111040147"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0070486305005",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Garden Lites® Veggies Made Great® Spinach Egg White Frittata",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0070486305005",
+                "customerFacingSize": "6 ct / 12 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 8.49,
+                "unitPricePaid": 8.49,
+                "totalPricePaid": 16.98,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 16.98"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2,
+                "qtyRefunded": 0,
+                "qtyRefundable": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0070486305005"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0084886004072",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "GoGo Squeez Yogurtz Strawberry and Banana Yogurt Pouch Variety Pack",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0084886004072",
+                "customerFacingSize": "16 ct / 3 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 13.79,
+                "unitPricePaid": 13.79,
+                "totalPricePaid": 13.79,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 13.79"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0084886004072"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0089000000115",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "GoGo Squeez® Apple Apple Applesauce Pouches",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0089000000115",
+                "customerFacingSize": "12 ct / 3.2 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 8.79,
+                "unitPricePaid": 8.29,
+                "totalPricePaid": 8.29,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 0.5,
+                "originalTotalPricePaid": "USD 8.79"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0089000000115"
+            },
+            "monetizationInfo": {
+              "adId": "SF_981dfcad-4b06-46ce-80dc-30bcf5b17562",
+              "adPosition": 3
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0084886004906",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "GoGoSqueeZ® YogurtZ Lowfat Strawberry Banana Yogurt Pouches",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0084886004906",
+                "customerFacingSize": "16 ct / 3 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 13.79,
+                "unitPricePaid": 13.79,
+                "totalPricePaid": 13.79,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 13.79"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0084886004906"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0003663207112",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Horizon Organic Whole Milk",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0003663207112",
+                "customerFacingSize": "6 ct / 8 fl oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 8.29,
+                "unitPricePaid": 8.29,
+                "totalPricePaid": 8.29,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 8.29"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0003663207112"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0007790050311",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Jimmy Dean® Sausage Egg & Cheese Biscuit Sandwiches",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0007790050311",
+                "customerFacingSize": "8 ct / 4.5 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 12.99,
+                "unitPricePaid": 12.99,
+                "totalPricePaid": 12.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 12.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0007790050311"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0076770700214",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Kerrygold Grass Fed Pure Irish Butter Sticks",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0076770700214",
+                "customerFacingSize": "8 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 5.49,
+                "unitPricePaid": 5.49,
+                "totalPricePaid": 5.49,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 5.49"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0076770700214"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0081088201051",
+              "itemType": "NORMAL",
+              "isRefundable": false,
+              "displayInfo": {
+                "description": "Kidfresh® Wagon Wheels Frozen Mac & Cheese",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0081088201051",
+                "customerFacingSize": "7.25 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 0,
+                "unitPricePaid": 0,
+                "totalPricePaid": 0,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 0.00"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 0,
+                "notReceived": 1,
+                "substitutes": 0,
+                "addAllToCart": 0,
+                "qtyRefunded": 0,
+                "qtyRefundable": 0
+              }
+            },
+            "catalogData": {
+              "upc": "0081088201051"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111089875",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Kroger Enriched Long Grain White Rice",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111089875",
+                "customerFacingSize": "32 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 1.69,
+                "unitPricePaid": 1.5,
+                "totalPricePaid": 1.5,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.19,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 0.19,
+                "originalTotalPricePaid": "USD 1.69"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0001111089875"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111010348",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Kroger Recipe Beginnings Frozen Chopped Onions",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111010348",
+                "customerFacingSize": "12 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 1.69,
+                "unitPricePaid": 1.69,
+                "totalPricePaid": 6.76,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 6.76"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 4,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 4,
+                "qtyRefunded": 0,
+                "qtyRefundable": 4
+              }
+            },
+            "catalogData": {
+              "upc": "0001111010348"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111004845",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Kroger Salted Dry Roasted Peanuts",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111004845",
+                "customerFacingSize": "16 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 2.29,
+                "unitPricePaid": 1.99,
+                "totalPricePaid": 3.98,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.3,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.3,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 0.6,
+                "originalTotalPricePaid": "USD 4.58"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2,
+                "qtyRefunded": 0,
+                "qtyRefundable": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0001111004845"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0004126001320",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Kroger® Naproxen Sodium Tablets",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0004126001320",
+                "customerFacingSize": "100 ct"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 4.99,
+                "unitPricePaid": 4.99,
+                "totalPricePaid": 4.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 4.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0004126001320"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111050158",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Kroger® Shredded Sharp Cheddar Cheese",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111050158",
+                "customerFacingSize": "8 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 2.49,
+                "unitPricePaid": 2,
+                "totalPricePaid": 4,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.49,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.49,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 0.98,
+                "originalTotalPricePaid": "USD 4.98"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2,
+                "qtyRefunded": 0,
+                "qtyRefundable": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0001111050158"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0000000004065",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Large Green Bell Pepper",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0000000004065",
+                "customerFacingSize": "1 ct"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 0.99,
+                "unitPricePaid": 0.89,
+                "totalPricePaid": 1.78,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.1,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.1,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 0.2,
+                "originalTotalPricePaid": "USD 1.98"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2,
+                "qtyRefunded": 0,
+                "qtyRefundable": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0000000004065"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0081793901160",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Method Waterfall Foaming Hand Wash",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0081793901160",
+                "customerFacingSize": "10 fl oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 3.99,
+                "unitPricePaid": 3.99,
+                "totalPricePaid": 7.98,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 7.98"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2,
+                "qtyRefunded": 0,
+                "qtyRefundable": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0081793901160"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0081793900362",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Method® Green Tea & Aloe Foaming Hand Wash",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0081793900362",
+                "customerFacingSize": "10 fl oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 3.99,
+                "unitPricePaid": 3.99,
+                "totalPricePaid": 3.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 3.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0081793900362"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0081793900365",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Method® Sea Minerals Foaming Hand Soap",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0081793900365",
+                "customerFacingSize": "10 fl oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 3.99,
+                "unitPricePaid": 3.99,
+                "totalPricePaid": 3.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 3.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0081793900365"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0007050145105",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Neutrogena® Make-Up Remover Cleansing Towelettes",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0007050145105",
+                "customerFacingSize": "7 ct"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 2.59,
+                "unitPricePaid": 2.59,
+                "totalPricePaid": 2.59,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 2.59"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0007050145105"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0085282300610",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Once Upon a Farm Wild Rumpus Avocado Pineapple Banana Avocado Organic Kids Snack Pouch",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0085282300610",
+                "customerFacingSize": "3.2 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 2.99,
+                "unitPricePaid": 1.99,
+                "totalPricePaid": 7.96,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 4,
+                "originalTotalPricePaid": "USD 11.96"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 4,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 4,
+                "qtyRefunded": 0,
+                "qtyRefundable": 4
+              }
+            },
+            "catalogData": {
+              "upc": "0085282300610"
+            },
+            "monetizationInfo": {
+              "adId": "SF_0f122c7c-f808-4aeb-a8f6-41d84774d043",
+              "adPosition": 0
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0085282300648",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Once Upon a Farm™ Strawberry Banana Swirl Organic Smoothie Pouch",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0085282300648",
+                "customerFacingSize": "4 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 2.99,
+                "unitPricePaid": 1.99,
+                "totalPricePaid": 7.96,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 4,
+                "originalTotalPricePaid": "USD 11.96"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 4,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 4,
+                "qtyRefunded": 0,
+                "qtyRefundable": 4
+              }
+            },
+            "catalogData": {
+              "upc": "0085282300648"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0003700071477",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Pampers Cruisers 360 Fit Size 6 Diapers",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0003700071477",
+                "customerFacingSize": "17 ct"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 10.49,
+                "unitPricePaid": 10.49,
+                "totalPricePaid": 10.49,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 10.49"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0003700071477"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0003700073106",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Pampers Sensitive Fragrance Free Baby Wipes",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0003700073106",
+                "customerFacingSize": "12 pk / 56 ct"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 21.99,
+                "unitPricePaid": 21.99,
+                "totalPricePaid": 21.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 21.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0003700073106"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0003700074971",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Pampers Swaddlers Size 6 Diapers",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0003700074971",
+                "customerFacingSize": "50 ct"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 28.49,
+                "unitPricePaid": 18.49,
+                "totalPricePaid": 18.49,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -10,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 10,
+                "originalTotalPricePaid": "USD 28.49"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0003700074971"
+            },
+            "monetizationInfo": {
+              "adId": "SF_e5251511-7c10-4db1-9882-c2911e41da66",
+              "adPosition": 1
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111009775",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Private Selection™ Old Fashioned Egg Nog",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111009775",
+                "customerFacingSize": "32 fl oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 4.99,
+                "unitPricePaid": 4.49,
+                "totalPricePaid": 4.49,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 0.5,
+                "originalTotalPricePaid": "USD 4.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0001111009775"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111061140",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Simple Truth Organic™ Ground Onion Powder",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111061140",
+                "customerFacingSize": "1.94 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 3.79,
+                "unitPricePaid": 3.79,
+                "totalPricePaid": 3.79,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 3.79"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0001111061140"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0005446705035",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Starbucks® Double Chocolate Hot Cocoa Mix",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0005446705035",
+                "customerFacingSize": "8 ct"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 7.49,
+                "unitPricePaid": 6.99,
+                "totalPricePaid": 6.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 0.5,
+                "originalTotalPricePaid": "USD 7.49"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0005446705035"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001200010451",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Starbucks® DoubleShot® Espresso & Cream Premium Espresso Beverage",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001200010451",
+                "customerFacingSize": "4 cans / 6.5 fl oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 8.49,
+                "unitPricePaid": 8.49,
+                "totalPricePaid": 25.47,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 25.47"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 3,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 3,
+                "qtyRefunded": 0,
+                "qtyRefundable": 3
+              }
+            },
+            "catalogData": {
+              "upc": "0001200010451"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0004160800088",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Summer's Eve® Active Cleansing Cloths",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0004160800088",
+                "customerFacingSize": "14 ct"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 2.69,
+                "unitPricePaid": 2.29,
+                "totalPricePaid": 2.29,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.4,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 0.4,
+                "originalTotalPricePaid": "USD 2.69"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0004160800088"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0073762801150",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Thai Kitchen Unsweetened Coconut Milk",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0073762801150",
+                "customerFacingSize": "13.66 fl oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 3.49,
+                "unitPricePaid": 2.99,
+                "totalPricePaid": 5.98,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 1,
+                "originalTotalPricePaid": "USD 6.98"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2,
+                "qtyRefunded": 0,
+                "qtyRefundable": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0073762801150"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001159410052",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Tim's Hawaiian Crispy & Crunchy Luau BBQ Sweet & Spicy Kettle Style Potato Chips",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001159410052",
+                "customerFacingSize": "7.5 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 4.79,
+                "unitPricePaid": 3,
+                "totalPricePaid": 6,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -1.79,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -1.79,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 3.58,
+                "originalTotalPricePaid": "USD 9.58"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2,
+                "qtyRefunded": 0,
+                "qtyRefundable": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0001159410052"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0007022101111",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Toblerone Holiday Honey & Almond Nougat Swiss Milk Chocolate Bar",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0007022101111",
+                "customerFacingSize": "3.52 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 3.29,
+                "unitPricePaid": 2.5,
+                "totalPricePaid": 5,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.79,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.79,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 1.58,
+                "originalTotalPricePaid": "USD 6.58"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2,
+                "qtyRefunded": 0,
+                "qtyRefundable": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0007022101111"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0030766749185",
+              "itemType": "NORMAL",
+              "isRefundable": true,
+              "displayInfo": {
+                "description": "Tums Extra Strength Chewy Bites Assorted Berries Flavor Chewable Tablets",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0030766749185",
+                "customerFacingSize": "60 ct"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 9.49,
+                "unitPricePaid": 9.49,
+                "totalPricePaid": 9.49,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 9.49"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1,
+                "qtyRefunded": 0,
+                "qtyRefundable": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0030766749185"
+            },
+            "monetizationInfo": {
+              "adId": "SF_de56c04c-708b-4d2d-8645-5fa32fb01946",
+              "adPosition": 2
+            }
+          }
+        ],
+        "loyaltyCard": "484012428807",
+        "numberOfItems": 59,
+        "orderStatus": "COMPLETED",
+        "isRefundable": false,
+        "paymentDetails": [
+          {
+            "paymentMethodName": "Visa",
+            "lastFourOfCard": "2250",
+            "paymentAmount": 289.28,
+            "cardTransactionType": "Visa",
+            "emvRequired": false
+          }
+        ],
+        "purchaseId": {
+          "orderNumber": "1223116754112252301",
+          "refundOrderNumber": "12231167541122523",
+          "receiptId": "701~00665~2022-11-07~163~201438",
+          "fulfillmentId": {
+            "divisionNumber": "701",
+            "storeNumber": "00665",
+            "locationId": "70100665"
+          }
+        },
+        "purchaseType": "PICKUP",
+        "receiptCreateDateTime": {
+          "value": "2022-11-07T22:38:00Z",
+          "timezone": "UTC"
+        },
+        "storeInfo": {
+          "vanityName": "Sumner",
+          "address": {
+            "addressLines": [
+              "1201 Valley Ave E"
+            ],
+            "cityTown": "Sumner",
+            "name": "Sumner",
+            "postalCode": "98390",
+            "stateProvince": "WA",
+            "residential": false,
+            "countryCode": "US"
+          },
+          "location": {
+            "lat": 47.2044963,
+            "lng": -122.2278548
+          }
+        },
+        "terminalNumber": "163",
+        "bannerKey": "fredmeyer"
+      }
+    ]
+  }
+}

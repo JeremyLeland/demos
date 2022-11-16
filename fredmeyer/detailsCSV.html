@@ -1,0 +1,18 @@
+<script type="module">
+  const json = JSON.parse( await ( await fetch( './test1.json' ) ).text() );
+
+  const date = json.data.purchaseHistoryDetails[ 0 ].receiptCreateDateTime.value;
+
+  const csv = 'Date,Item,Unit Price,Count,Total Price\n' + 
+    json.data.purchaseHistoryDetails[ 0 ].items.map( item =>
+    [
+      date,
+      item.purchasedData.displayInfo.description,
+      item.purchasedData.pricingInfo.unitPricePaid,
+      item.purchasedData.quantityInfo.received,
+      item.purchasedData.pricingInfo.totalPricePaid,
+    ].join(',')
+  ).join('\n');
+
+  console.log( csv );
+</script>

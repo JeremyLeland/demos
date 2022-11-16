@@ -1,0 +1,1194 @@
+{
+  "data": {
+    "purchaseHistoryDetails": [
+      {
+        "costSummary": {
+          "total": 241.19,
+          "totalTax": 7.18,
+          "itemSalesAndCouponSavings": 17.81,
+          "feeOriginal": 0,
+          "feePaid": 0,
+          "feeSavings": 0,
+          "coupons": [],
+          "couponTotal": 0,
+          "otherFees": [],
+          "otherFeeTotal": 0,
+          "subTotal": 251.82,
+          "savings": 17.81,
+          "boostSavings": 0,
+          "alcoholSubTotal": "USD 0.00"
+        },
+        "items": [
+          {
+            "purchasedData": {
+              "upc": "0076401433352",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Aidells® All Natural Fully Cooked Pineapple & Bacon Smoked Chicken Sausage",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0076401433352",
+                "customerFacingSize": "4 ct / 12 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 7.99,
+                "unitPricePaid": 6.49,
+                "totalPricePaid": 12.98,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -1.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -1.5,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 3,
+                "originalTotalPricePaid": "USD 15.98"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0076401433352"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0064312604011",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Banana",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0000000004011",
+                "unitOfMeasure": "lbs",
+                "customerFacingSize": "1 ct"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 0.59,
+                "unitPricePaid": 0.59,
+                "totalPricePaid": 1.22,
+                "hasEstimatedUnitPricePaid": true,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 1.22"
+              },
+              "isWeighted": true,
+              "quantityInfo": {
+                "received": 2.06,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0000000004011"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0004157006827",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Blue Diamond® Almond Breeze® Original Almond Milk",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0004157006827",
+                "customerFacingSize": "32 fl oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 2.19,
+                "unitPricePaid": 2.19,
+                "totalPricePaid": 6.57,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 6.57"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 3,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 3
+              }
+            },
+            "catalogData": {
+              "upc": "0004157006827"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0081106801000",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Dr Teal's® Soothe & Sleep Pure Epsom Salt with Lavender Soaking Solution",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0081106801000",
+                "customerFacingSize": "3 lb"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 8.49,
+                "unitPricePaid": 5.99,
+                "totalPricePaid": 11.98,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -2.5,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -2.5,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 5,
+                "originalTotalPricePaid": "USD 16.98"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0081106801000"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0005170020614",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Finish Powerball Quantum Dishwasher Detergent Tabs",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0005170020614",
+                "customerFacingSize": "50 ct"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 14.99,
+                "unitPricePaid": 14.99,
+                "totalPricePaid": 14.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 14.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0005170020614"
+            },
+            "monetizationInfo": {
+              "adId": "SF_9e686ce8-1d12-45f5-9ec3-744f8a276266",
+              "adPosition": 1
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111040147",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Fred Meyer Vitamin D Whole Milk",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111040147",
+                "customerFacingSize": "1/2 gallon"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 2.39,
+                "unitPricePaid": 2.39,
+                "totalPricePaid": 7.17,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 7.17"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 3,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 3
+              }
+            },
+            "catalogData": {
+              "upc": "0001111040147"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0084886004457",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "GoGo SqueeZ Apple Cherry & Gimme Five & Apple Pineapple Variety Pack",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0084886004457",
+                "customerFacingSize": "12 ct / 3.2 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 8.79,
+                "unitPricePaid": 8.79,
+                "totalPricePaid": 8.79,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 8.79"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0084886004457"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0089000000115",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "GoGo Squeez® Apple Apple Applesauce Pouches",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0089000000115",
+                "customerFacingSize": "12 ct / 3.2 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 8.79,
+                "unitPricePaid": 8.79,
+                "totalPricePaid": 8.79,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 8.79"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0089000000115"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0084886004126",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "GoGo Squeez® Yogurtz Blueberry & Berry Yogurt On The Go Variety Pack",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0084886004126",
+                "customerFacingSize": "10 ct / 3 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 8.79,
+                "unitPricePaid": 8.79,
+                "totalPricePaid": 8.79,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 8.79"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0084886004126"
+            },
+            "monetizationInfo": {
+              "adId": "SF_7f65f839-a9b3-4f11-b5c2-d7819d0d7970",
+              "adPosition": 2
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0087520800068",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Gourmet Garden™ Ginger Stir-In Paste",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0087520800068",
+                "customerFacingSize": "4 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 4.79,
+                "unitPricePaid": 4.79,
+                "totalPricePaid": 4.79,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 4.79"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0087520800068"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0085907800215",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Harmless Harvest 100% Raw Coconut Water",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0085907800215",
+                "customerFacingSize": "16 fl oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 4.99,
+                "unitPricePaid": 4.99,
+                "totalPricePaid": 4.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 4.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0085907800215"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001159429329",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Hawaiian Big Waves Luau BBQ Potato Chips",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001159429329",
+                "customerFacingSize": "7 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 4.29,
+                "unitPricePaid": 3.5,
+                "totalPricePaid": 3.5,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.79,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 0.79,
+                "originalTotalPricePaid": "USD 4.29"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0001159429329"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0002970000146",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Idahoan® Butter & Herb Mashed Potatoes",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0002970000146",
+                "customerFacingSize": "4 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 1.34,
+                "unitPricePaid": 1.34,
+                "totalPricePaid": 2.68,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 2.68"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0002970000146"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0002970000146",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Idahoan® Butter & Herb Mashed Potatoes",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0002970000146",
+                "customerFacingSize": "4 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 1.33,
+                "unitPricePaid": 1.33,
+                "totalPricePaid": 2.66,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 2.66"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0002970000146"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0076172005110",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Karo Light Corn Syrup with Real Vanilla",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0076172005110",
+                "customerFacingSize": "16 fl oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 5.49,
+                "unitPricePaid": 4.99,
+                "totalPricePaid": 4.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.5,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 0.5,
+                "originalTotalPricePaid": "USD 5.49"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0076172005110"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0076770700214",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Kerrygold Grass Fed Pure Irish Butter Sticks",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0076770700214",
+                "customerFacingSize": "8 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 5.49,
+                "unitPricePaid": 5.49,
+                "totalPricePaid": 10.98,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 10.98"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0076770700214"
+            },
+            "monetizationInfo": {
+              "adId": "SF_c62d4630-219a-4cba-a691-b2f91e6571c4",
+              "adPosition": 0
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111084602",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Kroger®  Auto Rinse Aid",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111084602",
+                "customerFacingSize": "8.45 fl oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 2.99,
+                "unitPricePaid": 2.39,
+                "totalPricePaid": 2.39,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.6,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 0.6,
+                "originalTotalPricePaid": "USD 2.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0001111084602"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111087283",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Kroger® Gluten Free Italian Style Bread Crumbs",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111087283",
+                "customerFacingSize": "9 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 3.79,
+                "unitPricePaid": 3.79,
+                "totalPricePaid": 7.58,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 7.58"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0001111087283"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111050312",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Kroger® Heavy Whipping Cream",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111050312",
+                "customerFacingSize": "1 qt"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 5.49,
+                "unitPricePaid": 5.49,
+                "totalPricePaid": 10.98,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 10.98"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0001111050312"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111090414",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Kroger® Premium Coconut Milk",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111090414",
+                "customerFacingSize": "13.5 fl oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 1.99,
+                "unitPricePaid": 1.99,
+                "totalPricePaid": 5.97,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 5.97"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 3,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 3
+              }
+            },
+            "catalogData": {
+              "upc": "0001111090414"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111088310",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Kroger® Sweetened Condensed Milk",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111088310",
+                "customerFacingSize": "14 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 2.19,
+                "unitPricePaid": 2,
+                "totalPricePaid": 4,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.19,
+                    "description": "Item Coupon/Sale"
+                  },
+                  {
+                    "amount": -0.19,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 0.38,
+                "originalTotalPricePaid": "USD 4.38"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0001111088310"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111010594",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Kroger® Ultra Select-A-Sheet® Paper Towels",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111010594",
+                "customerFacingSize": "8 rolls"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 14.99,
+                "unitPricePaid": 14.99,
+                "totalPricePaid": 14.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 14.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0001111010594"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0082927400622",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Meow Mix® Tender Favorites Poultry & Beef Wet Cat Food",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0082927400622",
+                "customerFacingSize": "33 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 8.99,
+                "unitPricePaid": 8.99,
+                "totalPricePaid": 17.98,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 17.98"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 2,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 2
+              }
+            },
+            "catalogData": {
+              "upc": "0082927400622"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0007007456091",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Pedialyte® Electrolyte Powder Packets Variety Pack",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0007007456091",
+                "customerFacingSize": "8 ct / 0.3 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 9.29,
+                "unitPricePaid": 8.29,
+                "totalPricePaid": 8.29,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -1,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 1,
+                "originalTotalPricePaid": "USD 9.29"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0007007456091"
+            },
+            "monetizationInfo": {
+              "adId": "SF_a2b2cc4a-2382-449c-8c20-0e0ab43af2d8",
+              "adPosition": 3
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111003931",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Private Selection™ Colossal Blueberries",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111003931",
+                "customerFacingSize": "9.8 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 5.99,
+                "unitPricePaid": 4.99,
+                "totalPricePaid": 4.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -1,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 1,
+                "originalTotalPricePaid": "USD 5.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0001111003931"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001111072985",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Private Selection™ Parsley Flakes",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001111072985",
+                "customerFacingSize": "0.28 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 3.99,
+                "unitPricePaid": 3.99,
+                "totalPricePaid": 3.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 3.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0001111072985"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0004144947397",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Red Lobster™ Gluten-Free Cheddar Bay Biscuit® Mix",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0004144947397",
+                "customerFacingSize": "11.36 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 5.99,
+                "unitPricePaid": 5.99,
+                "totalPricePaid": 5.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 5.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0004144947397"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0071575610062",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Red Raspberries",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0003338321000",
+                "customerFacingSize": "6 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 3.49,
+                "unitPricePaid": 1.25,
+                "totalPricePaid": 1.25,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -2.24,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 2.24,
+                "originalTotalPricePaid": "USD 3.49"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0003338321000"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001090074331",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Reynolds Kitchens® Parchment Paper Food Wrap",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001090074331",
+                "customerFacingSize": "45 sq ft"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 5.49,
+                "unitPricePaid": 3.99,
+                "totalPricePaid": 3.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -1.5,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 1.5,
+                "originalTotalPricePaid": "USD 5.49"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0001090074331"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001090000330",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Reynolds® Cut-Rite® Wax Paper",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001090000330",
+                "customerFacingSize": "75 sq ft"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 2.99,
+                "unitPricePaid": 1.79,
+                "totalPricePaid": 1.79,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -1.2,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 1.2,
+                "originalTotalPricePaid": "USD 2.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0001090000330"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001732400296",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Spice Islands Smoked Paprika",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001732400296",
+                "customerFacingSize": "2.1 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 9.49,
+                "unitPricePaid": 9.49,
+                "totalPricePaid": 9.49,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 9.49"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0001732400296"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0001200010451",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Starbucks® DoubleShot® Espresso & Cream Premium Espresso Beverage",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0001200010451",
+                "customerFacingSize": "4 cans / 6.5 fl oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 8.49,
+                "unitPricePaid": 8.49,
+                "totalPricePaid": 8.49,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 8.49"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0001200010451"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0004400005549",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Triscuit Four Cheese And Herb Whole Grain Wheat Crackers",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0004400005549",
+                "customerFacingSize": "8.5 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 3.59,
+                "unitPricePaid": 2.99,
+                "totalPricePaid": 2.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [
+                  {
+                    "amount": -0.6,
+                    "description": "Item Coupon/Sale"
+                  }
+                ],
+                "totalSavings": 0.6,
+                "originalTotalPricePaid": "USD 3.59"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0004400005549"
+            }
+          },
+          {
+            "purchasedData": {
+              "upc": "0008379119169",
+              "itemType": "NORMAL",
+              "displayInfo": {
+                "description": "Zapp's® VOODOO® Potato Chips",
+                "imageUrl": "https://www.kroger.com/product/images/small/front/0008379119169",
+                "customerFacingSize": "4.75 oz"
+              },
+              "pricingInfo": {
+                "originalUnitPrice": 2.99,
+                "unitPricePaid": 2.99,
+                "totalPricePaid": 2.99,
+                "hasEstimatedUnitPricePaid": false,
+                "priceModifiers": [],
+                "totalSavings": 0,
+                "originalTotalPricePaid": "USD 2.99"
+              },
+              "isWeighted": false,
+              "quantityInfo": {
+                "received": 1,
+                "notReceived": 0,
+                "substitutes": 0,
+                "addAllToCart": 1
+              }
+            },
+            "catalogData": {
+              "upc": "0008379119169"
+            }
+          }
+        ],
+        "loyaltyCard": "484012428807",
+        "numberOfItems": 49,
+        "orderStatus": "COMPLETED",
+        "isRefundable": false,
+        "paymentDetails": [
+          {
+            "paymentMethodName": "VISA",
+            "paymentAmount": 241.19,
+            "lastFourOfCard": "2250",
+            "cardTransactionType": "VISA",
+            "emvRequired": true,
+            "emv": {
+              "applicationId": "A0000000031010",
+              "authorizationCode": "81D56B608D923E39",
+              "verifiedByPin": false
+            }
+          }
+        ],
+        "purchaseId": {
+          "receiptId": "701~00665~2022-11-14~6~2831858",
+          "fulfillmentId": {
+            "divisionNumber": "701",
+            "storeNumber": "00665",
+            "locationId": "70100665"
+          }
+        },
+        "purchaseType": "IN_STORE",
+        "ratingAndSurvey": {
+          "ratingUntilTime": {
+            "value": "2022-11-17T02:58:00.000Z",
+            "timezone": "UTC"
+          },
+          "surveyUrl": "https://www.krogerstoresfeedback.com/?InviteStatus=History&D=2211-14&T=185&V=701&U=2831858&S=00665&R=6&L=484012428807",
+          "canTip": false
+        },
+        "receiptCreateDateTime": {
+          "value": "2022-11-15T02:58:00Z",
+          "timezone": "UTC"
+        },
+        "storeInfo": {
+          "vanityName": "Sumner",
+          "address": {
+            "addressLines": [
+              "1201 Valley Ave E"
+            ],
+            "cityTown": "Sumner",
+            "name": "Sumner",
+            "postalCode": "98390",
+            "stateProvince": "WA",
+            "residential": false,
+            "countryCode": "US"
+          },
+          "location": {
+            "lat": 47.2044963,
+            "lng": -122.2278548
+          }
+        },
+        "terminalNumber": "6",
+        "bannerKey": "fredmeyer"
+      }
+    ]
+  }
+}
