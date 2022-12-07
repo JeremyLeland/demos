@@ -1,0 +1,42 @@
+<link rel="stylesheet" href="../style.css">
+
+<canvas id="canvas" width="500" height="400"></canvas>
+
+<script type="module">
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+
+  function getValue( x, y ) {
+    const val = Math.max( 0, Math.sin( 0.02 * ( x + y ) ) ) * 255;
+    return ( 255 << 24 ) | ( val << 16 ) | ( val << 8 ) | val;
+  }
+
+  function drawValues( valFunc ) {
+    const timeStr = `Drawing values`;
+    console.time( timeStr );
+
+    const cols = ctx.canvas.width;
+    const rows = ctx.canvas.height;
+
+    const imageData = ctx.getImageData( 0, 0, cols, rows );
+
+    const buf = new ArrayBuffer( imageData.data.length );
+    const buf8 = new Uint8ClampedArray( buf );
+    const data = new Uint32Array( buf );
+
+    let index = 0;
+    for ( var y = 0; y < rows; y ++ ) {
+      for ( var x = 0; x < cols; x ++ ) {
+        data[ index ++ ] = valFunc( x, y );
+      }
+    }
+
+    imageData.data.set( buf8 );
+    ctx.putImageData( imageData, 0, 0 );
+
+    console.timeEnd( timeStr );
+  }
+
+  drawValues( getValue );
+  
+</script>
