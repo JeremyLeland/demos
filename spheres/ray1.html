@@ -1,6 +1,6 @@
 <link rel="stylesheet" href="../style.css">
 
-<canvas id="canvas" width="800" height="800"></canvas>
+<canvas id="canvas" width="800" height="600"></canvas>
 
 <script type="module">
 
@@ -9,7 +9,7 @@
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
 
   const sphere = {
-    pos: { x: 0, y: 0, z: 0 },
+    pos: { x: 1, y: 1, z: 1 },
     radius: 1
   };
 
@@ -19,12 +19,13 @@
     const cols = ctx.canvas.width;
     const rows = ctx.canvas.height;
 
-    const FOV = Math.PI * ( 2 / 3 );
+    const aspectRatio = cols / rows;
+    const FOV = Math.PI * ( 1 / 3 );
 
     // TODO: How to handle this for non-square views?
     // TODO: This seems distorted at the edges
-    const u = ( x / cols - 0.5 ) * FOV;
-    const v = ( y / rows - 0.5 ) * FOV;
+    const u = ( ( x + 0.5 ) / cols - 0.5 ) * FOV * aspectRatio;
+    const v = ( 1 - ( y + 0.5 ) / rows - 0.5 ) * FOV;
 
     const dist = Math.hypot( Math.sin( u ), Math.sin( v ), 1 );
 
@@ -35,15 +36,41 @@
         z: -4,
       },
       dir: {
-        x: u / dist, 
-        y: v / dist, 
+        x: Math.sin( u ) / dist, 
+        y: Math.sin( v ) / dist, 
         z: 1 / dist,
       },
     }
 
-    const val = intersect( ray, sphere ) ? 255 : 0;
+    const hitTime = intersect( ray, sphere );
 
-    return ( 255 << 24 ) | ( val << 16 ) | ( val << 8 ) | val;
+    const hitPoint = {
+      x: ray.pos.x + ray.dir.x * hitTime,
+      y: ray.pos.y + ray.dir.y * hitTime,
+      z: ray.pos.z + ray.dir.z * hitTime,
+    };
+
+    const hitNormal = {
+      x: hitPoint.x - sphere.pos.x,
+      y: hitPoint.y - sphere.pos.y,
+      z: hitPoint.z - sphere.pos.z,
+    };
+
+    const normalLen = Math.hypot( hitNormal.x, hitNormal.y, hitNormal.z );
+    hitNormal.x /= normalLen;
+    hitNormal.y /= normalLen;
+    hitNormal.z /= normalLen;
+
+    // const val = hitTime < Infinity ? 255 : 0;
+    if ( hitTime < Infinity ) {
+
+      const val = Math.max( 0, hitNormal.x * ray.dir.x + hitNormal.y * ray.dir.y + hitNormal.z * ray.dir.z ) * 255;
+ 
+      return ( 255 << 24 ) | ( val << 16 ) | ( val << 8 ) | val;
+    }
+    else {
+      return 0;
+    }
   }
 
   function drawValues( valFunc ) {
@@ -97,7 +124,7 @@
 
     const t = solveQuadratic(a, b, c );
 
-    return t < Infinity;
+    return t;
   }
 
   // https://mathworld.wolfram.com/QuadraticEquation.html
