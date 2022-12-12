@@ -44,27 +44,12 @@
 
     const hitTime = intersect( ray, sphere );
 
-    const hitPoint = {
-      x: ray.pos.x + ray.dir.x * hitTime,
-      y: ray.pos.y + ray.dir.y * hitTime,
-      z: ray.pos.z + ray.dir.z * hitTime,
-    };
+    const hitPoint = add( ray.pos, mult( ray.dir, hitTime ) );
 
-    const hitNormal = {
-      x: hitPoint.x - sphere.pos.x,
-      y: hitPoint.y - sphere.pos.y,
-      z: hitPoint.z - sphere.pos.z,
-    };
+    const hitNormal = normalize( sub( hitPoint, sphere.pos ) );
 
-    const normalLen = Math.hypot( hitNormal.x, hitNormal.y, hitNormal.z );
-    hitNormal.x /= normalLen;
-    hitNormal.y /= normalLen;
-    hitNormal.z /= normalLen;
-
-    // const val = hitTime < Infinity ? 255 : 0;
     if ( hitTime < Infinity ) {
-
-      const val = Math.max( 0, hitNormal.x * ray.dir.x + hitNormal.y * ray.dir.y + hitNormal.z * ray.dir.z ) * 255;
+      const val = Math.max( 0, dot( hitNormal, ray.dir ) ) * 255;
  
       return ( 255 << 24 ) | ( val << 16 ) | ( val << 8 ) | val;
     }
@@ -105,24 +90,13 @@
 
   function intersect( ray, sphere ) {
 
-    const L = {
-      x: ray.pos.x - sphere.pos.x,
-      y: ray.pos.y - sphere.pos.y,
-      z: ray.pos.z - sphere.pos.z,
-    };
+    const L = sub( ray.pos, sphere.pos );
 
-    const a = 1;//ray.dir.x * ray.dir.x + ray.dir.y * ray.dir.y + ray.dir.z * ray.dir.z;  // can be 1 if dir is normalized
-    const b = 2 * ( ray.dir.x * L.x + ray.dir.y * L.y + ray.dir.z * L.z );
-    const c = L.x * L.x + L.y * L.y + L.z * L.z - sphere.radius * sphere.radius;
+    const a = 1; // dot( ray.dir, ray.dir );  // can be 1 if dir is normalized
+    const b = 2 * dot( ray.dir, L );
+    const c = dot( L, L ) - sphere.radius * sphere.radius;
     
-
-    // Vec3f L = orig - center; 
-    // float a = dir.dotProduct(dir); 
-    // float b = 2 * dir.dotProduct(L); 
-    // float c = L.dotProduct(L) - radius2;
-
-
-    const t = solveQuadratic(a, b, c );
+    const t = solveQuadratic( a, b, c );
 
     return t;
   }
@@ -141,6 +115,43 @@
       const x1 = c / q;
       return x0 < 0 ? x1 : x0;
     } 
+  }
+
+  function dot( a, b ) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+  }
+
+  function normalize( a ) {
+    const len = Math.hypot( a.x, a.y, a.z );
+    return {
+      x: a.x / len,
+      y: a.y / len,
+      z: a.z / len,
+    };
+  }
+
+  function add( a, b ) {
+    return { 
+      x: a.x + b.x,
+      y: a.y + b.y,
+      z: a.z + b.z,
+    }
+  }
+
+  function sub( a, b ) {
+    return {
+      x: a.x - b.x,
+      y: a.y - b.y,
+      z: a.z - b.z,
+    }
+  }
+
+  function mult( a, b ) {
+    return { 
+      x: a.x * b,
+      y: a.y * b,
+      z: a.z * b,
+    }
   }
   
 </script>
