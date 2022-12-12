@@ -14,7 +14,7 @@
     },
     light: {
       ambient: 0.01,
-      pos: { x: 0, y: 0, z: 10 },
+      pos: { x: -10, y: 5, z: 5 },
     },
     spheres: [
       {
@@ -23,6 +23,10 @@
       },
       {
         pos: { x: 1, y: 0, z: 0 },
+        radius: 1
+      },
+      {
+        pos: { x: 2, y: 0, z: 0 },
         radius: 1
       },
     ],
@@ -50,6 +54,10 @@
 
     const hits = scene.spheres.map( sphere => getSphereHit( ray, sphere ) );
 
+    if ( hits[ 0 ].pos && hits[ 1 ].pos ) {
+      // debugger;
+    }
+
     const hit = hits.reduce( ( closest, h ) => h.time < closest.time ? h : closest );
     
     if ( hit.pos ) {
@@ -57,7 +65,7 @@
       
       // See https://developer.download.nvidia.com/cg/lit.html
       const N = hit.norm;
-      const L = normalize( sub( hit.pos, scene.light.pos ) );
+      const L = normalize( sub( scene.light.pos, hit.pos ) );
       const NdotL = dot( N, L );
       
       if ( NdotL > 0 ) {
@@ -143,7 +151,7 @@
       const q = -0.5 * ( b + sign * Math.sqrt( discr ) );
       const x0 = q / a;
       const x1 = c / q;
-      return x0 < 0 ? x1 : x0;
+      return x0 < 0 ? x1 : Math.min( x0, x1 );
     } 
   }
 
