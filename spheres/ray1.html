@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../grid.css">
 
 <canvas id="canvas" width="800" height="600"></canvas>
 
@@ -10,7 +10,8 @@
 
   const scene = {
     light: {
-      pos: { x: 0, y: 0, z: 10 },
+      ambient: 0.01,
+      pos: { x: -2, y: -1, z: 10 },
     },
     sphere: {
       pos: { x: 2, y: 1, z: 1 },
@@ -43,22 +44,19 @@
       },
     }
 
-    const hitTime = intersect( ray, scene.sphere );
-    const hitPoint = add( ray.pos, mult( ray.dir, hitTime ) );
-    const hitNormal = normalize( sub( hitPoint, scene.sphere.pos ) );
+    const hit = getSphereHit( ray, scene.sphere );
+    
+    if ( hit.pos ) {
+      let color = scene.light.ambient;
 
-    if ( hitTime < Infinity ) {
-
-      const lightDist = normalize( sub( scene.light.pos, hitPoint ) );
-      const d = dot( hitNormal, lightDist );
-
-      const ambient = 0.01;
+      const lightDist = normalize( sub( scene.light.pos, hit.pos ) );
+      const d = dot( hit.norm, lightDist );
 
       if ( d > 0 ) {
         // See https://developer.download.nvidia.com/cg/lit.html
-        const N = hitNormal;
+        const N = hit.norm;
         const L = lightDist;
-        const V = normalize( sub( ray.pos, hitPoint ) );
+        const V = normalize( sub( ray.pos, hit.pos ) );
         const H = normalize( add( L, V ) );
 
         const NdotL = dot( N, L );
@@ -70,13 +68,11 @@
         const specular = ( NdotL > 0 ) ? Math.pow( Math.max( 0, NdotH ), shininess ) : 0;
 
         // TODO: Sphere and light color
-        const val = Math.min( 1, ambient + diffuse + specular ) * 255;
-        return rgbToInt( val, val, val );
+        color += diffuse + specular; 
       }
-      else {
-        const val = ambient * 255;
-        return rgbToInt( val, val, val );
-      }
+
+      const val = Math.min( 1, color ) * 255;
+      return rgbToInt( val, val, val );
     }
     
     return 0;
@@ -115,18 +111,21 @@
   drawValues( getValue );
 
   // See https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
-
-  function intersect( ray, sphere ) {
-
-    const L = sub( ray.pos, sphere.pos );
+  function getSphereHit( ray, sphere ) {
+    const v = sub( ray.pos, sphere.pos );
 
     const a = 1; // dot( ray.dir, ray.dir );  // can be 1 if dir is normalized
-    const b = 2 * dot( ray.dir, L );
-    const c = dot( L, L ) - sphere.radius * sphere.radius;
+    const b = 2 * dot( ray.dir, v );
+    const c = dot( v, v ) - sphere.radius * sphere.radius;
     
-    const t = solveQuadratic( a, b, c );
+    const hit = { time: solveQuadratic( a, b, c ) };
 
-    return t;
+    if ( hit.time < Infinity ) {
+      hit.pos = add( ray.pos, mult( ray.dir, hit.time ) );
+      hit.norm = normalize( sub( hit.pos, sphere.pos ) );
+    }
+
+    return hit;
   }
 
   // https://mathworld.wolfram.com/QuadraticEquation.html
