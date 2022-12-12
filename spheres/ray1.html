@@ -13,21 +13,25 @@
       fov: 60,
     },
     light: {
-      ambient: 0.01,
-      pos: { x: -10, y: 5, z: 5 },
+      ambient: { x: 0.01, y: 0.01, z: 0.01 },
+      color: { x: 1, y: 1, z: 1 },
+      pos: { x: 1, y: 1, z: 1.5 },
     },
     spheres: [
       {
         pos: { x: 0, y: 0, z: 0 },
-        radius: 1
+        radius: 1,
+        color: { x: 1, y: 0, z: 0 },
       },
       {
         pos: { x: 1, y: 0, z: 0 },
-        radius: 1
+        radius: 1,
+        color: { x: 0, y: 1, z: 0 },
       },
       {
         pos: { x: 2, y: 0, z: 0 },
-        radius: 1
+        radius: 1,
+        color: { x: 0, y: 0, z: 1 },
       },
     ],
   };
@@ -79,11 +83,16 @@
         const specular = ( NdotL > 0 ) ? Math.pow( Math.max( 0, NdotH ), shininess ) : 0;
 
         // TODO: Sphere and light color
-        color += diffuse + specular; 
+        color = add( color, mult( multv( scene.light.color, hit.sphere.color ), diffuse ) );
+        color = add( color, mult( scene.light.color, specular ) );
       }
 
       const val = Math.min( 1, color ) * 255;
-      return rgbToInt( val, val, val );
+      return rgbToInt(
+        Math.min( 1, color.x ) * 255,
+        Math.min( 1, color.y ) * 255,
+        Math.min( 1, color.z ) * 255,
+      );
     }
     
     return rgbToInt( 0, 0, 20 );
@@ -132,6 +141,7 @@
     const hit = { time: solveQuadratic( a, b, c ) };
 
     if ( hit.time < Infinity ) {
+      hit.sphere = sphere;
       hit.pos = add( ray.pos, mult( ray.dir, hit.time ) );
       hit.norm = normalize( sub( hit.pos, sphere.pos ) );
     }
@@ -181,6 +191,14 @@
       x: a.x - b.x,
       y: a.y - b.y,
       z: a.z - b.z,
+    }
+  }
+
+  function multv( a, b ) {
+    return { 
+      x: a.x * b.x,
+      y: a.y * b.y,
+      z: a.z * b.z,
     }
   }
 
