@@ -15,7 +15,7 @@
     light: {
       ambient: { x: 0.01, y: 0.01, z: 0.01 },
       color: { x: 1, y: 1, z: 1 },
-      pos: { x: 1, y: 1, z: 1.5 },
+      pos: { x: -1.2, y: -1, z: 3 },
     },
     spheres: [
       {
@@ -32,6 +32,11 @@
         pos: { x: 2, y: 0, z: 0 },
         radius: 1,
         color: { x: 0, y: 0, z: 1 },
+      },
+      {
+        pos: { x: 0, y: -0.5, z: 2 },
+        radius: 0.1,
+        color: { x: 1, y: 1, z: 0 },
       },
     ],
   };
@@ -57,11 +62,6 @@
     }
 
     const hits = scene.spheres.map( sphere => getSphereHit( ray, sphere ) );
-
-    if ( hits[ 0 ].pos && hits[ 1 ].pos ) {
-      // debugger;
-    }
-
     const hit = hits.reduce( ( closest, h ) => h.time < closest.time ? h : closest );
     
     if ( hit.pos ) {
@@ -71,8 +71,15 @@
       const N = hit.norm;
       const L = normalize( sub( scene.light.pos, hit.pos ) );
       const NdotL = dot( N, L );
+
+      const lightRay = { pos: hit.pos, dir: L };
+      const lightHits = scene.spheres.filter( s => s != hit.sphere ).map( sphere => getSphereHit( lightRay, sphere ) );
+      const lightHit = lightHits.reduce( 
+        ( closest, h ) => 0 < h.time && h.time < closest.time ? h : closest, 
+        { time: Infinity } 
+      );
       
-      if ( NdotL > 0 ) {
+      if ( NdotL > 0 && lightHit.time == Infinity ) {
         const V = normalize( sub( ray.pos, hit.pos ) );
         const H = normalize( add( L, V ) );
         
