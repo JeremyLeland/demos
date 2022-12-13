@@ -3,35 +3,39 @@
 <canvas id="canvas" width="800" height="600"></canvas>
 
 <script type="module">
-
-  // TODO: Settings object, changeable by dat.UI
+  import { GUI } from '../lib/dat.gui.module.js';
 
   const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
 
   const scene = {
-    camera: {
-      fov: 60,
-    },
-    light: {
-      ambient: { x: 0.01, y: 0.01, z: 0.01 },
-      color: { x: 1, y: 1, z: 1 },
-      pos: { x: -1.2, y: -1, z: 3 },
-    },
+    // camera: {
+    //   fov: 60,
+    // },
+    lights: [
+      {
+        color: { x: 0.4, y: 0.1, z: 0.1 },
+        pos: { x: -1.2, y: -1, z: 3 },
+      },
+      {
+        color: { x: 0.1, y: 0.1, z: 0.4 },
+        pos: { x: -1, y: -1, z: 6 },
+      },
+    ],
     spheres: [
       {
         pos: { x: 0, y: 0, z: 0 },
         radius: 1,
-        color: { x: 1, y: 0, z: 0 },
+        color: { x: 0.5, y: 0.5, z: 0.5 },
       },
       {
         pos: { x: 1, y: 0, z: 0 },
         radius: 1,
-        color: { x: 0, y: 1, z: 0 },
+        color: { x: 0.7, y: 0.7, z: 0.7 },
       },
       {
         pos: { x: 2, y: 0, z: 0 },
         radius: 1,
-        color: { x: 0, y: 0, z: 1 },
+        color: { x: 0.9, y: 0.9, z: 0.9 },
       },
       {
         pos: { x: 0, y: -0.5, z: 2 },
@@ -41,11 +45,39 @@
     ],
   };
 
+  const gui = new GUI( { width: 200 } );
+
+  for ( let cat in scene ) {
+    const folder = gui.addFolder( cat );
+    folder.open();
+
+    scene[ cat ].forEach( ( item, index ) => {
+      const itemFolder = folder.addFolder( index );
+      itemFolder.open();
+      
+      for ( let varName in item ) {
+        if ( varName == 'pos' ) {
+          const posFolder = itemFolder.addFolder( 'pos' );
+          posFolder.open();
+
+          for ( let coord in item[ varName ] ) {
+            posFolder.add( item.pos, coord ).min( -3 ).max( 3 ).step( 0.1 ).onChange( render );
+          }
+        }
+        if ( varName == 'radius' ) {
+          itemFolder.add( item, 'radius' ).min( 0.01 ).max( 2 ).step( 0.01 ).onChange( render );
+        }
+      }
+    } );
+  }
+
+  render();
+
   function getValue( x, y ) {
     const cols = ctx.canvas.width;
     const rows = ctx.canvas.height;
 
-    const scale = Math.tan( ( scene.camera.fov / 2 ) * ( Math.PI / 180 ) )
+    const scale = Math.tan( ( 60 /*scene.camera.fov*/ / 2 ) * ( Math.PI / 180 ) )
     const aspectRatio = cols / rows;
 
     const ray = {
@@ -65,35 +97,36 @@
     const hit = hits.reduce( ( closest, h ) => h.time < closest.time ? h : closest );
     
     if ( hit.pos ) {
-      let color = scene.light.ambient;
+      let color = { x: 0.01, y: 0.01, z: 0.01 };
       
-      // See https://developer.download.nvidia.com/cg/lit.html
-      const N = hit.norm;
-      const L = normalize( sub( scene.light.pos, hit.pos ) );
-      const NdotL = dot( N, L );
+      scene.lights.forEach( light => {
+        // See https://developer.download.nvidia.com/cg/lit.html
+        const N = hit.norm;
+        const L = normalize( sub( light.pos, hit.pos ) );
+        const NdotL = dot( N, L );
 
-      const lightRay = { pos: hit.pos, dir: L };
-      const lightHits = scene.spheres.filter( s => s != hit.sphere ).map( sphere => getSphereHit( lightRay, sphere ) );
-      const lightHit = lightHits.reduce( 
-        ( closest, h ) => 0 < h.time && h.time < closest.time ? h : closest, 
-        { time: Infinity } 
-      );
+        const lightRay = { pos: hit.pos, dir: L };
+        const lightHits = scene.spheres.filter( s => s != hit.sphere ).map( sphere => getSphereHit( lightRay, sphere ) );
+        const lightHit = lightHits.reduce( 
+          ( closest, h ) => 0 < h.time && h.time < closest.time ? h : closest, 
+          { time: Infinity } 
+        );
+        
+        if ( NdotL > 0 && lightHit.time == Infinity ) {
+          const V = normalize( sub( ray.pos, hit.pos ) );
+          const H = normalize( add( L, V ) );
+          
+          const NdotH = dot( N, H );
+          const shininess = 2000;
+          
+          const diffuse = Math.max( 0, NdotL );
+          const specular = ( NdotL > 0 ) ? Math.pow( Math.max( 0, NdotH ), shininess ) : 0;
+
+          color = add( color, mult( multv( light.color, hit.sphere.color ), diffuse ) );
+          color = add( color, mult( light.color, specular ) );
+        }
+      } );
       
-      if ( NdotL > 0 && lightHit.time == Infinity ) {
-        const V = normalize( sub( ray.pos, hit.pos ) );
-        const H = normalize( add( L, V ) );
-        
-        const NdotH = dot( N, H );
-        const shininess = 2000;
-        
-        const diffuse = Math.max( 0, NdotL );
-        const specular = ( NdotL > 0 ) ? Math.pow( Math.max( 0, NdotH ), shininess ) : 0;
-
-        // TODO: Sphere and light color
-        color = add( color, mult( multv( scene.light.color, hit.sphere.color ), diffuse ) );
-        color = add( color, mult( scene.light.color, specular ) );
-      }
-
       const val = Math.min( 1, color ) * 255;
       return rgbToInt(
         Math.min( 1, color.x ) * 255,
@@ -135,7 +168,9 @@
     return ( 255 << 24 ) | ( b << 16 ) | ( g << 8 ) | r;  // NOTE: assumes little endian
   }
 
-  drawValues( getValue );
+  function render() {
+    drawValues( getValue );
+  }
 
   // See https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
   function getSphereHit( ray, sphere ) {
