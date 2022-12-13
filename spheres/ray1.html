@@ -73,26 +73,8 @@
 
   render();
 
-  function getValue( x, y ) {
-    const cols = ctx.canvas.width;
-    const rows = ctx.canvas.height;
-
-    const scale = Math.tan( ( 60 /*scene.camera.fov*/ / 2 ) * ( Math.PI / 180 ) )
-    const aspectRatio = cols / rows;
-
-    const ray = {
-      pos: {
-        x: 0,
-        y: 0,
-        z: 4,
-      },
-      dir: normalize( {
-        x: ( 2 * ( x + 0.5 ) / cols - 1 ) * scale * aspectRatio,
-        y: ( 1 - 2 * ( y + 0.5 ) / rows ) * scale,
-        z: -1,
-      } ),
-    }
-
+  function getColor( ray ) {
+   
     const hits = scene.spheres.map( sphere => getSphereHit( ray, sphere ) );
     const hit = hits.reduce( ( closest, h ) => h.time < closest.time ? h : closest );
     
@@ -126,50 +108,11 @@
           color = add( color, mult( light.color, specular ) );
         }
       } );
-      
-      const val = Math.min( 1, color ) * 255;
-      return rgbToInt(
-        Math.min( 1, color.x ) * 255,
-        Math.min( 1, color.y ) * 255,
-        Math.min( 1, color.z ) * 255,
-      );
+
+      return color;
     }
     
-    return rgbToInt( 0, 0, 20 );
-  }
-
-  function drawValues( valFunc ) {
-    const timeStr = `Drawing values`;
-    console.time( timeStr );
-
-    const cols = ctx.canvas.width;
-    const rows = ctx.canvas.height;
-
-    const imageData = ctx.getImageData( 0, 0, cols, rows );
-
-    const buf = new ArrayBuffer( imageData.data.length );
-    const buf8 = new Uint8ClampedArray( buf );
-    const data = new Uint32Array( buf );
-
-    let index = 0;
-    for ( var y = 0; y < rows; y ++ ) {
-      for ( var x = 0; x < cols; x ++ ) {
-        data[ index ++ ] = valFunc( x, y );
-      }
-    }
-
-    imageData.data.set( buf8 );
-    ctx.putImageData( imageData, 0, 0 );
-
-    console.timeEnd( timeStr );
-  }
-
-  function rgbToInt( r, g, b ) {
-    return ( 255 << 24 ) | ( b << 16 ) | ( g << 8 ) | r;  // NOTE: assumes little endian
-  }
-
-  function render() {
-    drawValues( getValue );
+    return { x: 0, y: 0, z: 0.2 };   // default background of dark blue
   }
 
   // See https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
@@ -190,6 +133,58 @@
 
     return hit;
   }
+
+  function render() {
+    const timeStr = `Render`;
+    console.time( timeStr );
+
+    const cols = ctx.canvas.width;
+    const rows = ctx.canvas.height;
+    const scale = Math.tan( ( 60 /*scene.camera.fov*/ / 2 ) * ( Math.PI / 180 ) )
+    const aspectRatio = cols / rows;
+
+    const imageData = ctx.getImageData( 0, 0, cols, rows );
+    const buf = new ArrayBuffer( imageData.data.length );
+    const buf8 = new Uint8ClampedArray( buf );
+    const data = new Uint32Array( buf );
+
+    let index = 0;
+    for ( var y = 0; y < rows; y ++ ) {
+      for ( var x = 0; x < cols; x ++ ) {
+
+        const ray = {
+          pos: {
+            x: 0,
+            y: 0,
+            z: 4,
+          },
+          dir: normalize( {
+            x: ( 2 * ( x + 0.5 ) / cols - 1 ) * scale * aspectRatio,
+            y: ( 1 - 2 * ( y + 0.5 ) / rows ) * scale,
+            z: -1,
+          } ),
+        }
+
+        const color = getColor( ray );
+
+        data[ index ++ ] = rgbToInt(
+          Math.min( 1, color.x ) * 255,
+          Math.min( 1, color.y ) * 255,
+          Math.min( 1, color.z ) * 255,
+        );
+      }
+    }
+
+    imageData.data.set( buf8 );
+    ctx.putImageData( imageData, 0, 0 );
+
+    console.timeEnd( timeStr );
+  }
+
+  function rgbToInt( r, g, b ) {
+    return ( 255 << 24 ) | ( b << 16 ) | ( g << 8 ) | r;  // NOTE: assumes little endian
+  }
+
 
   // https://mathworld.wolfram.com/QuadraticEquation.html
   function solveQuadratic( a, b, c ) {
