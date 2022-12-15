@@ -1,0 +1,372 @@
+<link rel="stylesheet" href="../grid.css">
+
+<canvas id="canvas" width="800" height="600"></canvas>
+
+<script type="module">
+  import { GUI } from '../lib/dat.gui.module.js';
+
+  const ctx = document.getElementById( 'canvas' ).getContext( '2d' );
+
+  const scene = {
+    // camera: {
+    //   fov: 60,
+    // },
+    lights: [
+      {
+        color: { x: 0.4, y: 0.1, z: 0.1 },
+        pos: { x: -1.2, y: -1, z: 3 },
+      },
+      {
+        color: { x: 0.1, y: 0.1, z: 0.4 },
+        pos: { x: -1, y: -1, z: 6 },
+      },
+    ],
+    spheres: [
+      {
+        pos: { x: 0, y: 0, z: 0 },
+        inverseMatrix: inverseMatrix( multMatrices( rotateMatrix( 0, 0, 0.4 ), scaleMatrix( 1, 2, 1 ) ) ),
+        //inverseMatrix: inverseMatrix( scaleMatrix( 1, 2, 1 ) ),
+        radius: 1,
+        color: { x: 0.5, y: 0.5, z: 0.5 },
+      },
+      // {
+      //   pos: { x: 1, y: 0, z: 0 },
+      //   transform: [
+      //     Math.cos( 1 ), -Math.sin( 1 ), 0, 0,
+      //     Math.sin( 1 ), 2 * Math.cos( 1 ), 0, 0,
+      //     0, 0, 1, 0,
+      //     0, 0, 0, 1,
+      //   ],
+      //   radius: 1,
+      //   color: { x: 0.7, y: 0.7, z: 0.7 },
+      // },
+      // {
+      //   pos: { x: 2, y: 0, z: 0 },
+      //   transform: [
+      //     Math.cos( 1 ), -Math.sin( 1 ), 0, 0,
+      //     Math.sin( 1 ), 2 * Math.cos( 1 ), 0, 0,
+      //     0, 0, 1, 0,
+      //     0, 0, 0, 1,
+      //   ],
+      //   radius: 1,
+      //   color: { x: 0.9, y: 0.9, z: 0.9 },
+      // },
+      // {
+      //   pos: { x: 0, y: -0.5, z: 2 },
+      //   transform: [
+      //     Math.cos( 1 ), -Math.sin( 1 ), 0, 0,
+      //     Math.sin( 1 ), 2 * Math.cos( 1 ), 0, 0,
+      //     0, 0, 1, 0,
+      //     0, 0, 0, 1,
+      //   ],
+      //   radius: 0.1,
+      //   color: { x: 1, y: 1, z: 0 },
+      // },
+    ],
+  };
+
+  const gui = new GUI( { width: 200 } );
+
+  for ( let cat in scene ) {
+    const folder = gui.addFolder( cat );
+    folder.open();
+
+    scene[ cat ].forEach( ( item, index ) => {
+      const itemFolder = folder.addFolder( index );
+      itemFolder.open();
+      
+      for ( let varName in item ) {
+        if ( varName == 'pos' ) {
+          const posFolder = itemFolder.addFolder( 'pos' );
+          posFolder.open();
+
+          for ( let coord in item[ varName ] ) {
+            posFolder.add( item.pos, coord ).min( -3 ).max( 3 ).step( 0.1 ).onChange( render );
+          }
+        }
+        if ( varName == 'radius' ) {
+          itemFolder.add( item, 'radius' ).min( 0.01 ).max( 2 ).step( 0.01 ).onChange( render );
+        }
+      }
+    } );
+  }
+
+  render();
+
+  function getColor( ray ) {
+   
+    const hits = scene.spheres.map( sphere => getSphereHit( ray, sphere ) );
+    const hit = hits.reduce( ( closest, h ) => h.time < closest.time ? h : closest );
+    
+    if ( hit.pos ) {
+      let color = { x: 0.01, y: 0.01, z: 0.01 };
+      
+      scene.lights.forEach( light => {
+        // See https://developer.download.nvidia.com/cg/lit.html
+        const N = hit.norm;
+        const L = normalize( sub( light.pos, hit.pos ) );
+        const NdotL = dot( N, L );
+
+        const lightRay = { pos: hit.pos, dir: L };
+        const lightHits = scene.spheres.filter( s => s != hit.sphere ).map( sphere => getSphereHit( lightRay, sphere ) );
+        const lightHit = lightHits.reduce( 
+          ( closest, h ) => 0 < h.time && h.time < closest.time ? h : closest, 
+          { time: Infinity } 
+        );
+        
+        if ( NdotL > 0 && lightHit.time == Infinity ) {
+          const V = normalize( sub( ray.pos, hit.pos ) );
+          const H = normalize( add( L, V ) );
+          
+          const NdotH = dot( N, H );
+          const shininess = 2000;
+          
+          const diffuse = Math.max( 0, NdotL );
+          const specular = ( NdotL > 0 ) ? Math.pow( Math.max( 0, NdotH ), shininess ) : 0;
+
+          color = add( color, mult( multv( light.color, hit.sphere.color ), diffuse ) );
+          color = add( color, mult( light.color, specular ) );
+        }
+      } );
+
+      return color;
+    }
+    
+    return { x: 0, y: 0, z: 0.2 };   // default background of dark blue
+  }
+
+  // See https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
+  function getSphereHit( ray, sphere ) {
+    
+    const objectRayPos = mult4x4( ray.pos, sphere.inverseMatrix );
+
+    // Don't normalize? See https://graphicscompendium.com/raytracing/12-transformations
+    const objectRayDir = mult4x4( ray.dir, sphere.inverseMatrix );
+
+    const v = sub( objectRayPos, sphere.pos );
+
+    const a = dot( objectRayDir, objectRayDir );  // can be 1 if dir is normalized
+    const b = 2 * dot( objectRayDir, v );
+    const c = dot( v, v ) - sphere.radius * sphere.radius;
+    
+    const hit = { time: solveQuadratic( a, b, c ) };
+
+    if ( hit.time < Infinity ) {
+      hit.sphere = sphere;
+      hit.pos = add( ray.pos, mult( ray.dir, hit.time ) );
+      hit.norm = normalize( sub( hit.pos, sphere.pos ) );
+    }
+
+    return hit;
+  }
+
+  function render() {
+    const timeStr = `Render`;
+    console.time( timeStr );
+
+    const cols = ctx.canvas.width;
+    const rows = ctx.canvas.height;
+    const scale = Math.tan( ( 60 /*scene.camera.fov*/ / 2 ) * ( Math.PI / 180 ) )
+    const aspectRatio = cols / rows;
+
+    const imageData = ctx.getImageData( 0, 0, cols, rows );
+    const buf = new ArrayBuffer( imageData.data.length );
+    const buf8 = new Uint8ClampedArray( buf );
+    const data = new Uint32Array( buf );
+
+    let index = 0;
+    for ( var y = 0; y < rows; y ++ ) {
+      for ( var x = 0; x < cols; x ++ ) {
+
+        const ray = {
+          pos: {
+            x: 0,
+            y: 0,
+            z: 4,
+            w: 1,
+          },
+          dir: normalize( {
+            x: ( 2 * ( x + 0.5 ) / cols - 1 ) * scale * aspectRatio,
+            y: ( 1 - 2 * ( y + 0.5 ) / rows ) * scale,
+            z: -1,
+            w: 0,
+          } ),
+        }
+
+        const color = getColor( ray );
+
+        data[ index ++ ] = rgbToInt(
+          Math.min( 1, color.x ) * 255,
+          Math.min( 1, color.y ) * 255,
+          Math.min( 1, color.z ) * 255,
+        );
+      }
+    }
+
+    imageData.data.set( buf8 );
+    ctx.putImageData( imageData, 0, 0 );
+
+    console.timeEnd( timeStr );
+  }
+
+  function rgbToInt( r, g, b ) {
+    return ( 255 << 24 ) | ( b << 16 ) | ( g << 8 ) | r;  // NOTE: assumes little endian
+  }
+
+
+  // https://mathworld.wolfram.com/QuadraticEquation.html
+  function solveQuadratic( a, b, c ) {
+    const discr = b * b - 4 * a * c; 
+
+    if ( discr < 0 ) {
+      return Infinity;
+    } 
+    else {
+      const sign = b < 0 ? -1 : 1;
+      const q = -0.5 * ( b + sign * Math.sqrt( discr ) );
+      const x0 = q / a;
+      const x1 = c / q;
+      return x0 < 0 ? x1 : Math.min( x0, x1 );
+    } 
+  }
+
+  function dot( a, b ) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+  }
+
+  function normalize( a ) {
+    const len = Math.hypot( a.x, a.y, a.z );
+    return {
+      x: a.x / len,
+      y: a.y / len,
+      z: a.z / len,
+      w: a.w,   // don't change w?
+    };
+  }
+
+  function add( a, b ) {
+    return { 
+      x: a.x + b.x,
+      y: a.y + b.y,
+      z: a.z + b.z,
+      w: a.w,
+    }
+  }
+
+  function sub( a, b ) {
+    return {
+      x: a.x - b.x,
+      y: a.y - b.y,
+      z: a.z - b.z,
+      w: a.w,
+    }
+  }
+
+  function mult( a, b ) {
+    return { 
+      x: a.x * b,
+      y: a.y * b,
+      z: a.z * b,
+      w: a.w,
+    }
+  }
+
+  function multv( a, v ) {
+    return { 
+      x: a.x * v.x,
+      y: a.y * v.y,
+      z: a.z * v.z,
+      w: a.w,
+    }
+  }
+
+  function mult4x4( a, m ) {
+    return {
+      x: a.x * m[  0 ] + a.y * m[  1 ] + a.z * m[  2 ] + a.w * m[  3 ],
+      y: a.x * m[  4 ] + a.y * m[  5 ] + a.z * m[  6 ] + a.w * m[  7 ],
+      z: a.x * m[  8 ] + a.y * m[  9 ] + a.z * m[ 10 ] + a.w * m[ 11 ],
+      w: a.x * m[ 12 ] + a.y * m[ 13 ] + a.z * m[ 14 ] + a.w * m[ 15 ],
+    }
+  }
+
+  function multMatrices( a, b ) {
+    const result = [];
+
+    for ( let r = 0; r < 4; r ++ ) {
+      for ( let c = 0; c < 4; c ++ ) {
+        let val = 0;
+
+        for ( let i = 0; i < 4; i ++ ) {
+          val += a[ r * 4 + i ] * b[ c + i * 4 ];
+        }
+
+        result.push( val );
+      }
+    }
+
+    return result;
+  }
+
+  // See https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
+  // Moral of the story is we should really use library/hardware for this stuff
+  function inverseMatrix( m ) {
+    const inv = Array( 16 );
+    
+    inv[0]  =  m[5] * m[10] * m[15] - m[5] * m[11] * m[14] - m[9] * m[6] * m[15] + m[9] * m[7] * m[14] + m[13] * m[6] * m[11] - m[13] * m[7] * m[10];
+    inv[4]  = -m[4] * m[10] * m[15] + m[4] * m[11] * m[14] + m[8] * m[6] * m[15] - m[8] * m[7] * m[14] - m[12] * m[6] * m[11] + m[12] * m[7] * m[10];
+    inv[8]  =  m[4] * m[9]  * m[15] - m[4] * m[11] * m[13] - m[8] * m[5] * m[15] + m[8] * m[7] * m[13] + m[12] * m[5] * m[11] - m[12] * m[7] * m[9];
+    inv[12] = -m[4] * m[9]  * m[14] + m[4] * m[10] * m[13] + m[8] * m[5] * m[14] - m[8] * m[6] * m[13] - m[12] * m[5] * m[10] + m[12] * m[6] * m[9];
+    inv[1]  = -m[1] * m[10] * m[15] + m[1] * m[11] * m[14] + m[9] * m[2] * m[15] - m[9] * m[3] * m[14] - m[13] * m[2] * m[11] + m[13] * m[3] * m[10];
+    inv[5]  =  m[0] * m[10] * m[15] - m[0] * m[11] * m[14] - m[8] * m[2] * m[15] + m[8] * m[3] * m[14] + m[12] * m[2] * m[11] - m[12] * m[3] * m[10];
+    inv[9]  = -m[0] * m[9]  * m[15] + m[0] * m[11] * m[13] + m[8] * m[1] * m[15] - m[8] * m[3] * m[13] - m[12] * m[1] * m[11] + m[12] * m[3] * m[9];
+    inv[13] =  m[0] * m[9]  * m[14] - m[0] * m[10] * m[13] - m[8] * m[1] * m[14] + m[8] * m[2] * m[13] + m[12] * m[1] * m[10] - m[12] * m[2] * m[9];
+    inv[2]  =  m[1] * m[6]  * m[15] - m[1] * m[7]  * m[14] - m[5] * m[2] * m[15] + m[5] * m[3] * m[14] + m[13] * m[2] * m[7]  - m[13] * m[3] * m[6];
+    inv[6]  = -m[0] * m[6]  * m[15] + m[0] * m[7]  * m[14] + m[4] * m[2] * m[15] - m[4] * m[3] * m[14] - m[12] * m[2] * m[7]  + m[12] * m[3] * m[6];
+    inv[10] =  m[0] * m[5]  * m[15] - m[0] * m[7]  * m[13] - m[4] * m[1] * m[15] + m[4] * m[3] * m[13] + m[12] * m[1] * m[7]  - m[12] * m[3] * m[5];
+    inv[14] = -m[0] * m[5]  * m[14] + m[0] * m[6]  * m[13] + m[4] * m[1] * m[14] - m[4] * m[2] * m[13] - m[12] * m[1] * m[6]  + m[12] * m[2] * m[5];
+    inv[3]  = -m[1] * m[6]  * m[11] + m[1] * m[7]  * m[10] + m[5] * m[2] * m[11] - m[5] * m[3] * m[10] - m[9]  * m[2] * m[7]  + m[9]  * m[3] * m[6];
+    inv[7]  =  m[0] * m[6]  * m[11] - m[0] * m[7]  * m[10] - m[4] * m[2] * m[11] + m[4] * m[3] * m[10] + m[8]  * m[2] * m[7]  - m[8]  * m[3] * m[6];
+    inv[11] = -m[0] * m[5]  * m[11] + m[0] * m[7]  * m[9]  + m[4] * m[1] * m[11] - m[4] * m[3] * m[9]  - m[8]  * m[1] * m[7]  + m[8]  * m[3] * m[5];
+    inv[15] =  m[0] * m[5]  * m[10] - m[0] * m[6]  * m[9]  - m[4] * m[1] * m[10] + m[4] * m[2] * m[9]  + m[8]  * m[1] * m[6]  - m[8]  * m[2] * m[5];
+
+    let det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+    if (det != 0) {
+      det = 1.0 / det;
+
+      return inv.map( i => i * det );
+    }
+  }
+
+  function translateMatrix( x, y, z ) {
+    return [
+      1, 0, 0, x,
+      0, 1, 0, y,
+      0, 0, 1, z,
+      0, 0, 0, 1,
+    ];
+  }
+
+  // https://en.wikipedia.org/wiki/Rotation_matrix
+  function rotateMatrix( x, y, z ) {
+    const cosX = Math.cos( x ), sinX = Math.sin( x );
+    const cosY = Math.cos( y ), sinY = Math.sin( y );
+    const cosZ = Math.cos( z ), sinZ = Math.sin( z );
+
+    return [
+      cosY * cosZ,    sinX * sinY * cosZ - cosX * sinZ,   cosX * sinY * cosZ + sinX * sinZ,   0,
+      cosY * sinZ,    sinX * sinY * sinZ + cosX * cosZ,   cosX * sinY * sinZ - sinX * cosZ,   0,
+      -sinY,          sinX * cosY,                        cosX * cosY,                        0,
+      0,              0,                                  0,                                  1,
+    ];
+  }
+
+  function scaleMatrix( x, y, z ) {
+    return [
+      x, 0, 0, 0,
+      0, y, 0, 0,
+      0, 0, z, 0,
+      0, 0, 0, 1,
+    ];
+  }
+  
+</script>
