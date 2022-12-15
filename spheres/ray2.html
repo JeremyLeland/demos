@@ -24,7 +24,7 @@
     spheres: [
       {
         pos: { x: 0, y: 0, z: 0 },
-        inverseMatrix: inverseMatrix( multMatrices( rotateMatrix( 0, 0, 0.4 ), scaleMatrix( 1, 2, 1 ) ) ),
+        inverseMatrix: inverseMatrix( multMatrices( rotateMatrix( 0, 0, 2.4 ), scaleMatrix( 1, 0.5, 1 ) ) ),
         //inverseMatrix: inverseMatrix( scaleMatrix( 1, 2, 1 ) ),
         radius: 1,
         color: { x: 0.5, y: 0.5, z: 0.5 },
@@ -154,7 +154,9 @@
     if ( hit.time < Infinity ) {
       hit.sphere = sphere;
       hit.pos = add( ray.pos, mult( ray.dir, hit.time ) );
-      hit.norm = normalize( sub( hit.pos, sphere.pos ) );
+
+      const normalMatrix = transposeMatrix( sphere.inverseMatrix );
+      hit.norm = normalize( mult4x4( sub( hit.pos, sphere.pos ), normalMatrix ) );
     }
 
     return hit;
@@ -335,6 +337,18 @@
 
       return inv.map( i => i * det );
     }
+  }
+
+  function transposeMatrix( m ) {
+    const result = [];
+
+    for ( let c = 0; c < 4; c ++ ) {
+      for ( let r = 0; r < 4; r ++ ) {
+        result.push( m[ r * 4 + c ] );
+      }
+    }
+
+    return result;
   }
 
   function translateMatrix( x, y, z ) {
