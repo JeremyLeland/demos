@@ -24,22 +24,22 @@
     spheres: [
       {
         pos: { x: 0, y: 0, z: 0 },
-        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 0, 0, 0 ), multMatrices( rotateMatrix( 0, 0, 2 ), scaleMatrix( 1, 1, 1 ) ) ) ),
+        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 0, 0, 0 ), multMatrices( rotateMatrix( 0, 0, 1 ), scaleMatrix( 1, 1, 1 ) ) ) ),
         color: { x: 0.5, y: 0.5, z: 0.5 },
       },
       {
         pos: { x: 1, y: 0, z: 0 },
-        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 1, 0, 0 ), multMatrices( rotateMatrix( 0, 0, 2 ), scaleMatrix( 1, 1, 1 ) ) ) ),
+        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 1, 0, 0 ), multMatrices( rotateMatrix( 0, 0, 2 ), scaleMatrix( 1, 1.5, 1 ) ) ) ),
         color: { x: 0.7, y: 0.7, z: 0.7 },
       },
       {
         pos: { x: 2, y: 0, z: 0 },
-        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 2, 0, 0 ), multMatrices( rotateMatrix( 0, 0, 2 ), scaleMatrix( 1, 1, 1 ) ) ) ),
+        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 2, 0, 0 ), multMatrices( rotateMatrix( 0, 0, 3 ), scaleMatrix( 1, 2, 1 ) ) ) ),
         color: { x: 0.9, y: 0.9, z: 0.9 },
       },
       {
         pos: { x: 0, y: -0.5, z: 2 },
-        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 0, -0.5, 2 ), multMatrices( rotateMatrix( 0, 0, 2 ), scaleMatrix( 0.1, 0.1, 0.1 ) ) ) ),
+        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 0, -0.5, 2 ), multMatrices( rotateMatrix( 0, 0, -0.4 ), scaleMatrix( 0.1, 0.2, 0.1 ) ) ) ),
         color: { x: 1, y: 1, z: 0 },
       },
     ],
