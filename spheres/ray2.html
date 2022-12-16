@@ -24,7 +24,7 @@
     spheres: [
       {
         pos: { x: 0, y: 0, z: 0 },
-        inverseMatrix: inverseMatrix( multMatrices( rotateMatrix( 0, 0, 2.4 ), scaleMatrix( 1, 0.5, 1 ) ) ),
+        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 0, 0, 0 ), multMatrices( rotateMatrix( 0, 0, 2 ), scaleMatrix( 1, 0.5, 1 ) ) ) ),
         //inverseMatrix: inverseMatrix( scaleMatrix( 1, 2, 1 ) ),
         radius: 1,
         color: { x: 0.5, y: 0.5, z: 0.5 },
@@ -100,6 +100,8 @@
     
     if ( hit.pos ) {
       let color = { x: 0.01, y: 0.01, z: 0.01 };
+
+      // return hit.norm;
       
       scene.lights.forEach( light => {
         // See https://developer.download.nvidia.com/cg/lit.html
@@ -155,8 +157,10 @@
       hit.sphere = sphere;
       hit.pos = add( ray.pos, mult( ray.dir, hit.time ) );
 
+      // TODO: Way to get normal without finding the hitPos twice?
       const normalMatrix = transposeMatrix( sphere.inverseMatrix );
-      hit.norm = normalize( mult4x4( sub( hit.pos, sphere.pos ), normalMatrix ) );
+      const objectHitPos = add( objectRayPos, mult( objectRayDir, hit.time ) );
+      hit.norm = normalize( mult4x4( sub( objectHitPos, sphere.pos ), normalMatrix ) );
     }
 
     return hit;
@@ -198,9 +202,9 @@
         const color = getColor( ray );
 
         data[ index ++ ] = rgbToInt(
-          Math.min( 1, color.x ) * 255,
-          Math.min( 1, color.y ) * 255,
-          Math.min( 1, color.z ) * 255,
+          Math.min( 1, Math.max( 0, color.x ) ) * 255,
+          Math.min( 1, Math.max( 0, color.y ) ) * 255,
+          Math.min( 1, Math.max( 0, color.z ) ) * 255,
         );
       }
     }
