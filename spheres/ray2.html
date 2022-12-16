@@ -14,11 +14,11 @@
     lights: [
       {
         color: { x: 0.4, y: 0.1, z: 0.1 },
-        pos: { x: -1.2, y: -1, z: 3 },
+        pos: { x: -1.2, y: -1, z: 3, w: 1 },
       },
       {
         color: { x: 0.1, y: 0.1, z: 0.4 },
-        pos: { x: -1, y: -1, z: 6 },
+        pos: { x: -1, y: -1, z: 6, w: 1 },
       },
     ],
     spheres: [
@@ -87,6 +87,7 @@
         // See https://developer.download.nvidia.com/cg/lit.html
         const N = hit.norm;
         const L = normalize( sub( light.pos, hit.pos ) );
+        L.w = 0;    // TODO: More elegant way to handle this?
         const NdotL = dot( N, L );
 
         const lightRay = { pos: hit.pos, dir: L };
