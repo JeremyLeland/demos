@@ -24,44 +24,24 @@
     spheres: [
       {
         pos: { x: 0, y: 0, z: 0 },
-        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 0, 0, 0 ), multMatrices( rotateMatrix( 0, 0, 2 ), scaleMatrix( 1, 0.5, 1 ) ) ) ),
-        //inverseMatrix: inverseMatrix( scaleMatrix( 1, 2, 1 ) ),
-        radius: 1,
+        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 0, 0, 0 ), multMatrices( rotateMatrix( 0, 0, 2 ), scaleMatrix( 1, 1, 1 ) ) ) ),
         color: { x: 0.5, y: 0.5, z: 0.5 },
       },
-      // {
-      //   pos: { x: 1, y: 0, z: 0 },
-      //   transform: [
-      //     Math.cos( 1 ), -Math.sin( 1 ), 0, 0,
-      //     Math.sin( 1 ), 2 * Math.cos( 1 ), 0, 0,
-      //     0, 0, 1, 0,
-      //     0, 0, 0, 1,
-      //   ],
-      //   radius: 1,
-      //   color: { x: 0.7, y: 0.7, z: 0.7 },
-      // },
-      // {
-      //   pos: { x: 2, y: 0, z: 0 },
-      //   transform: [
-      //     Math.cos( 1 ), -Math.sin( 1 ), 0, 0,
-      //     Math.sin( 1 ), 2 * Math.cos( 1 ), 0, 0,
-      //     0, 0, 1, 0,
-      //     0, 0, 0, 1,
-      //   ],
-      //   radius: 1,
-      //   color: { x: 0.9, y: 0.9, z: 0.9 },
-      // },
-      // {
-      //   pos: { x: 0, y: -0.5, z: 2 },
-      //   transform: [
-      //     Math.cos( 1 ), -Math.sin( 1 ), 0, 0,
-      //     Math.sin( 1 ), 2 * Math.cos( 1 ), 0, 0,
-      //     0, 0, 1, 0,
-      //     0, 0, 0, 1,
-      //   ],
-      //   radius: 0.1,
-      //   color: { x: 1, y: 1, z: 0 },
-      // },
+      {
+        pos: { x: 1, y: 0, z: 0 },
+        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 1, 0, 0 ), multMatrices( rotateMatrix( 0, 0, 2 ), scaleMatrix( 1, 1, 1 ) ) ) ),
+        color: { x: 0.7, y: 0.7, z: 0.7 },
+      },
+      {
+        pos: { x: 2, y: 0, z: 0 },
+        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 2, 0, 0 ), multMatrices( rotateMatrix( 0, 0, 2 ), scaleMatrix( 1, 1, 1 ) ) ) ),
+        color: { x: 0.9, y: 0.9, z: 0.9 },
+      },
+      {
+        pos: { x: 0, y: -0.5, z: 2 },
+        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 0, -0.5, 2 ), multMatrices( rotateMatrix( 0, 0, 2 ), scaleMatrix( 0.1, 0.1, 0.1 ) ) ) ),
+        color: { x: 1, y: 1, z: 0 },
+      },
     ],
   };
 
@@ -145,11 +125,11 @@
     // Don't normalize? See https://graphicscompendium.com/raytracing/12-transformations
     const objectRayDir = mult4x4( ray.dir, sphere.inverseMatrix );
 
-    const v = sub( objectRayPos, sphere.pos );
+    const v = objectRayPos; //sub( objectRayPos, sphere.pos );    // was - sphere.pos
 
     const a = dot( objectRayDir, objectRayDir );  // can be 1 if dir is normalized
     const b = 2 * dot( objectRayDir, v );
-    const c = dot( v, v ) - sphere.radius * sphere.radius;
+    const c = dot( v, v ) - 1;  // - radius^2, hardcoding to 1 for now
     
     const hit = { time: solveQuadratic( a, b, c ) };
 
@@ -160,7 +140,7 @@
       // TODO: Way to get normal without finding the hitPos twice?
       const normalMatrix = transposeMatrix( sphere.inverseMatrix );
       const objectHitPos = add( objectRayPos, mult( objectRayDir, hit.time ) );
-      hit.norm = normalize( mult4x4( sub( objectHitPos, sphere.pos ), normalMatrix ) );
+      hit.norm = normalize( mult4x4( objectHitPos, normalMatrix ) );   // was sub( objectHitPos, sphere.pos )
     }
 
     return hit;
