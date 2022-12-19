@@ -25,14 +25,14 @@
 
   const shader = new THREE.ShaderMaterial( {
     uniforms: {
-      rayPos: { value: new THREE.Vector3( 0, 0, 2 ) }
+      rayPos: { value: new THREE.Vector3( 0, 0, 2 ) },
+      lightPos: { value: new THREE.Vector3( -10, 10, 10 ) },
+      lightColor: { value: new THREE.Vector3( 1.0, 0.0, 0.0 ) },
+      sphereColor: { value: new THREE.Vector3( 0.5, 0.5, 0.5 ) },
     },
     vertexShader: `
       out vec2 v_uv;
       out vec3 v_pos;
-
-      //out vec3 rayDir;
-
       out vec4 screenPos;
 
       void main() {
@@ -40,9 +40,7 @@
         v_pos = position;
 
         screenPos = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-        //rayDir = vec3( screenPos.xy, -1.0 );
-
-        gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+        gl_Position = screenPos;
       }
     `,
     fragmentShader: `
@@ -50,9 +48,11 @@
       in vec3 v_pos;
 
       in vec4 screenPos;
-      in vec3 rayDir;
 
       uniform vec3 rayPos;
+      uniform vec3 lightPos;
+      uniform vec3 lightColor;
+      uniform vec3 sphereColor;
 
       out vec3 outColor;
 
@@ -72,40 +72,71 @@
         } 
       }
 
-      struct Hit {
-        float time;
-        // vec3 pos;
-        // vec3 norm;
+      struct Ray {
+        vec3 pos;
+        vec3 dir;
       };
 
-      Hit getSphereHit( vec3 rayPos, vec3 rayDir ) {
+      struct Light {
+        vec3 pos;
+        vec3 color;
+      };
+
+      struct Hit {
+        float time;
+        vec3 pos;
+        vec3 norm;
+      };
+
+      Hit getSphereHit( Ray ray ) {
         //const v = sub( ray.pos, sphere.pos );
-        vec3 v = rayPos;
+        vec3 v = ray.pos;
 
         float a = 1.0; // dot( ray.dir, ray.dir );  // can be 1 if dir is normalized
-        float b = 2.0 * dot( rayDir, v );
+        float b = 2.0 * dot( ray.dir, v );
         float c = dot( v, v ) - 1.0; //sphere.radius * sphere.radius;
         
-        Hit hit = Hit( solveQuadratic( a, b, c ) );
+        Hit hit = Hit( solveQuadratic( a, b, c ), vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ) );
 
         if ( hit.time > 0.0 ) {
           // hit.sphere = sphere;
-          // hit.pos = add( ray.pos, mult( ray.dir, hit.time ) );
-          // hit.norm = normalize( sub( hit.pos, sphere.pos ) );
+          hit.pos = ray.pos + ray.dir * hit.time;
+          hit.norm = normalize( hit.pos );
         }
 
         return hit;
       }
-
       
-
       void main() {
 
         vec3 rayDir = normalize( vec3( screenPos.xy, -1.0 ) );
 
-        Hit hit = getSphereHit( rayPos, rayDir );
+        Ray ray = Ray( rayPos, rayDir );
+        Hit hit = getSphereHit( ray );
 
-        outColor = hit.time > 0.0 ? vec3( 0.0, 1.0, 0.0 ) : rayDir;
+        if ( hit.time > 0.0 ) { 
+          vec3 N = hit.norm;
+          vec3 L = normalize( lightPos - hit.pos );
+          float NdotL = dot( N, L );
+
+          if ( NdotL > 0.0 /*&& lightHit.time == Infinity */ ) {
+            vec3 V = normalize( ray.pos - hit.pos );
+            vec3 H = normalize( L + V );
+            
+            float NdotH = dot( N, H );
+            float shininess = 2000.0;
+            
+            float diffuse = max( 0.0, NdotL );
+            float specular = ( NdotL > 0.0 ) ? pow( max( 0.0, NdotH ), shininess ) : 0.0;
+
+            outColor = vec3( 0.0, 0.0, 0.0 );
+            outColor += lightColor * sphereColor * diffuse;
+            outColor += lightColor * specular;
+          }
+        }
+        else {
+          outColor = rayDir;
+        }
       }
     `,
     glslVersion: THREE.GLSL3,
