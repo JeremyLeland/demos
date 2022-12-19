@@ -1,0 +1,141 @@
+<link rel="stylesheet" href="../grid.css">
+<script type="module">
+  import * as THREE from '../lib/three.module.js';
+  import { OrbitControls } from '../lib/controls/OrbitControls.js';
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color( 0x000009 );
+
+  const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 100 );
+  camera.position.set( 0, 0, 1 );
+
+  
+  const positions = [ 
+     1,  1,  0,
+    -1,  1,  0,
+     1, -1,  0, 
+    -1, -1,  0,
+  ];
+  const indices = [ 0, 1, 2, 2, 1, 3 ];
+  
+  
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( positions, 3 ) );
+  geometry.setIndex( indices );
+
+  const shader = new THREE.ShaderMaterial( {
+    uniforms: {
+      rayPos: { value: new THREE.Vector3( 0, 0, 2 ) }
+    },
+    vertexShader: `
+      out vec2 v_uv;
+      out vec3 v_pos;
+
+      //out vec3 rayDir;
+
+      out vec4 screenPos;
+
+      void main() {
+        v_uv = uv;
+        v_pos = position;
+
+        screenPos = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+        //rayDir = vec3( screenPos.xy, -1.0 );
+
+        gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+      }
+    `,
+    fragmentShader: `
+      in vec2 v_uv;
+      in vec3 v_pos;
+
+      in vec4 screenPos;
+      in vec3 rayDir;
+
+      uniform vec3 rayPos;
+
+      out vec3 outColor;
+
+      // https://mathworld.wolfram.com/QuadraticEquation.html
+      float solveQuadratic( float a, float b, float c ) {
+        float discr = b * b - 4.0 * a * c; 
+
+        if ( discr < 0.0 ) {
+          return -1.0;
+        } 
+        else {
+          float sign = b < 0.0 ? -1.0 : 1.0;
+          float q = -0.5 * ( b + sign * sqrt( discr ) );
+          float x0 = q / a;
+          float x1 = c / q;
+          return x0 < 0.0 ? x1 : min( x0, x1 );
+        } 
+      }
+
+      struct Hit {
+        float time;
+        // vec3 pos;
+        // vec3 norm;
+      };
+
+      Hit getSphereHit( vec3 rayPos, vec3 rayDir ) {
+        //const v = sub( ray.pos, sphere.pos );
+        vec3 v = rayPos;
+
+        float a = 1.0; // dot( ray.dir, ray.dir );  // can be 1 if dir is normalized
+        float b = 2.0 * dot( rayDir, v );
+        float c = dot( v, v ) - 1.0; //sphere.radius * sphere.radius;
+        
+        Hit hit = Hit( solveQuadratic( a, b, c ) );
+
+        if ( hit.time > 0.0 ) {
+          // hit.sphere = sphere;
+          // hit.pos = add( ray.pos, mult( ray.dir, hit.time ) );
+          // hit.norm = normalize( sub( hit.pos, sphere.pos ) );
+        }
+
+        return hit;
+      }
+
+      
+
+      void main() {
+
+        vec3 rayDir = normalize( vec3( screenPos.xy, -1.0 ) );
+
+        Hit hit = getSphereHit( rayPos, rayDir );
+
+        outColor = hit.time > 0.0 ? vec3( 0.0, 1.0, 0.0 ) : rayDir;
+      }
+    `,
+    glslVersion: THREE.GLSL3,
+  } );
+
+  const mesh = new THREE.Mesh( geometry, shader );
+
+  scene.add( mesh );
+
+  
+
+  const renderer = new THREE.WebGLRenderer();
+
+  function render() {
+    renderer.render( scene, camera );
+  }
+
+  document.body.appendChild( renderer.domElement );
+  window.onresize = () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    render();
+  }
+  window.onresize();
+
+  // const controls = new OrbitControls( camera, renderer.domElement );
+  // controls.target.set( 0, 0, 0 );
+  // controls.update();
+  // controls.addEventListener( 'change', render );
+
+</script>
