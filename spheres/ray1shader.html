@@ -29,6 +29,12 @@
       lightPos: { value: new THREE.Vector3( -10, 10, 10 ) },
       lightColor: { value: new THREE.Vector3( 1.0, 0.0, 0.0 ) },
       sphereColor: { value: new THREE.Vector3( 0.5, 0.5, 0.5 ) },
+      sphereInverseTransform: { value: new THREE.Matrix4().set(
+        2, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        -0.1, 0, 0, 1,
+      ) },
     },
     vertexShader: `
       out vec2 v_uv;
@@ -53,6 +59,7 @@
       uniform vec3 lightPos;
       uniform vec3 lightColor;
       uniform vec3 sphereColor;
+      uniform mat4 sphereInverseTransform;
 
       out vec3 outColor;
 
@@ -90,10 +97,17 @@
 
       Hit getSphereHit( Ray ray ) {
         //const v = sub( ray.pos, sphere.pos );
-        vec3 v = ray.pos;
+        // vec3 v = ray.pos;
 
-        float a = 1.0; // dot( ray.dir, ray.dir );  // can be 1 if dir is normalized
-        float b = 2.0 * dot( ray.dir, v );
+        vec3 objectRayPos = ( vec4( ray.pos, 1.0 ) * sphereInverseTransform ).xyz;
+
+        // Don't normalize? See https://graphicscompendium.com/raytracing/12-transformations
+        vec3 objectRayDir = ( vec4( ray.dir, 0.0 ) * sphereInverseTransform ).xyz;
+
+        vec3 v = objectRayPos;
+
+        float a = dot( objectRayDir, objectRayDir );
+        float b = 2.0 * dot( objectRayDir, v );
         float c = dot( v, v ) - 1.0; //sphere.radius * sphere.radius;
         
         Hit hit = Hit( solveQuadratic( a, b, c ), vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ) );
@@ -101,7 +115,12 @@
         if ( hit.time > 0.0 ) {
           // hit.sphere = sphere;
           hit.pos = ray.pos + ray.dir * hit.time;
-          hit.norm = normalize( hit.pos );
+          // hit.norm = normalize( hit.pos );
+
+          // TODO: Way to get normal without finding the hitPos twice?
+          mat4 normalMatrix = transpose( sphereInverseTransform );
+          vec3 objectHitPos = objectRayPos + objectRayDir * hit.time;
+          hit.norm = normalize( vec4( objectHitPos, 0.0 ) * normalMatrix ).xyz;
         }
 
         return hit;
