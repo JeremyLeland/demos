@@ -75,11 +75,28 @@
         tPosition: { value: renderTarget.texture[ 0 ] },
         tNormal:   { value: renderTarget.texture[ 1 ] },
         rayPos: { value: new THREE.Vector3( 0, 0, 2 ) },
-        lightPos: { value: new THREE.Vector3( -10, 10, 10 ) },
+        lightPos: { value: new THREE.Vector3( -10, 5, 5 ) },
         lightColor: { value: new THREE.Vector3( 1.0, 0.0, 0.0 ) },
       },
       vertexShader: Shader.VertUV,
       fragmentShader: Shader.FragLight,
+      blending: THREE.AdditiveBlending,
+    } )
+  ) );
+
+  postScene.add( new THREE.Mesh(
+    new THREE.PlaneGeometry( 2, 2 ),
+    new THREE.RawShaderMaterial( {
+      uniforms: {
+        tPosition: { value: renderTarget.texture[ 0 ] },
+        tNormal:   { value: renderTarget.texture[ 1 ] },
+        rayPos: { value: new THREE.Vector3( 0, 0, 2 ) },
+        lightPos: { value: new THREE.Vector3( 10, 5, 5 ) },
+        lightColor: { value: new THREE.Vector3( 0.0, 1.0, 0.0 ) },
+      },
+      vertexShader: Shader.VertUV,
+      fragmentShader: Shader.FragLight,
+      blending: THREE.AdditiveBlending,
     } )
   ) );
 
