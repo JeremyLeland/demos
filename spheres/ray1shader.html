@@ -71,8 +71,7 @@
           return -1.0;
         } 
         else {
-          float sign = b < 0.0 ? -1.0 : 1.0;
-          float q = -0.5 * ( b + sign * sqrt( discr ) );
+          float q = -0.5 * ( b + sign( b ) * sqrt( discr ) );
           float x0 = q / a;
           float x1 = c / q;
           return x0 < 0.0 ? x1 : min( x0, x1 );
