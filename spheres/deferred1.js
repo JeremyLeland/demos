@@ -161,7 +161,7 @@ export const FragLight = /*glsl*/`#version 300 es
       float diffuse = max( 0.0, NdotL );
       float specular = ( NdotL > 0.0 ) ? pow( max( 0.0, NdotH ), shininess ) : 0.0;
     
-      pc_FragColor.rgb = lightColor * diffuse + lightColor * specular;
+      pc_FragColor.rgb = lightColor * ( diffuse + specular );
       pc_FragColor.a = 1.0;
     }
   }

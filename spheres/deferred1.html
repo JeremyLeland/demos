@@ -19,6 +19,8 @@
   for ( let i = 0; i < 2; i ++ ) {
     renderTarget.texture[ i ].minFilter = THREE.NearestFilter;
     renderTarget.texture[ i ].magFilter = THREE.NearestFilter;
+    // renderTarget.texture[ i ].format = THREE.RGBAFormat;
+    renderTarget.texture[ i ].type = THREE.FloatType;
   }
 
   renderTarget.texture[ 0 ].name = 'position';
@@ -73,7 +75,7 @@
         tPosition: { value: renderTarget.texture[ 0 ] },
         tNormal:   { value: renderTarget.texture[ 1 ] },
         rayPos: { value: new THREE.Vector3( 0, 0, 2 ) },
-        lightPos: { value: new THREE.Vector3( -8, 5, 5 ) },
+        lightPos: { value: new THREE.Vector3( -10, 10, 10 ) },
         lightColor: { value: new THREE.Vector3( 1.0, 0.0, 0.0 ) },
       },
       vertexShader: Shader.VertUV,
