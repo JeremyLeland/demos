@@ -17,15 +17,15 @@
         lights: {
           value: [
             {
-              pos: new THREE.Vector3( -10, 10, 10 ),
+              pos: new THREE.Vector3( -2, 5, 5 ),
               color: new THREE.Vector3( 1, 0, 0 ),
             },
             {
-              pos: new THREE.Vector3( 10, 5, 10 ),
+              pos: new THREE.Vector3( 2, 2, 5 ),
               color: new THREE.Vector3( 0, 1, 0 ),
             },
             {
-              pos: new THREE.Vector3( 5, 5, 5 ),
+              pos: new THREE.Vector3( 1, 1, 6 ),
               color: new THREE.Vector3( 0, 0, 1 ),
             },
           ]
@@ -33,21 +33,17 @@
         spheres: {
           value: [
           {
-              inverseTransform: new THREE.Matrix4().set(
-                  1, 0, 0, 0,
-                  0, 2, 0, 0,
-                  0, 0, 1, 0,
-                -0.5, 0, 0, 1,
-              ),
+              inverseTransform: new THREE.Matrix4().makeTranslation( 0.5, 0, 0 )
+                .multiply( new THREE.Matrix4().makeRotationZ( 0.4 ) )
+                .multiply( new THREE.Matrix4().makeScale( 0.5, 1, 0.5 ) )
+                .invert().transpose(),
               color: new THREE.Vector3( 0.7, 0.7, 0.7 ),
             },
             {
-              inverseTransform: new THREE.Matrix4().set(
-                  1, 0, 0, 0,
-                  0, 1, 0, 0,
-                  0, 0, 1, 0,
-                0.5, 0, 0, 1,
-              ),
+              inverseTransform: new THREE.Matrix4().makeTranslation( -0.5, 0, 0 )
+                .multiply( new THREE.Matrix4().makeRotationZ( -0.4 ) )
+                .multiply( new THREE.Matrix4().makeScale( 0.5, 0.75, 0.5 ) )
+                .invert().transpose(),
               color: new THREE.Vector3( 0.5, 0.5, 0.5 ),
             },
             
