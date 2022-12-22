@@ -9,213 +9,196 @@
   const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 100 );
   camera.position.set( 0, 0, 1 );
 
-  
-  const positions = [ 
-     1,  1,  0,
-    -1,  1,  0,
-     1, -1,  0, 
-    -1, -1,  0,
-  ];
-  const indices = [ 0, 1, 2, 2, 1, 3 ];
-  
-  
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( positions, 3 ) );
-  geometry.setIndex( indices );
-
-  const shader = new THREE.RawShaderMaterial( {
-    uniforms: {
-      rayPos: { value: new THREE.Vector3( 0, 0, 2 ) },
-      lights: {
-        value: [
+  scene.add( new THREE.Mesh(
+    new THREE.PlaneGeometry( 2, 2 ),
+    new THREE.RawShaderMaterial( {
+      uniforms: {
+        rayPos: { value: new THREE.Vector3( 0, 0, 2 ) },
+        lights: {
+          value: [
+            {
+              pos: new THREE.Vector3( -10, 10, 10 ),
+              color: new THREE.Vector3( 1, 0, 0 ),
+            },
+            {
+              pos: new THREE.Vector3( 10, 5, 10 ),
+              color: new THREE.Vector3( 0, 1, 0 ),
+            },
+            {
+              pos: new THREE.Vector3( 5, 5, 5 ),
+              color: new THREE.Vector3( 0, 0, 1 ),
+            },
+          ]
+        },
+        spheres: {
+          value: [
           {
-            pos: new THREE.Vector3( -10, 10, 10 ),
-            color: new THREE.Vector3( 1, 0, 0 ),
-          },
-          {
-            pos: new THREE.Vector3( 10, 5, 10 ),
-            color: new THREE.Vector3( 0, 1, 0 ),
-          },
-          {
-            pos: new THREE.Vector3( 5, 5, 5 ),
-            color: new THREE.Vector3( 0, 0, 1 ),
-          },
-        ]
+              inverseTransform: new THREE.Matrix4().set(
+                  1, 0, 0, 0,
+                  0, 2, 0, 0,
+                  0, 0, 1, 0,
+                -0.5, 0, 0, 1,
+              ),
+              color: new THREE.Vector3( 0.7, 0.7, 0.7 ),
+            },
+            {
+              inverseTransform: new THREE.Matrix4().set(
+                  1, 0, 0, 0,
+                  0, 1, 0, 0,
+                  0, 0, 1, 0,
+                0.5, 0, 0, 1,
+              ),
+              color: new THREE.Vector3( 0.5, 0.5, 0.5 ),
+            },
+            
+          ]
+        },
       },
-      spheres: {
-        value: [
-        {
-            inverseTransform: new THREE.Matrix4().set(
-                1, 0, 0, 0,
-                0, 2, 0, 0,
-                0, 0, 1, 0,
-              -0.5, 0, 0, 1,
-            ),
-            color: new THREE.Vector3( 0.7, 0.7, 0.7 ),
-          },
-          {
-            inverseTransform: new THREE.Matrix4().set(
-                1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-              0.5, 0, 0, 1,
-            ),
-            color: new THREE.Vector3( 0.5, 0.5, 0.5 ),
-          },
-          
-        ]
-      },
-    },
-    vertexShader: /*glsl*/`
-      in vec3 position;
+      vertexShader: /*glsl*/`
+        in vec3 position;
 
-      out vec4 screenPos;
+        out vec4 screenPos;
 
-      uniform mat4 modelViewMatrix;
-      uniform mat4 projectionMatrix;
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
 
-      void main() {
-        screenPos = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-        gl_Position = screenPos;
-      }
-    `,
-    fragmentShader: /*glsl*/`
-      precision highp float;
-      precision highp int;
+        void main() {
+          screenPos = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+          gl_Position = screenPos;
+        }
+      `,
+      fragmentShader: /*glsl*/`
+        precision highp float;
+        precision highp int;
 
-      in vec4 screenPos;
+        in vec4 screenPos;
 
-      uniform vec3 rayPos;
+        uniform vec3 rayPos;
 
-      struct Sphere {
-        mat4 inverseTransform;
-        vec3 color;
-      };
+        struct Sphere {
+          mat4 inverseTransform;
+          vec3 color;
+        };
 
-      const int NUM_SPHERES = 2;
-      uniform Sphere spheres[ NUM_SPHERES ];
+        const int NUM_SPHERES = 2;
+        uniform Sphere spheres[ NUM_SPHERES ];
 
-      struct Light {
-        vec3 pos;
-        vec3 color;
-      };
+        struct Light {
+          vec3 pos;
+          vec3 color;
+        };
 
-      const int NUM_LIGHTS = 3;
-      uniform Light lights[ NUM_LIGHTS ];
-      
-      uniform mat4 sphereInverseTransform;
-
-      out vec3 outColor;
-
-      // https://mathworld.wolfram.com/QuadraticEquation.html
-      float solveQuadratic( float a, float b, float c ) {
-        float discr = b * b - 4.0 * a * c; 
-
-        if ( discr < 0.0 ) {
-          return -1.0;
-        } 
-        else {
-          float q = -0.5 * ( b + sign( b ) * sqrt( discr ) );
-          float x0 = q / a;
-          float x1 = c / q;
-          return x0 < 0.0 ? x1 : min( x0, x1 );
-        } 
-      }
-
-      struct Ray {
-        vec3 pos;
-        vec3 dir;
-      };
-      
-      struct Hit {
-        float time;
-        vec3 pos;
-        vec3 norm;
-      };
-
-      Hit getSphereHit( Ray ray, Sphere sphere ) {
-        vec3 objectRayPos = ( vec4( ray.pos, 1.0 ) * sphere.inverseTransform ).xyz;
-
-        // Don't normalize -- see https://graphicscompendium.com/raytracing/12-transformations
-        vec3 objectRayDir = ( vec4( ray.dir, 0.0 ) * sphere.inverseTransform ).xyz;
-
-        vec3 v = objectRayPos;
-
-        float a = dot( objectRayDir, objectRayDir );
-        float b = 2.0 * dot( objectRayDir, v );
-        float c = dot( v, v ) - 1.0;
+        const int NUM_LIGHTS = 3;
+        uniform Light lights[ NUM_LIGHTS ];
         
-        Hit hit = Hit( solveQuadratic( a, b, c ), vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ) );
+        uniform mat4 sphereInverseTransform;
 
-        if ( hit.time > 0.0 ) {
-          hit.pos = ray.pos + ray.dir * hit.time;
-          // hit.norm = normalize( hit.pos );
+        out vec3 outColor;
 
-          // TODO: Way to get normal without finding the hitPos twice?
-          mat4 normalMatrix = transpose( sphere.inverseTransform );
-          vec3 objectHitPos = objectRayPos + objectRayDir * hit.time;
-          hit.norm = normalize( vec4( objectHitPos, 0.0 ) * normalMatrix ).xyz;
+        // https://mathworld.wolfram.com/QuadraticEquation.html
+        float solveQuadratic( float a, float b, float c ) {
+          float discr = b * b - 4.0 * a * c; 
+
+          if ( discr < 0.0 ) {
+            return -1.0;
+          } 
+          else {
+            float q = -0.5 * ( b + sign( b ) * sqrt( discr ) );
+            float x0 = q / a;
+            float x1 = c / q;
+            return x0 < 0.0 ? x1 : min( x0, x1 );
+          } 
         }
 
-        return hit;
-      }
-      
-      void main() {
+        struct Ray {
+          vec3 pos;
+          vec3 dir;
+        };
+        
+        struct Hit {
+          float time;
+          vec3 pos;
+          vec3 norm;
+        };
 
-        vec3 rayDir = normalize( vec3( screenPos.xy, -1.0 ) );
+        Hit getSphereHit( Ray ray, Sphere sphere ) {
+          vec3 objectRayPos = ( vec4( ray.pos, 1.0 ) * sphere.inverseTransform ).xyz;
 
-        Ray ray = Ray( rayPos, rayDir );
+          // Don't normalize -- see https://graphicscompendium.com/raytracing/12-transformations
+          vec3 objectRayDir = ( vec4( ray.dir, 0.0 ) * sphere.inverseTransform ).xyz;
 
-        Hit closestHit = Hit( -1.0, vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ) );
-        int closestIndex = -1;
+          vec3 v = objectRayPos;
 
-        for ( int i = 0; i < NUM_SPHERES; i ++ ) {
-          Hit hit = getSphereHit( ray, spheres[ i ] );
+          float a = dot( objectRayDir, objectRayDir );
+          float b = 2.0 * dot( objectRayDir, v );
+          float c = dot( v, v ) - 1.0;
           
-          if ( closestHit.time == -1.0 || ( hit.time > 0.0 && hit.time < closestHit.time ) ) {
-            closestHit = hit;
-            closestIndex = i;
+          Hit hit = Hit( solveQuadratic( a, b, c ), vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ) );
+
+          if ( hit.time > 0.0 ) {
+            hit.pos = ray.pos + ray.dir * hit.time;
+            // hit.norm = normalize( hit.pos );
+
+            // TODO: Way to get normal without finding the hitPos twice?
+            mat4 normalMatrix = transpose( sphere.inverseTransform );
+            vec3 objectHitPos = objectRayPos + objectRayDir * hit.time;
+            hit.norm = normalize( vec4( objectHitPos, 0.0 ) * normalMatrix ).xyz;
           }
+
+          return hit;
         }
+        
+        void main() {
 
-        if ( closestHit.time > 0.0 ) { 
-          vec3 N = closestHit.norm;
+          vec3 rayDir = normalize( vec3( screenPos.xy, -1.0 ) );
 
-          vec3 lighting = vec3( 0.01, 0.01, 0.01 );
- 
-          for ( int i = 0; i < NUM_LIGHTS; i ++ ) {
-            vec3 L = normalize( lights[ i ].pos - closestHit.pos );
-            float NdotL = dot( N, L );
+          Ray ray = Ray( rayPos, rayDir );
 
-            if ( NdotL > 0.0 /*&& lightHit.time == Infinity */ ) {
-              vec3 V = normalize( ray.pos - closestHit.pos );
-              vec3 H = normalize( L + V );
-              
-              float NdotH = dot( N, H );
-              float shininess = 2000.0;
-              
-              float diffuse = max( 0.0, NdotL );
-              float specular = ( NdotL > 0.0 ) ? pow( max( 0.0, NdotH ), shininess ) : 0.0;
+          Hit closestHit = Hit( -1.0, vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ) );
+          int closestIndex = -1;
 
-              // TODO: Different sphere colors for diffuse and specular?
-              lighting += lights[ i ].color * spheres[ closestIndex ].color * ( diffuse + specular );
+          for ( int i = 0; i < NUM_SPHERES; i ++ ) {
+            Hit hit = getSphereHit( ray, spheres[ i ] );
+            
+            if ( closestHit.time == -1.0 || ( hit.time > 0.0 && hit.time < closestHit.time ) ) {
+              closestHit = hit;
+              closestIndex = i;
             }
           }
-          outColor = lighting;
-        }
-        else {
-          outColor = rayDir;
-        }
-      }
-    `,
-    glslVersion: THREE.GLSL3,
-  } );
 
-  const mesh = new THREE.Mesh( geometry, shader );
+          if ( closestHit.time > 0.0 ) { 
+            vec3 N = closestHit.norm;
 
-  scene.add( mesh );
-
+            vec3 lighting = vec3( 0.01, 0.01, 0.01 );
   
+            for ( int i = 0; i < NUM_LIGHTS; i ++ ) {
+              vec3 L = normalize( lights[ i ].pos - closestHit.pos );
+              float NdotL = dot( N, L );
+
+              if ( NdotL > 0.0 /*&& lightHit.time == Infinity */ ) {
+                vec3 V = normalize( ray.pos - closestHit.pos );
+                vec3 H = normalize( L + V );
+                
+                float NdotH = dot( N, H );
+                float shininess = 2000.0;
+                
+                float diffuse = max( 0.0, NdotL );
+                float specular = ( NdotL > 0.0 ) ? pow( max( 0.0, NdotH ), shininess ) : 0.0;
+
+                // TODO: Different sphere colors for diffuse and specular?
+                lighting += lights[ i ].color * spheres[ closestIndex ].color * ( diffuse + specular );
+              }
+            }
+            outColor = lighting;
+          }
+          else {
+            outColor = rayDir;
+          }
+        }
+      `,
+      glslVersion: THREE.GLSL3,
+    } )
+  ) );
 
   const renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio( window.devicePixelRatio );
