@@ -7,7 +7,7 @@
   scene.background = new THREE.Color( 0x000009 );
 
   const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 100 );
-  camera.position.set( 0, 0, 1 );
+  camera.position.set( 0, 0, 2 );
 
   scene.add( new THREE.Mesh(
     new THREE.PlaneGeometry( 2, 2 ),
@@ -15,9 +15,7 @@
       uniforms: {
         camera: {
           value: {
-            matrix: new THREE.Matrix4().makeTranslation( -1, 0, 2 )
-            .multiply( new THREE.Matrix4().makeRotationY( -0.5 ) )
-            .transpose(),
+            matrix: camera.matrixWorld,
           },
         },
         lights: {
@@ -64,7 +62,8 @@
         uniform mat4 projectionMatrix;
 
         void main() {
-          screenPos = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+          // screenPos = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+          screenPos = vec4( position, 1.0 );
           gl_Position = screenPos;
         }
       `,
@@ -155,8 +154,11 @@
         
         void main() {
 
-          vec3 rayPos = ( vec4( 0.0, 0.0, 0.0, 1.0 ) * camera.matrix ).xyz;
-          vec3 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * camera.matrix ).xyz;
+          // TODO: Do this once before the shader
+          mat4 cameraMatrix = transpose( camera.matrix );
+
+          vec3 rayPos = ( vec4( 0.0, 0.0, 0.0, 1.0 ) * cameraMatrix ).xyz;
+          vec3 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * cameraMatrix ).xyz;
 
           Ray ray = Ray( rayPos, rayDir );
 
@@ -223,9 +225,9 @@
   }
   window.onresize();
 
-  // const controls = new OrbitControls( camera, renderer.domElement );
-  // controls.target.set( 0, 0, 0 );
-  // controls.update();
-  // controls.addEventListener( 'change', render );
+  const controls = new OrbitControls( camera, renderer.domElement );
+  controls.target.set( 0, 0, 0 );
+  controls.update();
+  controls.addEventListener( 'change', render );
 
 </script>
