@@ -1,6 +1,7 @@
 <link rel="stylesheet" href="../grid.css">
 <script type="module">
   import * as THREE from '../lib/three.module.js';
+  import { GUI } from '../lib/dat.gui.module.js';
   import { OrbitControls } from '../lib/controls/OrbitControls.js';
 
   const World = {
@@ -251,5 +252,41 @@
   controls.target.set( 0, 0, 0 );
   controls.update();
   controls.addEventListener( 'change', render );
+
+
+  const gui = new GUI( { width: 200 } );
+
+  World.lights.forEach( ( light, index ) => {
+    const folder = gui.addFolder( 'Light ' + index );
+    folder.open();
+
+    folder.add( light.pos, 'x' ).min( -3 ).max( 3 ).step( 0.1 ).onChange( render );
+    folder.add( light.pos, 'y' ).min( -3 ).max( 3 ).step( 0.1 ).onChange( render );
+    folder.add( light.pos, 'z' ).min( -3 ).max( 3 ).step( 0.1 ).onChange( render );
+  } );
+
+  // for ( let cat in World ) {
+  //   const folder = gui.addFolder( cat );
+  //   folder.open();
+
+  //   scene[ cat ].forEach( ( item, index ) => {
+  //     const itemFolder = folder.addFolder( index );
+  //     itemFolder.open();
+      
+  //     for ( let varName in item ) {
+  //       if ( varName == 'pos' ) {
+  //         const posFolder = itemFolder.addFolder( 'pos' );
+  //         posFolder.open();
+
+  //         for ( let coord in item[ varName ] ) {
+  //           posFolder.add( item.pos, coord ).min( -3 ).max( 3 ).step( 0.1 ).onChange( render );
+  //         }
+  //       }
+  //       if ( varName == 'radius' ) {
+  //         itemFolder.add( item, 'radius' ).min( 0.01 ).max( 2 ).step( 0.01 ).onChange( render );
+  //       }
+  //     }
+  //   } );
+  // }
 
 </script>
