@@ -3,6 +3,48 @@
   import * as THREE from '../lib/three.module.js';
   import { OrbitControls } from '../lib/controls/OrbitControls.js';
 
+  const World = {
+    lights: [
+      {
+        pos: new THREE.Vector3( -2, 5, 5 ),
+        color: new THREE.Vector3( 1, 0, 0 ),
+      },
+      {
+        pos: new THREE.Vector3( 2, 2, 5 ),
+        color: new THREE.Vector3( 0, 1, 0 ),
+      },
+      {
+        pos: new THREE.Vector3( 1, 1, 6 ),
+        color: new THREE.Vector3( 0, 0, 1 ),
+      },
+    ],
+    spheres: [
+      {
+        inverseTransform: new THREE.Matrix4().makeTranslation( 0.5, 0, 0 )
+          .multiply( new THREE.Matrix4().makeRotationZ( 0.4 ) )
+          .multiply( new THREE.Matrix4().makeScale( 0.5, 1, 0.5 ) )
+          .invert().transpose(),
+        color: new THREE.Vector3( 0.7, 0.7, 0.7 ),
+      },
+      {
+        inverseTransform: new THREE.Matrix4().makeTranslation( -0.5, 0, 0 )
+          .multiply( new THREE.Matrix4().makeRotationZ( -0.4 ) )
+          .multiply( new THREE.Matrix4().makeScale( 0.5, 0.75, 0.5 ) )
+          .invert().transpose(),
+        color: new THREE.Vector3( 0.5, 0.5, 0.5 ),
+      },
+      {
+        inverseTransform: new THREE.Matrix4().makeTranslation( 0, 0, 1 )
+          .multiply( new THREE.Matrix4().makeRotationX( 0.6 ) )
+          .multiply( new THREE.Matrix4().makeRotationY( 0.5 ) )
+          .multiply( new THREE.Matrix4().makeRotationZ( 0.4 ) )
+          .multiply( new THREE.Matrix4().makeScale( 0.3, 0.2, 0.1 ) )
+          .invert().transpose(),
+        color: new THREE.Vector3( 0.6, 0.6, 0.6 ),
+      },
+    ],
+  };
+
   const scene = new THREE.Scene();
   scene.background = new THREE.Color( 0x000009 );
 
@@ -13,54 +55,9 @@
     new THREE.PlaneGeometry( 2, 2 ),
     new THREE.RawShaderMaterial( {
       uniforms: {
-        camera: {
-          value: {
-            matrix: camera.matrixWorld,
-          },
-        },
-        lights: {
-          value: [
-            {
-              pos: new THREE.Vector3( -2, 5, 5 ),
-              color: new THREE.Vector3( 1, 0, 0 ),
-            },
-            {
-              pos: new THREE.Vector3( 2, 2, 5 ),
-              color: new THREE.Vector3( 0, 1, 0 ),
-            },
-            {
-              pos: new THREE.Vector3( 1, 1, 6 ),
-              color: new THREE.Vector3( 0, 0, 1 ),
-            },
-          ]
-        },
-        spheres: {
-          value: [
-            {
-              inverseTransform: new THREE.Matrix4().makeTranslation( 0.5, 0, 0 )
-                .multiply( new THREE.Matrix4().makeRotationZ( 0.4 ) )
-                .multiply( new THREE.Matrix4().makeScale( 0.5, 1, 0.5 ) )
-                .invert().transpose(),
-              color: new THREE.Vector3( 0.7, 0.7, 0.7 ),
-            },
-            {
-              inverseTransform: new THREE.Matrix4().makeTranslation( -0.5, 0, 0 )
-                .multiply( new THREE.Matrix4().makeRotationZ( -0.4 ) )
-                .multiply( new THREE.Matrix4().makeScale( 0.5, 0.75, 0.5 ) )
-                .invert().transpose(),
-              color: new THREE.Vector3( 0.5, 0.5, 0.5 ),
-            },
-            {
-              inverseTransform: new THREE.Matrix4().makeTranslation( 0, 0, 1 )
-                .multiply( new THREE.Matrix4().makeRotationX( 0.6 ) )
-                .multiply( new THREE.Matrix4().makeRotationY( 0.5 ) )
-                .multiply( new THREE.Matrix4().makeRotationZ( 0.4 ) )
-                .multiply( new THREE.Matrix4().makeScale( 0.3, 0.2, 0.1 ) )
-                .invert().transpose(),
-              color: new THREE.Vector3( 0.6, 0.6, 0.6 ),
-            },
-          ]
-        },
+        camera: { value: { matrix: camera.matrixWorld, }, },
+        lights: { value: World.lights },
+        spheres: { value: World.spheres },
       },
       vertexShader: /*glsl*/`
         in vec3 position;
@@ -197,13 +194,13 @@
               Hit closestLightHit = Hit( -1.0, vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ) );
               int closestLightIndex = -1;
 
-              for ( int i = 0; i < NUM_SPHERES; i ++ ) {
-                if ( i != closestIndex ) {
-                  Hit lightHit = getSphereHit( lightRay, spheres[ i ] );
+              for ( int j = 0; j < NUM_SPHERES; j ++ ) {
+                if ( j != closestIndex ) {
+                  Hit lightHit = getSphereHit( lightRay, spheres[ j ] );
 
                   if ( closestLightHit.time == -1.0 || ( lightHit.time > 0.0 && lightHit.time < closestLightHit.time ) ) {
                     closestLightHit = lightHit;
-                    closestLightIndex = i;
+                    closestLightIndex = j;
                   }
                 }
               }
