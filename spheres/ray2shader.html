@@ -259,6 +259,18 @@
   const renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio( window.devicePixelRatio );
 
+  function animate( now ) {
+
+    lights[ 1 ].position.set( Math.cos( now / 1000 ), Math.sin( now / 500 ), 5 );
+
+    spheres[ 3 ].object.rotation.set( now / 400, now / 300, now / 1000 );
+
+    render();
+
+    requestAnimationFrame( animate );
+  }
+  requestAnimationFrame( animate );
+
   function render() {
 
     uniforms.lights.value = lights;
@@ -280,14 +292,14 @@
     camera.updateProjectionMatrix();
 
     renderer.setSize( window.innerWidth, window.innerHeight );
-    render();
+    // render();
   }
   window.onresize();
 
   const controls = new OrbitControls( camera, renderer.domElement );
   controls.target.set( 0, 0, 0 );
   controls.update();
-  controls.addEventListener( 'change', render );
+  // controls.addEventListener( 'change', render );
 
 
   const gui = new GUI( { width: 200 } );
