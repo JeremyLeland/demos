@@ -155,9 +155,13 @@
           float time;
           vec3 position;
           vec3 normal;
+          int sphereIndex;
         };
 
-        Hit getSphereHit( Ray ray, Sphere sphere ) {
+        Hit getSphereHit( Ray ray, int sphereIndex ) {
+
+          Sphere sphere = spheres[ sphereIndex ];
+
           vec3 objectRayPos = ( vec4( ray.position, 1.0 ) * sphere.inverseTransform ).xyz;
 
           // Don't normalize -- see https://graphicscompendium.com/raytracing/12-transformations
@@ -169,7 +173,7 @@
           float b = 2.0 * dot( objectRayDir, v );
           float c = dot( v, v ) - 1.0;
           
-          Hit hit = Hit( solveQuadratic( a, b, c ), vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ) );
+          Hit hit = Hit( solveQuadratic( a, b, c ), vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ), -1 );
 
           if ( hit.time > 0.0 ) {
             hit.position = ray.position + ray.dir * hit.time;
@@ -179,9 +183,27 @@
             mat4 normalMatrix = transpose( sphere.inverseTransform );
             vec3 objectHitPos = objectRayPos + objectRayDir * hit.time;
             hit.normal = normalize( vec4( objectHitPos, 0.0 ) * normalMatrix ).xyz;
+
+            hit.sphereIndex = sphereIndex;
           }
 
           return hit;
+        }
+
+        Hit getClosestHit( Ray ray, int skipIndex ) {
+          Hit closestHit = Hit( -1.0, vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ), -1 );
+
+          for ( int i = 0; i < NUM_SPHERES; i ++ ) {
+            if ( i != skipIndex ) {
+              Hit hit = getSphereHit( ray, i );
+              
+              if ( hit.time > 0.0 && ( closestHit.time == -1.0 || hit.time < closestHit.time ) ) {
+                closestHit = hit;
+              }
+            }
+          }
+
+          return closestHit;
         }
         
         void main() {
@@ -194,17 +216,7 @@
 
           Ray ray = Ray( rayPos, rayDir );
 
-          Hit closestHit = Hit( -1.0, vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ) );
-          int closestIndex = -1;
-
-          for ( int i = 0; i < NUM_SPHERES; i ++ ) {
-            Hit hit = getSphereHit( ray, spheres[ i ] );
-            
-            if ( closestHit.time == -1.0 || ( hit.time > 0.0 && hit.time < closestHit.time ) ) {
-              closestHit = hit;
-              closestIndex = i;
-            }
-          }
+          Hit closestHit = getClosestHit( ray, -1 );
 
           if ( closestHit.time > 0.0 ) { 
             vec3 N = closestHit.normal;
@@ -217,21 +229,9 @@
 
               Ray lightRay = Ray( closestHit.position, L );
 
-              Hit closestLightHit = Hit( -1.0, vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ) );
-              int closestLightIndex = -1;
+              Hit closestLightHit = getClosestHit( lightRay, closestHit.sphereIndex );
 
-              for ( int j = 0; j < NUM_SPHERES; j ++ ) {
-                if ( j != closestIndex ) {
-                  Hit lightHit = getSphereHit( lightRay, spheres[ j ] );
-
-                  if ( lightHit.time > 0.0 && ( closestLightHit.time == -1.0 || lightHit.time < closestLightHit.time ) ) {
-                    closestLightHit = lightHit;
-                    closestLightIndex = j;
-                  }
-                }
-              }
-
-              if ( NdotL > 0.0 && closestLightIndex == -1 ) {
+              if ( NdotL > 0.0 && closestLightHit.sphereIndex == -1 ) {
                 vec3 V = normalize( ray.position - closestHit.position );
                 vec3 H = normalize( L + V );
                 
@@ -242,7 +242,7 @@
                 float specular = ( NdotL > 0.0 ) ? pow( max( 0.0, NdotH ), shininess ) : 0.0;
 
                 // TODO: Different sphere colors for diffuse and specular?
-                lighting += lights[ i ].color * spheres[ closestIndex ].color * ( diffuse + specular );
+                lighting += lights[ i ].color * spheres[ closestHit.sphereIndex ].color * ( diffuse + specular );
               }
             }
             outColor = lighting;
