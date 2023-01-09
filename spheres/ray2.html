@@ -47,6 +47,11 @@
         inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 0, -0.5, 2 ), multMatrices( rotateMatrix( 0, 0, -0.4 ), scaleMatrix( 0.1, 0.2, 0.1 ) ) ) ),
         color: { x: 1, y: 1, z: 0 },
       },
+      {
+        pos: { x: 0, y: -0.5, z: 2 },
+        inverseMatrix: inverseMatrix( scaleMatrix( 7, 7, 7 ) ),
+        color: { x: 0, y: 0.5, z: 1 },
+      },
     ],
   };
 
@@ -93,16 +98,22 @@
         const N = hit.norm;
         const L = normalize( sub( light.pos, hit.pos ) );
         L.w = 0;    // TODO: More elegant way to handle this?
+
+        // TODO: Calculate this as part of figuring out L, maybe magnitude of vector before we normalize it?
+        const lightDist = Math.hypot( hit.pos.x - light.pos.x, hit.pos.y - light.pos.y, hit.pos.z - light.pos.z );
+
         const NdotL = dot( N, L );
 
         const lightRay = { pos: hit.pos, dir: L };
+
+        // TODO: Can't just ignore ourselves -- if we are inside sphere, front of sphere may block back of sphere from getting outside light
         const lightHits = scene.spheres.filter( s => s != hit.sphere ).map( sphere => getSphereHit( lightRay, sphere ) );
         const lightHit = lightHits.reduce( 
           ( closest, h ) => 0 < h.time && h.time < closest.time ? h : closest, 
-          { time: Infinity } 
+          { time: lightDist } 
         );
         
-        if ( NdotL > 0 && lightHit.time == Infinity ) {
+        if ( NdotL > 0 && lightHit.time == lightDist ) {
           const V = normalize( sub( ray.pos, hit.pos ) );
           const H = normalize( add( L, V ) );
           
@@ -114,6 +125,9 @@
 
           color = add( color, mult( multv( light.color, hit.sphere.color ), diffuse ) );
           color = add( color, mult( light.color, specular ) );
+        }
+        else {
+          // debugger
         }
       } );
 
@@ -136,20 +150,69 @@
     const a = dot( objectRayDir, objectRayDir );  // can be 1 if dir is normalized
     const b = 2 * dot( objectRayDir, v );
     const c = dot( v, v ) - 1;  // - radius^2, hardcoding to 1 for now
+
+    const quad = solveQuadratic( a, b, c );
     
-    const hit = { time: solveQuadratic( a, b, c ) };
+    if ( quad ) {
+      if ( quad.t1 < 0 ) {
+        return { time: Infinity };
+      }
+      else if ( quad.t0 < 0 ) {
+        // hit.sphere = sphere;
+        const pos = add( ray.pos, mult( ray.dir, quad.t1 ) );
 
-    if ( hit.time < Infinity ) {
-      hit.sphere = sphere;
-      hit.pos = add( ray.pos, mult( ray.dir, hit.time ) );
+        const normalMatrix = transposeMatrix( sphere.inverseMatrix );
+        const objectHitPos = add( objectRayPos, mult( objectRayDir, quad.t1 ) );
+        const norm = normalize( mult4x4( objectHitPos, normalMatrix ) );
 
-      // TODO: Way to get normal without finding the hitPos twice?
-      const normalMatrix = transposeMatrix( sphere.inverseMatrix );
-      const objectHitPos = add( objectRayPos, mult( objectRayDir, hit.time ) );
-      hit.norm = normalize( mult4x4( objectHitPos, normalMatrix ) );   // was sub( objectHitPos, sphere.pos )
+        norm.x = -norm.x;
+        norm.y = -norm.y;
+        norm.z = -norm.z;
+
+        return {
+          time: quad.t1,
+          sphere: sphere,
+          pos: pos,
+          norm: norm, 
+        }
+      }
+      else {
+        // hit.sphere = sphere;
+        const pos = add( ray.pos, mult( ray.dir, quad.t0 ) );
+
+        const normalMatrix = transposeMatrix( sphere.inverseMatrix );
+        const objectHitPos = add( objectRayPos, mult( objectRayDir, quad.t0 ) );
+        const norm = normalize( mult4x4( objectHitPos, normalMatrix ) );
+
+        return {
+          time: quad.t0,
+          sphere: sphere,
+          pos: pos,
+          norm: norm, 
+        }
+      }
+
+      // TODO: Differentiate between hitting inside and outside of sphere, and set normal accordingly
+
+      // return x0 < 0 ? x1 : Math.min( x0, x1 );
+
+      // const hit = { time:  };
+
+      // if ( hit.time < Infinity ) {
+      //   hit.sphere = sphere;
+      //   hit.pos = add( ray.pos, mult( ray.dir, hit.time ) );
+
+      //   // TODO: Way to get normal without finding the hitPos twice?
+      //   const normalMatrix = transposeMatrix( sphere.inverseMatrix );
+      //   const objectHitPos = add( objectRayPos, mult( objectRayDir, hit.time ) );
+      //   hit.norm = normalize( mult4x4( objectHitPos, normalMatrix ) );   // was sub( objectHitPos, sphere.pos )
+      // }
+
+      // return hit;
     }
-
-    return hit;
+    else {
+      return { time: Infinity };
+    }
   }
 
   function render() {
@@ -207,14 +270,20 @@
     const discr = b * b - 4 * a * c; 
 
     if ( discr < 0 ) {
-      return Infinity;
+      return null;
     } 
     else {
       const sign = b < 0 ? -1 : 1;
       const q = -0.5 * ( b + sign * Math.sqrt( discr ) );
+
       const x0 = q / a;
       const x1 = c / q;
-      return x0 < 0 ? x1 : Math.min( x0, x1 );
+
+      return {
+        t0: Math.min( x0, x1 ),
+        t1: Math.max( x0, x1 ),
+      }
+      // return x0 < 0 ? x1 : Math.min( x0, x1 );
     } 
   }
 
