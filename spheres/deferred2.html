@@ -31,7 +31,7 @@
   camera.position.set( 0, 0, 3 );
 
   // https://mathworld.wolfram.com/QuadraticEquation.html
-  const SolveQuadratic = /*glsl*/`
+  const SolveQuadratic = /* glsl */ `
     vec2 solveQuadratic( float a, float b, float c ) {
       float discr = b * b - 4.0 * a * c; 
 
@@ -44,6 +44,49 @@
         float x1 = c / q;
         return vec2( min( x0, x1 ), max( x0, x1 ) );
       }
+    }
+  `;
+
+  const SphereHit = /* glsl */ `
+    ${ SolveQuadratic }
+
+    struct Hit {
+      float time;
+      vec3 position;
+      vec3 normal;
+    };
+
+    Hit getSphereHit( vec3 rayPos, vec3 rayDir ) {
+      vec3 objectRayPos = ( vec4( rayPos, 1.0 ) * sphereInverseTransform ).xyz;
+
+      // Don't normalize -- see https://graphicscompendium.com/raytracing/12-transformations
+      vec3 objectRayDir = ( vec4( rayDir, 0.0 ) * sphereInverseTransform ).xyz;
+
+      float a = dot( objectRayDir, objectRayDir );
+      float b = 2.0 * dot( objectRayDir, objectRayPos );
+      float c = dot( objectRayPos, objectRayPos ) - 1.0;
+      
+      Hit hit = Hit( solveQuadratic( a, b, c ).x, vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ) );
+
+      if ( hit.time > 0.0 ) {
+        hit.position = rayPos + rayDir * hit.time;
+        
+        mat4 normalMatrix = transpose( sphereInverseTransform );
+        vec3 objectHitPos = objectRayPos + objectRayDir * hit.time;
+        hit.normal = normalize( vec4( objectHitPos, 0.0 ) * normalMatrix ).xyz;
+      }
+
+      return hit;
+    }
+  `;
+
+  const VertScreenPos = /* glsl */ `
+    in vec3 position;
+    out vec4 screenPos;
+
+    void main() {
+      screenPos = vec4( position, 1.0 );
+      gl_Position = screenPos;
     }
   `;
 
@@ -72,9 +115,7 @@
 
     struct Camera {
       mat4 matrix;
-    };
-
-    uniform Camera camera;
+    } camera;
 
     uniform mat4 sphereInverseTransform;
     uniform vec3 lightPos;
@@ -84,46 +125,7 @@
 
     layout(location = 0) out vec4 gMask;
 
-    ${ SolveQuadratic }
-
-    struct Ray {
-      vec3 position;
-      vec3 dir;
-    };
-    
-    struct Hit {
-      float time;
-      vec3 position;
-      vec3 normal;
-    };
-
-    Hit getSphereHit( Ray ray ) {
-
-      vec3 objectRayPos = ( vec4( ray.position, 1.0 ) * sphereInverseTransform ).xyz;
-
-      // Don't normalize -- see https://graphicscompendium.com/raytracing/12-transformations
-      vec3 objectRayDir = ( vec4( ray.dir, 0.0 ) * sphereInverseTransform ).xyz;
-
-      vec3 v = objectRayPos;
-
-      float a = dot( objectRayDir, objectRayDir );
-      float b = 2.0 * dot( objectRayDir, v );
-      float c = dot( v, v ) - 1.0;
-      
-      Hit hit = Hit( solveQuadratic( a, b, c ).x, vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ) );
-
-      if ( hit.time > 0.0 ) {
-        hit.position = ray.position + ray.dir * hit.time;
-        // hit.norm = normalize( hit.pos );
-
-        // TODO: Way to get normal without finding the hitPos twice?
-        mat4 normalMatrix = transpose( sphereInverseTransform );
-        vec3 objectHitPos = objectRayPos + objectRayDir * hit.time;
-        hit.normal = normalize( vec4( objectHitPos, 0.0 ) * normalMatrix ).xyz;
-      }
-
-      return hit;
-    }
+    ${ SphereHit }
     
     void main() {
       vec3 position = texture( tPosition, vUv ).rgb;
@@ -133,9 +135,7 @@
       float lightDist = length( toLight );
       vec3 L = normalize( toLight );
 
-      Ray lightRay = Ray( position, L );
-
-      Hit lightHit = getSphereHit( lightRay );
+      Hit lightHit = getSphereHit( position, L );
 
       if ( 0.0 < lightHit.time && lightHit.time < lightDist ) {
         gMask = vec4( 1.0, 0.0, 0.0, 0.0 );
@@ -157,19 +157,7 @@
         0, 0, 0, 1,
       ) },
     },
-    vertexShader: /*glsl*/`
-      in vec3 position;
-      out vec4 screenPos;
-
-      uniform mat4 modelViewMatrix;
-      uniform mat4 projectionMatrix;
-
-      void main() {
-        // screenPos = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-        screenPos = vec4( position, 1.0 );
-        gl_Position = screenPos;
-      }
-    `,
+    vertexShader: VertScreenPos,
     fragmentShader: /*glsl*/`
       precision highp float;
       precision highp int;
@@ -187,46 +175,7 @@
       layout(location = 0) out vec4 gPosition;
       layout(location = 1) out vec4 gNormal;
 
-      ${ SolveQuadratic }
-
-      struct Ray {
-        vec3 position;
-        vec3 dir;
-      };
-      
-      struct Hit {
-        float time;
-        vec3 position;
-        vec3 normal;
-      };
-
-      Hit getSphereHit( Ray ray ) {
-
-        vec3 objectRayPos = ( vec4( ray.position, 1.0 ) * sphereInverseTransform ).xyz;
-
-        // Don't normalize -- see https://graphicscompendium.com/raytracing/12-transformations
-        vec3 objectRayDir = ( vec4( ray.dir, 0.0 ) * sphereInverseTransform ).xyz;
-
-        vec3 v = objectRayPos;
-
-        float a = dot( objectRayDir, objectRayDir );
-        float b = 2.0 * dot( objectRayDir, v );
-        float c = dot( v, v ) - 1.0;
-        
-        Hit hit = Hit( solveQuadratic( a, b, c ).x, vec3( 0.0, 0.0, 0.0 ), vec3( 0.0, 0.0, 0.0 ) );
-
-        if ( hit.time > 0.0 ) {
-          hit.position = ray.position + ray.dir * hit.time;
-          // hit.norm = normalize( hit.pos );
-
-          // TODO: Way to get normal without finding the hitPos twice?
-          mat4 normalMatrix = transpose( sphereInverseTransform );
-          vec3 objectHitPos = objectRayPos + objectRayDir * hit.time;
-          hit.normal = normalize( vec4( objectHitPos, 0.0 ) * normalMatrix ).xyz;
-        }
-
-        return hit;
-      }
+      ${ SphereHit }      
       
       void main() {
 
@@ -236,9 +185,7 @@
         vec3 rayPos = ( vec4( 0.0, 0.0, 0.0, 1.0 ) * cameraMatrix ).xyz;
         vec3 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * cameraMatrix ).xyz;
 
-        Ray ray = Ray( rayPos, rayDir );
-
-        Hit hit = getSphereHit( ray );
+        Hit hit = getSphereHit( rayPos, rayDir );
 
         if ( hit.time > 0.0 ) { 
           gPosition = vec4( hit.position, 1.0 );
