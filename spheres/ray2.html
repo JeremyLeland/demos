@@ -86,7 +86,7 @@
   function getColor( ray ) {
    
     const hits = scene.spheres.map( sphere => getSphereHit( ray, sphere ) );
-    const hit = hits.reduce( ( closest, h ) => h.time < closest.time ? h : closest );
+    const hit = hits.reduce( ( closest, h ) => 0 < h.time && h.time < closest.time ? h : closest, { time: Infinity } );
     
     if ( hit.pos ) {
       let color = { x: 0.01, y: 0.01, z: 0.01 };
@@ -139,7 +139,6 @@
 
   // See https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
   function getSphereHit( ray, sphere ) {
-    
     const objectRayPos = mult4x4( ray.pos, sphere.inverseMatrix );
 
     // Don't normalize? See https://graphicscompendium.com/raytracing/12-transformations
@@ -151,68 +150,27 @@
     const b = 2 * dot( objectRayDir, v );
     const c = dot( v, v ) - 1;  // - radius^2, hardcoding to 1 for now
 
-    const quad = solveQuadratic( a, b, c );
+    const times = solveQuadratic( a, b, c );
     
-    if ( quad ) {
-      if ( quad.t1 < 0 ) {
-        return { time: Infinity };
+    const hit = { time: -1 };
+
+    if ( times.y > 0 ) {
+      hit.sphere = sphere;
+      hit.time = times.x < 0 ? times.y : times.x;
+      hit.pos = add( ray.pos, mult( ray.dir, hit.time ) );
+
+      const normalMatrix = transposeMatrix( sphere.inverseMatrix );
+      const objectHitPos = add( objectRayPos, mult( objectRayDir, hit.time ) );
+      hit.norm = normalize( mult4x4( objectHitPos, normalMatrix ) );
+
+      if ( times.x < 0 ) {
+        hit.norm.x = -hit.norm.x;
+        hit.norm.y = -hit.norm.y;
+        hit.norm.z = -hit.norm.z;
       }
-      else if ( quad.t0 < 0 ) {
-        // hit.sphere = sphere;
-        const pos = add( ray.pos, mult( ray.dir, quad.t1 ) );
-
-        const normalMatrix = transposeMatrix( sphere.inverseMatrix );
-        const objectHitPos = add( objectRayPos, mult( objectRayDir, quad.t1 ) );
-        const norm = normalize( mult4x4( objectHitPos, normalMatrix ) );
-
-        norm.x = -norm.x;
-        norm.y = -norm.y;
-        norm.z = -norm.z;
-
-        return {
-          time: quad.t1,
-          sphere: sphere,
-          pos: pos,
-          norm: norm, 
-        }
-      }
-      else {
-        // hit.sphere = sphere;
-        const pos = add( ray.pos, mult( ray.dir, quad.t0 ) );
-
-        const normalMatrix = transposeMatrix( sphere.inverseMatrix );
-        const objectHitPos = add( objectRayPos, mult( objectRayDir, quad.t0 ) );
-        const norm = normalize( mult4x4( objectHitPos, normalMatrix ) );
-
-        return {
-          time: quad.t0,
-          sphere: sphere,
-          pos: pos,
-          norm: norm, 
-        }
-      }
-
-      // TODO: Differentiate between hitting inside and outside of sphere, and set normal accordingly
-
-      // return x0 < 0 ? x1 : Math.min( x0, x1 );
-
-      // const hit = { time:  };
-
-      // if ( hit.time < Infinity ) {
-      //   hit.sphere = sphere;
-      //   hit.pos = add( ray.pos, mult( ray.dir, hit.time ) );
-
-      //   // TODO: Way to get normal without finding the hitPos twice?
-      //   const normalMatrix = transposeMatrix( sphere.inverseMatrix );
-      //   const objectHitPos = add( objectRayPos, mult( objectRayDir, hit.time ) );
-      //   hit.norm = normalize( mult4x4( objectHitPos, normalMatrix ) );   // was sub( objectHitPos, sphere.pos )
-      // }
-
-      // return hit;
     }
-    else {
-      return { time: Infinity };
-    }
+        
+    return hit;
   }
 
   function render() {
@@ -267,10 +225,12 @@
 
   // https://mathworld.wolfram.com/QuadraticEquation.html
   function solveQuadratic( a, b, c ) {
-    const discr = b * b - 4 * a * c; 
+    const discr = b * b - 4 * a * c;
+
+    // NOTE: Members are 'x' and 'y' to match syntax of shader version
 
     if ( discr < 0 ) {
-      return null;
+      return { x: -1, y: -1 };
     } 
     else {
       const sign = b < 0 ? -1 : 1;
@@ -280,10 +240,9 @@
       const x1 = c / q;
 
       return {
-        t0: Math.min( x0, x1 ),
-        t1: Math.max( x0, x1 ),
+        x: Math.min( x0, x1 ),
+        y: Math.max( x0, x1 ),
       }
-      // return x0 < 0 ? x1 : Math.min( x0, x1 );
     } 
   }
 
