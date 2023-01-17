@@ -123,7 +123,12 @@
           const diffuse = Math.max( 0, NdotL );
           const specular = ( NdotL > 0 ) ? Math.pow( Math.max( 0, NdotH ), shininess ) : 0;
 
-          color = add( color, mult( multv( light.color, hit.sphere.color ), diffuse ) );
+          const scale = 1;
+          const pattern = fmod( hit.theta * scale, 1 ) > 0.5 ^ fmod( hit.phi * scale, 1 ) > 0.5;
+
+          const sphereColor = multv( hit.sphere.color, pattern ? { x: 0.8, y: 0.8, z: 0.8 } : { x: 1, y: 1, z: 1 } );
+
+          color = add( color, mult( multv( light.color, sphereColor ), diffuse ) );
           color = add( color, mult( light.color, specular ) );
         }
         else {
@@ -168,6 +173,9 @@
         hit.norm.y = -hit.norm.y;
         hit.norm.z = -hit.norm.z;
       }
+
+      hit.theta = Math.acos( objectHitPos.z ) / Math.PI;
+      hit.phi = Math.atan2( objectHitPos.y, objectHitPos.x ) / Math.PI;
     }
         
     return hit;
@@ -244,6 +252,10 @@
         y: Math.max( x0, x1 ),
       }
     } 
+  }
+
+  function fmod( a, b ) {
+    return a - Math.floor( a / b ) * b;
   }
 
   function dot( a, b ) {
