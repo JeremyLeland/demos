@@ -29,7 +29,7 @@
     spheres: [
       {
         pos: { x: 0, y: 0, z: 0 },
-        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 0, 0, 0 ), multMatrices( rotateMatrix( 0, 0, 1 ), scaleMatrix( 1, 1, 1 ) ) ) ),
+        inverseMatrix: inverseMatrix( multMatrices( translateMatrix( 0, 0, 0 ), multMatrices( rotateMatrix( 0, 0, 0 ), scaleMatrix( 1, 1, 1 ) ) ) ),
         color: { x: 0.5, y: 0.5, z: 0.5 },
       },
       {
@@ -123,8 +123,8 @@
           const diffuse = Math.max( 0, NdotL );
           const specular = ( NdotL > 0 ) ? Math.pow( Math.max( 0, NdotH ), shininess ) : 0;
 
-          const scale = 1;
-          const pattern = fmod( hit.theta * scale, 1 ) > 0.5 ^ fmod( hit.phi * scale, 1 ) > 0.5;
+          const scale = 4;
+          const pattern = hit.theta * scale % 1 > 0.5 ^ hit.phi * scale % 1 > 0.5;
 
           const sphereColor = multv( hit.sphere.color, pattern ? { x: 0.8, y: 0.8, z: 0.8 } : { x: 1, y: 1, z: 1 } );
 
@@ -174,8 +174,8 @@
         hit.norm.z = -hit.norm.z;
       }
 
-      hit.theta = Math.acos( objectHitPos.z ) / Math.PI;
-      hit.phi = Math.atan2( objectHitPos.y, objectHitPos.x ) / Math.PI;
+      hit.theta = 0.5 + Math.acos( objectHitPos.y ) / ( 2 * Math.PI );
+      hit.phi = 0.5 + Math.atan2( objectHitPos.z, objectHitPos.x ) / ( 2 * Math.PI );
     }
         
     return hit;
