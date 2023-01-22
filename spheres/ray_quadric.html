@@ -10,7 +10,7 @@
   const scene = {
     camera: {
       fov: 60,
-      matrix: translateMatrix( 0, 0, 3 ),
+      matrix: translateMatrix( 0, 0, 5 ),
     },
     lights: [
       {
@@ -102,14 +102,10 @@
 
     const A = [ 
       1, 0, 0, 0,
-      0, 0, 0, -1,
+      0, -1, 0, 0,
       0, 0, 1, 0,
       0, 0, 0, -1,
     ];
-
-    // float a = dot(D,A*D);
-    // float b = dot(C,A*D) + dot(D,A*C);
-    // float c = dot(C,A*C)
 
     const AxC = mult4x4( C, A );
     const AxD = mult4x4( D, A );
@@ -129,9 +125,11 @@
 
       const normalMatrix = transposeMatrix( sphere.inverseMatrix );
 
-      // TODO: quadric normals
       const objectHitPos = add( objectRayPos, mult( objectRayDir, hit.time ) );
-      hit.norm = normalize( mult4x4( objectHitPos, normalMatrix ) );
+
+      const quadNorm = quadricSurfaceNormal( A, objectHitPos );
+
+      hit.norm = normalize( mult4x4( quadNorm, normalMatrix ) );
 
       if ( times.x < 0 ) {
         hit.norm.x = -hit.norm.x;
@@ -145,6 +143,23 @@
     }
         
     return hit;
+  }
+
+  // See: https://www.shadertoy.com/view/7tlBW8
+  function quadricSurfaceNormal( Q, P ) {
+    const a = Q[ 0 ], b = Q[ 4 ], c = Q[  8 ], d = Q[ 12 ],
+          e = Q[ 1 ], f = Q[ 5 ], g = Q[  9 ], h = Q[ 13 ],
+          i = Q[ 2 ], j = Q[ 6 ], k = Q[ 10 ], l = Q[ 14 ],
+          m = Q[ 3 ], n = Q[ 7 ], o = Q[ 11 ];
+    
+    const x = P.x, y = P.y, z = P.z;
+
+    return {
+      x: ( a + a ) * x + ( b + e ) * y + ( c + i ) * z + d + m,
+      y: ( b + e ) * x + ( f + f ) * y + ( g + j ) * z + h + n,
+      z: ( c + i ) * x + ( g + j ) * y + ( k + k ) * z + l + o,
+      w: 0,
+    };
   }
 
   function render() {
