@@ -78,28 +78,66 @@
 
       mat4 A = mat4(
         1.0, 0.0, 0.0, 0.0,
-        0.0, -1.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, -1.0,
         0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, -1.0
+        0.0, 0.0, 0.0, 0.0
       );
 
       float a = dot( D, A * D );
       float b = dot( C, A * D ) + dot( D, A * C );
       float c = dot( C, A * C );
-      
-      Hit hit = Hit( solveQuadratic( a, b, c ).x, vec4( 0.0 ), vec4( 0.0 ) );
 
-      if ( hit.time > 0.0 ) {
-        hit.position = rayPos + rayDir * hit.time;
-        
-        vec4 objectHitPos = C + D * hit.time;
-        vec4 quadNorm = quadricSurfaceNormal( A, objectHitPos );
+      vec2 times = solveQuadratic( a, b, c );
 
-        mat4 normalMatrix = transpose( sphereInverseTransform );    // TODO: Pass in?
-        hit.normal = normalize( quadNorm * normalMatrix );
+      vec4 fPos = C + D * times.x;
+      vec4 bPos = C + D * times.y;
+
+      if ( any( lessThan( fPos, vec4( -1.0 ) ) ) || any( greaterThan( fPos, vec4( 1.0 ) ) ) ) {
+        times.x = -1.0;
       }
 
-      return hit;
+      if ( any( lessThan( bPos, vec4( -1.0 ) ) ) || any( greaterThan( bPos, vec4( 1.0 ) ) ) ) {
+        times.y = -1.0;
+      }
+
+      float time   = times.x < 0.0 ? times.y : times.x;
+      vec4  objPos = times.x < 0.0 ? bPos    : fPos;
+
+      vec4 objNorm = quadricSurfaceNormal( A, objPos ) * ( times.x < 0.0 ? -1.0 : 1.0 );
+
+      mat4 normalMatrix = transpose( sphereInverseTransform );    // TODO: Pass in?
+
+      return Hit(
+        time, 
+        rayPos + rayDir * time, 
+        normalize( objNorm * normalMatrix )
+      );
+      
+      // hit.normal = normalize( quadNorm * normalMatrix );
+      
+      // Hit hit = Hit( solveQuadratic( a, b, c ).x, vec4( 0.0 ), vec4( 0.0 ) );
+
+      // if ( hit.time > 0.0 ) {
+      //   hit.position = rayPos + rayDir * hit.time;
+        
+      //   // TODO: Can we get everything we need from the objectHitPos? (multiply by transform?)
+      //   //       Or what if we returned a vec4 of objectHitPos.xyz and w = time? (for depth testing of sorts?)
+      //   vec4 objectHitPos = C + D * hit.time;
+
+      //   // TODO: Epsilon to fix precision errors?
+      //   if ( any( lessThan( objectHitPos, vec4( -1.0 ) ) ) ||
+      //        any( greaterThan( objectHitPos, vec4( 1.0 ) ) ) ) {
+      //     hit.time = -1.0;
+      //   }
+      //   else {
+      //     vec4 quadNorm = quadricSurfaceNormal( A, objectHitPos );
+
+      //     mat4 normalMatrix = transpose( sphereInverseTransform );    // TODO: Pass in?
+      //     hit.normal = normalize( quadNorm * normalMatrix );
+      //   }
+      // }
+
+      // return hit;
     }
   `;
 
@@ -142,7 +180,7 @@
       Hit hit = getSphereHit( rayPos, rayDir );
 
       if ( hit.time > 0.0 ) { 
-        outColor = getLighting( rayPos, vec4( -20.0, -20.0, 20.0, 1.0 ), hit.position, hit.normal );
+        outColor = getLighting( rayPos, vec4( 0.0, 0.0, 10.0, 1.0 ), hit.position, hit.normal );
       }
     }
   `;
