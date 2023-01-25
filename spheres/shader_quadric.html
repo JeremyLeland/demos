@@ -34,14 +34,44 @@
       Hit hit = quadricHit( shape, rayPos, rayDir );
 
       if ( hit.time > 0.0 ) { 
-        outColor = getLighting( rayPos, vec4( 0.0, 0.0, 10.0, 1.0 ), hit.position, hit.normal );
+        outColor = getLighting( rayPos, vec4( -5.0, 5.0, 10.0, 1.0 ), hit.position, hit.normal );
+        outColor = hit.normal;
+      }
+      else {
+        discard;
       }
     }
   `;
 
+  function getShapeUniform() {
+
+    const object = new THREE.Object3D();
+    object.position.set( 0, 1, 0 );
+    object.rotation.set( 0, 0, 0 );
+    object.scale.set( 1, 2, 1 );
+    object.updateMatrixWorld();
+
+    const inverseMatrix = object.matrixWorld.invert();
+    const normalMatrix = inverseMatrix.clone().transpose();
+
+    // NOTE: Matrices need to be transposed to be used in GLSL
+    return {
+      Q: new THREE.Matrix4().set(
+        1, 0, 0, 0,
+        0, 0, 0, 1,
+        0, 0, 1, 0,
+        0, 0, 0, -1
+      ),
+      minBounds: new THREE.Vector3( -2, -1, -1.5 ),
+      maxBounds: new THREE.Vector3(  2,  1,  1.1 ),
+      inverseMatrix: inverseMatrix.transpose(),
+      normalMatrix: normalMatrix.transpose(),
+    };
+  }
+
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color( 0x000009 );
+  scene.background = new THREE.Color( 0x111111 );
 
   const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 100 );
   camera.position.set( 0, 0, 5 );
@@ -50,31 +80,8 @@
     new THREE.PlaneGeometry( 2, 2 ),
     new THREE.RawShaderMaterial( {
       uniforms: {
-        camera: { value: { matrix: camera.matrixWorld, }, },
-        shape: {
-          value: {
-            Q: new THREE.Matrix4().set(
-              1, 0, 0, 0,
-              0, 0, 0, 1,
-              0, 0, 1, 0,
-              0, 0, 0, -1
-            ),
-            minBounds: new THREE.Vector3( -2, -1, -1.5 ),
-            maxBounds: new THREE.Vector3(  2,  1,  1.1 ),
-            itMatrix: new THREE.Matrix4().set(
-              1, 0, 0, 0,
-              0, 1, 0, 0,
-              0, 0, 1, 0,
-              0, 0, 0, 1,
-            ),
-            normalMatrix: new THREE.Matrix4().set(
-              1, 0, 0, 0,
-              0, 1, 0, 0,
-              0, 0, 1, 0,
-              0, 0, 0, 1,
-            )
-          },
-        },
+        camera: { value: { matrix: camera.matrixWorld }, },
+        shape: { value: getShapeUniform() },
       },
       vertexShader: Shaders.VertScreenPos,
       fragmentShader: FragMain,

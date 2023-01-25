@@ -64,7 +64,7 @@ export const QuadricHit = /* glsl */ `
     mat4 Q;
     vec3 minBounds;
     vec3 maxBounds;
-    mat4 itMatrix;
+    mat4 inverseMatrix;
     mat4 normalMatrix;
   };
 
@@ -75,8 +75,8 @@ export const QuadricHit = /* glsl */ `
   };
 
   Hit quadricHit( Shape shape, vec4 rayPos, vec4 rayDir ) {
-    vec4 C = rayPos * shape.itMatrix;
-    vec4 D = rayDir * shape.itMatrix;
+    vec4 C = rayPos * shape.inverseMatrix;
+    vec4 D = rayDir * shape.inverseMatrix;
 
     float a = dot( D, shape.Q * D );
     float b = dot( C, shape.Q * D ) + dot( D, shape.Q * C );
