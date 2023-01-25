@@ -3,153 +3,8 @@
   import * as THREE from '../lib/three.module.js';
   import { OrbitControls } from '../lib/controls/OrbitControls.js';
 
-  // https://mathworld.wolfram.com/QuadraticEquation.html
-  const SolveQuadratic = /* glsl */ `
-    vec2 solveQuadratic( float a, float b, float c ) {
-      float discr = b * b - 4.0 * a * c; 
+  import * as Shaders from './QuadricShaders.js';
 
-      if ( discr < 0.0 ) {
-        return vec2( -1.0, -1.0 );
-      } 
-      else {
-        float q = -0.5 * ( b + sign( b ) * sqrt( discr ) );
-        float x0 = q / a;
-        float x1 = c / q;
-        return vec2( min( x0, x1 ), max( x0, x1 ) );
-      }
-    }
-  `;
-
-  // See: https://www.shadertoy.com/view/7tlBW8
-  const QuadraticSurfaceNormal = /* glsl */ `
-    vec4 quadricSurfaceNormal( mat4 Q, vec4 P ) {
-      float a = Q[ 0 ][ 0 ], b = Q[ 0 ][ 1 ], c = Q[ 0 ][ 2 ], d = Q[ 0 ][ 3 ],
-            e = Q[ 1 ][ 0 ], f = Q[ 1 ][ 1 ], g = Q[ 1 ][ 2 ], h = Q[ 1 ][ 3 ],
-            i = Q[ 2 ][ 0 ], j = Q[ 2 ][ 1 ], k = Q[ 2 ][ 2 ], l = Q[ 2 ][ 3 ],
-            m = Q[ 3 ][ 0 ], n = Q[ 3 ][ 1 ], o = Q[ 3 ][ 2 ];
-      
-      float x = P.x, y = P.y, z = P.z;
-
-      return vec4(
-        ( a + a ) * x + ( b + e ) * y + ( c + i ) * z + d + m,
-        ( b + e ) * x + ( f + f ) * y + ( g + j ) * z + h + n,
-        ( c + i ) * x + ( g + j ) * y + ( k + k ) * z + l + o,
-        0.0
-      );
-    }
-  `;
-
-  const Lighting = /* glsl */ `
-    vec4 getLighting( vec4 rayPos, vec4 lightPos, vec4 position, vec4 normal ) {
-      vec4 N = normal;
-      vec4 L = normalize( lightPos - position );
-      float NdotL = dot( N, L );
-
-      if ( NdotL > 0.0 ) {
-        vec4 V = normalize( rayPos - position );
-        vec4 H = normalize( L + V );
-        
-        float NdotH = dot( N, H );
-        float shininess = 2000.0;
-        
-        float diffuse = max( 0.0, NdotL );
-        float specular = ( NdotL > 0.0 ) ? pow( max( 0.0, NdotH ), shininess ) : 0.0;
-
-        // TODO: Colored light
-        return vec4( diffuse + specular );
-      }
-    }
-  `;
-
-  const SphereHit = /* glsl */ `
-    ${ SolveQuadratic }
-    ${ QuadraticSurfaceNormal }
-
-    struct Hit {
-      float time;
-      vec4 position;
-      vec4 normal;
-    };
-
-    Hit getSphereHit( vec4 rayPos, vec4 rayDir ) {
-      // Don't normalize dir -- see https://graphicscompendium.com/raytracing/12-transformations
-      vec4 C = rayPos * sphereInverseTransform;
-      vec4 D = rayDir * sphereInverseTransform;
-
-      mat4 A = mat4(
-        1.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, -1.0,
-        0.0, 0.0, 1.0, 0.0,
-        0.0, 0.0, 0.0, 0.0
-      );
-
-      float a = dot( D, A * D );
-      float b = dot( C, A * D ) + dot( D, A * C );
-      float c = dot( C, A * C );
-
-      vec2 times = solveQuadratic( a, b, c );
-
-      vec4 fPos = C + D * times.x;
-      vec4 bPos = C + D * times.y;
-
-      if ( any( lessThan( fPos, vec4( -1.0 ) ) ) || any( greaterThan( fPos, vec4( 1.0 ) ) ) ) {
-        times.x = -1.0;
-      }
-
-      if ( any( lessThan( bPos, vec4( -1.0 ) ) ) || any( greaterThan( bPos, vec4( 1.0 ) ) ) ) {
-        times.y = -1.0;
-      }
-
-      float time   = times.x < 0.0 ? times.y : times.x;
-      vec4  objPos = times.x < 0.0 ? bPos    : fPos;
-
-      vec4 objNorm = quadricSurfaceNormal( A, objPos ) * ( times.x < 0.0 ? -1.0 : 1.0 );
-
-      mat4 normalMatrix = transpose( sphereInverseTransform );    // TODO: Pass in?
-
-      return Hit(
-        time, 
-        rayPos + rayDir * time, 
-        normalize( objNorm * normalMatrix )
-      );
-      
-      // hit.normal = normalize( quadNorm * normalMatrix );
-      
-      // Hit hit = Hit( solveQuadratic( a, b, c ).x, vec4( 0.0 ), vec4( 0.0 ) );
-
-      // if ( hit.time > 0.0 ) {
-      //   hit.position = rayPos + rayDir * hit.time;
-        
-      //   // TODO: Can we get everything we need from the objectHitPos? (multiply by transform?)
-      //   //       Or what if we returned a vec4 of objectHitPos.xyz and w = time? (for depth testing of sorts?)
-      //   vec4 objectHitPos = C + D * hit.time;
-
-      //   // TODO: Epsilon to fix precision errors?
-      //   if ( any( lessThan( objectHitPos, vec4( -1.0 ) ) ) ||
-      //        any( greaterThan( objectHitPos, vec4( 1.0 ) ) ) ) {
-      //     hit.time = -1.0;
-      //   }
-      //   else {
-      //     vec4 quadNorm = quadricSurfaceNormal( A, objectHitPos );
-
-      //     mat4 normalMatrix = transpose( sphereInverseTransform );    // TODO: Pass in?
-      //     hit.normal = normalize( quadNorm * normalMatrix );
-      //   }
-      // }
-
-      // return hit;
-    }
-  `;
-
-  const VertScreenPos = /* glsl */ `
-    in vec3 position;
-    out vec4 screenPos;
-
-    void main() {
-      screenPos = vec4( position, 1.0 );
-      gl_Position = screenPos;
-    }
-  `;
 
   const FragMain = /* glsl */ `
     precision highp float;
@@ -158,16 +13,15 @@
     in vec4 screenPos;
     out vec4 outColor;
 
+    ${ Shaders.QuadricHit }
+    ${ Shaders.Lighting }
+
     struct Camera {
       mat4 matrix;
     };
 
     uniform Camera camera;
-
-    uniform mat4 sphereInverseTransform;
-
-    ${ SphereHit }
-    ${ Lighting }
+    uniform Shape shape;
     
     void main() {
 
@@ -177,7 +31,7 @@
       vec4 rayPos = ( vec4( 0.0, 0.0, 0.0, 1.0 ) * cameraMatrix );
       vec4 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * cameraMatrix );
 
-      Hit hit = getSphereHit( rayPos, rayDir );
+      Hit hit = quadricHit( shape, rayPos, rayDir );
 
       if ( hit.time > 0.0 ) { 
         outColor = getLighting( rayPos, vec4( 0.0, 0.0, 10.0, 1.0 ), hit.position, hit.normal );
@@ -197,14 +51,32 @@
     new THREE.RawShaderMaterial( {
       uniforms: {
         camera: { value: { matrix: camera.matrixWorld, }, },
-        sphereInverseTransform: { value: new THREE.Matrix4().set(
-          1, 0, 0, 0,
-          0, 1, 0, 0,
-          0, 0, 1, 0,
-          0, 0, 0, 1,
-        ) },
+        shape: {
+          value: {
+            Q: new THREE.Matrix4().set(
+              1, 0, 0, 0,
+              0, 0, 0, 1,
+              0, 0, 1, 0,
+              0, 0, 0, -1
+            ),
+            minBounds: new THREE.Vector3( -2, -1, -1.5 ),
+            maxBounds: new THREE.Vector3(  2,  1,  1.1 ),
+            itMatrix: new THREE.Matrix4().set(
+              1, 0, 0, 0,
+              0, 1, 0, 0,
+              0, 0, 1, 0,
+              0, 0, 0, 1,
+            ),
+            normalMatrix: new THREE.Matrix4().set(
+              1, 0, 0, 0,
+              0, 1, 0, 0,
+              0, 0, 1, 0,
+              0, 0, 0, 1,
+            )
+          },
+        },
       },
-      vertexShader: VertScreenPos,
+      vertexShader: Shaders.VertScreenPos,
       fragmentShader: FragMain,
       glslVersion: THREE.GLSL3,
     } )
