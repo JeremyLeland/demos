@@ -35,13 +35,13 @@ export const QuadricSurfaceNormal = /* glsl */ `
 `;
 
 export const Lighting = /* glsl */ `
-  vec4 getLighting( vec4 rayPos, vec4 lightPos, vec4 position, vec4 normal ) {
-    vec4 N = normal;
-    vec4 L = normalize( lightPos - position );
+  vec4 getLighting( vec4 L, vec4 V, vec4 N ) {
+    // vec4 N = normal;
+    // vec4 L = normalize( lightPos - position );
     float NdotL = dot( N, L );
 
     if ( NdotL > 0.0 ) {
-      vec4 V = normalize( rayPos - position );
+      // vec4 V = normalize( rayPos - position );
       vec4 H = normalize( L + V );
       
       float NdotH = dot( N, H );
@@ -95,10 +95,10 @@ export const QuadricHit = /* glsl */ `
       times.y = -1.0;
     }
 
-    float time   = times.x < 0.0 ? times.y : times.x;
-    vec4  objPos = times.x < 0.0 ? bPos    : fPos;
+    float time   = times.x < 0.01 ? times.y : times.x;
+    vec4  objPos = times.x < 0.01 ? bPos    : fPos;
 
-    vec4 objNorm = quadricSurfaceNormal( shape.Q, objPos ) * ( times.x < 0.0 ? -1.0 : 1.0 );
+    vec4 objNorm = quadricSurfaceNormal( shape.Q, objPos ) * ( times.x < 0.01 ? -1.0 : 1.0 );
     
     return Hit(
       time, 

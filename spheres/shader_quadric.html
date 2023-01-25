@@ -33,9 +33,23 @@
 
       Hit hit = quadricHit( shape, rayPos, rayDir );
 
-      if ( hit.time > 0.0 ) { 
-        outColor = getLighting( rayPos, vec4( -5.0, 5.0, 10.0, 1.0 ), hit.position, hit.normal );
-        outColor = hit.normal;
+      if ( hit.time > 0.0 ) {
+
+        vec4 lightPos = vec4( 0.0, 0.0, 3.0, 1.0 );
+
+        vec4 toLight = lightPos - hit.position;
+        float lightDist = length( toLight );
+        vec4 L = normalize( toLight );
+
+        Hit lightHit = quadricHit( shape, hit.position, L );
+
+        if ( lightHit.time < 0.01 || lightHit.time > lightDist ) {
+          outColor = getLighting(
+            L, 
+            normalize( rayPos - hit.position), 
+            hit.normal
+          );
+        }
       }
       else {
         discard;
