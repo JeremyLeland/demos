@@ -22,6 +22,8 @@
 
     uniform Camera camera;
     uniform Shape shape;
+    uniform Light light;
+    uniform Material material;
     
     void main() {
 
@@ -34,21 +36,15 @@
       Hit hit = quadricHit( shape, rayPos, rayDir );
 
       if ( hit.time > 0.0 ) {
-
-        vec4 lightPos = vec4( 0.0, 0.0, 3.0, 1.0 );
-
-        vec4 toLight = lightPos - hit.position;
+        vec4 toLight = light.position - hit.position;
         float lightDist = length( toLight );
         vec4 L = normalize( toLight );
+        vec4 V = normalize( rayPos - hit.position );
 
         Hit lightHit = quadricHit( shape, hit.position, L );
 
         if ( lightHit.time < 0.01 || lightHit.time > lightDist ) {
-          outColor = getLighting(
-            L, 
-            normalize( rayPos - hit.position), 
-            hit.normal
-          );
+          outColor = getLighting( L, V, hit.normal, light, material );
         }
       }
       else {
@@ -96,6 +92,18 @@
       uniforms: {
         camera: { value: { matrix: camera.matrixWorld }, },
         shape: { value: getShapeUniform() },
+        light: { 
+          value: {
+            position: new THREE.Vector4( 1, 1, 5, 1 ),
+            color: new THREE.Vector4( 1, 1, 1, 1 ),
+          },
+        },
+        material: {
+          value: {
+            color: new THREE.Vector4( 0.5, 0.25, 0, 1 ),
+            shininess: 2000,
+          },
+        },
       },
       vertexShader: Shaders.VertScreenPos,
       fragmentShader: FragMain,

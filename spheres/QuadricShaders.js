@@ -35,7 +35,18 @@ export const QuadricSurfaceNormal = /* glsl */ `
 `;
 
 export const Lighting = /* glsl */ `
-  vec4 getLighting( vec4 L, vec4 V, vec4 N ) {
+  struct Light {
+    vec4 position;
+    vec4 color;
+  };
+
+  struct Material {
+    vec4 color;
+    // TODO: specular color?
+    float shininess;
+  };
+
+  vec4 getLighting( vec4 L, vec4 V, vec4 N, Light light, Material material ) {
     // vec4 N = normal;
     // vec4 L = normalize( lightPos - position );
     float NdotL = dot( N, L );
@@ -45,13 +56,12 @@ export const Lighting = /* glsl */ `
       vec4 H = normalize( L + V );
       
       float NdotH = dot( N, H );
-      float shininess = 2000.0;
       
       float diffuse = max( 0.0, NdotL );
-      float specular = ( NdotL > 0.0 ) ? pow( max( 0.0, NdotH ), shininess ) : 0.0;
+      float specular = ( NdotL > 0.0 ) ? pow( max( 0.0, NdotH ), material.shininess ) : 0.0;
 
       // TODO: Colored light
-      return vec4( diffuse + specular );
+      return vec4( light.color * material.color * ( diffuse + specular ) );
     }
   }
 `;
