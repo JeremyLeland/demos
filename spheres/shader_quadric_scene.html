@@ -48,14 +48,28 @@
     }
   }
 
-  const shape = new Shape( {
-    quadricMatrix: EllipticParaboloid,
-    minBounds: { x: -2, y:  -1, z: -1.5 },
-    maxBounds: { x:  2, y: 0.8, z:  1.1 },
-    position: { x: 0, y: 0, z: 0 },
-    rotation: { x: 0, y: 0, z: 0 },
-    scale:    { x: 1, y: 2, z: 1 },
-  } );
+  const json = {
+    shapes: [
+      {
+        quadricMatrix: EllipticParaboloid,
+        minBounds: { x: -2, y:  -1, z: -1.5 },
+        maxBounds: { x:  2, y: 0.8, z:  1.1 },
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale:    { x: 1, y: 2, z: 1 },
+      },
+      {
+        quadricMatrix: EllipticParaboloid,
+        minBounds: { x: -2, y:  -1, z: -1.5 },
+        maxBounds: { x:  2, y: 0.8, z:  1.1 },
+        position: { x: 0, y: 1, z: -3 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale:    { x: 1, y: 3, z: 1 },
+      },
+    ]
+  };
+
+  const shapes = json.shapes.map( shapeJson => new Shape( shapeJson ) );
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color( 0x111111 );
@@ -69,7 +83,7 @@
     camera.updateMatrixWorld();
 
     uniforms.camera = { value: { matrix: camera.matrixWorld.clone().transpose() }, };
-    uniforms.shape = { value: shape.getUniform() };
+    uniforms.shapes = { value: shapes.map( shape => shape.getUniform() ) };
     uniforms.light = { 
       value: {
         position: new THREE.Vector4( 1, 1, 5, 1 ),
@@ -107,15 +121,29 @@
         };
 
         uniform Camera camera;
-        uniform Shape shape;
+        uniform Shape shapes[ 2 ];
         uniform Light light;
         uniform Material material;
+
+        Hit getClosestHit( vec4 rayPos, vec4 rayDir ) {
+          Hit closestHit = Hit( -1.0, vec4( 0.0 ), vec4( 0.0 ) );
+
+          for ( int i = 0; i < shapes.length(); i ++ ) {
+            Hit hit = quadricHit( shapes[ i ], rayPos, rayDir );
+            
+            if ( hit.time > 0.01 && ( closestHit.time == -1.0 || hit.time < closestHit.time ) ) {
+              closestHit = hit;
+            }
+          }
+
+          return closestHit;
+        }
         
         void main() {
           vec4 rayPos = ( vec4( 0.0, 0.0, 0.0, 1.0 ) * camera.matrix );
           vec4 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * camera.matrix );
 
-          Hit hit = quadricHit( shape, rayPos, rayDir );
+          Hit hit = getClosestHit( rayPos, rayDir );
 
           if ( hit.time > 0.0 ) {
             vec4 toLight = light.position - hit.position;
@@ -123,7 +151,7 @@
             vec4 L = normalize( toLight );
             vec4 V = normalize( rayPos - hit.position );
 
-            Hit lightHit = quadricHit( shape, hit.position, L );
+            Hit lightHit = getClosestHit( hit.position, L );
 
             if ( lightHit.time < 0.01 || lightHit.time > lightDist ) {
               outColor = getLighting( L, V, hit.normal, light, material );
@@ -145,7 +173,7 @@
     // lights[ 1 ].position.set( Math.cos( now / 1000 ), Math.sin( now / 500 ), 5 );
 
     // shape.object.rotation.set( now / 4000, now / 3000, now / 10000 );
-    shape.object.rotation.set( now / 4000, 0, 0 );
+    shapes[ 0 ].object.rotation.set( now / 4000, now / 1000, 0 );
 
     render();
 
