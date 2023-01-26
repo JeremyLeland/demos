@@ -78,13 +78,7 @@ export const QuadricHit = /* glsl */ `
     mat4 normalMatrix;
   };
 
-  struct Hit {
-    float time;
-    vec4 position;
-    vec4 normal;
-  };
-
-  Hit quadricHit( Shape shape, vec4 rayPos, vec4 rayDir ) {
+  vec4 quadricHit( Shape shape, vec4 rayPos, vec4 rayDir ) {
     vec4 C = rayPos * shape.inverseMatrix;
     vec4 D = rayDir * shape.inverseMatrix;
 
@@ -108,13 +102,19 @@ export const QuadricHit = /* glsl */ `
     float time   = times.x < 0.01 ? times.y : times.x;
     vec4  objPos = times.x < 0.01 ? bPos    : fPos;
 
-    vec4 objNorm = quadricSurfaceNormal( shape.Q, objPos ) * ( times.x < 0.01 ? -1.0 : 1.0 );
-    
-    return Hit(
-      time, 
-      rayPos + rayDir * time, 
-      normalize( objNorm * shape.normalMatrix )
-    );
+    return vec4( objPos.xyz, time );
+  }
+
+  vec4 quadricNormal( Shape shape, vec4 rayPos, vec4 rayDir, vec3 objPos ) {
+    vec4 objNorm = quadricSurfaceNormal( shape.Q, vec4( objPos, 1.0 ) );
+    vec4 normal = normalize( objNorm * shape.normalMatrix );
+
+    // if backside, flip normal
+    if ( dot( rayDir, normal ) > 0.0 ) {
+      normal *= -1.0;
+    }
+
+    return normal;
   }
 `;
 

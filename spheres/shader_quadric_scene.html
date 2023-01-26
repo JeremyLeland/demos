@@ -125,18 +125,27 @@
         uniform Light light;
         uniform Material material;
 
+        // TODO: Instead of hit, maybe just return vec4( objPos.xyz, time ), and have the caller figure out the rest?
+
+        struct Hit {
+          vec4 hitInfo;
+          int shapeIndex;
+        };
+
         Hit getClosestHit( vec4 rayPos, vec4 rayDir ) {
-          Hit closestHit = Hit( -1.0, vec4( 0.0 ), vec4( 0.0 ) );
+          vec4 closestHit = vec4( 0.0, 0.0, 0.0, -1.0 );
+          int closestIndex = -1;
 
           for ( int i = 0; i < shapes.length(); i ++ ) {
-            Hit hit = quadricHit( shapes[ i ], rayPos, rayDir );
+            vec4 hit = quadricHit( shapes[ i ], rayPos, rayDir );
             
-            if ( hit.time > 0.01 && ( closestHit.time == -1.0 || hit.time < closestHit.time ) ) {
+            if ( hit.w > 0.01 && ( closestHit.w == -1.0 || hit.w < closestHit.w ) ) {
               closestHit = hit;
+              closestIndex = i;
             }
           }
 
-          return closestHit;
+          return Hit( closestHit, closestIndex );
         }
         
         void main() {
@@ -144,17 +153,23 @@
           vec4 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * camera.matrix );
 
           Hit hit = getClosestHit( rayPos, rayDir );
+          float hitTime = hit.hitInfo.w;
 
-          if ( hit.time > 0.0 ) {
-            vec4 toLight = light.position - hit.position;
+          if ( hitTime > 0.0 ) {
+            vec4 hitPos = rayPos + rayDir * hitTime;
+
+            vec4 N = quadricNormal( shapes[ hit.shapeIndex ], rayPos, rayDir, hit.hitInfo.xyz );
+
+            vec4 toLight = light.position - hitPos;
             float lightDist = length( toLight );
             vec4 L = normalize( toLight );
-            vec4 V = normalize( rayPos - hit.position );
+            vec4 V = normalize( rayPos - hitPos );
 
-            Hit lightHit = getClosestHit( hit.position, L );
+            Hit lightHit = getClosestHit( hitPos, L );
+            float lightTime = lightHit.hitInfo.w;
 
-            if ( lightHit.time < 0.01 || lightHit.time > lightDist ) {
-              outColor = getLighting( L, V, hit.normal, light, material );
+            if ( lightTime < 0.01 || lightTime > lightDist ) {
+              outColor = getLighting( L, V, N, light, material );
             }
           }
           else {

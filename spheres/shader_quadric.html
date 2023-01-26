@@ -33,18 +33,23 @@
       vec4 rayPos = ( vec4( 0.0, 0.0, 0.0, 1.0 ) * cameraMatrix );
       vec4 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * cameraMatrix );
 
-      Hit hit = quadricHit( shape, rayPos, rayDir );
+      vec4 shapeHit = quadricHit( shape, rayPos, rayDir );
+      float hitTime = shapeHit.w;
 
-      if ( hit.time > 0.0 ) {
-        vec4 toLight = light.position - hit.position;
+      if ( hitTime > 0.0 ) {
+        vec4 hitPos = rayPos + rayDir * hitTime;
+
+        vec4 N = quadricNormal( shape, rayPos, rayDir, shapeHit.xyz );
+
+        vec4 toLight = light.position - hitPos;
         float lightDist = length( toLight );
         vec4 L = normalize( toLight );
-        vec4 V = normalize( rayPos - hit.position );
+        vec4 V = normalize( rayPos - hitPos );
 
-        Hit lightHit = quadricHit( shape, hit.position, L );
+        vec4 lightHit = quadricHit( shape, hitPos, L );
 
-        if ( lightHit.time < 0.01 || lightHit.time > lightDist ) {
-          outColor = getLighting( L, V, hit.normal, light, material );
+        if ( lightHit.w < 0.01 || lightHit.w > lightDist ) {
+          outColor = getLighting( L, V, N, light, material );
         }
       }
       else {
