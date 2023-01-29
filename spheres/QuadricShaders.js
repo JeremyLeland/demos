@@ -15,6 +15,29 @@ const SolveQuadratic = /* glsl */ `
   }
 `;
 
+export const QuadricSurfaceHit = /* glsl */ `
+  vec4 quadricSurfaceHit( mat4 Q, vec3 minBounds, vec3 maxBounds, vec4 C, vec4 D ) {
+    float a = dot( D, Q * D );
+    float b = dot( C, Q * D ) + dot( D, Q * C );
+    float c = dot( C, Q * C );
+
+    vec2 times = solveQuadratic( a, b, c );
+
+    vec4 fPos = C + D * times.x;
+    vec4 bPos = C + D * times.y;
+
+    if ( any( lessThan( fPos.xyz, minBounds ) ) || any( greaterThan( fPos.xyz, maxBounds ) ) ) {
+      times.x = -1.0;
+    }
+
+    if ( any( lessThan( bPos.xyz, minBounds ) ) || any( greaterThan( bPos.xyz, maxBounds ) ) ) {
+      times.y = -1.0;
+    }
+
+    return times.x < 0.01 ? vec4( bPos.xyz, times.y ) : vec4( fPos.xyz, times.x );
+  }
+`;
+
 // See: https://www.shadertoy.com/view/7tlBW8
 export const QuadricSurfaceNormal = /* glsl */ `
   vec4 quadricSurfaceNormal( mat4 Q, vec4 P ) {
@@ -25,12 +48,52 @@ export const QuadricSurfaceNormal = /* glsl */ `
     
     float x = P.x, y = P.y, z = P.z;
 
-    return vec4(
+    vec4 normal = vec4(
       ( a + a ) * x + ( b + e ) * y + ( c + i ) * z + d + m,
       ( b + e ) * x + ( f + f ) * y + ( g + j ) * z + h + n,
       ( c + i ) * x + ( g + j ) * y + ( k + k ) * z + l + o,
       0.0
     );
+
+    return normal;
+  }
+`;
+
+export const QuadricHit = /* glsl */ `
+  ${ SolveQuadratic }
+  ${ QuadricSurfaceHit }
+  ${ QuadricSurfaceNormal }
+
+  // TODO: Take the inverse matrix, etc out of this. We don't need a full object for this function, just the Q and bounds
+  //       Matrial will join the Shape definition somewhere further up the heirarchy 
+
+  // vec4 quadricHit( Shape shape, vec4 rayPos, vec4 rayDir ) {
+  //   vec4 C = rayPos * shape.inverseMatrix;
+  //   vec4 D = rayDir * shape.inverseMatrix;
+
+  //   return quadricSurfaceHit( shape.Q, shape.minBounds, shape.maxBounds, C, D );
+  // }
+
+  // vec4 quadricNormal( Shape shape, vec3 objPos, vec4 rayDir ) {
+  //   vec4 objNorm = quadricSurfaceNormal( shape.Q, vec4( objPos, 1.0 ) );
+  //   vec4 normal = normalize( objNorm * shape.normalMatrix );
+
+  //   // if backside, flip normal
+  //   if ( dot( rayDir, normal ) > 0.0 ) {
+  //     normal *= -1.0;
+  //   }
+
+  //   return normal;
+  // }
+`;
+
+export const VertScreenPos = /* glsl */ `
+  in vec3 position;
+  out vec4 screenPos;
+
+  void main() {
+    screenPos = vec4( position, 1.0 );
+    gl_Position = screenPos;
   }
 `;
 
@@ -63,67 +126,5 @@ export const Lighting = /* glsl */ `
       // TODO: Colored light
       return vec4( light.color * material.color * ( diffuse + specular ) );
     }
-  }
-`;
-
-export const QuadricHit = /* glsl */ `
-  ${ SolveQuadratic }
-  ${ QuadricSurfaceNormal }
-
-  struct Shape {
-    mat4 Q;
-    vec3 minBounds;
-    vec3 maxBounds;
-    mat4 inverseMatrix;
-    mat4 normalMatrix;
-  };
-
-  vec4 quadricHit( Shape shape, vec4 rayPos, vec4 rayDir ) {
-    vec4 C = rayPos * shape.inverseMatrix;
-    vec4 D = rayDir * shape.inverseMatrix;
-
-    float a = dot( D, shape.Q * D );
-    float b = dot( C, shape.Q * D ) + dot( D, shape.Q * C );
-    float c = dot( C, shape.Q * C );
-
-    vec2 times = solveQuadratic( a, b, c );
-
-    vec4 fPos = C + D * times.x;
-    vec4 bPos = C + D * times.y;
-
-    if ( any( lessThan( fPos.xyz, shape.minBounds ) ) || any( greaterThan( fPos.xyz, shape.maxBounds ) ) ) {
-      times.x = -1.0;
-    }
-
-    if ( any( lessThan( bPos.xyz, shape.minBounds ) ) || any( greaterThan( bPos.xyz, shape.maxBounds ) ) ) {
-      times.y = -1.0;
-    }
-
-    float time   = times.x < 0.01 ? times.y : times.x;
-    vec4  objPos = times.x < 0.01 ? bPos    : fPos;
-
-    return vec4( objPos.xyz, time );
-  }
-
-  vec4 quadricNormal( Shape shape, vec4 rayPos, vec4 rayDir, vec3 objPos ) {
-    vec4 objNorm = quadricSurfaceNormal( shape.Q, vec4( objPos, 1.0 ) );
-    vec4 normal = normalize( objNorm * shape.normalMatrix );
-
-    // if backside, flip normal
-    if ( dot( rayDir, normal ) > 0.0 ) {
-      normal *= -1.0;
-    }
-
-    return normal;
-  }
-`;
-
-export const VertScreenPos = /* glsl */ `
-  in vec3 position;
-  out vec4 screenPos;
-
-  void main() {
-    screenPos = vec4( position, 1.0 );
-    gl_Position = screenPos;
   }
 `;
