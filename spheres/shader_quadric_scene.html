@@ -5,6 +5,13 @@
 
   import * as Shaders from './QuadricShaders.js';
 
+  const Sphere = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, -1
+  ];
+
   const EllipticParaboloid = [
     1, 0, 0, 0,
     0, 0, 0, 1,
@@ -15,26 +22,25 @@
   class Shape {
     object;
 
-    Q;
-    minBounds;
-    maxBounds;
-
+    quadric;
     material;
         
     constructor( json ) {
       this.object = new THREE.Object3D();
-      this.object.position.set( json.position.x, json.position.y, json.position.z );
-      this.object.rotation.set( json.rotation.x, json.rotation.y, json.rotation.z );
-      this.object.scale.set( json.scale.x, json.scale.y, json.scale.z );
-      // this.object.updateMatrixWorld();
 
-      this.Q = new THREE.Matrix4().fromArray( json.quadricMatrix );
-      this.minBounds = new THREE.Vector3( json.minBounds.x, json.minBounds.y, json.minBounds.z );
-      this.maxBounds = new THREE.Vector3( json.maxBounds.x, json.maxBounds.y, json.maxBounds.z );
+      if ( json.position )  this.object.position.set( json.position.x, json.position.y, json.position.z );
+      if ( json.rotation )  this.object.rotation.set( json.rotation.x, json.rotation.y, json.rotation.z );
+      if ( json.scale )     this.object.scale.set( json.scale.x, json.scale.y, json.scale.z );
+
+      this.quadric = {
+        Q: new THREE.Matrix4().fromArray( json.quadric?.Q ?? Sphere ),
+        minBounds: new THREE.Vector3( json.quadric?.minBounds?.x ?? -2, json.quadric?.minBounds?.y ?? -2, json.quadric?.minBounds?.z ?? -2 ),
+        maxBounds: new THREE.Vector3( json.quadric?.maxBounds?.x ?? 2, json.quadric?.maxBounds?.y ?? 2, json.quadric?.maxBounds?.z ?? 2 ),
+      }
 
       this.material = {
-        color: new THREE.Vector4( json.material.color.r, json.material.color.g, json.material.color.b, 1 ),
-        shininess: json.material.shininess,
+        color: new THREE.Vector4( json.material?.color?.r ?? 1, json.material?.color?.g ?? 1, json.material?.color?.b ?? 1, 1 ),
+        shininess: json.material?.shininess ?? 2000,
       };
     }
 
@@ -46,9 +52,7 @@
 
       // NOTE: Matrices need to be transposed to be used in GLSL
       return {
-        Q: this.Q,
-        minBounds: this.minBounds,
-        maxBounds: this.maxBounds,
+        quadric: this.quadric,
         inverseMatrix: inverseMatrix.transpose(),
         normalMatrix: normalMatrix.transpose(),
         material: this.material,
@@ -56,48 +60,63 @@
     }
   }
 
+  class Light {
+    position;
+    color;
+
+    constructor( json ) {
+      this.position = new THREE.Vector4( json.position.x, json.position.y, json.position.z, 1 );
+      this.color = new THREE.Vector4( json.color.r, json.color.g, json.color.b, 1 );
+    }
+  }
+
+  const HutQuadric = {
+    Q: EllipticParaboloid,
+    minBounds: { x: -2, y:  -1, z: -1.5 },
+    maxBounds: { x:  2, y: 0.8, z:  1.1 },
+  };
+
+
+
   const json = {
     shapes: [
       {
-        quadricMatrix: EllipticParaboloid,
-        minBounds: { x: -2, y:  -1, z: -1.5 },
-        maxBounds: { x:  2, y: 0.8, z:  1.1 },
-        position: { x: 0, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale:    { x: 1, y: 2, z: 1 },
+        scale: { x: 7, y: 7, z: 7 },
         material: {
-          color: { r: 0.25, g: 0.5, b: 0 },
-          shininess: 2000,
-        },
+          color: { r: 0, y: 0, b: 1 },
+        }
+      }
+    ],
+    lights: [
+      {
+        position: { x: 1, y: 1, z: 5 },
+        color: { r: 1, g: 0, b: 0 },
       },
       {
-        quadricMatrix: EllipticParaboloid,
-        minBounds: { x: -2, y:  -1, z: -1.5 },
-        maxBounds: { x:  2, y: 0.8, z:  1.1 },
-        position: { x: 0, y: 1, z: -3 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale:    { x: 1, y: 3, z: 1 },
-        material: {
-          color: { r: 0.5, g: 0.25, b: 0 },
-          shininess: 2000,
-        },
+        position: { x: 2, y: 1, z: 5 },
+        color: { r: 0, g: 1, b: 0 },
       },
       {
-        quadricMatrix: EllipticParaboloid,
-        minBounds: { x: -2, y:  -1, z: -1.5 },
-        maxBounds: { x:  2, y: 0.8, z:  1.1 },
-        position: { x: 1, y: 0, z: 0 },
-        rotation: { x: 0, y: 0, z: 0 },
-        scale:    { x: 1, y: 2, z: 1 },
-        material: {
-          color: { r: 0, g: 0.25, b: 0.5 },
-          shininess: 2000,
-        },
+        position: { x: 3, y: 1, z: 5 },
+        color: { r: 0, g: 0, b: 1 },
       },
-    ]
+    ],
+  };
+
+  for ( let z = -1; z <= 1; z ++ ) {
+    for ( let x = -1; x <= 1; x ++ ) {
+      const height = 0.7 * ( Math.random() + 0.5 );
+
+      json.shapes.push( {
+        quadric: HutQuadric,
+        position: { x: x * 2, y: height, z: z * 2 },
+        scale: { x: 0.5, y: height, z: 0.5 },
+      } );
+    }
   };
 
   const shapes = json.shapes.map( shapeJson => new Shape( shapeJson ) );
+  const lights = json.lights.map( lightJson => new Light( lightJson ) );
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color( 0x111111 );
@@ -112,18 +131,7 @@
 
     uniforms.camera = { value: { matrix: camera.matrixWorld.clone().transpose() }, };
     uniforms.shapes = { value: shapes.map( shape => shape.getUniform() ) };
-    uniforms.light = { 
-      value: {
-        position: new THREE.Vector4( 1, 1, 5, 1 ),
-        color: new THREE.Vector4( 1, 1, 1, 1 ),
-      },
-    };
-    uniforms.material = {
-      value: {
-        color: new THREE.Vector4( 0.5, 0.25, 0, 1 ),
-        shininess: 2000,
-      },
-    };
+    uniforms.lights = { value: lights };
   }
 
   updateUniforms();
@@ -148,18 +156,22 @@
           mat4 matrix;
         };
 
-        struct Shape {
+        struct Quadric {
           mat4 Q;
           vec3 minBounds;
           vec3 maxBounds;
+        };
+
+        struct Shape {
+          Quadric quadric;
           mat4 inverseMatrix;
           mat4 normalMatrix;
           Material material;
         };
 
         uniform Camera camera;
-        uniform Shape shapes[ 3 ];
-        uniform Light light;
+        uniform Shape shapes[ ${ json.shapes.length } ];
+        uniform Light lights[ ${ json.lights.length } ];
 
         struct Hit {
           vec4 hitInfo;
@@ -175,7 +187,7 @@
             vec4 C = rayPos * shapes[ i ].inverseMatrix;
             vec4 D = rayDir * shapes[ i ].inverseMatrix;
 
-            vec4 hit = quadricSurfaceHit( shapes[ i ].Q, shapes[ i ].minBounds, shapes[ i ].maxBounds, C, D );
+            vec4 hit = quadricSurfaceHit( shapes[ i ].quadric.Q, shapes[ i ].quadric.minBounds, shapes[ i ].quadric.maxBounds, C, D );
             
             if ( hit.w > 0.01 && ( closestHit.w == -1.0 || hit.w < closestHit.w ) ) {
               closestHit = hit;
@@ -196,7 +208,7 @@
           if ( hitTime > 0.0 ) {
             vec4 hitPos = rayPos + rayDir * hitTime;
 
-            vec4 objNorm = quadricSurfaceNormal( shapes[ hit.shapeIndex ].Q, vec4( hit.hitInfo.xyz, 1.0 ) );
+            vec4 objNorm = quadricSurfaceNormal( shapes[ hit.shapeIndex ].quadric.Q, vec4( hit.hitInfo.xyz, 1.0 ) );
             vec4 N = normalize( objNorm * shapes[ hit.shapeIndex ].normalMatrix );
 
             // if backside, flip normal
@@ -204,16 +216,20 @@
               N *= -1.0;
             }
 
-            vec4 toLight = light.position - hitPos;
-            float lightDist = length( toLight );
-            vec4 L = normalize( toLight );
-            vec4 V = normalize( rayPos - hitPos );
+            outColor = vec4( 0.1, 0.1, 0.1, 1.0 );
 
-            Hit lightHit = getClosestHit( hitPos, L );
-            float lightTime = lightHit.hitInfo.w;
+            for ( int i = 0; i < lights.length(); i ++ ) {
+              vec4 toLight = lights[ i ].position - hitPos;
+              float lightDist = length( toLight );
+              vec4 L = normalize( toLight );
+              vec4 V = normalize( rayPos - hitPos );
 
-            if ( lightTime < 0.01 || lightTime > lightDist ) {
-              outColor = getLighting( L, V, N, light, shapes[ hit.shapeIndex].material );
+              Hit lightHit = getClosestHit( hitPos, L );
+              float lightTime = lightHit.hitInfo.w;
+
+              if ( lightTime < 0.01 || lightTime > lightDist ) {
+                outColor += getLighting( L, V, N, lights[ i ], shapes[ hit.shapeIndex ].material );
+              }
             }
           }
           else {
@@ -229,10 +245,12 @@
   renderer.setPixelRatio( window.devicePixelRatio );
 
   function animate( now ) {
-    // lights[ 1 ].position.set( Math.cos( now / 1000 ), Math.sin( now / 500 ), 5 );
+    lights[ 0 ].position.set( Math.cos( now / 1000 ) - 1, Math.sin( now / 500 ) + 1, 5, 1 );
+    lights[ 1 ].position.set( Math.cos( now / 1000 ), Math.sin( now / 500 ) + 2, 5, 1 );
+    lights[ 2 ].position.set( Math.cos( now / 1000 ) + 1, Math.sin( now / 500 ) + 3, 5, 1 );
 
     // shape.object.rotation.set( now / 4000, now / 3000, now / 10000 );
-    shapes[ 0 ].object.rotation.set( now / 4000, now / 1000, 0 );
+    // shapes[ 0 ].object.rotation.set( now / 4000, now / 1000, 0 );
 
     render();
 
@@ -258,6 +276,6 @@
   const controls = new OrbitControls( camera, renderer.domElement );
   controls.target.set( 0, 0, 0 );
   controls.update();
-  controls.addEventListener( 'change', render );
+  // controls.addEventListener( 'change', render );
 
 </script>
