@@ -6,17 +6,19 @@
   import * as Shaders from './QuadricShaders.js';
 
   const Sphere = [
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, -1
+    1,  0,  0,  0,
+    0,  1,  0,  0,
+    0,  0,  1,  0,
+    0,  0,  0, -1,
   ];
 
+  
+
   const EllipticParaboloid = [
-    1, 0, 0, 0,
-    0, 0, 0, 1,
-    0, 0, 1, 0,
-    0, 0, 0, -1
+    1,  0,  0,  0,
+    0,  0,  0,  1,
+    0,  0,  1,  0,
+    0,  0,  0, -1,
   ];
 
   class Shape {
@@ -70,27 +72,85 @@
     }
   }
 
-  const HutQuadric = {
-    Q: EllipticParaboloid,
-    minBounds: { x: -2, y:  -1, z: -1.5 },
-    maxBounds: { x:  2, y: 0.8, z:  1.1 },
+  // const HutQuadric = {
+  //   Q: EllipticParaboloid,
+  //   minBounds: { x: -2, y:  -1, z: -1.5 },
+  //   maxBounds: { x:  2, y: 0.8, z:  1.1 },
+  // };
+
+  const Cone = {
+    Q: [
+      1,  0,  0,  0,
+      0, -1,  0,  0,
+      0,  0,  1,  0,
+      0,  0,  0,  0,
+    ],
+    minBounds: { x: -1, y: -1, z: -1 },
+    maxBounds: { x: 1, y: 0, z: 1 },
+  }
+
+  const Snow = {
+    color: { r: 1, g: 1, b: 1 },
+    shininess: 1000,
   };
-
-
 
   const json = {
     shapes: [
+      // ground
       {
-        scale: { x: 7, y: 0.01, z: 7 },
+        scale: { x: 7, y: 0.4, z: 7 },
+        material: Snow
+      },
+      // body
+      {
+        position: { x: 0, y: 1, z: 0 },
+        scale: { x: 1, y: 1, z: 1 },
+        material: Snow
+      },
+      {
+        position: { x: 0, y: 2, z: 0 },
+        scale: { x: 0.7, y: 0.7, z: 0.7 },
+        material: Snow
+      },
+      {
+        position: { x: 0, y: 2.8, z: 0 },
+        scale: { x: 0.4, y: 0.4, z: 0.4 },
+        material: Snow
+      },
+      // nose
+      {
+        quadric: Cone,
+        position: { x: 0, y: 2.9, z: 0.7 },
+        rotation: { x: Math.PI / 2, y: 0, z: 0 },
+        scale: { x: 0.1, y: 0.5, z: 0.1 },
         material: {
-          color: { r: 0, g: 0.2, b: 0 },
-          shininess: 0,
+          color: { r: 1, g: 0.5, b: 0 },
+          shininess: 100,
         }
-      }
+      },
+      // tree
+      {
+        quadric: Cone,
+        position: { x: 2, y: 3, z: 3 },
+        scale: { x: 0.5, y: 3, z: 0.5 },
+        material: {
+          color: { r: 0.25, g: 0.1, b: 0 },
+          shininess: 1000,
+        }
+      },
+      {
+        quadric: Cone,
+        position: { x: 2, y: 5.5, z: 3 },
+        scale: { x: 1, y: 4, z: 1 },
+        material: {
+          color: { r: 0, g: 0.3, b: 0 },
+          shininess: 1000,
+        }
+      },
     ],
     lights: [
       {
-        position: { x: 1, y: 1, z: 5 },
+        position: { x: -10, y: 10, z: 10 },
         color: { r: 1, g: 1, b: 1 },
       },
       // {
@@ -102,18 +162,6 @@
       //   color: { r: 0, g: 0, b: 1 },
       // },
     ],
-  };
-
-  for ( let z = -1; z <= 1; z ++ ) {
-    for ( let x = -1; x <= 1; x ++ ) {
-      const height = 0.7 * ( Math.random() + 0.5 );
-
-      json.shapes.push( {
-        quadric: HutQuadric,
-        position: { x: x * 2, y: height, z: z * 2 },
-        scale: { x: 0.5, y: height, z: 0.5 },
-      } );
-    }
   };
 
   const shapes = json.shapes.map( shapeJson => new Shape( shapeJson ) );
@@ -254,7 +302,6 @@
 
     requestAnimationFrame( animate );
   }
-  requestAnimationFrame( animate );
 
   function render() {
     updateUniforms();
@@ -272,8 +319,13 @@
   window.onresize();
 
   const controls = new OrbitControls( camera, renderer.domElement );
-  controls.target.set( 0, 0, 0 );
+  controls.target.set( 0, 1, 0 );
   controls.update();
-  // controls.addEventListener( 'change', render );
+
+  // TEMP: Animate or not?
+  render();
+  controls.addEventListener( 'change', render );
+  // ...OR...
+  //requestAnimationFrame( animate );
 
 </script>
