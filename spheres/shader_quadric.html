@@ -20,36 +20,42 @@
       mat4 matrix;
     };
 
+    struct Shape {
+      Quadric quadric;
+      mat4 inverseMatrix;
+      mat4 normalMatrix;
+      Material material;
+    };
+
     uniform Camera camera;
     uniform Shape shape;
     uniform Light light;
-    uniform Material material;
     
     void main() {
 
       // TODO: Do this once before the shader
       mat4 cameraMatrix = transpose( camera.matrix );
 
-      vec4 rayPos = ( vec4( 0.0, 0.0, 0.0, 1.0 ) * cameraMatrix );
-      vec4 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * cameraMatrix );
+      vec4 rayPos = ( vec4( 0.0, 0.0, 0.0, 1.0 ) * camera.matrix );
+      vec4 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * camera.matrix );
 
-      vec4 shapeHit = quadricHit( shape, rayPos, rayDir );
+      vec4 shapeHit = quadricHit( shape.quadric, shape.inverseMatrix, rayPos, rayDir );
       float hitTime = shapeHit.w;
 
       if ( hitTime > 0.0 ) {
         vec4 hitPos = rayPos + rayDir * hitTime;
 
-        vec4 N = quadricNormal( shape, rayPos, rayDir, shapeHit.xyz );
+        vec4 N = quadricNormal( shape.quadric, shapeHit.xyz, shape.normalMatrix, rayDir );
 
         vec4 toLight = light.position - hitPos;
         float lightDist = length( toLight );
         vec4 L = normalize( toLight );
         vec4 V = normalize( rayPos - hitPos );
 
-        vec4 lightHit = quadricHit( shape, hitPos, L );
+        vec4 lightHit = quadricHit( shape.quadric, shape.inverseMatrix, hitPos, L );
 
         if ( lightHit.w < 0.01 || lightHit.w > lightDist ) {
-          outColor = getLighting( L, V, N, light, material );
+          outColor = getLighting( L, V, N, light, shape.material );
         }
       }
       else {
@@ -66,21 +72,27 @@
     object.scale.set( 1, 2, 1 );
     object.updateMatrixWorld();
 
-    const inverseMatrix = object.matrixWorld.invert();
+    const inverseMatrix = object.matrixWorld.clone().invert();
     const normalMatrix = inverseMatrix.clone().transpose();
 
     // NOTE: Matrices need to be transposed to be used in GLSL
     return {
-      Q: new THREE.Matrix4().set(
-        1, 0, 0, 0,
-        0, 0, 0, 1,
-        0, 0, 1, 0,
-        0, 0, 0, -1
-      ),
-      minBounds: new THREE.Vector3( -2, -1, -1.5 ),
-      maxBounds: new THREE.Vector3(  2,  1,  1.1 ),
+      quadric: {
+        Q: new THREE.Matrix4().set(
+          1, 0, 0, 0,
+          0, 0, 0, 1,
+          0, 0, 1, 0,
+          0, 0, 0, -1
+        ),
+        minBounds: new THREE.Vector3( -2, -1, -1.5 ),
+        maxBounds: new THREE.Vector3(  2,  1,  1.1 ),
+      },
       inverseMatrix: inverseMatrix.transpose(),
       normalMatrix: normalMatrix.transpose(),
+      material: {
+        color: new THREE.Vector4( 0.5, 0.25, 0, 1 ),
+        shininess: 2000,
+      },
     };
   }
 
@@ -91,25 +103,21 @@
   const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 100 );
   camera.position.set( 0, 0, 5 );
 
+  const uniforms = {
+    // camera: { value: { matrix: camera.matrixWorld.clone().transpose() }, },
+    shape: { value: getShapeUniform() },
+    light: { 
+      value: {
+        position: new THREE.Vector4( 1, 1, 5, 1 ),
+        color: new THREE.Vector4( 1, 1, 1, 1 ),
+      },
+    },
+  };
+
   scene.add( new THREE.Mesh(
     new THREE.PlaneGeometry( 2, 2 ),
     new THREE.RawShaderMaterial( {
-      uniforms: {
-        camera: { value: { matrix: camera.matrixWorld }, },
-        shape: { value: getShapeUniform() },
-        light: { 
-          value: {
-            position: new THREE.Vector4( 1, 1, 5, 1 ),
-            color: new THREE.Vector4( 1, 1, 1, 1 ),
-          },
-        },
-        material: {
-          value: {
-            color: new THREE.Vector4( 0.5, 0.25, 0, 1 ),
-            shininess: 2000,
-          },
-        },
-      },
+      uniforms: uniforms,
       vertexShader: Shaders.VertScreenPos,
       fragmentShader: FragMain,
       glslVersion: THREE.GLSL3,
@@ -120,6 +128,10 @@
   renderer.setPixelRatio( window.devicePixelRatio );
 
   function render() {
+
+    camera.updateMatrixWorld();
+    uniforms.camera = { value: { matrix: camera.matrixWorld.clone().transpose() }, };
+
     renderer.render( scene, camera );
   }
 

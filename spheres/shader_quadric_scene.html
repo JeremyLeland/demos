@@ -157,12 +157,6 @@
           mat4 matrix;
         };
 
-        struct Quadric {
-          mat4 Q;
-          vec3 minBounds;
-          vec3 maxBounds;
-        };
-
         struct Shape {
           Quadric quadric;
           mat4 inverseMatrix;
@@ -188,7 +182,7 @@
             vec4 C = rayPos * shapes[ i ].inverseMatrix;
             vec4 D = rayDir * shapes[ i ].inverseMatrix;
 
-            vec4 hit = quadricSurfaceHit( shapes[ i ].quadric.Q, shapes[ i ].quadric.minBounds, shapes[ i ].quadric.maxBounds, C, D );
+            vec4 hit = quadricSurfaceHit( shapes[ i ].quadric, C, D );
             
             if ( hit.w > 0.01 && ( closestHit.w == -1.0 || hit.w < closestHit.w ) ) {
               closestHit = hit;
@@ -209,7 +203,7 @@
           if ( hitTime > 0.0 ) {
             vec4 hitPos = rayPos + rayDir * hitTime;
 
-            vec4 objNorm = quadricSurfaceNormal( shapes[ hit.shapeIndex ].quadric.Q, vec4( hit.hitInfo.xyz, 1.0 ) );
+            vec4 objNorm = quadricSurfaceNormal( shapes[ hit.shapeIndex ].quadric, vec4( hit.hitInfo.xyz, 1.0 ) );
             vec4 N = normalize( objNorm * shapes[ hit.shapeIndex ].normalMatrix );
 
             // if backside, flip normal
