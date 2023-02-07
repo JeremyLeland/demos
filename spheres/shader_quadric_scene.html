@@ -105,6 +105,11 @@
     shininess: 1000,
   };
 
+  const Coal = {
+    color: { r: 0.1, g: 0.1, b: 0.1 },
+    shininess: 2000,
+  };
+
   const json = {
     shapes: [
       // ground
@@ -130,6 +135,22 @@
         scale: { x: 0.4, y: 0.4, z: 0.4 },
         material: Snow
       },
+      // buttons
+      {
+        position: { x: 0, y: 2, z: 0.7 },
+        scale: { x: 0.05, y: 0.05, z: 0.05 },
+        material: Coal
+      },
+      {
+        position: { x: 0, y: 2.2, z: 0.7 },
+        scale: { x: 0.05, y: 0.05, z: 0.05 },
+        material: Coal
+      },
+      {
+        position: { x: 0, y: 2.4, z: 0.6 },
+        scale: { x: 0.05, y: 0.05, z: 0.05 },
+        material: Coal
+      },
       // nose
       {
         quadric: Cone,
@@ -141,6 +162,19 @@
           shininess: 100,
         }
       },
+      // eyes
+      {
+        position: { x: -0.1, y: 3, z: 0.35 },
+        scale: { x: 0.05, y: 0.05, z: 0.05 },
+        material: Coal
+      },
+      {
+        position: { x: 0.1, y: 3, z: 0.35 },
+        scale: { x: 0.05, y: 0.05, z: 0.05 },
+        material: Coal
+      },
+      // hat
+      // TODO: Cylinder with hyperbolic plane base
       // tree
       {
         quadric: Cone,
