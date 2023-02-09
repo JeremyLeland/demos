@@ -2,12 +2,16 @@
 <style>
   #panel {
     position: absolute;
+    width: 300px;
+
     display: grid;
     grid-template-columns: 50px 50px 50px 50px;
   }
+
 </style>
 
-<div id="panel"></div>
+<div id="panel">
+</div>
 
 <script type="module">
   import * as THREE from '../lib/three.module.js';
@@ -33,18 +37,40 @@
     const numInputUI = document.createElement( 'input' );
     numInputUI.type = 'number';
     numInputUI.value = val;
-    numInputUI.id = `Q${index}`;
     numInputUI.min = -10;
     numInputUI.max = 10;
     numInputUI.step = 0.1;
 
-    numInputUI.oninput =  e => {
+    numInputUI.oninput = e => {
       quadric.Q.elements[ index ] = parseFloat( numInputUI.value );
       render();
     };
 
     panelUI.appendChild( numInputUI );
   } );
+  
+  [ 'min', 'max' ].forEach( minMax => {
+    const vector = quadric[ minMax + 'Bounds' ];
+    
+    panelUI.appendChild( document.createTextNode( minMax ) );
+
+    [ 'x', 'y', 'z' ].forEach( axis => {
+      const numInputUI = document.createElement( 'input' );
+      numInputUI.type = 'number';
+      numInputUI.value = vector[ axis ];
+      numInputUI.min = -10;
+      numInputUI.max = 10;
+      numInputUI.step = 0.1;
+
+      numInputUI.oninput = e => {
+        vector[ axis ] = parseFloat( numInputUI.value );
+        render();
+      };
+
+      panelUI.appendChild( numInputUI );
+    } );
+  } );
+
 
   const FragMain = /* glsl */ `
     precision highp float;
