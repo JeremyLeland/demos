@@ -1,0 +1,184 @@
+<link rel="stylesheet" href="../grid.css">
+<style>
+  #panel {
+    position: absolute;
+    display: grid;
+    grid-template-columns: 50px 50px 50px 50px;
+  }
+</style>
+
+<div id="panel"></div>
+
+<script type="module">
+  import * as THREE from '../lib/three.module.js';
+  import { OrbitControls } from '../lib/controls/OrbitControls.js';
+
+  import * as Shaders from './QuadricShaders.js';
+
+  const quadric = {
+    Q: new THREE.Matrix4().set(
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, -1
+    ),
+    minBounds: new THREE.Vector3( -2, -2, -2 ),
+    maxBounds: new THREE.Vector3(  2,  2,  2 ),
+  };
+
+
+  const panelUI = document.getElementById( 'panel' );
+
+  quadric.Q.elements.forEach( ( val, index ) => {
+    const numInputUI = document.createElement( 'input' );
+    numInputUI.type = 'number';
+    numInputUI.value = val;
+    numInputUI.id = `Q${index}`;
+    numInputUI.min = -10;
+    numInputUI.max = 10;
+    numInputUI.step = 0.1;
+
+    numInputUI.oninput =  e => {
+      quadric.Q.elements[ index ] = parseFloat( numInputUI.value );
+      render();
+    };
+
+    panelUI.appendChild( numInputUI );
+  } );
+
+  const FragMain = /* glsl */ `
+    precision highp float;
+    precision highp int;
+
+    in vec4 screenPos;
+    out vec4 outColor;
+
+    ${ Shaders.QuadricHit }
+    ${ Shaders.Lighting }
+
+    struct Camera {
+      mat4 matrix;
+    };
+
+    struct Shape {
+      Quadric quadric;
+      mat4 inverseMatrix;
+      mat4 normalMatrix;
+      Material material;
+    };
+
+    uniform Camera camera;
+    uniform Shape shape;
+    uniform Light light;
+    
+    void main() {
+
+      // TODO: Do this once before the shader
+      mat4 cameraMatrix = transpose( camera.matrix );
+
+      vec4 rayPos = ( vec4( 0.0, 0.0, 0.0, 1.0 ) * camera.matrix );
+      vec4 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * camera.matrix );
+
+      vec4 shapeHit = quadricHit( shape.quadric, shape.inverseMatrix, rayPos, rayDir );
+      float hitTime = shapeHit.w;
+
+      if ( hitTime > 0.0 ) {
+        vec4 hitPos = rayPos + rayDir * hitTime;
+
+        vec4 N = quadricNormal( shape.quadric, shapeHit.xyz, shape.normalMatrix, rayDir );
+
+        vec4 toLight = light.position - hitPos;
+        float lightDist = length( toLight );
+        vec4 L = normalize( toLight );
+        vec4 V = normalize( rayPos - hitPos );
+
+        vec4 lightHit = quadricHit( shape.quadric, shape.inverseMatrix, hitPos, L );
+
+        if ( lightHit.w < 0.01 || lightHit.w > lightDist ) {
+          outColor = getLighting( L, V, N, light, shape.material );
+        }
+      }
+      else {
+        discard;
+      }
+    }
+  `;
+
+  function getShapeUniform() {
+
+    const object = new THREE.Object3D();
+    object.position.set( 0, 1, 0 );
+    object.rotation.set( 0, 0, 0 );
+    object.scale.set( 1, 1, 1 );
+    object.updateMatrixWorld();
+
+    const inverseMatrix = object.matrixWorld.clone().invert();
+    const normalMatrix = inverseMatrix.clone().transpose();
+
+    // NOTE: Matrices need to be transposed to be used in GLSL
+    return {
+      quadric: quadric,
+      inverseMatrix: inverseMatrix.transpose(),
+      normalMatrix: normalMatrix.transpose(),
+      material: {
+        color: new THREE.Vector4( 0.5, 0.25, 0, 1 ),
+        shininess: 2000,
+      },
+    };
+  }
+
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color( 0x111111 );
+
+  const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 100 );
+  camera.position.set( 0, 0, 5 );
+
+  const uniforms = {
+    // camera: { value: { matrix: camera.matrixWorld.clone().transpose() }, },
+    shape: { value: getShapeUniform() },
+    light: { 
+      value: {
+        position: new THREE.Vector4( 1, 1, 5, 1 ),
+        color: new THREE.Vector4( 1, 1, 1, 1 ),
+      },
+    },
+  };
+
+  scene.add( new THREE.Mesh(
+    new THREE.PlaneGeometry( 2, 2 ),
+    new THREE.RawShaderMaterial( {
+      uniforms: uniforms,
+      vertexShader: Shaders.VertScreenPos,
+      fragmentShader: FragMain,
+      glslVersion: THREE.GLSL3,
+    } )
+  ) );
+
+  const renderer = new THREE.WebGLRenderer();
+  renderer.setPixelRatio( window.devicePixelRatio );
+
+  function render() {
+
+    camera.updateMatrixWorld();
+    uniforms.camera = { value: { matrix: camera.matrixWorld.clone().transpose() }, };
+
+    renderer.render( scene, camera );
+  }
+
+  document.body.appendChild( renderer.domElement );
+  window.onresize = () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    render();
+  }
+  window.onresize();
+
+  const controls = new OrbitControls( camera, renderer.domElement );
+  controls.target.set( 0, 0, 0 );
+  controls.update();
+  controls.addEventListener( 'change', render );
+
+</script>
