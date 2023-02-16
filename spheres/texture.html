@@ -45,18 +45,29 @@
         //  - https://thebookofshaders.com/edit.php#09/mirrortiles.frag
 
         void main() {
-
           float theta = atan( v_pos.z, v_pos.x );
 
-          // TODO: Mirror for top half
+          float y = v_pos.y * 2.0;
 
-          float val = 0.2 + sin( 5.0 * theta ) * 0.2;
+          if ( fract( y * 0.5 ) > 0.5 ) {
+            theta = 2.0 * PI - theta;
+            y = 1.0 - y;
+          }
 
-          outColor = vec3( 
-            0.0,
-            smoothstep( val, val, fract( v_pos.y ) ), 
-            0.0 
-          );
+          y = fract( y );
+
+          float val = 0.5 + sin( 5.0 * theta ) * 0.5;
+          float result = smoothstep( val, val, y );
+
+          if ( v_pos.y > 0.5 ) {
+            result = 1.0;
+          }
+
+          outColor = vec3( 0.0, 0.25 + 0.25 * result, 0.0 );
+
+          if ( v_pos.y < -0.5 && result < 0.5 ) {
+            discard;
+          }
         }
       `,
       glslVersion: THREE.GLSL3,
