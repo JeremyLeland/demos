@@ -1,0 +1,67 @@
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import * as THREE from '../lib/three.module.js';
+  import * as MeshDemo from './meshDemo.js';
+
+  const uniforms = {
+  };
+
+  MeshDemo.meshDemo( new THREE.Mesh(
+    new THREE.ConeGeometry( 1, 2, 16 ),
+    new THREE.ShaderMaterial( {
+      uniforms: uniforms,
+      vertexShader: /* glsl */ `
+        out vec3 v_pos;
+        out vec3 v_normal;
+
+        void main() {
+          v_pos = position;
+          v_normal = normal;
+          
+          gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        #define PI 3.14159265359
+
+        in vec3 v_pos;
+        in vec3 v_normal;
+
+        out vec3 outColor;
+
+        // Tree inspired by:
+        //  - https://thebookofshaders.com/edit.php#09/zigzag.frag
+        //  - https://thebookofshaders.com/edit.php#09/mirrortiles.frag
+
+        void main() {
+          float theta = atan( v_pos.z, v_pos.x );
+
+          float y = v_pos.y * 2.0;
+
+          if ( fract( y * 0.5 ) > 0.5 ) {
+            theta = 2.0 * PI - theta;
+            y = 1.0 - y;
+          }
+
+          y = fract( y );
+
+          float val = 0.5 + sin( 5.0 * theta ) * 0.5;
+          float result = smoothstep( val, val, y );
+
+          if ( v_pos.y > 0.5 ) {
+            result = 1.0;
+          }
+
+          outColor = vec3( 0.0, 0.25 + 0.25 * result, 0.0 );
+
+          if ( v_pos.y < -0.5 && result < 0.5 ) {
+            discard;
+          }
+        }
+      `,
+      glslVersion: THREE.GLSL3,
+    } )
+  ) );
+
+</script>
