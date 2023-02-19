@@ -146,59 +146,98 @@
     }
   `;
 
-  const geometry = new THREE.PlaneGeometry( 2, 2 );
-  const shader = new THREE.RawShaderMaterial( {
-    uniforms: {
-      camera: { value: { matrix: camera.matrixWorld, }, },
-      sphereInverseTransform: { value: new THREE.Matrix4().set(
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1,
-      ) },
-    },
-    vertexShader: VertScreenPos,
-    fragmentShader: /*glsl*/`
-      precision highp float;
-      precision highp int;
+  const mainShader = /*glsl*/`
+    precision highp float;
+    precision highp int;
 
-      in vec4 screenPos;
+    in vec4 screenPos;
 
-      struct Camera {
-        mat4 matrix;
-      };
+    struct Camera {
+      mat4 matrix;
+    };
 
-      uniform Camera camera;
+    uniform Camera camera;
 
-      uniform mat4 sphereInverseTransform;
+    uniform mat4 sphereInverseTransform;
 
-      layout(location = 0) out vec4 gPosition;
-      layout(location = 1) out vec4 gNormal;
+    layout(location = 0) out vec4 gPosition;
+    layout(location = 1) out vec4 gNormal;
 
-      ${ SphereHit }      
-      
-      void main() {
+    ${ SphereHit }      
+    
+    void main() {
 
-        // TODO: Do this once before the shader
-        mat4 cameraMatrix = transpose( camera.matrix );
+      // TODO: Do this once before the shader
+      mat4 cameraMatrix = transpose( camera.matrix );
 
-        vec3 rayPos = ( vec4( 0.0, 0.0, 0.0, 1.0 ) * cameraMatrix ).xyz;
-        vec3 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * cameraMatrix ).xyz;
+      vec3 rayPos = ( vec4( 0.0, 0.0, 0.0, 1.0 ) * cameraMatrix ).xyz;
+      vec3 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * cameraMatrix ).xyz;
 
-        Hit hit = getSphereHit( rayPos, rayDir );
+      Hit hit = getSphereHit( rayPos, rayDir );
 
-        if ( hit.time > 0.0 ) { 
-          gPosition = vec4( hit.position, 1.0 );
-          gNormal = vec4( hit.normal, 0.0 );
-        }
+      if ( hit.time > 0.0 ) { 
+        gPosition = vec4( hit.position, hit.time );   // TODO: Check hit.time and only output if this is closer
+        gNormal = vec4( hit.normal, 0.0 );
       }
-    `,
-    glslVersion: THREE.GLSL3,
-  } );
+      else {
+        discard;
+      }
+    }
+  `;
 
-  const mesh = new THREE.Mesh( geometry, shader );
+  scene.add( new THREE.Mesh( 
+    new THREE.PlaneGeometry( 2, 2 ), 
+    new THREE.RawShaderMaterial( {
+      uniforms: {
+        camera: { value: { matrix: camera.matrixWorld, }, },
+        sphereInverseTransform: { value: new THREE.Matrix4().set(
+          1, 0, 0, 0,
+          0, 1, 0, 0,
+          0, 0, 1, 0,
+          0, 0, 0, 1,
+        ) },
+      },
+      vertexShader: VertScreenPos,
+      fragmentShader: mainShader,
+      glslVersion: THREE.GLSL3,
+    } ),
+  ) );
 
-  scene.add( mesh );
+  scene.add( new THREE.Mesh( 
+    new THREE.PlaneGeometry( 2, 2 ), 
+    new THREE.RawShaderMaterial( {
+      uniforms: {
+        camera: { value: { matrix: camera.matrixWorld, }, },
+        sphereInverseTransform: { value: new THREE.Matrix4().set(
+          1, 0, 0, 0,
+          0, 1, 0, 0,
+          0, 0, 1, 0,
+          2.2, -0.1, -2.5, 1,
+        ) },
+      },
+      vertexShader: VertScreenPos,
+      fragmentShader: mainShader,
+      glslVersion: THREE.GLSL3,
+    } ),
+  ) );
+
+  scene.add( new THREE.Mesh( 
+    new THREE.PlaneGeometry( 2, 2 ), 
+    new THREE.RawShaderMaterial( {
+      uniforms: {
+        camera: { value: { matrix: camera.matrixWorld, }, },
+        sphereInverseTransform: { value: new THREE.Matrix4().set(
+          1, 0, 0, 0,
+          0, 1, 0, 0,
+          0, 0, 1, 0,
+          1.1, -0.4, -2.4, 1,
+        ) },
+      },
+      vertexShader: VertScreenPos,
+      fragmentShader: mainShader,
+      glslVersion: THREE.GLSL3,
+    } ),
+  ) );
 
 
   // TODO: For each light, check pixel for shadow and render to a (single value?) texture
