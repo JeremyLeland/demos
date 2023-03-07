@@ -30,9 +30,12 @@
     maxBounds: new THREE.Vector3(  2,  2,  2 ),
   };
 
+  const lightPos = new THREE.Vector4( 1, 1, 5, 1 );
+
 
   const panelUI = document.getElementById( 'panel' );
 
+  // Quadric matrix
   quadric.Q.elements.forEach( ( val, index ) => {
     const numInputUI = document.createElement( 'input' );
     numInputUI.type = 'number';
@@ -49,6 +52,7 @@
     panelUI.appendChild( numInputUI );
   } );
   
+  // Quadric bounds
   [ 'min', 'max' ].forEach( minMax => {
     const vector = quadric[ minMax + 'Bounds' ];
     
@@ -69,6 +73,24 @@
 
       panelUI.appendChild( numInputUI );
     } );
+  } );
+
+  // Light position
+  panelUI.appendChild( document.createTextNode( 'Light' ) );
+  [ 'x', 'y', 'z' ].forEach( axis => {
+    const numInputUI = document.createElement( 'input' );
+    numInputUI.type = 'number';
+    numInputUI.value = lightPos[ axis ];
+    numInputUI.min = -10;
+    numInputUI.max = 10;
+    numInputUI.step = 0.1;
+
+    numInputUI.oninput = e => {
+      lightPos[ axis ] = parseFloat( numInputUI.value );
+      render();
+    };
+
+    panelUI.appendChild( numInputUI );
   } );
 
 
@@ -179,12 +201,14 @@
   const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 100 );
   camera.position.set( 0, 0, 5 );
 
+  
+
   const uniforms = {
     // camera: { value: { matrix: camera.matrixWorld.clone().transpose() }, },
     shape: { value: getShapeUniform() },
     light: { 
       value: {
-        position: new THREE.Vector4( 1, 1, 5, 1 ),
+        position: lightPos,
         color: new THREE.Vector4( 1, 1, 1, 1 ),
       },
     },
