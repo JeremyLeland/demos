@@ -5,31 +5,35 @@
 
 <script type="module">
 
+  import { Curve } from './Curve.js';
+
   const canvas = document.getElementById( 'canvas' );
   const ctx = canvas.getContext( '2d' );
 
-  const start = { x: 32 * 2, y: 32 * 2 };
-  const cp1 = { x: 100, y: 500 };
-  const cp2 = { x: 600, y: 100 };
-  const end = { x: 32 * 20, y: 32 * 20 };
+  const curves = Curve.getCurvesThroughPoints( [
+    [ 64, 64 ],
+    [ 320, 420 ],
+    [ 720, 280 ],
+    [ 700, 600 ], 
+  ] );
 
-  const roadPath = new Path2D();
-  roadPath.moveTo( start.x, start.y );
-  roadPath.bezierCurveTo( cp1.x, cp1.y, cp2.x, cp2.y, end.x, end.y );
+  const path = new Path2D();
+  path.moveTo( curves[ 0 ].start[ 0 ], curves[ 0 ].start[ 1 ] );
+  curves.forEach( curve => path.bezierCurveTo(
+    curve.control1[ 0 ], curve.control1[ 1 ], 
+    curve.control2[ 0 ], curve.control2[ 1 ], 
+    curve.end[ 0 ],      curve.end[ 1 ]
+  ) );
+  
+  ctx.strokeStyle = 'gray';
+  ctx.lineWidth = 32;
+  ctx.lineCap = 'round';
+  ctx.stroke( path );
 
-  drawRoad( roadPath );
-
-  function drawRoad( path ) {
-    ctx.strokeStyle = 'gray';
-    ctx.lineWidth = 32;
-    ctx.lineCap = 'round';
-    ctx.stroke( path );
-
-    ctx.strokeStyle = 'yellow';
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'butt';
-    ctx.setLineDash( [ 16, 16 ] );
-    ctx.stroke( path );
-  }
+  ctx.strokeStyle = 'yellow';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'butt';
+  ctx.setLineDash( [ 16, 16 ] );
+  ctx.stroke( path );
 
 </script>
