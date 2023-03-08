@@ -1,0 +1,26 @@
+<title>Road</title>
+<link rel="stylesheet" href="../grid.css">
+
+<canvas id="canvas" width="800px" height="800px"></canvas>
+
+<script type="module">
+
+  const canvas = document.getElementById( 'canvas' );
+  const ctx = canvas.getContext( '2d' );
+
+  ctx.beginPath();
+  ctx.moveTo( 32 * 2, 32 * 2 );
+  ctx.lineTo( 32 * 20, 32 * 20 );
+
+  ctx.strokeStyle = 'gray';
+  ctx.lineWidth = 32;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  ctx.strokeStyle = 'yellow';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'butt';
+  ctx.setLineDash( [ 16, 16 ] );
+  ctx.stroke();
+
+</script>
