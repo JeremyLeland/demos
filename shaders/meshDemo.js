@@ -37,4 +37,6 @@ export function meshDemo( mesh ) {
   controls.target.set( 0, 0, 0 );
   controls.update();
   controls.addEventListener( 'change', render );
+
+  return render;
 }

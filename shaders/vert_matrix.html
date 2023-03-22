@@ -1,0 +1,75 @@
+<link rel="stylesheet" href="../grid.css">
+<style>
+  #panel {
+    position: absolute;
+    width: 300px;
+
+    display: grid;
+    grid-template-columns: 50px 50px 50px 50px;
+  }
+
+</style>
+
+<div id="panel"></div>
+
+<script type="module">
+  import * as THREE from '../lib/three.module.js';
+  import * as MeshDemo from './meshDemo.js';
+
+  const matrix = new THREE.Matrix4();
+
+  const panelUI = document.getElementById( 'panel' );
+
+  const uniforms = {
+    matrix: { value: matrix }
+  };
+
+  const render = MeshDemo.meshDemo( new THREE.Mesh(
+    new THREE.SphereGeometry( 1, 16, 16 ),
+    new THREE.ShaderMaterial( {
+      uniforms: uniforms,
+      vertexShader: /* glsl */ `
+        out vec3 v_pos;
+        out vec3 v_normal;
+
+        uniform mat4 matrix;
+
+        void main() {
+
+          v_pos = ( matrix * vec4( position, 1.0 ) ).xyz;
+          v_normal = normal;
+          
+          gl_Position = projectionMatrix * modelViewMatrix * matrix * vec4( v_pos, 1.0 );
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        in vec3 v_pos;
+        in vec3 v_normal;
+
+        out vec3 outColor;
+
+        void main() {
+          outColor = normalize( v_normal );
+        }
+      `,
+      glslVersion: THREE.GLSL3,
+    } )
+  ) );
+
+  matrix.elements.forEach( ( val, index ) => {
+    const numInputUI = document.createElement( 'input' );
+    numInputUI.type = 'number';
+    numInputUI.value = val;
+    numInputUI.min = -10;
+    numInputUI.max = 10;
+    numInputUI.step = 0.1;
+
+    numInputUI.oninput = e => {
+      matrix.elements[ index ] = parseFloat( numInputUI.value );
+      render();
+    };
+
+    panelUI.appendChild( numInputUI );
+  } );
+
+</script>
