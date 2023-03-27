@@ -1,0 +1,38 @@
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import * as THREE from '../lib/three.module.js';
+  import * as MeshDemo from './meshDemo.js';
+
+  const uniforms = {
+  };
+
+  MeshDemo.meshDemo( new THREE.Mesh(
+    new THREE.SphereGeometry( 1, 32, 32 ),
+    new THREE.ShaderMaterial( {
+      uniforms: uniforms,
+      vertexShader: /* glsl */ `
+        out vec3 v_pos;
+
+        void main() {
+          v_pos = position;
+          
+          gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        in vec3 v_pos;
+
+        out vec3 outColor;
+
+        void main() {
+          float y = v_pos.y * 2.0;
+
+          outColor = fract( y ) > 0.5 ? vec3( 1.0, 1.0, 0.3 ) : vec3( 0.1 );
+        }
+      `,
+      glslVersion: THREE.GLSL3,
+    } )
+  ) );
+
+</script>
