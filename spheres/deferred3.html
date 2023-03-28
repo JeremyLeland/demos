@@ -1,0 +1,238 @@
+<link rel="stylesheet" href="../grid.css">
+<script type="module">
+  import * as THREE from '../lib/three.module.js';
+  import { OrbitControls } from '../lib/controls/OrbitControls.js';
+
+  const renderer = new THREE.WebGLRenderer();
+  renderer.setPixelRatio( window.devicePixelRatio );
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  document.body.appendChild( renderer.domElement );
+
+  const renderTarget = new THREE.WebGLMultipleRenderTargets(
+    window.innerWidth * window.devicePixelRatio,
+    window.innerHeight * window.devicePixelRatio,
+    2
+  );
+
+  for ( let i = 0; i < 2; i ++ ) {
+    renderTarget.texture[ i ].minFilter = THREE.NearestFilter;
+    renderTarget.texture[ i ].magFilter = THREE.NearestFilter;
+    // renderTarget.texture[ i ].format = THREE.RGBAFormat;
+    renderTarget.texture[ i ].type = THREE.FloatType;
+  }
+
+  renderTarget.texture[ 0 ].name = 'position';
+  renderTarget.texture[ 1 ].name = 'normal';
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color( 0x444 );
+
+  const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 100 );
+  camera.position.set( 0, 0, 3 );
+
+  const VertScreenPos = /* glsl */ `
+    in vec3 position;
+    out vec4 screenPos;
+
+    void main() {
+      screenPos = vec4( position, 1.0 );
+      gl_Position = screenPos;
+    }
+  `;
+
+  const VertUV = /*glsl*/`
+    in vec3 position;
+    in vec2 uv;
+
+    out vec2 v_uv;
+    out vec4 v_screenPos;
+
+    uniform mat4 modelViewMatrix;
+    uniform mat4 projectionMatrix;
+
+    void main() {
+      v_uv = uv;
+      v_screenPos = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+      gl_Position = v_screenPos;
+    }
+  `;
+
+  const VertPosNorm = /*glsl*/`
+    in vec3 position;
+    in vec3 normal;
+
+    out vec3 v_position;
+    out vec3 v_normal;
+
+    uniform mat4 modelViewMatrix;
+    uniform mat4 projectionMatrix;
+
+    void main() {
+      v_position = position;
+      v_normal = normal;
+
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }
+  `;
+
+  const FragPosNorm = /* glsl */ `
+    precision highp float;
+
+    in vec3 v_position;
+    in vec3 v_normal;
+
+    layout(location = 0) out vec4 gPosition;
+    layout(location = 1) out vec4 gNormal;
+
+    void main() {
+      gPosition = vec4( v_position, 1.0 );
+      gNormal = vec4( normalize( v_normal ), 0.0 );
+    }
+  `;
+
+  const FragLighting =  /* glsl */ `
+    precision highp float;
+
+    in vec2 v_uv;
+
+    out vec4 pc_FragColor;
+
+    uniform sampler2D tPosition;
+    uniform sampler2D tNormal;
+
+    uniform vec3 eyePos;
+    uniform vec3 lightPos;
+    uniform vec3 lightColor;
+
+    void main() {
+
+      vec3 position = texture( tPosition, v_uv ).rgb;
+      vec3 normal = texture( tNormal, v_uv ).rgb;
+  
+      vec3 N = normal;
+      vec3 L = normalize( lightPos - position );
+      float NdotL = dot( N, L );
+
+      if ( NdotL > 0.0 ) {
+        vec3 V = normalize( eyePos - position );
+        vec3 H = normalize( L + V );
+        
+        float NdotH = dot( N, H );
+        float shininess = 2000.0;
+        
+        float diffuse = max( 0.0, NdotL );
+        float specular = ( NdotL > 0.0 ) ? pow( max( 0.0, NdotH ), shininess ) : 0.0;
+      
+        pc_FragColor.rgb = lightColor * ( diffuse + specular );
+        pc_FragColor.a = 1.0;
+      }
+    }
+  `;
+
+  //
+  // Geometry pass
+  //
+  [
+    [ 0, 0, 0 ],
+    [ 1, 1, 0 ],
+    [ 1, 0, 0 ],
+  ].forEach( pos => { 
+    const mesh = new THREE.Mesh( 
+      new THREE.SphereGeometry( 1, 16, 16 ), 
+      new THREE.RawShaderMaterial( {
+        vertexShader: VertPosNorm,
+        fragmentShader: FragPosNorm,
+        glslVersion: THREE.GLSL3,
+      } )
+    );
+
+    mesh.position.set( pos[ 0 ], pos[ 1 ], pos[ 2 ] );
+
+    scene.add( mesh );
+  } );
+
+  //
+  // Lighting pass
+  //
+  const postScene = new THREE.Scene();
+  const postCamera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
+
+  postScene.add( new THREE.Mesh(
+    new THREE.PlaneGeometry( 2, 2 ),
+    new THREE.RawShaderMaterial( {
+      uniforms: {
+        tPosition: { value: renderTarget.texture[ 0 ] },
+        tNormal:   { value: renderTarget.texture[ 1 ] },
+        eyePos: { value: camera.position },
+        lightPos: { value: new THREE.Vector3( -10, 5, 5 ) },
+        lightColor: { value: new THREE.Vector3( 1, 0, 0 ) },
+      },
+      vertexShader: VertUV,
+      fragmentShader: FragLighting,
+      glslVersion: THREE.GLSL3,
+      blending: THREE.AdditiveBlending,
+    } )
+  ) );
+
+  postScene.add( new THREE.Mesh(
+    new THREE.PlaneGeometry( 2, 2 ),
+    new THREE.RawShaderMaterial( {
+      uniforms: {
+        tPosition: { value: renderTarget.texture[ 0 ] },
+        tNormal:   { value: renderTarget.texture[ 1 ] },
+        eyePos: { value: camera.position },
+        lightPos: { value: new THREE.Vector3( 10, 5, 5 ) },
+        lightColor: { value: new THREE.Vector3( 0, 1, 0 ) },
+      },
+      vertexShader: VertUV,
+      fragmentShader: FragLighting,
+      glslVersion: THREE.GLSL3,
+      blending: THREE.AdditiveBlending,
+    } )
+  ) );
+
+  postScene.add( new THREE.Mesh(
+    new THREE.PlaneGeometry( 2, 2 ),
+    new THREE.RawShaderMaterial( {
+      uniforms: {
+        tPosition: { value: renderTarget.texture[ 0 ] },
+        tNormal:   { value: renderTarget.texture[ 1 ] },
+        eyePos: { value: camera.position },
+        lightPos: { value: new THREE.Vector3( 0, 10, 0 ) },
+        lightColor: { value: new THREE.Vector3( 0, 0, 1 ) },
+      },
+      vertexShader: VertUV,
+      fragmentShader: FragLighting,
+      glslVersion: THREE.GLSL3,
+      blending: THREE.AdditiveBlending,
+    } )
+  ) );
+
+  
+  window.onresize = () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+    const dpr = renderer.getPixelRatio();
+    renderTarget.setSize( window.innerWidth * dpr, window.innerHeight * dpr );
+
+    render();
+  }
+  window.onresize();
+
+  function render() {
+    renderer.setRenderTarget( renderTarget );
+    renderer.render( scene, camera );
+
+    renderer.setRenderTarget( null );
+    renderer.render( postScene, postCamera );
+  }
+
+  const controls = new OrbitControls( camera, renderer.domElement );
+  controls.target.set( 0, 0, 0 );
+  controls.update();
+  controls.addEventListener( 'change', render );
+
+</script>
