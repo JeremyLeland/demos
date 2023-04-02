@@ -11,7 +11,7 @@
   const renderTarget = new THREE.WebGLMultipleRenderTargets(
     window.innerWidth * window.devicePixelRatio,
     window.innerHeight * window.devicePixelRatio,
-    2
+    3
   );
 
   for ( let i = 0; i < 2; i ++ ) {
@@ -23,6 +23,7 @@
 
   renderTarget.texture[ 0 ].name = 'position';
   renderTarget.texture[ 1 ].name = 'normal';
+  renderTarget.texture[ 2 ].name = 'diffuse';
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color( 0x444 );
@@ -60,9 +61,11 @@
   const VertPosNorm = /*glsl*/`
     in vec3 position;
     in vec3 normal;
+    in vec2 uv;
 
     out vec3 v_position;
     out vec3 v_normal;
+    out vec2 v_uv;
 
     uniform mat4 modelViewMatrix;
     uniform mat4 projectionMatrix;
@@ -70,6 +73,7 @@
     void main() {
       v_position = position;
       v_normal = normal;
+      v_uv = uv;
 
       gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
     }
@@ -80,13 +84,18 @@
 
     in vec3 v_position;
     in vec3 v_normal;
+    in vec2 v_uv;
 
     layout(location = 0) out vec4 gPosition;
     layout(location = 1) out vec4 gNormal;
+    layout(location = 2) out vec4 gDiffuse;
 
     void main() {
       gPosition = vec4( v_position, 1.0 );
       gNormal = vec4( normalize( v_normal ), 0.0 );
+
+      bvec2 uv = lessThan( fract( v_uv * 8.0 ), vec2( 0.5 ) );
+      gDiffuse = vec4( vec3( uv.x ^^ uv.y ? 0.8 : 0.4 ), 1.0 );
     }
   `;
 
@@ -99,6 +108,7 @@
 
     uniform sampler2D tPosition;
     uniform sampler2D tNormal;
+    uniform sampler2D tDiffuse;
 
     uniform vec3 eyePos;
     uniform vec3 lightPos;
@@ -108,6 +118,7 @@
 
       vec3 position = texture( tPosition, v_uv ).rgb;
       vec3 normal = texture( tNormal, v_uv ).rgb;
+      vec3 diffuse = texture( tDiffuse, v_uv ).rgb;
   
       vec3 N = normal;
       vec3 L = normalize( lightPos - position );
@@ -120,10 +131,10 @@
         float NdotH = dot( N, H );
         float shininess = 2000.0;
         
-        float diffuse = max( 0.0, NdotL );
-        float specular = ( NdotL > 0.0 ) ? pow( max( 0.0, NdotH ), shininess ) : 0.0;
+        float lightDiffuse = max( 0.0, NdotL );
+        float lightSpecular = ( NdotL > 0.0 ) ? pow( max( 0.0, NdotH ), shininess ) : 0.0;
       
-        pc_FragColor.rgb = lightColor * ( diffuse + specular );
+        pc_FragColor.rgb = lightColor * ( diffuse * lightDiffuse + lightSpecular );
         pc_FragColor.a = 1.0;
       }
     }
@@ -163,6 +174,7 @@
       uniforms: {
         tPosition: { value: renderTarget.texture[ 0 ] },
         tNormal:   { value: renderTarget.texture[ 1 ] },
+        tDiffuse:  { value: renderTarget.texture[ 2 ] },
         eyePos: { value: camera.position },
         lightPos: { value: new THREE.Vector3( -10, 5, 5 ) },
         lightColor: { value: new THREE.Vector3( 1, 0, 0 ) },
@@ -180,6 +192,7 @@
       uniforms: {
         tPosition: { value: renderTarget.texture[ 0 ] },
         tNormal:   { value: renderTarget.texture[ 1 ] },
+        tDiffuse:  { value: renderTarget.texture[ 2 ] },
         eyePos: { value: camera.position },
         lightPos: { value: new THREE.Vector3( 10, 5, 5 ) },
         lightColor: { value: new THREE.Vector3( 0, 1, 0 ) },
@@ -197,6 +210,7 @@
       uniforms: {
         tPosition: { value: renderTarget.texture[ 0 ] },
         tNormal:   { value: renderTarget.texture[ 1 ] },
+        tDiffuse:  { value: renderTarget.texture[ 2 ] },
         eyePos: { value: camera.position },
         lightPos: { value: new THREE.Vector3( 0, 10, 0 ) },
         lightColor: { value: new THREE.Vector3( 0, 0, 1 ) },
