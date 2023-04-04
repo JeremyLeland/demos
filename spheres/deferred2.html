@@ -163,7 +163,15 @@
     layout(location = 0) out vec4 gPosition;
     layout(location = 1) out vec4 gNormal;
 
-    ${ SphereHit }      
+    ${ SphereHit }
+
+    float getDepth( float dist ) {
+      float zNear = 0.1, zFar = 100.0;     // from above
+      float a = zFar / ( zFar - zNear );
+      float b = zFar * zNear / ( zNear - zFar );
+      float z = dist;
+      return a + b / z;
+    }
     
     void main() {
 
@@ -174,9 +182,10 @@
       vec3 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * cameraMatrix ).xyz;
 
       Hit hit = getSphereHit( rayPos, rayDir );
+      gl_FragDepth = getDepth( hit.time );
 
       if ( hit.time > 0.0 ) { 
-        gPosition = vec4( hit.position, hit.time );   // TODO: Check hit.time and only output if this is closer
+        gPosition = vec4( hit.position, 1.0 );
         gNormal = vec4( hit.normal, 0.0 );
       }
       else {
