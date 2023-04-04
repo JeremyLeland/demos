@@ -4,6 +4,21 @@
   import * as THREE from '../lib/three.module.js';
   import { OrbitControls } from '../lib/controls/OrbitControls.js';
 
+  const renderTarget = new THREE.WebGLMultipleRenderTargets(
+    window.innerWidth * window.devicePixelRatio,
+    window.innerHeight * window.devicePixelRatio,
+    1
+  );
+
+  for ( let i = 0; i < 1; i ++ ) {
+    renderTarget.texture[ i ].minFilter = THREE.NearestFilter;
+    renderTarget.texture[ i ].magFilter = THREE.NearestFilter;
+    // renderTarget.texture[ i ].format = THREE.RGBAFormat;
+    renderTarget.texture[ i ].type = THREE.FloatType;
+  }
+
+  renderTarget.texture[ 0 ].name = 'test';
+
   const scene = new THREE.Scene();
   scene.background = new THREE.Color( 0x111111 );
 
@@ -61,11 +76,59 @@
     } )
   ) );
 
+  const postScene = new THREE.Scene();
+  const postCamera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
+
+  postScene.add( new THREE.Mesh(
+    new THREE.PlaneGeometry( 2, 2 ),
+    new THREE.RawShaderMaterial( {
+      uniforms: {
+        tPosition: { value: renderTarget.texture[ 0 ] },
+      },
+      vertexShader: /*glsl*/`
+        in vec3 position;
+        in vec2 uv;
+
+        out vec2 v_uv;
+
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+
+        void main() {
+          v_uv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        precision highp float;
+
+        in vec2 v_uv;
+        out vec4 pc_FragColor;
+        uniform sampler2D tPosition;
+        
+        void main() {
+
+          vec3 position = texture( tPosition, v_uv ).rgb;
+          
+          // Reverse order to prove this one ran
+          pc_FragColor.bgr = position;
+          pc_FragColor.a = 1.0;
+        }
+      `,
+      glslVersion: THREE.GLSL3,
+      blending: THREE.AdditiveBlending,
+    } )
+  ) );
+
   const renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio( window.devicePixelRatio );
 
   function render() {
+    renderer.setRenderTarget( renderTarget );
     renderer.render( scene, camera );
+
+    renderer.setRenderTarget( null );
+    renderer.render( postScene, postCamera );
   }
 
   document.body.appendChild( renderer.domElement );
