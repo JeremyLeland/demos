@@ -230,6 +230,13 @@
         vertexShader: VertUV,
         fragmentShader: FragShadow,
         glslVersion: THREE.GLSL3,
+        colorWrite: false,
+        stencilWrite: true,
+        stencilRef: 1,
+        stencilFunc: THREE.AlwaysStencilFunc,
+        // stencilFail: THREE.ReplaceStencilOp,
+        // stencilZFail: THREE.ReplaceStencilOp,
+        stencilZPass: THREE.ReplaceStencilOp,
       } )
     ) );
   } );
@@ -293,6 +300,9 @@
       fragmentShader: FragLight,
       glslVersion: THREE.GLSL3,
       blending: THREE.AdditiveBlending,
+      stencilWrite: true,
+      stencilRef: 0,
+      stencilFunc: THREE.EqualStencilFunc,
     } )
   ) );
 
