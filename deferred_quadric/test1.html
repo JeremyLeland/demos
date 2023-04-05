@@ -8,18 +8,17 @@
 
   const json = {
     shapes: [
-      // body
       {
-        position: { x: 0, y: 1, z: 0 },
-        scale: { x: 1, y: 1, z: 1 },
+        position: { x: 0, y: 0, z: 0 },
+         scale: { x: 1, y: 1, z: 1 },
       },
       {
-        position: { x: 0, y: 2, z: 0 },
-        scale: { x: 0.7, y: 0.7, z: 0.7 },
+        position: { x: 0, y: 0, z: 2 },
+        scale: { x: 0.5, y: 0.5, z: 0.5 },
       },
       {
-        position: { x: 0, y: 2.8, z: 0 },
-        scale: { x: 0.4, y: 0.4, z: 0.4 },
+        position: { x: 0, y: 0, z: 3 },
+        scale: { x: 0.2, y: 0.2, z: 0.2 },
       },
     ],
   };
@@ -27,7 +26,20 @@
   const shapes = json.shapes.map( shapeJson => new QuadricShape( shapeJson ) );
 
 
-  const lightPos = new THREE.Vector4( 10, 10, 10, 1 );
+  const lightPos = new THREE.Vector4( 0, 0, 10, 1 );
+
+  
+
+
+  const renderer = new THREE.WebGLRenderer();
+  renderer.setPixelRatio( window.devicePixelRatio );
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  document.body.appendChild( renderer.domElement );
+
+
+  //
+  // Main geometry (position, normals, diffuse)
+  //
 
   const VertScreenPos = /* glsl */ `
     in vec3 position;
@@ -86,7 +98,7 @@
 
         vec4 N = quadricNormal( shape.quadric, shapeHit.xyz, shape.normalMatrix, rayDir );
 
-        gPosition = vec4( shapeHit.xyz, 1.0 );
+        gPosition = hitPos;
         gNormal = vec4( N );
       }
       else {
@@ -95,11 +107,31 @@
     }
   `;
 
+  
 
-  const renderer = new THREE.WebGLRenderer();
-  renderer.setPixelRatio( window.devicePixelRatio );
-  renderer.setSize( window.innerWidth, window.innerHeight );
-  document.body.appendChild( renderer.domElement );
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color( 0x3333 );
+
+  const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 100 );
+  camera.position.set( -2, 2, 5 );
+  camera.lookAt( 0, 0, 0 );
+
+  const cameraUniform = { matrix: new THREE.Matrix4() };
+
+  shapes.forEach( shape => {
+    scene.add( new THREE.Mesh( 
+      new THREE.PlaneGeometry( 2, 2 ), 
+      new THREE.RawShaderMaterial( {
+        uniforms: {
+          camera: { value: cameraUniform },
+          shape: { value: shape.uniform },
+        },
+        vertexShader: VertScreenPos,
+        fragmentShader: FragMain,
+        glslVersion: THREE.GLSL3,
+      } ),
+    ) );
+  } );
 
   const renderTarget = new THREE.WebGLMultipleRenderTargets(
     window.innerWidth * window.devicePixelRatio,
@@ -117,42 +149,91 @@
   renderTarget.texture[ 0 ].name = 'position';
   renderTarget.texture[ 1 ].name = 'normal';
 
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color( 0xaaaaa );
 
-  const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 100 );
-  camera.position.set( 0, 0, 3 );
+  //
+  // Shadows
+  //
 
-  const cameraUniform = { matrix: new THREE.Matrix4() };
+  const postScene = new THREE.Scene();
+  postScene.background = new THREE.Color( 0x123123 );
+  const postCamera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
 
-  function updateUniforms() {
-    camera.updateMatrixWorld();
-    cameraUniform.matrix.copy( camera.matrixWorld );
-    cameraUniform.matrix.transpose();
+  const VertUV = /* glsl */ `
+    in vec3 position;
+    in vec2 uv;
 
-    shapes.forEach( shape => shape.updateUniform() );
+    out vec2 v_uv;
+    out vec4 v_screenPos;
 
-  }
+    uniform mat4 modelViewMatrix;
+    uniform mat4 projectionMatrix;
 
-  updateUniforms();
+    void main() {
+      v_uv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );;
+    }
+  `;
 
+  const FragShadow = /* glsl */ `
+    precision highp float;
+
+    in vec2 v_uv;
+    layout(location = 0) out vec4 outColor;
+
+    uniform sampler2D tPosition;
+
+    ${ Shaders.QuadricHit }
+
+    struct Shape {
+      Quadric quadric;
+      mat4 inverseMatrix;
+      mat4 normalMatrix;
+      // Material material;
+    };
+
+    uniform Shape shape;
+    uniform vec3 lightPos;
+
+    void main() {
+      vec3 position = texture( tPosition, v_uv ).rgb;
+
+      if ( position.r == 0.0 ) {    // TODO: Better way to check if no fragment occured here?
+        discard;
+      }
+      else {
+        vec3 toLight = lightPos - position;
+        float lightDist = length( toLight );
+        vec3 L = normalize( toLight );
+
+        vec4 lightHit = quadricHit( shape.quadric, shape.inverseMatrix, vec4( position, 1.0 ), vec4( L, 0.0 ) );
+        float hitTime = lightHit.w;
+
+        if ( 0.01 < hitTime && hitTime < lightDist ) {
+          outColor = vec4( 1.0, 0.0, 0.0, 1.0 );
+        }
+        else {
+          discard;
+        }
+      }      
+    }
+  `;
 
   shapes.forEach( shape => {
-    scene.add( new THREE.Mesh( 
-      new THREE.PlaneGeometry( 2, 2 ), 
+    postScene.add( new THREE.Mesh(
+      new THREE.PlaneGeometry( 2, 2 ),
       new THREE.RawShaderMaterial( {
         uniforms: {
-          camera: { value: cameraUniform },
+          tPosition: { value: renderTarget.texture[ 0 ] },
+          tNormal:   { value: renderTarget.texture[ 1 ] },
           shape: { value: shape.uniform },
+          lightPos: { value: lightPos },
         },
-        vertexShader: VertScreenPos,
-        fragmentShader: FragMain,
+        vertexShader: VertUV,
+        fragmentShader: FragShadow,
         glslVersion: THREE.GLSL3,
-      } ),
+      } )
     ) );
   } );
-
-
 
   
   window.onresize = () => {
@@ -170,16 +251,18 @@
 
 
   function render() {
-    updateUniforms();
+    camera.updateMatrixWorld();
+    cameraUniform.matrix.copy( camera.matrixWorld );
+    cameraUniform.matrix.transpose();
 
-    // renderer.setRenderTarget( renderTarget );
+    renderer.setRenderTarget( renderTarget );
     renderer.render( scene, camera );
 
     // renderer.setRenderTarget( maskTarget );
     // renderer.render( maskScene, maskCamera );
 
-    // renderer.setRenderTarget( null );
-    // renderer.render( postScene, postCamera );
+    renderer.setRenderTarget( null );
+    renderer.render( postScene, postCamera );
   }
 
   const controls = new OrbitControls( camera, renderer.domElement );

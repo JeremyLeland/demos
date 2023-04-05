@@ -25,6 +25,8 @@ export class QuadricShape {
     if ( json.rotation )  this.object.rotation.set( json.rotation.x, json.rotation.y, json.rotation.z );
     if ( json.scale )     this.object.scale.set( json.scale.x, json.scale.y, json.scale.z );
 
+    this.updateUniform();
+
     this.quadric = {
       Q: new THREE.Matrix4().fromArray( json.quadric?.Q ?? Sphere ),
       minBounds: new THREE.Vector3( json.quadric?.minBounds?.x ?? -1, json.quadric?.minBounds?.y ?? -1, json.quadric?.minBounds?.z ?? -1 ),
@@ -45,13 +47,11 @@ export class QuadricShape {
     const inverseMatrix = this.object.matrixWorld.clone().invert();
     const normalMatrix = inverseMatrix.clone().transpose();
 
-    // NOTE: Matrices need to be transposed to be used in GLSL
-    // this.uniform.quadric = this.quadric;
     this.uniform.inverseMatrix.copy( inverseMatrix );
-    this.uniform.inverseMatrix.transpose();
     this.uniform.normalMatrix.copy( normalMatrix )
+    
+    // NOTE: Matrices need to be transposed to be used in GLSL
+    this.uniform.inverseMatrix.transpose();
     this.uniform.normalMatrix.transpose();
-      // material: this.material,
-    // };
   }
 }
