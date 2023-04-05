@@ -85,6 +85,7 @@
     }
     
     void main() {
+      // TODO: Can these be calculated in vertex shader and passed along? (still need to normalize rayDir)
       vec4 rayPos = ( vec4( 0.0, 0.0, 0.0, 1.0 ) * camera.matrix );
       vec4 rayDir = ( vec4( normalize( vec3( screenPos.xy, -1.0 ) ), 0.0 ) * camera.matrix );
 
@@ -99,7 +100,7 @@
         vec4 N = quadricNormal( shape.quadric, shapeHit.xyz, shape.normalMatrix, rayDir );
 
         gPosition = hitPos;
-        gNormal = vec4( N );
+        gNormal = vec4( normalize( N.xyz ), 0.0 );
       }
       else {
         discard;
@@ -155,7 +156,6 @@
   //
 
   const postScene = new THREE.Scene();
-  postScene.background = new THREE.Color( 0x123123 );
   const postCamera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
 
   const VertUV = /* glsl */ `
@@ -178,7 +178,7 @@
     precision highp float;
 
     in vec2 v_uv;
-    layout(location = 0) out vec4 outColor;
+    out vec4 outColor;
 
     uniform sampler2D tPosition;
 
@@ -224,7 +224,6 @@
       new THREE.RawShaderMaterial( {
         uniforms: {
           tPosition: { value: renderTarget.texture[ 0 ] },
-          tNormal:   { value: renderTarget.texture[ 1 ] },
           shape: { value: shape.uniform },
           lightPos: { value: lightPos },
         },
@@ -234,6 +233,68 @@
       } )
     ) );
   } );
+
+  //
+  // Lighting
+  //
+
+  const FragLight = /*glsl*/`
+    precision highp float;
+    
+    in vec2 v_uv;
+    out vec4 outColor;
+
+    uniform sampler2D tPosition;
+    uniform sampler2D tNormal;
+    
+    uniform vec3 rayPos;
+    uniform vec3 lightPos;
+    uniform vec3 lightColor;
+
+    void main() {
+      vec3 position = texture( tPosition, v_uv ).rgb;
+      vec3 normal = texture( tNormal, v_uv ).rgb;
+  
+      if ( position.r == 0.0 ) {    // TODO: Better way to check if no fragment occured here?
+        discard;
+      }
+      else {
+        vec3 N = normal;
+        vec3 L = normalize( lightPos - position );
+        float NdotL = dot( N, L );
+
+        if ( NdotL > 0.0 ) {
+          vec3 V = normalize( rayPos - position );
+          vec3 H = normalize( L + V );
+          
+          float NdotH = dot( N, H );
+          float shininess = 2000.0;
+          
+          float diffuse = max( 0.0, NdotL );
+          float specular = ( NdotL > 0.0 ) ? pow( max( 0.0, NdotH ), shininess ) : 0.0;
+        
+          outColor = vec4( lightColor * ( diffuse + specular ), 1.0 );
+        }
+      }
+    }
+  `;
+
+  postScene.add( new THREE.Mesh(
+    new THREE.PlaneGeometry( 2, 2 ),
+    new THREE.RawShaderMaterial( {
+      uniforms: {
+        tPosition: { value: renderTarget.texture[ 0 ] },
+        tNormal:   { value: renderTarget.texture[ 1 ] },
+        rayPos: { value: camera.position },
+        lightPos: { value: lightPos },
+        lightColor: { value: new THREE.Vector3( 1.0, 1.0, 1.0 ) },
+      },
+      vertexShader: VertUV,
+      fragmentShader: FragLight,
+      glslVersion: THREE.GLSL3,
+      blending: THREE.AdditiveBlending,
+    } )
+  ) );
 
   
   window.onresize = () => {
