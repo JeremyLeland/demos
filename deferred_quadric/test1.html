@@ -63,6 +63,7 @@
 
     layout(location = 0) out vec4 gPosition;
     layout(location = 1) out vec4 gNormal;
+    layout(location = 2) out vec4 gDiffuse;
 
     ${ Shaders.QuadricHit }
 
@@ -106,6 +107,10 @@
 
         gPosition = hitPos;
         gNormal = vec4( normalize( N.xyz ), 0.0 );
+
+        bool stripe = fract( shapeHit.y * 2.0 ) > 0.5;
+
+        gDiffuse = stripe ? vec4( 1.0, 1.0, 0.2, 1.0 ) : vec4( 0.2, 0.2, 0.2, 1.0 );
       }
       else {
         discard;
@@ -140,10 +145,10 @@
   const renderTarget = new THREE.WebGLMultipleRenderTargets(
     window.innerWidth * window.devicePixelRatio,
     window.innerHeight * window.devicePixelRatio,
-    2
+    3
   );
 
-  for ( let i = 0; i < 2; i ++ ) {
+  for ( let i = 0; i < 3; i ++ ) {
     renderTarget.texture[ i ].minFilter = THREE.NearestFilter;
     renderTarget.texture[ i ].magFilter = THREE.NearestFilter;
     // renderTarget.texture[ i ].format = THREE.RGBAFormat;
@@ -152,6 +157,7 @@
 
   renderTarget.texture[ 0 ].name = 'position';
   renderTarget.texture[ 1 ].name = 'normal';
+  renderTarget.texture[ 2 ].name = 'diffuse';
 
 
   //
@@ -225,6 +231,7 @@
 
     uniform sampler2D tPosition;
     uniform sampler2D tNormal;
+    uniform sampler2D tDiffuse;
     
     uniform vec3 rayPos;
     uniform vec3 lightPos;
@@ -233,6 +240,7 @@
     void main() {
       vec3 position = texture( tPosition, v_uv ).rgb;
       vec3 normal = texture( tNormal, v_uv ).rgb;
+      vec3 diffuse = texture( tDiffuse, v_uv ).rgb;
   
       if ( position.r == 0.0 ) {    // TODO: Better way to check if no fragment occured here?
         discard;
@@ -249,10 +257,10 @@
         float NdotH = dot( N, H );
         float shininess = 2000.0;
         
-        float diffuse = max( 0.0, NdotL );
+        float diffuseVal = max( 0.0, NdotL );
         float specular = ( NdotL > 0.0 ) ? pow( max( 0.0, NdotH ), shininess ) : 0.0;
       
-        outColor = vec4( lightColor * ( diffuse + specular ), 1.0 );
+        outColor = vec4( lightColor * diffuse * ( diffuseVal + specular ), 1.0 );
       }
     }
   `;
@@ -294,6 +302,7 @@
         uniforms: {
           tPosition: { value: renderTarget.texture[ 0 ] },
           tNormal:   { value: renderTarget.texture[ 1 ] },
+          tDiffuse:  { value: renderTarget.texture[ 2 ] },
           rayPos: { value: camera.position },
           lightPos: { value: lightPos[ i ] },
           lightColor: { value: lightColor[ i ] },
