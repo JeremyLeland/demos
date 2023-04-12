@@ -1,0 +1,151 @@
+<title>Attract and Repel Tests</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { AnimatedCanvas } from './AnimatedCanvas.js';
+
+
+  // TODO: A collection of entities that attract and repel each other
+  // "Player", "small enemy", and "large enemy"
+  // Small enemy and large enemy are attracted to player (to pursue it)
+  // Small enemies should be attracted to nearby small enemies so they will fly in formation
+  // Small enemies should be attacted to somewhat nearby large enemies to escort them
+  // Large enemies avoid other large enemies (to keep distance), and let escorts come to them
+  // All enemies try to avoid impact with each other (if they get too close)
+
+  // Do this with circles for now, should work for space ships and asteroids
+  // For tunnels, we might eventually want this with lines
+
+  const SmallEnemy = {
+    size: 20,
+    color: 'green',
+  };
+
+  const entities = [
+    { x: 300, y: 300, angle: -2, info: SmallEnemy },
+    { x: 400, y: 300, angle: -1, info: SmallEnemy },
+    // { x: 300, y: 350, info: SmallEnemy },
+    // { x: 500, y: 500, info: SmallEnemy },
+  ];
+
+  const anim = new AnimatedCanvas();
+
+  const ATTRACT_DIST = 100, REPEL_DIST = 40;
+
+  anim.update = ( dt ) => {
+    entities.forEach( entity => {
+      entity.vectors = [];
+
+      entities.forEach( other => {
+        if ( entity != other ) {
+          const cx = other.x - entity.x;
+          const cy = other.y - entity.y;
+          const distance = Math.hypot( cx, cy ) - entity.info.size - other.info.size;
+          const toOther = Math.atan2( cy, cx );
+
+          let vx = 0, vy = 0;
+          
+          // If distance from attract line is near zero, we should be aiming toward other entity
+          // If distance from repel line is near zero, we should be matching other entity's angle
+          if ( distance < REPEL_DIST ) {
+            // TODO: Support different repel dists for each entity?
+            const part = ( REPEL_DIST - distance ) / REPEL_DIST;
+            
+            vx = ( 1 - part ) * Math.cos( other.angle ) - part * Math.cos( toOther );
+            vy = ( 1 - part ) * Math.sin( other.angle ) - part * Math.sin( toOther );
+          }
+          else if ( distance < ATTRACT_DIST ) {
+            const part = ( ATTRACT_DIST - distance ) / ( ATTRACT_DIST - REPEL_DIST );
+
+            vx = ( 1 - part ) * Math.cos( toOther ) + part * Math.cos( other.angle );
+            vy = ( 1 - part ) * Math.sin( toOther ) + part * Math.sin( other.angle );
+          }
+
+          // TODO: Weight repel heavier than attract (so we don't crash!)
+
+          if ( vx != 0 || vy != 0 ) {
+            const length = Math.hypot( vx, vy );
+            const angle = Math.atan2( vy, vx );
+
+            entity.vectors.push( {
+              x: vx / length,
+              y: vy / length,
+              length: length,  // for DEBUG
+              angle: angle,    // for DEBUG
+              src: other,      // for DEBUG
+            } );
+          }          
+        }
+      } );
+    } );
+  };
+
+  const VECTOR_SCALE = 30;
+  
+  anim.draw = ( ctx ) => {
+    entities.forEach( entity => {
+
+      ctx.beginPath();
+      ctx.arc( entity.x, entity.y, entity.info.size + ATTRACT_DIST / 2, 0, Math.PI * 2 );
+      ctx.fillStyle = 'rgba( 0, 255, 0, 0.1 )';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc( entity.x, entity.y, entity.info.size + REPEL_DIST / 2, 0, Math.PI * 2 );
+      ctx.fillStyle = 'rgba( 255, 0, 0, 0.2 )';
+      ctx.fill();
+
+      ctx.save();
+
+      ctx.translate( entity.x, entity.y );
+      ctx.rotate( entity.angle );
+
+      ctx.beginPath();
+      ctx.moveTo( entity.info.size, 0 );
+      ctx.arc( 0, 0, entity.info.size, 2.2, -2.2 );
+      ctx.closePath();
+
+      ctx.fillStyle = entity.info.color;
+      ctx.fill();
+      ctx.strokeStyle = 'black';
+      ctx.stroke();
+
+      ctx.restore();
+    } );
+
+    entities.forEach( entity => {
+      entity.vectors?.forEach( vector => {
+        
+        const offset = vector.length * VECTOR_SCALE / 2;
+
+        ctx.save();
+
+        ctx.translate( entity.x, entity.y );
+
+        ctx.beginPath();
+        ctx.moveTo( 0, 0 );
+        ctx.lineTo( vector.x * VECTOR_SCALE, vector.y * VECTOR_SCALE );
+        
+        ctx.strokeStyle = 'red';
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo( vector.x * VECTOR_SCALE, vector.y * VECTOR_SCALE );
+        ctx.arc( vector.x * VECTOR_SCALE, vector.y * VECTOR_SCALE, 5, vector.angle + 2.5, vector.angle - 2.5 );
+        ctx.fillStyle = 'red';
+        ctx.fill();
+
+        ctx.fillStyle = 'red';
+        ctx.textAlign = 'center';
+        // ctx.fillText( vector.length.toFixed( 2 ), 0 /*+ vector.x * offset */, 0 /*+ vector.y * offset*/ );
+
+        ctx.restore();
+      } );
+    } );
+  };
+
+  // anim.start();
+  anim.update();
+  anim.redraw();
+  
+</script>
