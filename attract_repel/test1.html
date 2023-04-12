@@ -34,7 +34,6 @@
     
     const numInputUI = document.createElement( 'input' );
     
-    // TODO: Can these be styled with CSS?
     numInputUI.type = 'number';
     numInputUI.min = 0;
     numInputUI.max = Constants[ val ] * 2;
@@ -69,13 +68,13 @@
   const entities = [
     { x: 300, y: 300, angle: -2, info: SmallEnemy },
     { x: 400, y: 300, angle: -1, info: SmallEnemy },
-    // { x: 300, y: 350, info: SmallEnemy },
+    { x: 300, y: 350, angle:  0, info: SmallEnemy },
     // { x: 500, y: 500, info: SmallEnemy },
   ];
 
   const anim = new AnimatedCanvas();
 
-  
+  // TODO: "Play" this forward with spacebar -- advance by 10ms or whatever, see what happens next
 
   anim.update = ( dt ) => {
     const ATTRACT_DIST = Constants.AttractDistance, REPEL_DIST = Constants.RepelDistance;
@@ -215,7 +214,7 @@
     mouseDown = true;
     lastX = e.clientX;
     lastY = e.clientY;
-    activeEntity = closestEntity( e.clientX, e.clientY );
+    activeEntity = entityAt( e.clientX, e.clientY );
   } );
 
   document.addEventListener( 'mouseup', ( e ) => {
@@ -234,12 +233,29 @@
     }
   } );
 
+  document.addEventListener( 'wheel', ( e ) => {
+    const entity = entityAt( e.clientX, e.clientY );
+
+    if ( entity ) {
+      entity.angle -= ( e.wheelDelta / 120 ) * ( Math.PI / 32 );
+      refresh();
+    }
+  } );
+
+  function entityAt( x, y ) {
+    const closest = closestEntity( x, y );
+
+    if ( closest.dist < closest.entity.info.size ) {
+      return closest.entity;
+    }
+  }
+
   function closestEntity( x, y ) {
     return entities.map( 
       e => ( { entity: e, dist: Math.hypot( e.x - x, e.y - y ) } )
     ).reduce( 
       ( closest, e ) => e.dist < closest.dist ? e : closest
-    ).entity;
+    );
   }
   
 </script>
