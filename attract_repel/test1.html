@@ -1,9 +1,54 @@
 <title>Attract and Repel Tests</title>
 <link rel="stylesheet" href="../grid.css">
 
+<style>
+  #panel {
+    position: absolute;
+    width: 300px;
+
+    display: grid;
+    grid-template-columns: 120px 50px;
+  }
+
+</style>
+
+<div id="panel"></div>
+
 <script type="module">
   import { AnimatedCanvas } from './AnimatedCanvas.js';
 
+  const Constants = {
+    AttractDistance: 100,
+    RepelDistance: 40,
+    UIScale: 30,
+  };
+
+  const panelUI = document.getElementById( 'panel' );
+  for ( const val in Constants ) {
+
+    const labelUI = document.createElement( 'label' );
+    labelUI.setAttribute( 'for', val );
+    labelUI.innerText = val;
+
+    panelUI.appendChild( labelUI );
+    
+    const numInputUI = document.createElement( 'input' );
+    
+    // TODO: Can these be styled with CSS?
+    numInputUI.type = 'number';
+    numInputUI.min = 0;
+    numInputUI.max = Constants[ val ] * 2;
+    numInputUI.step = 1;
+    
+    numInputUI.id = val;
+    numInputUI.value = Constants[ val ];
+    numInputUI.oninput = e => {
+      Constants[ val ] = parseFloat( numInputUI.value );
+      refresh();
+    };
+
+    panelUI.appendChild( numInputUI );
+  }
 
   // TODO: A collection of entities that attract and repel each other
   // "Player", "small enemy", and "large enemy"
@@ -30,9 +75,11 @@
 
   const anim = new AnimatedCanvas();
 
-  const ATTRACT_DIST = 100, REPEL_DIST = 40;
+  
 
   anim.update = ( dt ) => {
+    const ATTRACT_DIST = Constants.AttractDistance, REPEL_DIST = Constants.RepelDistance;
+
     entities.forEach( entity => {
       entity.vectors = [];
 
@@ -85,13 +132,17 @@
   anim.draw = ( ctx ) => {
     entities.forEach( entity => {
 
+      // NOTE: Showing half of attract/repel distance to make it easier to understand visual output
+      //       (objects are within attract/repel distance if their debug circles are overlapping)
+      //       May need to change this later if it becomes misleading, especailly if different entities
+      //       end up having different attract ranges
       ctx.beginPath();
-      ctx.arc( entity.x, entity.y, entity.info.size + ATTRACT_DIST / 2, 0, Math.PI * 2 );
+      ctx.arc( entity.x, entity.y, entity.info.size + Constants.AttractDistance / 2, 0, Math.PI * 2 );
       ctx.fillStyle = 'rgba( 0, 255, 0, 0.1 )';
       ctx.fill();
 
       ctx.beginPath();
-      ctx.arc( entity.x, entity.y, entity.info.size + REPEL_DIST / 2, 0, Math.PI * 2 );
+      ctx.arc( entity.x, entity.y, entity.info.size + Constants.RepelDistance / 2, 0, Math.PI * 2 );
       ctx.fillStyle = 'rgba( 255, 0, 0, 0.2 )';
       ctx.fill();
 
@@ -116,7 +167,8 @@
     entities.forEach( entity => {
       entity.vectors?.forEach( vector => {
         
-        const offset = vector.length * VECTOR_SCALE / 2;
+        const scale = Constants.UIScale;
+        // const offset = vector.length * scale / 2;
 
         ctx.save();
 
@@ -124,14 +176,14 @@
 
         ctx.beginPath();
         ctx.moveTo( 0, 0 );
-        ctx.lineTo( vector.x * VECTOR_SCALE, vector.y * VECTOR_SCALE );
+        ctx.lineTo( vector.x * scale, vector.y * scale );
         
         ctx.strokeStyle = 'red';
         ctx.stroke();
         
         ctx.beginPath();
-        ctx.moveTo( vector.x * VECTOR_SCALE, vector.y * VECTOR_SCALE );
-        ctx.arc( vector.x * VECTOR_SCALE, vector.y * VECTOR_SCALE, 5, vector.angle + 2.5, vector.angle - 2.5 );
+        ctx.moveTo( vector.x * scale, vector.y * scale );
+        ctx.arc( vector.x * scale, vector.y * scale, 5, vector.angle + 2.5, vector.angle - 2.5 );
         ctx.fillStyle = 'red';
         ctx.fill();
 
@@ -145,7 +197,12 @@
   };
 
   // anim.start();
-  anim.update();
-  anim.redraw();
+
+  function refresh() {
+    anim.update();
+    anim.redraw();
+  }
+  
+  refresh();
   
 </script>
