@@ -204,5 +204,42 @@
   }
   
   refresh();
+
+  //
+  // Move entities with mouse
+  //
+
+  let activeEntity = null, mouseDown = false, lastX = 0, lastY = 0;
+
+  document.addEventListener( 'mousedown', ( e ) => {
+    mouseDown = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    activeEntity = closestEntity( e.clientX, e.clientY );
+  } );
+
+  document.addEventListener( 'mouseup', ( e ) => {
+    mouseDown = false;
+    activeEntity = null;
+  } );
+
+  document.addEventListener( 'mousemove', ( e ) => {
+    if ( activeEntity ) {
+      activeEntity.x += e.clientX - lastX;
+      activeEntity.y += e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      
+      refresh();
+    }
+  } );
+
+  function closestEntity( x, y ) {
+    return entities.map( 
+      e => ( { entity: e, dist: Math.hypot( e.x - x, e.y - y ) } )
+    ).reduce( 
+      ( closest, e ) => e.dist < closest.dist ? e : closest
+    ).entity;
+  }
   
 </script>
