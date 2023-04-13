@@ -76,13 +76,26 @@
 
   const anim = new AnimatedCanvas();
 
-  // TODO: "Play" this forward with spacebar -- advance by 10ms or whatever, see what happens next
+  let targetX = 0, targetY = 0;
 
   anim.update = ( dt ) => {
     const ATTRACT_DIST = Constants.AttractDistance, REPEL_DIST = Constants.RepelDistance;
 
     entities.forEach( entity => {
       entity.vectors = [];
+
+      // TODO: Add vector toward target
+      const tx = targetX - entity.x;
+      const ty = targetY - entity.y;
+      const tdist = Math.hypot( tx, ty );
+      const tangle = Math.atan2( ty, tx );
+
+      entity.vectors.push( {
+        x: tx / tdist,
+        y: ty / tdist,
+        length: tdist,
+        angle: tangle,  
+      } );
 
       entities.forEach( other => {
         if ( entity != other ) {
@@ -133,12 +146,7 @@
     if ( dt ) {
       entities.forEach( entity => {
         if ( entity.vectors.length > 0 ) {
-          let total = { x: 0, y: 0 };
-          entity.vectors.forEach( v => {
-            total.x += v.x;
-            total.y += v.y;
-          } );
-
+          const total = entity.vectors.reduce( ( a, b ) => ( { x: a.x + b.x, y: a.y + b.y } ) );
           entity.goalAngle = Math.atan2( total.y, total.x );
         }
         else {
@@ -295,6 +303,9 @@
   } );
 
   document.addEventListener( 'mousemove', ( e ) => {
+    targetX = e.clientX;
+    targetY = e.clientY;
+
     if ( activeEntity ) {
       activeEntity.x += e.clientX - lastX;
       activeEntity.y += e.clientY - lastY;
