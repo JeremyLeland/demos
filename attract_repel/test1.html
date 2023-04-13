@@ -64,13 +64,14 @@
     size: 20,
     color: 'green',
     turnSpeed: 0.01,
+    moveSpeed: 0.1,
   };
 
   const entities = [
     { x: 300, y: 300, angle: -1, info: SmallEnemy },
     { x: 400, y: 300, angle: -2, info: SmallEnemy },
-    // { x: 300, y: 350, angle:  0, info: SmallEnemy },
-    // { x: 500, y: 500, info: SmallEnemy },
+    { x: 300, y: 350, angle:  0, info: SmallEnemy },
+    { x: 500, y: 500, angle:  1, info: SmallEnemy },
   ];
 
   const anim = new AnimatedCanvas();
@@ -131,15 +132,23 @@
 
     if ( dt ) {
       entities.forEach( entity => {
-        let total = { x: 0, y: 0 };
-        entity.vectors.forEach( v => {
-          total.x += v.x;
-          total.y += v.y;
-        } );
+        if ( entity.vectors.length > 0 ) {
+          let total = { x: 0, y: 0 };
+          entity.vectors.forEach( v => {
+            total.x += v.x;
+            total.y += v.y;
+          } );
 
-        const goalAngle = Math.atan2( total.y, total.x );
+          entity.goalAngle = Math.atan2( total.y, total.x );
+        }
+        else {
+          entity.goalAngle = entity.angle;
+        }
 
-        entity.angle = approachAngle( goalAngle, entity.angle, entity.info.turnSpeed * dt );
+        entity.angle = approachAngle( entity.goalAngle, entity.angle, entity.info.turnSpeed * dt );
+
+        entity.x += Math.cos( entity.angle ) * entity.info.moveSpeed * dt;
+        entity.y += Math.sin( entity.angle ) * entity.info.moveSpeed * dt;
       } );
     }
   };
@@ -216,36 +225,42 @@
     } );
 
     entities.forEach( entity => {
-      entity.vectors?.forEach( vector => {
-        
-        const scale = Constants.UIScale;
-        // const offset = vector.length * scale / 2;
+      ctx.save();
+      ctx.translate( entity.x, entity.y );
+      
+      ctx.fillStyle = ctx.strokeStyle = 'red';
+      entity.vectors?.forEach( vector => drawVector( vector, ctx ) );
 
-        ctx.save();
-
-        ctx.translate( entity.x, entity.y );
-
-        ctx.beginPath();
-        ctx.moveTo( 0, 0 );
-        ctx.lineTo( vector.x * scale, vector.y * scale );
-        
-        ctx.strokeStyle = 'red';
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo( vector.x * scale, vector.y * scale );
-        ctx.arc( vector.x * scale, vector.y * scale, 5, vector.angle + 2.5, vector.angle - 2.5 );
-        ctx.fillStyle = 'red';
-        ctx.fill();
-
-        ctx.fillStyle = 'red';
-        ctx.textAlign = 'center';
-        // ctx.fillText( vector.length.toFixed( 2 ), 0 /*+ vector.x * offset */, 0 /*+ vector.y * offset*/ );
-
-        ctx.restore();
-      } );
+      ctx.fillStyle = ctx.strokeStyle = 'green';
+      drawVector( {
+        x: Math.cos( entity.goalAngle ),
+        y: Math.sin( entity.goalAngle ),
+        length: 1,
+        angle: entity.goalAngle,
+      }, ctx );
+     
+      ctx.restore();
     } );
   };
+
+  function drawVector( vector, ctx ) {
+    const scale = Constants.UIScale;
+
+    ctx.beginPath();
+    ctx.moveTo( 0, 0 );
+    ctx.lineTo( vector.x * scale, vector.y * scale );
+    
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo( vector.x * scale, vector.y * scale );
+    ctx.arc( vector.x * scale, vector.y * scale, 5, vector.angle + 2.5, vector.angle - 2.5 );
+
+    ctx.fill();
+
+    // ctx.textAlign = 'center';
+    // ctx.fillText( vector.length.toFixed( 2 ), 0 /*+ vector.x * offset */, 0 /*+ vector.y * offset*/ );
+  }
 
   // anim.start();
 
