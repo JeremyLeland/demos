@@ -168,14 +168,17 @@
             // vy = ( 1 - part ) * Math.sin( averageAngle ) - part * Math.sin( toOther );
             // const length = Math.hypot( vx, vy );
 
-            const weight = repelDist / distance;    // TODO: Other curves better here? 1/x^3, maybe?
+            // const weight = repelDist / distance;    // TODO: Other curves better here?
+            const weight = -Math.log( distance / repelDist );
             
-            entity.vectors.push( {
-              x: -weight * Math.cos( toOther ),
-              y: -weight * Math.sin( toOther ),
-              src: other,      // for DEBUG
-            } );
-          // }
+            if ( weight > 0 ) {
+              entity.vectors.push( {
+                x: -weight * Math.cos( toOther ),
+                y: -weight * Math.sin( toOther ),
+                src: other,      // for DEBUG
+              } );
+            }
+              // }
           // else if ( distance < attractDist ) {
           //   const part = ( attractDist - distance ) / ( attractDist - repelDist );
 
