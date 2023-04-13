@@ -1,0 +1,401 @@
+<title>Attract and Repel Tests</title>
+<link rel="stylesheet" href="../grid.css">
+
+<style>
+  #panel {
+    position: absolute;
+    width: 300px;
+
+    display: grid;
+    grid-template-columns: 120px 50px;
+  }
+
+</style>
+
+<div id="panel"></div>
+
+<script type="module">
+  import { AnimatedCanvas } from './AnimatedCanvas.js';
+
+  const Constants = {
+    AttractDistance: 100,
+    RepelDistance: 40,
+    UIScale: 30,
+  };
+
+  const panelUI = document.getElementById( 'panel' );
+  for ( const val in Constants ) {
+
+    const labelUI = document.createElement( 'label' );
+    labelUI.setAttribute( 'for', val );
+    labelUI.innerText = val;
+
+    panelUI.appendChild( labelUI );
+    
+    const numInputUI = document.createElement( 'input' );
+    
+    numInputUI.type = 'number';
+    numInputUI.min = 0;
+    numInputUI.max = Constants[ val ] * 2;
+    numInputUI.step = 1;
+    
+    numInputUI.id = val;
+    numInputUI.value = Constants[ val ];
+    numInputUI.oninput = e => {
+      Constants[ val ] = parseFloat( numInputUI.value );
+      refresh();
+    };
+
+    panelUI.appendChild( numInputUI );
+  }
+
+  // TODO: A collection of entities that attract and repel each other
+  // "Player", "small enemy", and "large enemy"
+  // Small enemy and large enemy are attracted to player (to pursue it)
+  // Small enemies should be attracted to nearby small enemies so they will fly in formation
+  // Small enemies should be attacted to somewhat nearby large enemies to escort them
+  // Large enemies avoid other large enemies (to keep distance), and let escorts come to them
+  // All enemies try to avoid impact with each other (if they get too close)
+
+  // Do this with circles for now, should work for space ships and asteroids
+  // For tunnels, we might eventually want this with lines
+
+  function shipPath() {
+    const path = new Path2D();
+    path.moveTo( 1, 0 );
+    path.arc( 0, 0, 1, 2.2, -2.2 );
+    path.closePath();
+    return path;
+  }
+
+  function rockPath() {
+    const path = new Path2D();
+    path.arc( 0, 0, 1, 0, Math.PI * 2 );
+    return path;
+  }
+
+  const Info = {
+    Small: {
+      size: 20,
+      drawPaths: [ {
+        fillStyle: 'dodgerblue',
+        path: shipPath(),
+      } ],
+      turnSpeed: 0.01,
+      moveSpeed: 0.1,
+      attract: [ 'Small' ],
+      repel: [ 'Small', 'Rock' ],
+    },
+    Rock: {
+      size: 30,
+      drawPaths: [ {
+        fillStyle: 'brown',
+        path: rockPath(),
+      } ],
+    }
+  }
+
+  const entities = [
+    { x: 250, y: 250, angle: -1, type: 'Small' },
+    // { x: 400, y: 300, angle: -2, type: 'Small' },
+    // { x: 300, y: 350, angle:  0, type: 'Small' },
+    // { x: 500, y: 500, angle:  1, type: 'Small' },
+    { x: 200, y: 200, angle: 0, type: 'Rock' },
+  ];
+
+  const anim = new AnimatedCanvas();
+
+  let targetX = 0, targetY = 0;
+
+  anim.update = ( dt ) => {
+    entities.forEach( entity => {
+      const info = Info[ entity.type ];
+
+      entity.vectors = [];
+
+      // TODO: Eventually this will be an attract to the player entity (larger attract value)
+      if ( info.moveSpeed ) {
+        const tx = targetX - entity.x;
+        const ty = targetY - entity.y;
+        const tdist = Math.hypot( tx, ty );
+        const tangle = Math.atan2( ty, tx );
+
+        entity.vectors.push( {
+          x: tx / tdist,
+          y: ty / tdist,
+          length: tdist,
+          angle: tangle,  
+        } );
+      }
+
+      // const attractList = this.entities.filter( other => other != entity && info.attract.includes( other.type ) );
+      // const repelList = this.entities.filter( other => other != entity && info.repel.includes( other.type ) );
+      
+      // repelList.forEach( other => {
+      //   const cx = other.x - entity.x;
+      //   const cy = other.y - entity.y;
+      //   const distance = Math.hypot( cx, cy ) - Info[ entity.type ].size - Info[ other.type ].size;
+      //   const toOther = Math.atan2( cy, cx );
+      // } );
+
+      entities.forEach( other => {
+        if ( entity != other ) {
+
+          // TODO: Different values for this, from attract/repel list?
+          const attractDist = info.attract?.includes( other.type ) ? Constants.AttractDistance : 0;
+          const repelDist = info.repel?.includes( other.type ) ? Constants.RepelDistance : 0;
+
+          const cx = other.x - entity.x;
+          const cy = other.y - entity.y;
+          const distance = Math.hypot( cx, cy ) - Info[ entity.type ].size - Info[ other.type ].size;
+          const toOther = Math.atan2( cy, cx );
+
+          let vx = 0, vy = 0;
+          
+          // If distance from attract line is near zero, we should be aiming toward other entity
+          // If distance from repel line is near zero, we should be approaching other entity's angle
+          //    - maybe split the difference between the angles, for more gradual turns when facing away from each other?
+          const averageAngle = entity.angle + deltaAngle( entity.angle, other.angle ) / 2;
+
+          // Should this be default for attract? Might throw off "attracting" to player if we're trying to shoot them...
+
+          // if ( distance < repelDist ) {
+            // TODO: Weight repel heavier than attract (so we don't crash!)
+            // TODO: Support different repel dists for each entity?
+            // const part = ( repelDist - distance ) / repelDist;
+          
+            // vx = ( 1 - part ) * Math.cos( averageAngle ) - part * Math.cos( toOther );
+            // vy = ( 1 - part ) * Math.sin( averageAngle ) - part * Math.sin( toOther );
+            // const length = Math.hypot( vx, vy );
+
+            const weight = repelDist / distance;    // TODO: Other curves better here? 1/x^3, maybe?
+            
+            entity.vectors.push( {
+              x: -weight * Math.cos( toOther ),
+              y: -weight * Math.sin( toOther ),
+              src: other,      // for DEBUG
+            } );
+          // }
+          // else if ( distance < attractDist ) {
+          //   const part = ( attractDist - distance ) / ( attractDist - repelDist );
+
+          //   // vx = ( 1 - part ) * Math.cos( toOther ) + part * Math.cos( averageAngle );
+          //   // vy = ( 1 - part ) * Math.sin( toOther ) + part * Math.sin( averageAngle );
+          //   // const length = Math.hypot( vx, vy );
+            
+          //   entity.vectors.push( {
+          //     x: Math.cos( toOther ),
+          //     y: Math.sin( toOther ),
+          //     src: other,      // for DEBUG
+          //   } );
+          // }
+        }
+      } );
+      
+    } );
+
+    if ( dt ) {
+      entities.forEach( entity => {
+        const info = Info[ entity.type ];
+
+        if ( entity.vectors.length > 0 ) {
+          const total = entity.vectors.reduce( ( a, b ) => ( { x: a.x + b.x, y: a.y + b.y } ) );
+          entity.goalAngle = Math.atan2( total.y, total.x );
+        }
+        else {
+          entity.goalAngle = entity.angle;
+        }
+
+        entity.angle = approachAngle( entity.goalAngle, entity.angle, info.turnSpeed * dt );
+
+        if ( info.moveSpeed ) {
+          entity.x += Math.cos( entity.angle ) * info.moveSpeed * dt;
+          entity.y += Math.sin( entity.angle ) * info.moveSpeed * dt;
+          // TODO: set dx/dy here instead, and let update take it
+        }
+      } );
+    }
+  };
+
+  // TODO: Put this back to my general-purpose approach, and do a fixAngle outside of it?
+
+  function approachAngle( goal, current, maxDelta ) {
+    const delta = deltaAngle( current, goal );
+
+    if ( delta < 0 ) {
+      return -maxDelta < delta ? goal : current - maxDelta;
+    }
+    else if ( delta > 0 ) {
+      return  delta < maxDelta ? goal : current + maxDelta;
+    }
+    else {
+      return goal;
+    }
+  }
+
+  function fixAngleTo( angle, otherAngle ) {
+    if ( otherAngle - angle > Math.PI ) {
+      return angle + Math.PI * 2;
+    }
+    else if ( angle - otherAngle > Math.PI ) {
+      return angle - Math.PI * 2;
+    }
+
+    return angle;
+  }
+
+  export function fixAngle( a ) {
+    return a > Math.PI ? a - Math.PI * 2 : a < -Math.PI ? a + Math.PI * 2 : a;
+  }
+
+  export function deltaAngle( a, b ) {
+    return fixAngle( b - a );
+  }
+
+  
+  anim.draw = ( ctx ) => {
+    entities.forEach( entity => {
+
+      const info = Info[ entity.type ];
+
+      // NOTE: Showing half of attract/repel distance to make it easier to understand visual output
+      //       (objects are within attract/repel distance if their debug circles are overlapping)
+      //       May need to change this later if it becomes misleading, especailly if different entities
+      //       end up having different attract ranges
+      ctx.beginPath();
+      ctx.arc( entity.x, entity.y, info.size + Constants.AttractDistance / 2, 0, Math.PI * 2 );
+      ctx.fillStyle = 'rgba( 0, 255, 0, 0.1 )';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc( entity.x, entity.y, info.size + Constants.RepelDistance / 2, 0, Math.PI * 2 );
+      ctx.fillStyle = 'rgba( 255, 0, 0, 0.2 )';
+      ctx.fill();
+
+      ctx.save();
+
+      ctx.translate( entity.x, entity.y );
+      ctx.rotate( entity.angle );
+      ctx.scale( info.size, info.size );
+
+      info.drawPaths.forEach( pathInfo => {
+        ctx.fillStyle = pathInfo.fillStyle;
+        ctx.fill( pathInfo.path );
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1 / info.size;
+        ctx.stroke( pathInfo.path );
+      } );
+
+      ctx.restore();
+    } );
+
+    entities.forEach( entity => {
+      ctx.save();
+      ctx.translate( entity.x, entity.y );
+      
+      ctx.fillStyle = ctx.strokeStyle = 'red';
+      entity.vectors?.forEach( vector => drawVector( vector, ctx ) );
+
+      ctx.fillStyle = ctx.strokeStyle = 'green';
+      drawVector( {
+        x: Math.cos( entity.goalAngle ),
+        y: Math.sin( entity.goalAngle ),
+      }, ctx );
+     
+      ctx.restore();
+    } );
+  };
+
+  function drawVector( vector, ctx ) {
+    const scale = Constants.UIScale;
+
+    ctx.beginPath();
+    ctx.moveTo( 0, 0 );
+    ctx.lineTo( vector.x * scale, vector.y * scale );
+    
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo( vector.x * scale, vector.y * scale );
+
+    const angle = Math.atan2( vector.y, vector.x );
+    ctx.arc( vector.x * scale, vector.y * scale, 5, angle + 2.5, angle - 2.5 );
+
+    ctx.fill();
+
+    // ctx.textAlign = 'center';
+    // ctx.fillText( vector.length.toFixed( 2 ), 0 /*+ vector.x * offset */, 0 /*+ vector.y * offset*/ );
+  }
+
+  // anim.start();
+
+  function refresh() {
+    anim.update();
+    anim.redraw();
+  }
+  
+  refresh();
+
+  document.addEventListener( 'keydown', ( e ) => {
+    anim.update( 10 );
+    anim.redraw();
+  } );
+
+  //
+  // Move entities with mouse
+  //
+
+  let activeEntity = null, mouseDown = false, lastX = 0, lastY = 0;
+
+  document.addEventListener( 'mousedown', ( e ) => {
+    mouseDown = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    activeEntity = entityAt( e.clientX, e.clientY );
+  } );
+
+  document.addEventListener( 'mouseup', ( e ) => {
+    mouseDown = false;
+    activeEntity = null;
+  } );
+
+  document.addEventListener( 'mousemove', ( e ) => {
+    targetX = e.clientX;
+    targetY = e.clientY;
+
+    if ( activeEntity ) {
+      activeEntity.x += e.clientX - lastX;
+      activeEntity.y += e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      
+      refresh();
+    }
+  } );
+
+  document.addEventListener( 'wheel', ( e ) => {
+    const entity = entityAt( e.clientX, e.clientY );
+
+    if ( entity ) {
+      entity.angle -= ( e.wheelDelta / 120 ) * ( Math.PI / 32 );
+      refresh();
+    }
+  } );
+
+  function entityAt( x, y ) {
+    const closest = closestEntity( x, y );
+
+    if ( closest.dist < Info[ closest.entity.type ].size ) {
+      return closest.entity;
+    }
+  }
+
+  function closestEntity( x, y ) {
+    return entities.map( 
+      e => ( { entity: e, dist: Math.hypot( e.x - x, e.y - y ) } )
+    ).reduce( 
+      ( closest, e ) => e.dist < closest.dist ? e : closest
+    );
+  }
+  
+</script>
