@@ -102,11 +102,11 @@
   }
 
   const entities = [
-    { x: 250, y: 300, angle: -1, type: 'Small' },
-    { x: 500, y: 300, angle: -2, type: 'Small' },
-    { x: 300, y: 350, angle:  0, type: 'Small' },
-    { x: 500, y: 500, angle:  1, type: 'Small' },
-    { x: 200, y: 200, angle: 0, type: 'Rock' },
+    { x: 250, y: 250, angle: -2, type: 'Small', size: 16 },
+    // { x: 300, y: 300, angle: -2, type: 'Small' },
+    // { x: 350, y: 350, angle: -2, type: 'Small' },
+    // { x: 400, y: 400, angle: -2, type: 'Small' },
+    { x: 200, y: 200, angle: 0, dx: 0, dy: 0, type: 'Rock', size: 30 },
     // { x: 250, y: 200, angle: 0, type: 'Rock' },
   ];
 
@@ -115,6 +115,30 @@
   let targetX = 0, targetY = 0;
 
   anim.update = ( dt ) => {
+    if ( dt ) {
+      entities.forEach( entity => {
+        const info = Info[ entity.type ];
+
+        if ( entity.vectors?.length > 0 ) {
+          const total = entity.vectors.reduce( ( a, b ) => ( { x: a.x + b.x, y: a.y + b.y } ) );
+          entity.goalAngle = Math.atan2( total.y, total.x );
+        }
+        else {
+          entity.goalAngle = entity.angle;
+        }
+
+        entity.angle = approachAngle( entity.goalAngle, entity.angle, info.turnSpeed * dt );
+
+        if ( info.moveSpeed ) {
+          entity.dx = Math.cos( entity.angle ) * info.moveSpeed;
+          entity.dy = Math.sin( entity.angle ) * info.moveSpeed;
+        }
+
+        entity.x += entity.dx * dt;
+        entity.y += entity.dy * dt;
+      } );
+    }
+
     entities.forEach( entity => {
       const info = Info[ entity.type ];
 
@@ -130,8 +154,6 @@
         entity.vectors.push( {
           x: tx / tdist,
           y: ty / tdist,
-          length: tdist,
-          angle: tangle,  
         } );
       }
 
@@ -154,7 +176,12 @@
 
           const cx = other.x - entity.x;
           const cy = other.y - entity.y;
-          const distance = Math.hypot( cx, cy ) - Info[ entity.type ].size - Info[ other.type ].size;
+
+          const r = Info[ entity.type ].size + Info[ other.type ].size + 20;
+          const h = Math.hypot( cx, cy );
+          const spread = Math.asin( Math.min( 1, r / h ) );   // min() prevents floating errors when we get really close
+
+          const distance = h - Info[ entity.type ].size - Info[ other.type ].size;
           const toOther = Math.atan2( cy, cx );
 
           let vx = 0, vy = 0;
@@ -166,7 +193,8 @@
 
           // Should this be default for attract? Might throw off "attracting" to player if we're trying to shoot them...
 
-          // if ( distance < repelDist ) {
+          // Handle "attract" entities differently than "repel"? (if we attract, try to match angles)
+          if ( distance < repelDist ) {
             // TODO: Weight repel heavier than attract (so we don't crash!)
             // TODO: Support different repel dists for each entity?
             // const part = ( repelDist - distance ) / repelDist;
@@ -178,54 +206,54 @@
             // const weight = repelDist / distance;    // TODO: Other curves better here?
             //const weight = 10 * -Math.log( distance / repelDist );
             const weight = 2 * ( 1 / ( distance / repelDist ) - 1 );
+            //const weight = 2 * ( 1 / ( timeUntilHit( entity, other ) / 200 ) - 1 );
             
+            // TODO: I'm trying to have this nudge me in the direction to avoid the asteroid
+            //       I'm weighting it by when we would hit the asteroid, which has the fishtailing problem
+            //       Need a way to nudge based on how close we are but only stop nudging when we've really cleared it
+            //       Maybe project our direction of travel to the distance between us 
+            //       to see if we are "in front" of it or "behind" it?
+
+            const left = toOther - Math.PI / 2;//spread;
+            const right = toOther + Math.PI / 2; //spread;
+
+            const closest = right;//deltaAngle( left, toOther ) < deltaAngle( toOther, right ) ? left : right;
+
             if ( weight > 0 ) {
               entity.vectors.push( {
-                x: -weight * Math.cos( toOther ),
-                y: -weight * Math.sin( toOther ),
-                src: other,      // for DEBUG
+                x: weight * Math.cos( closest ),
+                y: weight * Math.sin( closest ),
+                src: other,   // for DEBUG
               } );
             }
-              // }
-          // if ( distance < attractDist ) {
+          }
+           if ( distance < attractDist ) {
           //   const part = ( attractDist - distance ) / ( attractDist - repelDist );
 
           //   const vx = ( 1 - part ) * Math.cos( toOther ) + part * Math.cos( averageAngle );
           //   const vy = ( 1 - part ) * Math.sin( toOther ) + part * Math.sin( averageAngle );
           //   const length = Math.hypot( vx, vy );
+
+            const weight = 1 / ( distance + 1 );
+          
+            entity.vectors.push( {
+              x: weight * Math.cos( averageAngle ),
+              y: weight * Math.sin( averageAngle ),
+              src: other,   // for DEBUG
+            } );
             
           //   entity.vectors.push( {
           //     x: vx / length,
           //     y: vy / length,
           //     src: other,      // for DEBUG
           //   } );
-          // }
+          }
         }
       } );
       
     } );
 
-    if ( dt ) {
-      entities.forEach( entity => {
-        const info = Info[ entity.type ];
-
-        if ( entity.vectors.length > 0 ) {
-          const total = entity.vectors.reduce( ( a, b ) => ( { x: a.x + b.x, y: a.y + b.y } ) );
-          entity.goalAngle = Math.atan2( total.y, total.x );
-        }
-        else {
-          entity.goalAngle = entity.angle;
-        }
-
-        entity.angle = approachAngle( entity.goalAngle, entity.angle, info.turnSpeed * dt );
-
-        if ( info.moveSpeed ) {
-          entity.x += Math.cos( entity.angle ) * info.moveSpeed * dt;
-          entity.y += Math.sin( entity.angle ) * info.moveSpeed * dt;
-          // TODO: set dx/dy here instead, and let update take it
-        }
-      } );
-    }
+    
   };
 
   // TODO: Put this back to my general-purpose approach, and do a fixAngle outside of it?
@@ -273,12 +301,12 @@
       //       (objects are within attract/repel distance if their debug circles are overlapping)
       //       May need to change this later if it becomes misleading, especailly if different entities
       //       end up having different attract ranges
-      // if ( info.attract ) {
-        // ctx.beginPath();
-        // ctx.arc( entity.x, entity.y, info.size + Constants.AttractDistance / 2, 0, Math.PI * 2 );
-        // ctx.fillStyle = 'rgba( 0, 255, 0, 0.1 )';
-        // ctx.fill();
-      // }
+      if ( info.attract ) {
+        ctx.beginPath();
+        ctx.arc( entity.x, entity.y, info.size + Constants.AttractDistance / 2, 0, Math.PI * 2 );
+        ctx.fillStyle = 'rgba( 0, 255, 0, 0.1 )';
+        ctx.fill();
+      }
 
       // if ( info.repel ) {
         ctx.beginPath();
@@ -321,6 +349,24 @@
     } );
   };
 
+  function timeUntilHit( entity, other ) {
+    const cx = entity.x - other.x;
+    const cy = entity.y - other.y;
+    const vx = entity.dx - other.dx;
+    const vy = entity.dy - other.dy;
+    const rr = entity.size + other.size;
+
+    const a = vx * vx + vy * vy;
+    const b = 2 * ( cx * vx + cy * vy );
+    const c = cx * cx + cy * cy - rr * rr;
+
+    const disc = b * b - 4 * a * c;
+
+    // If the objects don't collide, the discriminant will be negative
+    // We only care about first intersection, so just return t0 (which uses -b)
+    return disc < 0 ? Infinity : ( -b - Math.sqrt( disc ) ) / ( 2 * a );
+  }
+
   function drawVector( vector, ctx ) {
     const scale = Constants.UIScale;
 
@@ -345,7 +391,7 @@
   // anim.start();
 
   function refresh() {
-    anim.update();
+    anim.update( 10 );
     anim.redraw();
   }
   
