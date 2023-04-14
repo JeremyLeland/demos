@@ -18,7 +18,7 @@
   import { AnimatedCanvas } from './AnimatedCanvas.js';
 
   const Constants = {
-    AttractDistance: 100,
+    AttractDistance: 300,
     RepelDistance: 40,
     UIScale: 30,
   };
@@ -60,6 +60,12 @@
   // Do this with circles for now, should work for space ships and asteroids
   // For tunnels, we might eventually want this with lines
 
+  // TODO: Handling two rocks next to each other. This isn't handled well by the repel (very fishtaily)
+  //   - combine into larger entity to avoid?
+  //   - something like avoid-cones from before?
+  //   - waypoints of some kind? (try a line, create waypoints to get around obstacles)
+  //   - pathfinding of some kind? (generate nodes dynamically that represent available regions, then A-Star through this?)
+
   function shipPath() {
     const path = new Path2D();
     path.moveTo( 1, 0 );
@@ -76,13 +82,13 @@
 
   const Info = {
     Small: {
-      size: 20,
+      size: 16,
       drawPaths: [ {
         fillStyle: 'dodgerblue',
         path: shipPath(),
       } ],
-      turnSpeed: 0.01,
-      moveSpeed: 0.1,
+      turnSpeed: 0.008,
+      moveSpeed: 0.2,
       attract: [ 'Small' ],
       repel: [ 'Small', 'Rock' ],
     },
@@ -96,11 +102,12 @@
   }
 
   const entities = [
-    { x: 250, y: 250, angle: -1, type: 'Small' },
-    // { x: 400, y: 300, angle: -2, type: 'Small' },
-    // { x: 300, y: 350, angle:  0, type: 'Small' },
-    // { x: 500, y: 500, angle:  1, type: 'Small' },
+    { x: 250, y: 300, angle: -1, type: 'Small' },
+    { x: 500, y: 300, angle: -2, type: 'Small' },
+    { x: 300, y: 350, angle:  0, type: 'Small' },
+    { x: 500, y: 500, angle:  1, type: 'Small' },
     { x: 200, y: 200, angle: 0, type: 'Rock' },
+    // { x: 250, y: 200, angle: 0, type: 'Rock' },
   ];
 
   const anim = new AnimatedCanvas();
@@ -169,7 +176,8 @@
             // const length = Math.hypot( vx, vy );
 
             // const weight = repelDist / distance;    // TODO: Other curves better here?
-            const weight = -Math.log( distance / repelDist );
+            //const weight = 10 * -Math.log( distance / repelDist );
+            const weight = 2 * ( 1 / ( distance / repelDist ) - 1 );
             
             if ( weight > 0 ) {
               entity.vectors.push( {
@@ -179,16 +187,16 @@
               } );
             }
               // }
-          // else if ( distance < attractDist ) {
+          // if ( distance < attractDist ) {
           //   const part = ( attractDist - distance ) / ( attractDist - repelDist );
 
-          //   // vx = ( 1 - part ) * Math.cos( toOther ) + part * Math.cos( averageAngle );
-          //   // vy = ( 1 - part ) * Math.sin( toOther ) + part * Math.sin( averageAngle );
-          //   // const length = Math.hypot( vx, vy );
+          //   const vx = ( 1 - part ) * Math.cos( toOther ) + part * Math.cos( averageAngle );
+          //   const vy = ( 1 - part ) * Math.sin( toOther ) + part * Math.sin( averageAngle );
+          //   const length = Math.hypot( vx, vy );
             
           //   entity.vectors.push( {
-          //     x: Math.cos( toOther ),
-          //     y: Math.sin( toOther ),
+          //     x: vx / length,
+          //     y: vy / length,
           //     src: other,      // for DEBUG
           //   } );
           // }
@@ -265,15 +273,19 @@
       //       (objects are within attract/repel distance if their debug circles are overlapping)
       //       May need to change this later if it becomes misleading, especailly if different entities
       //       end up having different attract ranges
-      ctx.beginPath();
-      ctx.arc( entity.x, entity.y, info.size + Constants.AttractDistance / 2, 0, Math.PI * 2 );
-      ctx.fillStyle = 'rgba( 0, 255, 0, 0.1 )';
-      ctx.fill();
+      // if ( info.attract ) {
+        // ctx.beginPath();
+        // ctx.arc( entity.x, entity.y, info.size + Constants.AttractDistance / 2, 0, Math.PI * 2 );
+        // ctx.fillStyle = 'rgba( 0, 255, 0, 0.1 )';
+        // ctx.fill();
+      // }
 
-      ctx.beginPath();
-      ctx.arc( entity.x, entity.y, info.size + Constants.RepelDistance / 2, 0, Math.PI * 2 );
-      ctx.fillStyle = 'rgba( 255, 0, 0, 0.2 )';
-      ctx.fill();
+      // if ( info.repel ) {
+        ctx.beginPath();
+        ctx.arc( entity.x, entity.y, info.size + Constants.RepelDistance / 2, 0, Math.PI * 2 );
+        ctx.fillStyle = 'rgba( 255, 0, 0, 0.2 )';
+        ctx.fill();
+      // }
 
       ctx.save();
 
