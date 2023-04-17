@@ -18,8 +18,8 @@
   import { AnimatedCanvas } from './AnimatedCanvas.js';
 
   const Constants = {
-    AvoidDistance: 100,
-    AttractDistance: 300,
+    AvoidDistance: 200,
+    AttractDistance: 100,
     RepelDistance: 40,
     UIScale: 30,
   };
@@ -153,8 +153,8 @@
 
       if ( info.moveSpeed ) {
         entity.vectors.push( {
-          x: tx / tdist,
-          y: ty / tdist,
+          x: 0.1 * tx / tdist,
+          y: 0.1 * ty / tdist,
           src: { color: 'white' },
         } );
       }
@@ -207,10 +207,10 @@
           const attractDist = Constants.AttractDistance;
           const repelDist = Constants.RepelDistance;
           
-          const part = ( attractDist - distance ) / ( attractDist - repelDist );
+          // const part = ( attractDist - distance ) / ( attractDist - repelDist );
           const averageAngle = entity.angle + deltaAngle( entity.angle, other.angle ) / 2;
 
-          if ( distance < repelDist ) {
+          // if ( distance < repelDist ) {
             const part = ( repelDist - distance ) / repelDist;
 
             const vx = ( 1 - part ) * Math.cos( averageAngle ) - part * Math.cos( toOther );
@@ -218,15 +218,15 @@
             
             const length = Math.hypot( vx, vy );
 
-            const weight = Constants.RepelDistance / distance;
+            const weight = Constants.RepelDistance / distance - 1;
             if ( weight > 0 ) {
               entity.vectors.push( {
-                x: weight * vx / length,
-                y: weight * vy / length,
+                x: weight * -Math.cos( toOther ), //vx / length,
+                y: weight * -Math.sin( toOther ), //vy / length,
                 src: other,      // for DEBUG
               } );
             }
-          }
+          // }
           // else if ( distance < attractDist ) {
           //   const part = ( attractDist - distance ) / ( attractDist - repelDist );
 
