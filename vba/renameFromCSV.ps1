@@ -1,18 +1,14 @@
 ﻿param($csvPath, $srcFolder, $renamedFolder)
 
-#$csvPath = "C:\Users\iggam\Documents\rachel\RenameFiles.csv"
-#$srcFolder = "C:\Users\iggam\Documents\rachel\All-CARA-Images-Unsorted\"
-#$renamedFolder = "C:\Users\iggam\Documents\rachel\All-CARA-renamed\"
-
 New-Item -Path $renamedFolder -ItemType Directory
 
-$csv = Import-Csv -path $csvPath
+$csv = Import-Csv -Path $csvPath -Header 'From','To'
 
 foreach($line in $csv)
 { 
     
-    $from = Join-Path -Path $srcFolder -ChildPath $line.File_Name
-    $to = Join-Path -Path $renamedFolder -ChildPath $line.'New Name'
+    $from = Join-Path -Path $srcFolder -ChildPath $line.From
+    $to = Join-Path -Path $renamedFolder -ChildPath $line.To
 
     #preview
     Write-Output "Copy-Item -Path $($from) -Destination $($to)"
