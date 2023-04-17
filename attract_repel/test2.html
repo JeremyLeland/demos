@@ -18,6 +18,7 @@
   import { AnimatedCanvas } from './AnimatedCanvas.js';
 
   const Constants = {
+    AvoidDistance: 100,
     AttractDistance: 300,
     RepelDistance: 40,
     UIScale: 30,
@@ -90,7 +91,7 @@
       turnSpeed: 0.008,
       moveSpeed: 0.2,
       attract: [ 'Small' ],
-      repel: [ 'Small', 'Rock' ],
+      avoid: [ 'Rock' ],
     },
     Rock: {
       size: 30,
@@ -102,12 +103,12 @@
   }
 
   const entities = [
-    { x: 250, y: 250, angle: -2, type: 'Small', size: 16 },
-    // { x: 300, y: 300, angle: -2, type: 'Small' },
-    // { x: 350, y: 350, angle: -2, type: 'Small' },
-    // { x: 400, y: 400, angle: -2, type: 'Small' },
-    { x: 200, y: 200, angle: 0, dx: 0, dy: 0, type: 'Rock', size: 30 },
-    // { x: 250, y: 200, angle: 0, type: 'Rock' },
+    { x: 350, y: 250, angle: 0, type: 'Small', size: 16, color: 'red' },
+    { x: 300, y: 300, angle: 0, type: 'Small', color: 'orange' },
+    { x: 350, y: 450, angle: 0, type: 'Small', color: 'yellow' },
+    { x: 300, y: 500, angle: 0, type: 'Small', color: 'blue' },
+    { x: 200, y: 200, angle: 0, dx: 0, dy: 0, type: 'Rock', size: 30, color: 'brown' },
+    { x: 250, y: 200, angle: 0, dx: 0, dy: 0, type: 'Rock', color: 'gray' },
   ];
 
   const anim = new AnimatedCanvas();
@@ -145,115 +146,106 @@
       entity.vectors = [];
 
       // TODO: Eventually this will be an attract to the player entity (larger attract value)
-      if ( info.moveSpeed ) {
-        const tx = targetX - entity.x;
-        const ty = targetY - entity.y;
-        const tdist = Math.hypot( tx, ty );
-        const tangle = Math.atan2( ty, tx );
+      const tx = targetX - entity.x;
+      const ty = targetY - entity.y;
+      const tdist = Math.hypot( tx, ty );
+      const tangle = Math.atan2( ty, tx );
 
+      if ( info.moveSpeed ) {
         entity.vectors.push( {
           x: tx / tdist,
           y: ty / tdist,
+          src: { color: 'white' },
         } );
       }
 
-      // const attractList = this.entities.filter( other => other != entity && info.attract.includes( other.type ) );
-      // const repelList = this.entities.filter( other => other != entity && info.repel.includes( other.type ) );
+      // TODO: Treat "repel" and "attract" objects differently (and maybe get better names -- "avoid" and "formation" or something?)
+      //       "Avoid" objects can use the "in front" logic below and use the normal to go around.
+      //       "Formation" objects should use something closer to test1 where we try to match angle if we're close 
+      //       (but head towards/away otherwise)
+
+      const attractList = info.attract ? entities.filter( other => other != entity && info.attract.includes( other.type ) ) : null;
+      const avoidList = info.avoid ? entities.filter( other => other != entity && info.avoid.includes( other.type ) ) : null;
       
-      // repelList.forEach( other => {
-      //   const cx = other.x - entity.x;
-      //   const cy = other.y - entity.y;
-      //   const distance = Math.hypot( cx, cy ) - Info[ entity.type ].size - Info[ other.type ].size;
-      //   const toOther = Math.atan2( cy, cx );
-      // } );
+      avoidList?.forEach( other => {
+        const cx = other.x - entity.x;
+        const cy = other.y - entity.y;
+        const distance = Math.hypot( cx, cy ) - Info[ entity.type ].size - Info[ other.type ].size;
+        const toOther = Math.atan2( cy, cx );
 
-      entities.forEach( other => {
-        if ( entity != other ) {
+        //     const r = Info[ entity.type ].size + Info[ other.type ].size + 20;
+      //     const h = Math.hypot( cx, cy );
+      //     const spread = Math.asin( Math.min( 1, r / h ) );   // min() prevents floating errors when we get really close
 
-          // TODO: Different values for this, from attract/repel list?
-          const attractDist = info.attract?.includes( other.type ) ? Constants.AttractDistance : 0;
-          const repelDist = info.repel?.includes( other.type ) ? Constants.RepelDistance : 0;
+        const otherInFront = cx * tx + cy * ty > 0;
+        if ( otherInFront ) {
+          const weight = Constants.AvoidDistance / distance - 1;
 
-          const cx = other.x - entity.x;
-          const cy = other.y - entity.y;
+          if ( weight > 0 ) {
+            const left = toOther - Math.PI / 2;
+            const right = toOther + Math.PI / 2;
+            const closest = deltaAngle( left, tangle ) < deltaAngle( tangle, right ) ? left : right;
 
-          const r = Info[ entity.type ].size + Info[ other.type ].size + 20;
-          const h = Math.hypot( cx, cy );
-          const spread = Math.asin( Math.min( 1, r / h ) );   // min() prevents floating errors when we get really close
+            entity.vectors.push( {
+              x: weight * Math.cos( closest ),
+              y: weight * Math.sin( closest ),
+              src: other,   // for DEBUG
+            } );
+          }
+        }
+      } );
 
-          const distance = h - Info[ entity.type ].size - Info[ other.type ].size;
-          const toOther = Math.atan2( cy, cx );
+      attractList?.forEach( other => {
+        const cx = other.x - entity.x;
+        const cy = other.y - entity.y;
+        const distance = Math.hypot( cx, cy ) - Info[ entity.type ].size - Info[ other.type ].size;
+        const toOther = Math.atan2( cy, cx );
 
-          let vx = 0, vy = 0;
+        // const otherInFront = cx * tx + cy * ty > 0;
+        // if ( otherInFront ) {
+          // TODO: Support different repel dists for each entity?
+          const attractDist = Constants.AttractDistance;
+          const repelDist = Constants.RepelDistance;
           
-          // If distance from attract line is near zero, we should be aiming toward other entity
-          // If distance from repel line is near zero, we should be approaching other entity's angle
-          //    - maybe split the difference between the angles, for more gradual turns when facing away from each other?
+          const part = ( attractDist - distance ) / ( attractDist - repelDist );
           const averageAngle = entity.angle + deltaAngle( entity.angle, other.angle ) / 2;
 
-          // Should this be default for attract? Might throw off "attracting" to player if we're trying to shoot them...
-
-          // Handle "attract" entities differently than "repel"? (if we attract, try to match angles)
           if ( distance < repelDist ) {
-            // TODO: Weight repel heavier than attract (so we don't crash!)
-            // TODO: Support different repel dists for each entity?
-            // const part = ( repelDist - distance ) / repelDist;
-          
-            // vx = ( 1 - part ) * Math.cos( averageAngle ) - part * Math.cos( toOther );
-            // vy = ( 1 - part ) * Math.sin( averageAngle ) - part * Math.sin( toOther );
-            // const length = Math.hypot( vx, vy );
+            const part = ( repelDist - distance ) / repelDist;
 
-            // const weight = repelDist / distance;    // TODO: Other curves better here?
-            //const weight = 10 * -Math.log( distance / repelDist );
-            const weight = 2 * ( 1 / ( distance / repelDist ) - 1 );
-            //const weight = 2 * ( 1 / ( timeUntilHit( entity, other ) / 200 ) - 1 );
+            const vx = ( 1 - part ) * Math.cos( averageAngle ) - part * Math.cos( toOther );
+            const vy = ( 1 - part ) * Math.sin( averageAngle ) - part * Math.sin( toOther );
             
-            // TODO: I'm trying to have this nudge me in the direction to avoid the asteroid
-            //       I'm weighting it by when we would hit the asteroid, which has the fishtailing problem
-            //       Need a way to nudge based on how close we are but only stop nudging when we've really cleared it
-            //       Maybe project our direction of travel to the distance between us 
-            //       to see if we are "in front" of it or "behind" it?
+            const length = Math.hypot( vx, vy );
 
-            const left = toOther - Math.PI / 2;//spread;
-            const right = toOther + Math.PI / 2; //spread;
-
-            const closest = right;//deltaAngle( left, toOther ) < deltaAngle( toOther, right ) ? left : right;
-
+            const weight = Constants.RepelDistance / distance;
             if ( weight > 0 ) {
               entity.vectors.push( {
-                x: weight * Math.cos( closest ),
-                y: weight * Math.sin( closest ),
-                src: other,   // for DEBUG
+                x: weight * vx / length,
+                y: weight * vy / length,
+                src: other,      // for DEBUG
               } );
             }
           }
-           if ( distance < attractDist ) {
+          // else if ( distance < attractDist ) {
           //   const part = ( attractDist - distance ) / ( attractDist - repelDist );
 
           //   const vx = ( 1 - part ) * Math.cos( toOther ) + part * Math.cos( averageAngle );
           //   const vy = ( 1 - part ) * Math.sin( toOther ) + part * Math.sin( averageAngle );
-          //   const length = Math.hypot( vx, vy );
 
-            const weight = 1 / ( distance + 1 );
-          
-            entity.vectors.push( {
-              x: weight * Math.cos( averageAngle ),
-              y: weight * Math.sin( averageAngle ),
-              src: other,   // for DEBUG
-            } );
-            
+          //   const length = Math.hypot( vx, vy );
           //   entity.vectors.push( {
           //     x: vx / length,
           //     y: vy / length,
           //     src: other,      // for DEBUG
           //   } );
-          }
-        }
+          // }
+        // }
+            
       } );
       
     } );
 
-    
   };
 
   // TODO: Put this back to my general-purpose approach, and do a fixAngle outside of it?
@@ -322,7 +314,7 @@
       ctx.scale( info.size, info.size );
 
       info.drawPaths.forEach( pathInfo => {
-        ctx.fillStyle = pathInfo.fillStyle;
+        ctx.fillStyle = entity.color ?? pathInfo.fillStyle;
         ctx.fill( pathInfo.path );
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 1 / info.size;
@@ -336,8 +328,10 @@
       ctx.save();
       ctx.translate( entity.x, entity.y );
       
-      ctx.fillStyle = ctx.strokeStyle = 'red';
-      entity.vectors?.forEach( vector => drawVector( vector, ctx ) );
+      entity.vectors?.forEach( vector => {
+        ctx.fillStyle = ctx.strokeStyle = vector.src?.color;
+        drawVector( vector, ctx );
+      } );
 
       ctx.fillStyle = ctx.strokeStyle = 'green';
       drawVector( {
