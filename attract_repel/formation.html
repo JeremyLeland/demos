@@ -1,19 +1,35 @@
 <title>Attract and Repel Tests</title>
 <link rel="stylesheet" href="../grid.css">
 
+<style>
+  #panel {
+    position: absolute;
+    width: 300px;
+
+    display: grid;
+    grid-template-columns: 120px 50px;
+  }
+</style>
+
 <div id="panel"></div>
 
 <script type="module">
   import { AnimatedCanvas } from './AnimatedCanvas.js';
+  import { ValuesPanel } from './ValuesPanel.js';
+  import { Entity } from './Entity.js';
 
   const Constants = {
-    FlockDistance: 50,
+    FlockDistance: 100,
     UIScale: 30,
   };
 
+  new ValuesPanel( Constants ).valueChanged = refresh;
+
   // Forget dodging for now, just try to keep everyone in a flock?
 
-  // Maybe if we hit each ship with all the forces affecting the other ship, it'll make it move more?
+  // Repel ships from nearest ships affecting them
+  // This is starting to sound a bit like voronoi/delauny...wonder how fast that can run? 
+  // Explicitly link them for now, consider using voronoi library to try this
 
   function shipPath() {
     const path = new Path2D();
@@ -29,51 +45,14 @@
     return path;
   }
 
-  class Entity {
-    x = 0;
-    y = 0;
-    angle = 0;
-
-    dx = 0;
-    dy = 0;
-    dAngle = 0;
-
-    color = 'black';
-    drawPath = new Path2D();
-
-    constructor( values ) {
-      Object.assign( this, values );
-    }
-
-    update( dt ) {
-      this.x += this.dx * dt;
-      this.y += this.dy * dt;
-      this.angle += this.dAngle * dt;
-    }
-
-    draw( ctx ) {
-      ctx.save();
-
-      ctx.translate( this.x, this.y );
-      ctx.rotate( this.angle );
-      ctx.scale( this.size, this.size );
-
-      ctx.fillStyle = this.color;
-      ctx.fill( this.drawPath );
-      ctx.strokeStyle = 'black';
-      ctx.lineWidth = 1 / this.size;
-      ctx.stroke( this.drawPath );
-
-      ctx.restore();
-    }
-  }
-
   class Ship extends Entity {
     size = 16;
     // color = 'green';
     drawPath = shipPath();
     turnSpeed = 0.008;
     moveSpeed = 0.2;
+
+    links = [];
   }
 
   class Rock extends Entity {
@@ -90,59 +69,60 @@
     // new Ship( { x: 200, y: 420, color: 'dodgerblue' } ),
   ];
 
+  entities[ 0 ].links.push( entities[ 1 ] );
+  entities[ 1 ].links.push( entities[ 0 ] );
+  entities[ 1 ].links.push( entities[ 2 ] );
+  entities[ 2 ].links.push( entities[ 1 ] );
+
   const anim = new AnimatedCanvas();
 
   let target = { x: 500, y: 300 };
 
   anim.update = ( dt ) => {
     entities.forEach( entity => {
-      const tx = target.x - entity.x;
-      const ty = target.y - entity.y;
-      const tdist = Math.hypot( tx, ty )
-      const tangle = Math.atan2( ty, tx );
+      // const tx = target.x - entity.x;
+      // const ty = target.y - entity.y;
+      // const tdist = Math.hypot( tx, ty )
+      // const tangle = Math.atan2( ty, tx );
 
-      entity.vectors = [ {
-        x: Math.cos( tangle ),
-        y: Math.sin( tangle ),
-        src: { color: 'gray' },
-      } ];
+      entity.vectors = [];
+      // entity.vectors = [ {
+      //   x: Math.cos( tangle ),
+      //   y: Math.sin( tangle ),
+      //   src: { color: 'gray' },
+      // } ];
 
-      entities.forEach( other => {
-        if ( entity != other ) {
-          const cx = other.x - entity.x;
-          const cy = other.y - entity.y;
-          const dist = Math.hypot( cx, cy );
-          const angle = Math.atan2( cy, cx );
-          
-          // const weight = 10 * Constants.FlockDistance / dist - 1;
+      entity.links.forEach( other => {
+        const cx = other.x - entity.x;
+        const cy = other.y - entity.y;
+        const dist = Math.hypot( cx, cy );
+        const angle = Math.atan2( cy, cx );
+        
+        const weight = Constants.FlockDistance / dist - 1;
 
-          // 1 at 0, drop slowly until near flockDist, then 0 at flockDist
-          //const weight = 1 / ( dist - Constants.FlockDistance - 1 ) + 1;
-          const weight = Math.log( Constants.FlockDistance + 1 - dist );
-          
-          if ( weight > 0 ) {
-            entity.vectors.push( {
-              x: weight * -Math.cos( angle ),
-              y: weight * -Math.sin( angle ),
-              src: other,   // for DEBUG
-            } );
-          }
-        }
+        entity.vectors.push( {
+          x: weight * -Math.cos( angle ),
+          y: weight * -Math.sin( angle ),
+          src: other,   // for DEBUG
+        } );
       } );
 
       if ( entity.vectors?.length > 0 ) {
         entity.vectorTotal = entity.vectors.reduce( ( a, b ) => ( { x: a.x + b.x, y: a.y + b.y } ) );
         const goalAngle = Math.atan2( entity.vectorTotal.y, entity.vectorTotal.x );
 
-        entity.dAngle = entity.turnSpeed * Math.sign( deltaAngle( entity.angle, goalAngle ) );
+        // entity.dAngle = entity.turnSpeed * Math.sign( deltaAngle( entity.angle, goalAngle ) );
       }
       else {
         // entity.goalAngle = entity.angle;
         entity.dAngle = 0;
       }
 
-      entity.dx = entity.moveSpeed * Math.cos( entity.angle );
-      entity.dy = entity.moveSpeed * Math.sin( entity.angle );
+      entity.dx = entity.vectorTotal.x;
+      entity.dy = entity.vectorTotal.y;
+
+      // entity.dx = entity.moveSpeed * Math.cos( entity.angle );
+      // entity.dy = entity.moveSpeed * Math.sin( entity.angle );
     } );
 
     entities.forEach( entity => entity.update( dt ) );
@@ -261,8 +241,7 @@
   } );
 
   document.addEventListener( 'mousemove', ( e ) => {
-    // targetX = e.clientX;
-    // targetY = e.clientY;
+    // target = { x: e.clientX, y: e.clientY };
 
     if ( activeEntity ) {
       activeEntity.x += e.clientX - lastX;
