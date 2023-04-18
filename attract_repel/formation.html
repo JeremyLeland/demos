@@ -8,6 +8,7 @@
 
   const Constants = {
     FlockDistance: 50,
+    UIScale: 30,
   };
 
   // Forget dodging for now, just try to keep everyone in a flock?
@@ -69,7 +70,7 @@
 
   class Ship extends Entity {
     size = 16;
-    color = 'green';
+    // color = 'green';
     drawPath = shipPath();
     turnSpeed = 0.008;
     moveSpeed = 0.2;
@@ -82,9 +83,11 @@
   }
 
   const entities = [
-    new Ship( { x: 200, y: 260 } ),
-    new Ship( { x: 200, y: 300 } ),
-    new Ship( { x: 200, y: 340 } ),
+    new Ship( { x: 200, y: 260, color: 'red' } ),
+    new Ship( { x: 200, y: 300, color: 'orange' } ),
+    new Ship( { x: 200, y: 340, color: 'yellow' } ),
+    // new Ship( { x: 200, y: 380, color: 'green' } ),
+    // new Ship( { x: 200, y: 420, color: 'dodgerblue' } ),
   ];
 
   const anim = new AnimatedCanvas();
@@ -93,19 +96,53 @@
 
   anim.update = ( dt ) => {
     entities.forEach( entity => {
-      entity.closest = entities.filter( e => e != entity ).map( 
-        e => ( { entity: e, dist: Math.hypot( e.x - entity.x, e.y - entity.y ) } )
-      ).reduce( 
-        ( closest, e ) => e.dist < closest.dist ? e : closest
-      );
+      const tx = target.x - entity.x;
+      const ty = target.y - entity.y;
+      const tdist = Math.hypot( tx, ty )
+      const tangle = Math.atan2( ty, tx );
 
-      const cx = entity.closest.entity.x - entity.x;
-      const cy = entity.closest.entity.y - entity.y;
-      const angle = Math.atan2( cy, cx );
+      entity.vectors = [ {
+        x: Math.cos( tangle ),
+        y: Math.sin( tangle ),
+        src: { color: 'gray' },
+      } ];
 
-      const weight = Constants.FlockDistance / entity.closest.dist - 1;
-      entity.dx = weight * -Math.cos( angle );
-      entity.dy = weight * -Math.sin( angle );
+      entities.forEach( other => {
+        if ( entity != other ) {
+          const cx = other.x - entity.x;
+          const cy = other.y - entity.y;
+          const dist = Math.hypot( cx, cy );
+          const angle = Math.atan2( cy, cx );
+          
+          // const weight = 10 * Constants.FlockDistance / dist - 1;
+
+          // 1 at 0, drop slowly until near flockDist, then 0 at flockDist
+          //const weight = 1 / ( dist - Constants.FlockDistance - 1 ) + 1;
+          const weight = Math.log( Constants.FlockDistance + 1 - dist );
+          
+          if ( weight > 0 ) {
+            entity.vectors.push( {
+              x: weight * -Math.cos( angle ),
+              y: weight * -Math.sin( angle ),
+              src: other,   // for DEBUG
+            } );
+          }
+        }
+      } );
+
+      if ( entity.vectors?.length > 0 ) {
+        entity.vectorTotal = entity.vectors.reduce( ( a, b ) => ( { x: a.x + b.x, y: a.y + b.y } ) );
+        const goalAngle = Math.atan2( entity.vectorTotal.y, entity.vectorTotal.x );
+
+        entity.dAngle = entity.turnSpeed * Math.sign( deltaAngle( entity.angle, goalAngle ) );
+      }
+      else {
+        // entity.goalAngle = entity.angle;
+        entity.dAngle = 0;
+      }
+
+      entity.dx = entity.moveSpeed * Math.cos( entity.angle );
+      entity.dy = entity.moveSpeed * Math.sin( entity.angle );
     } );
 
     entities.forEach( entity => entity.update( dt ) );
@@ -114,25 +151,51 @@
   anim.draw = ( ctx ) => {
 
     // flock distance
-    ctx.fillStyle = 'rgba( 255, 255, 0, 0.2 )';
+    ctx.fillStyle = 'rgba( 255, 255, 0, 0.1 )';
     entities.forEach( entity => {
       ctx.beginPath();
-      ctx.arc( entity.x, entity.y, Constants.FlockDistance, 0, Math.PI * 2 );
+      ctx.arc( entity.x, entity.y, Constants.FlockDistance / 2, 0, Math.PI * 2 );
       ctx.fill();
-    } );
 
-    // closest ship
-    entities.forEach( entity => {
       ctx.beginPath();
-      ctx.moveTo( entity.x, entity.y );
-      ctx.lineTo( entity.closest.entity.x, entity.closest.entity.y );
-      ctx.lineWidth = 4 * Constants.FlockDistance / entity.closest.dist;
-      ctx.strokeStyle = 'red'
+      ctx.moveTo( target.x, target.y );
+      ctx.lineTo( entity.x, entity.y );
+      ctx.setLineDash( [ 5, 5 ] );
+      ctx.strokeStyle = 'gray';
       ctx.stroke();
-
+      ctx.setLineDash( [ ] );
     } );
+
+    // // closest ship
+    // entities.forEach( entity => {
+    //   ctx.beginPath();
+    //   ctx.moveTo( entity.x, entity.y );
+    //   ctx.lineTo( entity.closest.entity.x, entity.closest.entity.y );
+    //   ctx.lineWidth = 4 * Constants.FlockDistance / entity.closest.dist;
+    //   ctx.strokeStyle = 'red'
+    //   ctx.stroke();
+
+    // } );
 
     entities.forEach( entity => entity.draw( ctx ) );
+
+    entities.forEach( entity => {
+      ctx.save();
+
+      ctx.translate( entity.x, entity.y );
+
+      entity.vectors.forEach( vector => {
+        ctx.fillStyle = ctx.strokeStyle = vector.src.color;
+        drawVector( vector, ctx );
+      } );
+
+      ctx.fillStyle = ctx.strokeStyle = 'white';
+      drawVector( entity.vectorTotal, ctx );
+
+      ctx.restore();
+    } );
+
+    
 
   };
 
@@ -207,7 +270,7 @@
       lastX = e.clientX;
       lastY = e.clientY;
       
-      refresh();
+      anim.redraw();
     }
   } );
 
