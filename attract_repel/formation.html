@@ -19,8 +19,14 @@
   import { Entity } from './Entity.js';
 
   const Constants = {
-    FlockDistance: 100,
-    UIScale: 30,
+    DesiredSeparation: 50,
+    SeparationWeight: 1.5,
+    AlignmentWeight: 1,
+    CohesionWeight: 0.1,
+    NeighborAngle: 2.2,
+    NeighborDistance: 400,
+    MaxSpeed: 0.1,
+    UIScale: 100,
   };
 
   new ValuesPanel( Constants ).valueChanged = refresh;
@@ -52,7 +58,7 @@
     turnSpeed = 0.008;
     moveSpeed = 0.2;
 
-    links = [];
+    // links = [];
   }
 
   class Rock extends Entity {
@@ -63,16 +69,16 @@
 
   const entities = [
     new Ship( { x: 200, y: 260, color: 'red' } ),
-    new Ship( { x: 200, y: 300, color: 'orange' } ),
+    new Ship( { x: 220, y: 300, color: 'orange' } ),
     new Ship( { x: 200, y: 340, color: 'yellow' } ),
     // new Ship( { x: 200, y: 380, color: 'green' } ),
     // new Ship( { x: 200, y: 420, color: 'dodgerblue' } ),
   ];
 
-  entities[ 0 ].links.push( entities[ 1 ] );
-  entities[ 1 ].links.push( entities[ 0 ] );
-  entities[ 1 ].links.push( entities[ 2 ] );
-  entities[ 2 ].links.push( entities[ 1 ] );
+  // entities[ 0 ].links.push( entities[ 1 ] );
+  // entities[ 1 ].links.push( entities[ 0 ] );
+  // entities[ 1 ].links.push( entities[ 2 ] );
+  // entities[ 2 ].links.push( entities[ 1 ] );
 
   const anim = new AnimatedCanvas();
 
@@ -85,41 +91,66 @@
       // const tdist = Math.hypot( tx, ty )
       // const tangle = Math.atan2( ty, tx );
 
-      entity.vectors = [];
-      // entity.vectors = [ {
-      //   x: Math.cos( tangle ),
-      //   y: Math.sin( tangle ),
-      //   src: { color: 'gray' },
-      // } ];
+      entity.neighborhood = [ entity ];
+      entity.separationVectors = [];
 
-      entity.links.forEach( other => {
+      entities.filter( e => e != entity ).forEach( other => {
         const cx = other.x - entity.x;
         const cy = other.y - entity.y;
         const dist = Math.hypot( cx, cy );
         const angle = Math.atan2( cy, cx );
-        
-        const weight = Constants.FlockDistance / dist - 1;
 
-        entity.vectors.push( {
-          x: weight * -Math.cos( angle ),
-          y: weight * -Math.sin( angle ),
-          src: other,   // for DEBUG
-        } );
+        if ( dist < Constants.NeighborDistance /*&& 
+             Math.abs( deltaAngle( entity.angle, angle ) ) < Constants.NeighborAngle*/ ) {
+      
+          entity.neighborhood.push( other );
+
+          const avoidWeight = Constants.DesiredSeparation / dist - 1;
+
+          if ( avoidWeight > 0 ) {
+            entity.separationVectors.push( {
+              x: avoidWeight * -Math.cos( angle ),
+              y: avoidWeight * -Math.sin( angle ),
+              src: other,   // for DEBUG
+            } );
+          }
+        }
       } );
 
-      if ( entity.vectors?.length > 0 ) {
-        entity.vectorTotal = entity.vectors.reduce( ( a, b ) => ( { x: a.x + b.x, y: a.y + b.y } ) );
-        const goalAngle = Math.atan2( entity.vectorTotal.y, entity.vectorTotal.x );
+      entity.separation = entity.separationVectors.reduce( ( a, b ) => ( { x: a.x + b.x, y: a.y + b.y } ), { x: 0, y: 0 } );
+      
+      const averageAngle = entity.neighborhood.reduce( ( a, b ) => a + b.angle, 0 ) / entity.neighborhood.length;
+      entity.alignment = { 
+        x: Math.cos( averageAngle ),
+        y: Math.sin( averageAngle ),
+      };
 
-        // entity.dAngle = entity.turnSpeed * Math.sign( deltaAngle( entity.angle, goalAngle ) );
-      }
-      else {
-        // entity.goalAngle = entity.angle;
-        entity.dAngle = 0;
+      entity.cohesion = entity.neighborhood.reduce( ( a, b ) => ( { x: a.x + b.x, y: a.y + b.y } ), { x: 0, y: 0 } );
+      entity.cohesion.x /= entity.neighborhood.length;
+      entity.cohesion.y /= entity.neighborhood.length;
+      entity.cohesion.x -= entity.x;
+      entity.cohesion.y -= entity.y;
+
+      const coLength = Math.hypot( entity.cohesion.x, entity.cohesion.y );
+      if ( coLength > 0 ) {
+        entity.cohesion.x /= coLength;
+        entity.cohesion.y /= coLength;
       }
 
-      entity.dx = entity.vectorTotal.x;
-      entity.dy = entity.vectorTotal.y;
+      entity.vectorTotal = { x: 0, y: 0 };
+
+      entity.vectorTotal.x += Constants.SeparationWeight * entity.separation.x;
+      entity.vectorTotal.y += Constants.SeparationWeight * entity.separation.y;
+      entity.vectorTotal.x += Constants.AlignmentWeight * entity.alignment.x;
+      entity.vectorTotal.y += Constants.AlignmentWeight * entity.alignment.y;
+      entity.vectorTotal.x += Constants.CohesionWeight * entity.cohesion.x;
+      entity.vectorTotal.y += Constants.CohesionWeight * entity.cohesion.y;
+
+
+      entity.angle = Math.atan2( entity.vectorTotal.y, entity.vectorTotal.x );
+
+      entity.dx = Constants.MaxSpeed * Math.cos( entity.angle );
+      entity.dy = Constants.MaxSpeed * Math.sin( entity.angle );
 
       // entity.dx = entity.moveSpeed * Math.cos( entity.angle );
       // entity.dy = entity.moveSpeed * Math.sin( entity.angle );
@@ -129,45 +160,53 @@
   };
   
   anim.draw = ( ctx ) => {
+    entities.forEach( entity => entity.draw( ctx ) );
 
-    // flock distance
-    ctx.fillStyle = 'rgba( 255, 255, 0, 0.1 )';
+    // Neighborhood
     entities.forEach( entity => {
       ctx.beginPath();
-      ctx.arc( entity.x, entity.y, Constants.FlockDistance / 2, 0, Math.PI * 2 );
+      ctx.moveTo( entity.x, entity.y );
+      ctx.arc( entity.x, entity.y, Constants.DesiredSeparation, 0, Math.PI * 2 );
+      ctx.fillStyle = 'rgba( 255, 0, 0, 0.05 )';
+      ctx.fill();
+      
+      ctx.beginPath();
+      ctx.moveTo( entity.x, entity.y );
+      ctx.arc( entity.x, entity.y, Constants.NeighborDistance, 0, Math.PI * 2 /* entity.angle - Constants.NeighborAngle, entity.angle + Constants.NeighborAngle */);
+      ctx.fillStyle = 'rgba( 255, 255, 0, 0.05 )';
       ctx.fill();
 
-      ctx.beginPath();
-      ctx.moveTo( target.x, target.y );
-      ctx.lineTo( entity.x, entity.y );
       ctx.setLineDash( [ 5, 5 ] );
       ctx.strokeStyle = 'gray';
-      ctx.stroke();
+      entity.neighborhood.forEach( other => {
+        ctx.beginPath();
+        ctx.moveTo( other.x, other.y );
+        ctx.lineTo( entity.x, entity.y );
+        ctx.stroke();
+      } );
       ctx.setLineDash( [ ] );
     } );
 
-    // // closest ship
-    // entities.forEach( entity => {
-    //   ctx.beginPath();
-    //   ctx.moveTo( entity.x, entity.y );
-    //   ctx.lineTo( entity.closest.entity.x, entity.closest.entity.y );
-    //   ctx.lineWidth = 4 * Constants.FlockDistance / entity.closest.dist;
-    //   ctx.strokeStyle = 'red'
-    //   ctx.stroke();
-
-    // } );
-
-    entities.forEach( entity => entity.draw( ctx ) );
+    
 
     entities.forEach( entity => {
       ctx.save();
 
       ctx.translate( entity.x, entity.y );
 
-      entity.vectors.forEach( vector => {
+      entity.separationVectors.forEach( vector => {
         ctx.fillStyle = ctx.strokeStyle = vector.src.color;
         drawVector( vector, ctx );
       } );
+
+      ctx.fillStyle = ctx.strokeStyle = 'green';
+      drawVector( entity.separation, ctx );
+      
+      ctx.fillStyle = ctx.strokeStyle = 'cyan';
+      drawVector( entity.alignment, ctx );
+
+      ctx.fillStyle = ctx.strokeStyle = 'purple';
+      drawVector( entity.cohesion, ctx );
 
       ctx.fillStyle = ctx.strokeStyle = 'white';
       drawVector( entity.vectorTotal, ctx );
@@ -258,7 +297,7 @@
 
     if ( entity ) {
       entity.angle -= ( e.wheelDelta / 120 ) * ( Math.PI / 32 );
-      refresh();
+      anim.redraw();
     }
   } );
 

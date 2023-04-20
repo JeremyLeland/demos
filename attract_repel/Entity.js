@@ -7,6 +7,10 @@ export class Entity {
   dy = 0;
   dAngle = 0;
 
+  ddx = 0;
+  ddy = 0;
+  ddAngle = 0;
+
   color = 'black';
   drawPath = new Path2D();
 
@@ -15,6 +19,10 @@ export class Entity {
   }
 
   update( dt ) {
+    this.dx += this.ddx * dt;
+    this.dy += this.ddy * dt;
+    this.ddAngle = this.dAngle * dt;
+
     this.x += this.dx * dt;
     this.y += this.dy * dt;
     this.angle += this.dAngle * dt;
