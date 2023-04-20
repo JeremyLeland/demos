@@ -68,9 +68,12 @@
   }
 
   const entities = [
-    new Ship( { x: 200, y: 260, color: 'red' } ),
-    new Ship( { x: 220, y: 300, color: 'orange' } ),
-    new Ship( { x: 200, y: 340, color: 'yellow' } ),
+    new Ship( { x: 200, y: 260, angle: -2, color: 'red' } ),
+    new Ship( { x: 220, y: 300, angle: -2, color: 'orange' } ),
+    new Ship( { x: 200, y: 340, angle: -2, color: 'yellow' } ),
+    new Ship( { x: 400, y: 360, angle: -2, color: 'red' } ),
+    new Ship( { x: 420, y: 400, angle: -2, color: 'orange' } ),
+    new Ship( { x: 400, y: 440, angle: -2, color: 'yellow' } ),
     // new Ship( { x: 200, y: 380, color: 'green' } ),
     // new Ship( { x: 200, y: 420, color: 'dodgerblue' } ),
   ];
@@ -93,6 +96,22 @@
 
       entity.neighborhood = [ entity ];
       entity.separationVectors = [];
+
+      const leftWeight = Math.max( 0, Constants.DesiredSeparation / entity.x - 1 );
+      const topWeight  = Math.max( 0, Constants.DesiredSeparation / entity.y - 1 );
+      const rightWeight   = Math.max( 0, Constants.DesiredSeparation / ( window.innerWidth - entity.x ) - 1 );
+      const bottomWeight  = Math.max( 0, Constants.DesiredSeparation / ( window.innerHeight - entity.y ) - 1 );
+      entity.separationVectors.push( {
+        x: leftWeight,
+        y: topWeight,
+        src: entity,
+      } );
+
+      entity.separationVectors.push( {
+        x: -rightWeight,
+        y: -bottomWeight,
+        src: entity,
+      } );
 
       entities.filter( e => e != entity ).forEach( other => {
         const cx = other.x - entity.x;
@@ -117,13 +136,17 @@
         }
       } );
 
-      entity.separation = entity.separationVectors.reduce( ( a, b ) => ( { x: a.x + b.x, y: a.y + b.y } ), { x: 0, y: 0 } );
+      entity.separation = entity.separationVectors.reduce( 
+        ( a, b ) => ( { x: a.x + b.x, y: a.y + b.y } ), { x: 0, y: 0 } 
+      );
       
-      const averageAngle = entity.neighborhood.reduce( ( a, b ) => a + b.angle, 0 ) / entity.neighborhood.length;
-      entity.alignment = { 
-        x: Math.cos( averageAngle ),
-        y: Math.sin( averageAngle ),
-      };
+      // TODO: dx/dy instead of angle?
+      entity.alignment = entity.neighborhood.reduce( ( a, b ) => ( { 
+        x: a.x + Math.cos( b.angle ), 
+        y: a.y + Math.sin( b.angle ),
+      } ), { x: 0, y: 0 } );
+      entity.alignment.x /= entity.neighborhood.length;
+      entity.alignment.y /= entity.neighborhood.length;
 
       entity.cohesion = entity.neighborhood.reduce( ( a, b ) => ( { x: a.x + b.x, y: a.y + b.y } ), { x: 0, y: 0 } );
       entity.cohesion.x /= entity.neighborhood.length;
@@ -145,8 +168,9 @@
       entity.vectorTotal.y += Constants.AlignmentWeight * entity.alignment.y;
       entity.vectorTotal.x += Constants.CohesionWeight * entity.cohesion.x;
       entity.vectorTotal.y += Constants.CohesionWeight * entity.cohesion.y;
+    } );
 
-
+    entities.forEach( entity => {
       entity.angle = Math.atan2( entity.vectorTotal.y, entity.vectorTotal.x );
 
       entity.dx = Constants.MaxSpeed * Math.cos( entity.angle );
