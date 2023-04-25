@@ -8,7 +8,7 @@
 
   const Constants = {
     FrontAngle: 1,
-    FollowAngle: 2.2,
+    FollowAngle: 2.3,
     FollowDistance: 50,
     MaxSpeed: 0.1,
     UIScale: 100,
@@ -63,18 +63,26 @@
   anim.update = ( dt ) => {
     entities.forEach( entity => {
 
-      const neighbors = entities.filter( e => e != entity ).map( other => {
-        const cx = other.x - entity.x;
-        const cy = other.y - entity.y;
+      const follows = [];
+      
+      entities.filter( e => e != entity ).forEach( other => {
+        [ -1, 1 ].forEach( e => {
+          const x = other.x + Math.cos( other.angle + e * Constants.FollowAngle ) * Constants.FollowDistance;
+          const y = other.y + Math.sin( other.angle + e * Constants.FollowAngle ) * Constants.FollowDistance;
+          const cx = x - entity.x;
+          const cy = y - entity.y;
 
-        return { 
-          dist: Math.hypot( cx, cy ),
-          angle: Math.atan2( cy, cx ),
-          entity: other,
-        };
+          follows.push( {
+            x: x,
+            y: y,
+            dist: Math.hypot( cx, cy ),
+            angle: Math.atan2( cy, cx ),
+            entity: other,
+          } );
+        } );
       } );
 
-      const closestFront = neighbors.reduce(
+      const closestFollow = follows.reduce(
         ( closest, e ) => {
           // TODO: Only follow if facing away from us?
           const inFront = Math.abs( deltaAngle( entity.angle, e.angle ) ) < Constants.FrontAngle;
@@ -83,8 +91,13 @@
         { dist: Infinity }
       );
 
-      entity.closestFront = closestFront.entity;
+      entity.closestFollow = closestFollow;
     } );
+
+    // TODO: Two forces here:
+    //        1) Aiming toward closest follow location (stronger further away)
+    //        2) Aligning with leader (stronger as we get closer)
+    //        3) Avoid leader if too close (e.g. they suddenly turned)
 
     entities.forEach( entity => entity.update( dt ) );
   };
@@ -103,12 +116,19 @@
       ctx.fill();
       
       ctx.setLineDash( [ 5, 5 ] );
-      ctx.strokeStyle = 'gray';
-      if ( entity.closestFront ) {
+      if ( entity.closestFollow.entity ) {
         ctx.beginPath();
-        ctx.moveTo( entity.closestFront.x, entity.closestFront.y );
+        ctx.moveTo( entity.closestFollow.x, entity.closestFollow.y );
         ctx.lineTo( entity.x, entity.y );
+        ctx.strokeStyle = 'gray';
         ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo( entity.closestFollow.entity.x, entity.closestFollow.entity.y );
+        ctx.lineTo( entity.closestFollow.x, entity.closestFollow.y );
+        ctx.strokeStyle = 'white';
+        ctx.stroke();
+        
       }
       ctx.setLineDash( [ ] );
     } );
