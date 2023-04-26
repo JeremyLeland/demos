@@ -7,7 +7,7 @@
   import { Entity } from './Entity.js';
 
   const Constants = {
-    FrontAngle: 1,
+    FrontAngle: 1.5,
     FollowAngle: 2.3,
     FollowDistance: 50,
     FollowWeight: 1,
@@ -97,6 +97,8 @@
       entity.closestFollow = follows.reduce(
         ( closest, e ) => {
           // TODO: Only follow if facing away from us?
+          //  - Maybe this will prevent us from suddenly trying to follow people following us
+          //    when we start to turn...
           const inFront = Math.abs( deltaAngle( entity.angle, e.angle ) ) < Constants.FrontAngle;
           return inFront && e.dist < closest.dist ? e : closest;
         },
@@ -121,6 +123,13 @@
         entity.vectors.push( {
           x: Math.cos( alignAngle ) * alignWeight, 
           y: Math.sin( alignAngle ) * alignWeight, 
+        } );
+      }
+      else {
+        const targetAngle = Math.atan2( target.y - entity.y, target.x - entity.x );
+        entity.vectors.push( {
+          x: Math.cos( targetAngle ),
+          y: Math.sin( targetAngle ),
         } );
       }
 
@@ -235,7 +244,7 @@
   } );
 
   document.addEventListener( 'mousemove', ( e ) => {
-    // target = { x: e.clientX, y: e.clientY };
+    target = { x: e.clientX, y: e.clientY };
 
     if ( activeEntity ) {
       activeEntity.x += e.clientX - lastX;
