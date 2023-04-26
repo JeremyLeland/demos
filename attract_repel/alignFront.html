@@ -1,0 +1,258 @@
+<title>Follow the Leader</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { AnimatedCanvas } from './AnimatedCanvas.js';
+  import { ValuesPanel } from './ValuesPanel.js';
+  import { Entity } from './Entity.js';
+
+  const Constants = {
+    FrontAngle: 1.5,
+    FrontDistance: 100,
+    FollowAngle: 1.8,
+    FollowDistance: 50,
+    FollowWeight: 1,
+    AlignWeight: 10,
+    AvoidWeight: 10,
+    MaxSpeed: 0.1,
+    UIScale: 100,
+  };
+
+  new ValuesPanel( Constants ).valueChanged = refresh;
+
+  // Try having ships follow the closest ship in front of them
+  // Each ship has two follow points, to the left/right and behind them
+  // Ships behind them aim toward whichever follow point is closest
+  // (How to keep two ships from picking same follow point? Maybe
+  // avoidance will take care of this for us later)
+  
+  function shipPath() {
+    const path = new Path2D();
+    path.moveTo( 1, 0 );
+    path.arc( 0, 0, 1, 2.2, -2.2 );
+    path.closePath();
+    return path;
+  }
+
+  function rockPath() {
+    const path = new Path2D();
+    path.arc( 0, 0, 1, 0, Math.PI * 2 );
+    return path;
+  }
+
+  class Ship extends Entity {
+    size = 16;
+    // color = 'green';
+    drawPath = shipPath();
+    turnSpeed = 0.008;
+    moveSpeed = 0.02;
+
+    update( dt ) {
+      if ( dt > 0 ) {
+
+        const goalTurn = deltaAngle( this.angle, this.goalAngle );
+        const turn = Math.min( Math.abs( goalTurn ), this.turnSpeed * dt );
+        this.angle += Math.sign( goalTurn ) * turn;
+
+        // this.angle = this.goalAngle;  // TODO: turn toward (not instant)
+        
+        this.dx = Math.cos( this.angle ) * this.moveSpeed * dt;
+        this.dy = Math.sin( this.angle ) * this.moveSpeed * dt;
+        
+        super.update( dt );
+      }
+    }
+  }
+
+  class Rock extends Entity {
+    size = 30;
+    color = 'brown';
+    drawPath = rockPath();
+  }
+
+  const entities = [
+    new Ship( { x: 200, y: 200, angle:  1, color: 'red' } ),
+    new Ship( { x: 250, y: 250, angle:  0, color: 'orange' } ),
+    new Ship( { x: 200, y: 300, angle: -1, color: 'yellow' } ),
+  ];
+
+  const anim = new AnimatedCanvas();
+
+  let target = { x: 500, y: 300 };
+
+  anim.update = ( dt ) => {
+    entities.forEach( entity => {
+
+      entity.vectors = [];
+      
+      entities.filter( e => e != entity ).forEach( other => {
+        const cx = other.x - entity.x;
+        const cy = other.y - entity.y;
+        const dist = Math.hypot( cx, cy );
+        const angle = Math.atan2( cy, cx );
+
+        const inFront = Math.abs( deltaAngle( entity.angle, angle ) ) < Constants.FrontAngle;
+        const inRange = dist < Constants.FrontDistance;
+
+        if ( inFront && inRange ) {
+          const alignWeight = Constants.AlignWeight / dist;
+          
+          entity.vectors.push ( {
+            x: Math.cos( other.angle ) * alignWeight,
+            y: Math.sin( other.angle ) * alignWeight,
+            src: other,
+          } );
+        }
+      } );
+
+      // const targetAngle = Math.atan2( target.y - entity.y, target.x - entity.x );
+      // entity.vectors.push( {
+      //   x: Math.cos( targetAngle ),
+      //   y: Math.sin( targetAngle ),
+      // } );
+
+      if ( entity.vectors?.length > 0 ) {
+        entity.totalVector = entity.vectors.reduce( 
+          ( a, b ) => ( { x: a.x + b.x, y: a.y + b.y } )
+        );
+        entity.goalAngle = Math.atan2( entity.totalVector.y, entity.totalVector.x );
+      }
+      else {
+        entity.totalVector = null;
+        entity.goalAngle = entity.angle;
+      }
+    } );
+
+    entities.forEach( entity => entity.update( dt ) );
+  };
+  
+  anim.draw = ( ctx ) => {
+    entities.forEach( entity => entity.draw( ctx ) );
+
+    entities.forEach( entity => {
+      // Front zone
+      ctx.beginPath();
+      ctx.moveTo( entity.x, entity.y );
+      ctx.arc( entity.x, entity.y, Constants.FrontDistance, 
+        entity.angle - Constants.FrontAngle, 
+        entity.angle + Constants.FrontAngle 
+      );
+      ctx.fillStyle = 'rgba( 255, 255, 0, 0.05 )';
+      ctx.fill();
+      
+      // Vectors
+      ctx.save();
+      ctx.translate( entity.x, entity.y );
+
+      entity.vectors?.forEach( v => drawVector( v, ctx ) );
+      drawVector( entity.totalVector, ctx );
+
+      ctx.restore();
+    } );
+  };
+
+  function fixAngle( a ) {
+    return a > Math.PI ? a - Math.PI * 2 : a < -Math.PI ? a + Math.PI * 2 : a;
+  }
+
+  function deltaAngle( a, b ) {
+    return fixAngle( b - a );
+  }
+ 
+  function drawVector( vector, ctx ) {
+    const scale = Constants.UIScale;
+
+    if ( vector ) {
+      ctx.fillStyle = ctx.strokeStyle = vector.src?.color ?? 'white';
+
+      ctx.beginPath();
+      ctx.moveTo( 0, 0 );
+      ctx.lineTo( vector.x * scale, vector.y * scale );
+      
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.moveTo( vector.x * scale, vector.y * scale );
+      
+      const angle = Math.atan2( vector.y, vector.x );
+      ctx.arc( vector.x * scale, vector.y * scale, 5, angle + 2.5, angle - 2.5 );
+      
+      ctx.fill();
+      
+      // ctx.textAlign = 'center';
+      // ctx.fillText( vector.length.toFixed( 2 ), 0 /*+ vector.x * offset */, 0 /*+ vector.y * offset*/ );
+    }
+  }
+
+  // anim.start();
+
+  function refresh() {
+    anim.update( 0 );
+    anim.redraw();
+  }
+  
+  refresh();
+
+  document.addEventListener( 'keydown', ( e ) => {
+    anim.update( 10 );
+    anim.redraw();
+  } );
+
+  //
+  // Move entities with mouse
+  //
+
+  let activeEntity = null, mouseDown = false, lastX = 0, lastY = 0;
+
+  document.addEventListener( 'mousedown', ( e ) => {
+    mouseDown = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    activeEntity = entityAt( e.clientX, e.clientY );
+  } );
+
+  document.addEventListener( 'mouseup', ( e ) => {
+    mouseDown = false;
+    activeEntity = null;
+  } );
+
+  document.addEventListener( 'mousemove', ( e ) => {
+    target = { x: e.clientX, y: e.clientY };
+
+    if ( activeEntity ) {
+      activeEntity.x += e.clientX - lastX;
+      activeEntity.y += e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      
+      refresh();
+    }
+  } );
+
+  document.addEventListener( 'wheel', ( e ) => {
+    const entity = entityAt( e.clientX, e.clientY );
+
+    if ( entity ) {
+      entity.angle -= ( e.wheelDelta / 120 ) * ( Math.PI / 32 );
+      entity.goalAngle = entity.angle;  // change it instantly
+      refresh();
+    }
+  } );
+
+  function entityAt( x, y ) {
+    const closest = closestEntity( x, y );
+
+    if ( closest.dist < closest.entity.size ) {
+      return closest.entity;
+    }
+  }
+
+  function closestEntity( x, y ) {
+    return entities.map( 
+      e => ( { entity: e, dist: Math.hypot( e.x - x, e.y - y ) } )
+    ).reduce( 
+      ( closest, e ) => e.dist < closest.dist ? e : closest
+    );
+  }
+  
+</script>
