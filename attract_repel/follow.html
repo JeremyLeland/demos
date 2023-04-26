@@ -8,7 +8,7 @@
 
   const Constants = {
     FrontAngle: 1.5,
-    FollowAngle: 2.3,
+    FollowAngle: 1.8,
     FollowDistance: 50,
     FollowWeight: 1,
     AlignWeight: 10,
@@ -156,7 +156,7 @@
       ctx.fill();
       
       ctx.setLineDash( [ 5, 5 ] );
-      if ( entity.closestFollow.entity ) {
+      if ( entity.closestFollow?.entity ) {
         ctx.beginPath();
         ctx.moveTo( entity.closestFollow.x, entity.closestFollow.y );
         ctx.lineTo( entity.x, entity.y );
@@ -175,7 +175,7 @@
       ctx.save();
       ctx.translate( entity.x, entity.y );
 
-      entity.vectors.forEach( v => drawVector( v, ctx ) );
+      entity.vectors?.forEach( v => drawVector( v, ctx ) );
       drawVector( entity.totalVector, ctx );
 
       ctx.restore();
@@ -193,28 +193,30 @@
   function drawVector( vector, ctx ) {
     const scale = Constants.UIScale;
 
-    ctx.beginPath();
-    ctx.moveTo( 0, 0 );
-    ctx.lineTo( vector.x * scale, vector.y * scale );
-    
-    ctx.stroke();
-    
-    ctx.beginPath();
-    ctx.moveTo( vector.x * scale, vector.y * scale );
-
-    const angle = Math.atan2( vector.y, vector.x );
-    ctx.arc( vector.x * scale, vector.y * scale, 5, angle + 2.5, angle - 2.5 );
-
-    ctx.fill();
-
-    // ctx.textAlign = 'center';
-    // ctx.fillText( vector.length.toFixed( 2 ), 0 /*+ vector.x * offset */, 0 /*+ vector.y * offset*/ );
+    if ( vector ) {
+      ctx.beginPath();
+      ctx.moveTo( 0, 0 );
+      ctx.lineTo( vector.x * scale, vector.y * scale );
+      
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.moveTo( vector.x * scale, vector.y * scale );
+      
+      const angle = Math.atan2( vector.y, vector.x );
+      ctx.arc( vector.x * scale, vector.y * scale, 5, angle + 2.5, angle - 2.5 );
+      
+      ctx.fill();
+      
+      // ctx.textAlign = 'center';
+      // ctx.fillText( vector.length.toFixed( 2 ), 0 /*+ vector.x * offset */, 0 /*+ vector.y * offset*/ );
+    }
   }
 
   // anim.start();
 
   function refresh() {
-    anim.update( 0 );
+    // anim.update( 0 );
     anim.redraw();
   }
   
