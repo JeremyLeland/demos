@@ -7,13 +7,9 @@
   import { Entity } from './Entity.js';
 
   const Constants = {
-    FrontAngle: 1.5,
-    FrontDistance: 100,
-    FollowAngle: 1.8,
-    FollowDistance: 50,
-    FollowWeight: 1,
+    TargetWeight: 0.1,
     AlignWeight: 10,
-    AvoidWeight: 10,
+    AvoidWeight: 1,
     MaxSpeed: 0.1,
     UIScale: 100,
   };
@@ -74,6 +70,9 @@
     new Ship( { x: 200, y: 200, angle:  1, color: 'red' } ),
     new Ship( { x: 250, y: 250, angle:  0, color: 'orange' } ),
     new Ship( { x: 200, y: 300, angle: -1, color: 'yellow' } ),
+    new Ship( { x: 100, y: 200, angle:  1, color: 'salmon' } ),
+    new Ship( { x: 150, y: 250, angle:  0, color: 'brown' } ),
+    new Ship( { x: 100, y: 300, angle: -1, color: 'lime' } ),
   ];
 
   const anim = new AnimatedCanvas();
@@ -94,22 +93,33 @@
         const inFront = Math.abs( deltaAngle( entity.angle, angle ) ) < Constants.FrontAngle;
         const inRange = dist < Constants.FrontDistance;
 
-        if ( inFront && inRange ) {
-          const alignWeight = Constants.AlignWeight / dist;
-          
-          entity.vectors.push ( {
-            x: Math.cos( other.angle ) * alignWeight,
-            y: Math.sin( other.angle ) * alignWeight,
+        // if ( inFront && inRange ) {
+
+          const avoidWeight = Constants.AvoidWeight / dist;
+          entity.vectors.push( {
+            x: -Math.cos( angle ) * avoidWeight,
+            y: -Math.sin( angle ) * avoidWeight,
             src: other,
           } );
-        }
+
+          const alignWeight = Constants.AlignWeight / dist;
+          const averageAngle = entity.angle + deltaAngle( entity.angle, other.angle ) / 2;
+          
+          entity.vectors.push ( {
+            x: Math.cos( averageAngle ) * alignWeight,
+            y: Math.sin( averageAngle ) * alignWeight,
+            src: other,
+          } );
+        // }
       } );
 
-      // const targetAngle = Math.atan2( target.y - entity.y, target.x - entity.x );
-      // entity.vectors.push( {
-      //   x: Math.cos( targetAngle ),
-      //   y: Math.sin( targetAngle ),
-      // } );
+      const targetWeight = Constants.TargetWeight;
+      const targetAngle = Math.atan2( target.y - entity.y, target.x - entity.x );
+      entity.vectors.push( {
+        x: Math.cos( targetAngle ) * targetWeight,
+        y: Math.sin( targetAngle ) * targetWeight,
+        src: { color: 'green' },
+      } );
 
       if ( entity.vectors?.length > 0 ) {
         entity.totalVector = entity.vectors.reduce( 
@@ -129,18 +139,8 @@
   anim.draw = ( ctx ) => {
     entities.forEach( entity => entity.draw( ctx ) );
 
+    // Vectors
     entities.forEach( entity => {
-      // Front zone
-      ctx.beginPath();
-      ctx.moveTo( entity.x, entity.y );
-      ctx.arc( entity.x, entity.y, Constants.FrontDistance, 
-        entity.angle - Constants.FrontAngle, 
-        entity.angle + Constants.FrontAngle 
-      );
-      ctx.fillStyle = 'rgba( 255, 255, 0, 0.05 )';
-      ctx.fill();
-      
-      // Vectors
       ctx.save();
       ctx.translate( entity.x, entity.y );
 
