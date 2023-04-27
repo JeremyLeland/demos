@@ -132,14 +132,22 @@
     ctx.stroke();
     ctx.setLineDash( [] );
 
-    // Normal of entityToTarget
+    // Normal
     const norm = angle + Math.PI / 2;
-    const normx = from.x + Math.cos( norm ) * 50;
-    const normy = from.y + Math.sin( norm ) * 50;
+    const normx = Math.cos( norm ) * to.size;
+    const normy = Math.sin( norm ) * to.size;
 
+    // ctx.beginPath();
+    // ctx.moveTo( from.x, from.y );
+    // ctx.lineTo( from.x + normx, from.y + normy );
+    // ctx.stroke();
+
+    // Edges
     ctx.beginPath();
-    ctx.moveTo( from.x, from.y );
-    ctx.lineTo( normx, normy );
+    ctx.moveTo( from.x - normx, from.y - normy );
+    ctx.lineTo( to.x - normx, to.y - normy );
+    ctx.moveTo( from.x + normx, from.y + normy );
+    ctx.lineTo( to.x + normx, to.y + normy );
     ctx.stroke();
   }
 
