@@ -13,6 +13,7 @@ export class Entity {
 
   color = 'black';
   drawPath = new Path2D();
+  type = 'entity';
 
   constructor( values ) {
     Object.assign( this, values );
