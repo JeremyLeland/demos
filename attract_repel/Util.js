@@ -7,9 +7,13 @@ export function deltaAngle( a, b ) {
 }
 
 export function betweenAngles( angle, left, right, inclusive = true ) {
-  const EPSILON = ( inclusive ? 1 : -1 ) * -0.1;
-  const dLeft = EPSILON < deltaAngle( left, angle );
-  const dRight = EPSILON < deltaAngle( angle, right );
+  const fAngle = fixAngle( angle );
+  const fLeft = fixAngle( left );
+  const fRight = fixAngle( right );
 
-  return left < right ? dLeft && dRight : dLeft || dRight;
+  const EPSILON = ( inclusive ? 1 : -1 ) * -0.1;
+  const dLeft = EPSILON < fAngle - fLeft;
+  const dRight = EPSILON < fRight - fAngle;
+
+  return fLeft < fRight ? dLeft && dRight : dLeft || dRight;
 }

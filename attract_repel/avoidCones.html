@@ -165,13 +165,27 @@
   
   refresh();
 
+  let mouseX = 0, mouseY = 0;
+
   document.addEventListener( 'keydown', ( e ) => {
-    canvas.update( 10 );
+    if ( e.key == 's' ) {
+      entities.push( new Ship( { x: mouseX, y: mouseY, color: 'green' } ) );
+    }
+    else {
+      canvas.update( 10 );
+    }
+    
+    canvas.update( 0 );
     canvas.redraw();
   } );
   
+  document.addEventListener( 'mousedown', ( e ) => {
+    target = { x: e.clientX, y: e.clientY };
+  } );
+
   document.addEventListener( 'mousemove', ( e ) => {
-    // target = { x: e.clientX, y: e.clientY };
+    mouseX = e.clientX;
+    mouseY = e.clientY;
   } );
   
 </script>
