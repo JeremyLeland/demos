@@ -111,10 +111,13 @@
 
         const avoidCone = entity.avoidCones.getCone( targetAngle );
         if ( avoidCone ) {
-          // Need to avoid fishtailing here, but also need to avoid getting stuck facing away from target
-          // TODO: Two ships can get stuck moving in parallel away from target!
-          const dLeft = Math.abs( Util.deltaAngle( avoidCone.left, entity.angle ) );
-          const dRight = Math.abs( Util.deltaAngle( entity.angle, avoidCone.right ) );
+          // Try to pick the side of the avoid cone that makes the most sense
+          // We want to avoid hitting others, but still want to head toward target
+          const inAvoidCone = Util.betweenAngles( entity.angle, avoidCone.left, avoidCone.right );
+          const nearAngle = inAvoidCone ? entity.angle : targetAngle;
+
+          const dLeft = Math.abs( Util.deltaAngle( avoidCone.left, nearAngle ) );
+          const dRight = Math.abs( Util.deltaAngle( nearAngle, avoidCone.right ) );
           entity.goalAngle = dLeft < dRight ? avoidCone.left : avoidCone.right;
         }
         else {
@@ -153,7 +156,7 @@
     } );
   };
  
-  // anim.start();
+  //canvas.start();
 
   function refresh() {
     canvas.update( 0 );
