@@ -3,34 +3,50 @@ import * as Util from './Util.js';
 export class AvoidCones {
   cones = [];
 
-  addCone( cone ) {
-    const newCone = { ...cone };
-    const combinedCones = [ newCone ];
+  // TODO: Add these once in the constructor, and finalize once there?
+  // Use filter to remove cones that collide (while updating newCone), then add newCone?
 
-    this.cones.forEach( other => {
-      let merge = false;
+  constructor( closedCones ) {
+    
+    closedCones.forEach( newCone => {
+      this.cones = this.cones.filter( other => {
+        let merge = false;
 
-      if ( Util.betweenAngles( newCone.left, other.left, other.right ) ) {
-        newCone.left = other.left;
-        merge = true;
-      }
+        if ( Util.betweenAngles( newCone.left, other.left, other.right ) ) {
+          newCone.left = other.left;
+          merge = true;
+        }
+  
+        if ( Util.betweenAngles( newCone.right, other.left, other.right ) ) {
+          newCone.right = other.right;
+          merge = true;
+        }
+  
+        if ( Util.betweenAngles( other.left, newCone.left, newCone.right ) && 
+             Util.betweenAngles( other.right, newCone.left, newCone.right ) ) {
+          merge = true;
+        }
 
-      if ( Util.betweenAngles( newCone.right, other.left, other.right ) ) {
-        newCone.right = other.right;
-        merge = true;
-      }
+        return !merge;
+      } );
 
-      if ( Util.betweenAngles( other.left, newCone.left, newCone.right ) && 
-           Util.betweenAngles( other.right, newCone.left, newCone.right ) ) {
-        merge = true;
-      }
-
-      if ( !merge ) {
-        combinedCones.push( other );
-      }
+      this.cones.push( newCone );
     } );
 
-    this.cones = combinedCones;
+    this.cones.sort( ( a, b ) => a.left - b.left );
+
+    const combined = [];
+
+    for ( let i = 0; i < this.cones.length; i ++ ) {
+      combined.push( this.cones[ i ] );
+      combined.push( {
+        left: this.cones[ i ].right,
+        right: this.cones[ ( i + 1 ) % this.cones.length ].left,
+        open: true,
+      } );
+    }
+
+    this.cones = combined;
   }
 
   getCone( angle ) {
@@ -39,14 +55,18 @@ export class AvoidCones {
 
   draw( ctx ) {
     ctx.save();
-    ctx.globalAlpha = 0.1;
+    
     this.cones.forEach( cone => {
       ctx.beginPath();
       ctx.moveTo( 0, 0 );
       ctx.arc( 0, 0, 100, cone.left, cone.right );
       ctx.closePath();
+      ctx.globalAlpha = cone.open ? 0.1 : 0.2;
       ctx.fill();
-      ctx.stroke();
+
+      if ( !cone.open ) {
+        ctx.stroke();
+      }
     } );
     ctx.restore();
   }

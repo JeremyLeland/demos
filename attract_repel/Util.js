@@ -11,7 +11,7 @@ export function betweenAngles( angle, left, right, inclusive = true ) {
   const fLeft = fixAngle( left );
   const fRight = fixAngle( right );
 
-  const EPSILON = ( inclusive ? 1 : -1 ) * -0.1;
+  const EPSILON = ( inclusive ? 1 : -1 ) * -0.0000001;
   const dLeft = EPSILON < fAngle - fLeft;
   const dRight = EPSILON < fRight - fAngle;
 
