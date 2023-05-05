@@ -30,19 +30,24 @@
     // color = 'green';
     drawPath = shipPath();
     turnSpeed = 0.008;
-    moveSpeed = 0.02;
+    moveSpeed = 0.05;
     avoids = [ 'ship', 'rock' ];
 
     update( dt ) {
       if ( dt > 0 ) {
 
+        // const goalTurn = Util.deltaAngle( this.angle, this.goalAngle );
+        // const turn = Math.min( Math.abs( goalTurn ), this.turnSpeed * dt );
+        // this.angle += Math.sign( goalTurn ) * turn;
+
+
         const toGoalAngle = Util.deltaAngle( this.angle, this.goalAngle );
-        if ( Math.sign( toGoalAngle ) == Math.sign( this.dAngle ) && 
-             Math.abs( toGoalAngle ) < Math.abs( this.dAngle ) ) {
+        if ( /*Math.sign( toGoalAngle ) == Math.sign( this.dAngle ) && */
+             Math.abs( toGoalAngle ) < Math.abs( this.dAngle * dt ) ) {
           this.angle = this.goalAngle;
         }
         else {
-          this.angle += this.dAngle;
+          this.angle += this.dAngle * dt;
         }
         
         this.x += Math.cos( this.angle ) * this.moveSpeed * dt;
@@ -109,6 +114,8 @@
 
         const targetAngle = Math.atan2( target.y - entity.y, target.x - entity.x );
 
+        
+
         // TODO: Try this instead
         // AvoidCones always gives us a cone, either "closed" (avoid!) or "open" (all clear)
         // If we're in a closed cone, get out of it as quickly as possible to avoid collision (whichever end is closest)
@@ -117,30 +124,21 @@
         // Hopefully this will better get us out of situations where we are near other obstacles and our goal is behind us
         // Target may be open, we may be open, but the closest turn may be worse than the further turn due to obstacles nearby
 
-        // Where are we going? (best angle to target)
-        const targetCone = entity.avoidCones.getCone( targetAngle );
-        if ( targetCone ) {
-          const dLeft = Math.abs( Util.deltaAngle( targetCone.left, targetAngle ) );
-          const dRight = Math.abs( Util.deltaAngle( targetAngle, targetCone.right ) );
-          entity.goalAngle = dLeft < dRight ? targetCone.left : targetCone.right;
+        const forwardCone = entity.avoidCones.getCone( entity.angle );
+
+        if ( forwardCone.open ) {
+          entity.goalAngle = Util.clampAngle( targetAngle, forwardCone.left, forwardCone.right );
         }
         else {
-          entity.goalAngle = targetAngle;
+          entity.goalAngle = Util.closestAngle( entity.angle, forwardCone.left, forwardCone.right );
         }
 
-        // How are we getting there? (best way to turn, avoiding collisions)
-        // const forwardCone = entity.avoidCones.getCone( entity.angle );
-        const forwardCone = targetCone;
-        if ( forwardCone ) {
-          const coneAngle = Util.deltaAngle( forwardCone.left, forwardCone.right );
-          const fullAngle = coneAngle < 0 ? Math.PI - coneAngle : coneAngle;
-          const midCone = forwardCone.left + fullAngle / 2;
-          const dir = Util.betweenAngles( entity.angle, midCone, entity.goalAngle ) ? 1 : -1;
+        if ( entity.angle != entity.goalAngle ) {
+          const dir = Util.betweenAngles( entity.goalAngle, entity.angle, forwardCone.right ) ? 1 : -1;
           entity.dAngle = dir * entity.turnSpeed;
         }
         else {
-          const dir = Math.sign( Util.deltaAngle( entity.angle, entity.goalAngle ) );
-          entity.dAngle = dir * entity.turnSpeed;
+          entity.dAngle = 0;
         }
       }
     } );
@@ -160,18 +158,18 @@
       ctx.strokeStyle = 'white';
       entity.avoidCones?.draw( ctx );
       
-      // ctx.beginPath();
-      // ctx.moveTo( 0, 0 );
-      // ctx.lineTo( Math.cos( entity.goalAngle ) * Constants.UIScale, Math.sin( entity.goalAngle ) * Constants.UIScale );
-      // ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo( 0, 0 );
+      ctx.lineTo( Math.cos( entity.goalAngle ) * Constants.UIScale, Math.sin( entity.goalAngle ) * Constants.UIScale );
+      ctx.stroke();
 
       ctx.restore();
 
-      // ctx.strokeStyle = 'green';
-      // ctx.beginPath();
-      // ctx.moveTo( entity.x, entity.y );
-      // ctx.lineTo( target.x, target.y );
-      // ctx.stroke();
+      ctx.strokeStyle = 'green';
+      ctx.beginPath();
+      ctx.moveTo( entity.x, entity.y );
+      ctx.lineTo( target.x, target.y );
+      ctx.stroke();
     } );
   };
  
@@ -184,11 +182,22 @@
   
   refresh();
 
+  function randomColor() {
+    return `hsl( ${ Math.random() * 360 }deg, ${ Math.random() * 50 + 25 }%, ${ Math.random() * 50 + 25 }% )`;
+  }
+
+  function randomBrown() {
+    return `hsl( ${ 30 + Math.random() * 10 }deg, ${ Math.random() * 25 + 75 }%, ${ Math.random() * 25 }% )`;
+  }
+
   let mouseX = 0, mouseY = 0;
 
   document.addEventListener( 'keydown', ( e ) => {
     if ( e.key == 's' ) {
-      entities.push( new Ship( { x: mouseX, y: mouseY, color: 'green' } ) );
+      entities.push( new Ship( { x: mouseX, y: mouseY, color: randomColor() } ) );
+    }
+    if ( e.key == 'r' ) {
+      entities.push( new Rock( { x: mouseX, y: mouseY } ) );
     }
     else {
       canvas.update( 30 );

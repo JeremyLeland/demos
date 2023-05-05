@@ -50,7 +50,15 @@ export class AvoidCones {
   }
 
   getCone( angle ) {
-    return this.cones.find( c => Util.betweenAngles( angle, c.left, c.right ) );
+    const matches = this.cones.filter( c => Util.betweenAngles( angle, c.left, c.right ) );
+
+    // If we are on edge of two cones, consider us part of the open one
+    if ( matches.length > 1 ) {
+      return matches.find( c => c.open );
+    }
+    else {
+      return matches[ 0 ];
+    }
   }
 
   draw( ctx ) {

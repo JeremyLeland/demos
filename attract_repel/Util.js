@@ -17,3 +17,27 @@ export function betweenAngles( angle, left, right, inclusive = true ) {
 
   return fLeft < fRight ? dLeft && dRight : dLeft || dRight;
 }
+
+export function closestAngle( angle, left, right ) {
+  const dLeft = Math.abs( deltaAngle( left, angle ) );
+  const dRight = Math.abs( deltaAngle( angle, right ) );
+  return dLeft < dRight ? left : right;
+}
+
+export function clampAngle( angle, left, right ) {
+  if ( left < right ) {
+    if ( left < angle && angle < right ) {
+      return angle;
+    }
+  }
+  else {
+    if ( angle < right || left < angle ) {
+      return angle;
+    }
+  }
+
+  const dLeft = Math.abs( deltaAngle( left, angle ) );
+  const dRight = Math.abs( deltaAngle( angle, right ) );
+
+  return dLeft < dRight ? left : right;
+}
