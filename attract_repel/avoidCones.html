@@ -69,20 +69,21 @@
     // new Ship( { x: 200, y: 200, angle:  1, color: 'red' } ),
     // new Ship( { x: 250, y: 250, angle:  0, color: 'orange' } ),
     // new Ship( { x: 200, y: 300, angle: -1, color: 'yellow' } ),
-    new Ship( { x: 600, y: 280, angle:  0, color: 'salmon' } ),
+    // new Ship( { x: 600, y: 280, angle:  0, color: 'salmon' } ),
     // new Ship( { x: 600, y: 310, angle:  0, color: 'maroon' } ),
     // new Ship( { x: 100, y: 300, angle: -1, color: 'pink' } ),
-    new Rock( { x: 400, y: 250 } ),
-    new Rock( { x: 400, y: 320 } ),
-    new Rock( { x: 400, y: 390 } ),
+    // new Rock( { x: 400, y: 250 } ),
+    // new Rock( { x: 400, y: 320 } ),
+    // new Rock( { x: 400, y: 390 } ),
 
-    // new Ship( { x: 400, y: 400, angle: 0, color: 'red' } ),
-    // new Rock( { x: 350, y: 350 } ),
-    // new Rock( { x: 350, y: 450 } ),
-    // new Rock( { x: 450, y: 500 } ),
+    new Ship( { x: 400, y: 400, angle: 0, color: 'green' } ),
+    new Rock( { x: 150, y: 350 } ),
+    new Rock( { x: 250, y: 450 } ),
+    new Rock( { x: 350, y: 500 } ),
   ];
 
   const Constants = {
+    AvoidDistance: 100,
     UIScale: 100,
   };
 
@@ -97,20 +98,25 @@
     entities.forEach( entity => {
 
       if ( entity.avoids ) {
-        entity.avoidCones = new AvoidCones(
-          entities.filter( e => e != entity && entity.avoids.includes( e.type ) ).map( other => {
-            const cx = other.x - entity.x;
-            const cy = other.y - entity.y;
-            const dist = Math.hypot( cx, cy );
+        const closedCones = [];
+
+        entities.filter( e => e != entity && entity.avoids.includes( e.type ) ).forEach( other => {
+          const cx = other.x - entity.x;
+          const cy = other.y - entity.y;
+          const dist = Math.hypot( cx, cy );
+          
+          if ( dist < Constants.AvoidDistance ) {
             const angle = Math.atan2( cy, cx );
-            
+          
             const r = entity.size + other.size /*+ 20*/;
-            const h = Math.hypot( cx, cy );
+            const h = dist;
             const spread = Math.asin( Math.min( 1, r / h ) );   // min() prevents floating errors when we get really close
 
-            return { left: angle - spread, right: angle + spread };
-          } )
-        );
+            closedCones.push( { left: angle - spread, right: angle + spread } );
+          }
+        } );
+
+        entity.avoidCones = new AvoidCones( closedCones );
 
         const targetAngle = Math.atan2( target.y - entity.y, target.x - entity.x );
 
@@ -156,7 +162,7 @@
 
       ctx.fillStyle = entity.color;
       ctx.strokeStyle = 'white';
-      entity.avoidCones?.draw( ctx );
+      entity.avoidCones?.draw( ctx, Constants.UIScale );
       
       ctx.beginPath();
       ctx.moveTo( 0, 0 );
