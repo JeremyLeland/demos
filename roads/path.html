@@ -15,14 +15,63 @@
 
   const COLS = 5, ROWS = 5, SIZE = 200;
 
-  const grid = CellGrid.getSquareGrid( COLS, ROWS, SIZE, 0 );
+  const cells = CellGrid.getSquareGrid( COLS, ROWS, SIZE, 0 );
 
-  CellGrid.linkMaze( grid[ 0 ][ 0 ] );
+  const start = cells[ 0 ];
 
-  for ( let r = 0; r < grid[ 0 ].length; r ++ ) {
-    for ( let c = 0; c < grid.length; c ++ ) {
-      grid[ c ][ r ].draw( ctx );
+  CellGrid.linkMaze( start );
+
+  cells.forEach( cell => {
+    cell.draw( ctx );
+
+    const width = SIZE * ( 0.1 + 0.2 * Math.random() );
+
+    cell.caveNode = {
+      x: cell.x + ( SIZE - 2 * width ) * ( 0.5 - Math.random() ),
+      y: cell.y + ( SIZE - 2 * width ) * ( 0.5 - Math.random() ),
+      width: width,
+    };
+
+    ctx.beginPath();
+    ctx.arc( cell.caveNode.x, cell.caveNode.y, cell.caveNode.width, 0, Math.PI * 2 );
+    ctx.fill();
+  } );
+
+
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'yellow';
+  
+  
+  const visited = new Set();
+  let cell = start;
+  let index = 0;
+  let edge = cell.edges[ index ];
+
+  while( !visited.has( edge ) ) {
+    visited.add( edge );
+
+    if ( edge.linked ) {
+      drawEdge( edge );
+
+      edge = edge.neighbor;
+      cell = edge.parent;
+      index = cell.edges.findIndex( e => e == edge );
     }
+
+    index = ( index + 1 ) % cell.edges.length;
+    edge = cell.edges[ index ];
+  }
+
+  function drawEdge( edge ) {
+    const from = edge.parent.caveNode; 
+    const to = edge.neighbor.parent.caveNode;
+
+    const normal = Math.atan2( to.x - from.x, from.y - to.y );
+
+    ctx.beginPath();
+    ctx.moveTo( from.x + Math.cos( normal ) * from.width, from.y + Math.sin( normal ) * from.width );
+    ctx.lineTo( to.x   + Math.cos( normal ) * to.width,   to.y   + Math.sin( normal ) * to.width   );
+    ctx.stroke();
   }
 
 

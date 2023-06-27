@@ -21,6 +21,8 @@ export function getSquareGrid( cols, rows, size = 64, offset = 32 ) {
     )
   );
 
+  const cells = [];
+
   for ( let row = 0; row < rows; row ++ ) {
     for ( let col = 0; col < cols; col ++ ) {
       const cell = cellGrid[ col ][ row ];
@@ -29,10 +31,12 @@ export function getSquareGrid( cols, rows, size = 64, offset = 32 ) {
       if ( row < rows - 1 )  cell.edges[ 1 ].neighbor = cellGrid[ col ][ row + 1 ].edges[ 3 ];
       if ( col < cols - 1 )  cell.edges[ 2 ].neighbor = cellGrid[ col + 1 ][ row ].edges[ 0 ];
       if ( row > 0 )  cell.edges[ 3 ].neighbor = cellGrid[ col ][ row - 1 ].edges[ 1 ];
+      
+      cells.push( cell );
     }
   }
 
-  return cellGrid;
+  return cells;
 }
 
 export function getHexGrid( cols, rows, size = 64, offset = 0 ) {
@@ -61,6 +65,8 @@ export function getHexGrid( cols, rows, size = 64, offset = 0 ) {
     )
   );
 
+  const cells = [];
+
   for ( let row = 0; row < rows; row ++ ) {
     for ( let col = 0; col < cols; col ++ ) {
       const cell = cellGrid[ col ][ row ];
@@ -76,10 +82,12 @@ export function getHexGrid( cols, rows, size = 64, offset = 0 ) {
         if ( row > 0 )        cell.edges[ 4 ].neighbor = cellGrid[ col + 1 * row % 2 ][ row - 1 ];
       }
       if ( row > 1 )          cell.edges[ 5 ].neighbor = cellGrid[ col ][ row - 2 ];
+
+      cells.push( cell );
     }
   }
 
-  return cellGrid;
+  return cells;
 }
 
 export function getHexTriangleGrid( cols, rows, size = 64, offset = 32 ) {
@@ -124,6 +132,8 @@ export function getHexTriangleGrid( cols, rows, size = 64, offset = 32 ) {
     }
   }
 
+  const cells = [];
+
   // TODO: Make these point to edges, not cells
   for ( let row = 0; row < rows; row ++ ) {
     for ( let col = 0; col < cols; col ++ ) {
@@ -132,10 +142,14 @@ export function getHexTriangleGrid( cols, rows, size = 64, offset = 32 ) {
       if ( row < rows ) cell.edges[ 1 ].neighbor = cellGrid[ col * 2 ][ row + 1 ];
       if ( col < cols ) cell.edges[ 2 ].neighbor = cellGrid[ col * 2 + 1 ][ row ];
 
+      cells.push( cell );
+
       cell = cellGrid[ col * 2 + 1 ][ row ];
                             cell.edges[ 0 ].neighbor = cellGrid[ col * 2 ][ row ];
       if ( col < cols - 1 ) cell.edges[ 1 ].neighbor = cellGrid[ col * 2 + 2 ][ row ];
       if ( row > 0 )        cell.edges[ 2 ].neighbor = cellGrid[ col * 2 + 1 ][ row - 1 ];
+
+      cells.push( cell );
     }
     
     row ++;
@@ -146,14 +160,18 @@ export function getHexTriangleGrid( cols, rows, size = 64, offset = 32 ) {
       if ( col < cols ) cell.edges[ 1 ].neighbor = cellGrid[ col * 2 + 1 ][ row ];
       if ( row > 0 )    cell.edges[ 2 ].neighbor = cellGrid[ col * 2 ][ row - 1 ];
 
+      cells.push( cell );
+
       cell = cellGrid[ col * 2 + 1 ][ row ];
                             cell.edges[ 0 ].neighbor = cellGrid[ col * 2 ][ row ];
       if ( row < rows - 1 ) cell.edges[ 1 ].neighbor = cellGrid[ col * 2 + 1 ][ row + 1 ];
       if ( col < cols - 1 ) cell.edges[ 2 ].neighbor = cellGrid[ col * 2 + 2 ][ row ];
+
+      cells.push( cell );
     }
   }
 
-  return cellGrid;
+  return cells;
 }
 
 export function linkMaze( cell ) {
