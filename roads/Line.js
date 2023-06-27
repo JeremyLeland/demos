@@ -41,7 +41,7 @@ export class Line {
     return ( x - this.x1 ) * this.normal.x + ( y - this.y1 ) * this.normal.y;
   }
 
-  static getIntersection( x1, y1, x2, y2, x3, y3, x4, y4 ) {
+  static getIntersection( x1, y1, x2, y2, x3, y3, x4, y4, segment = true ) {
     const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
 
     if ( D != 0 ) {
@@ -49,7 +49,7 @@ export class Line {
       const uB = ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D;
 
       // Bounds check uB here so we can just return uA
-      if ( 0 <= uB && uB <= 1 ) {
+      if ( !segment || ( 0 <= uB && uB <= 1 ) ) {
         return uA;
       }
       // return {

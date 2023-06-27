@@ -14,7 +14,7 @@
 
 
 
-  const COLS = 5, ROWS = 5, SIZE = 200;
+  const COLS = 10, ROWS = 10, SIZE = 100;
 
   const cells = CellGrid.getSquareGrid( COLS, ROWS, SIZE, 0 );
 
@@ -23,7 +23,7 @@
   CellGrid.linkMaze( start );
 
   cells.forEach( cell => {
-    cell.draw( ctx );
+    // cell.draw( ctx );
 
     const width = SIZE * ( 0.1 + 0.2 * Math.random() );
 
@@ -35,7 +35,8 @@
 
     ctx.beginPath();
     ctx.arc( cell.caveNode.x, cell.caveNode.y, cell.caveNode.width, 0, Math.PI * 2 );
-    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
   } );
 
 
@@ -48,9 +49,10 @@
     const intersection = Line.getIntersection(
       curr.x1, curr.y1, curr.x2, curr.y2,
       next.x1, next.y1, next.x2, next.y2,
+      false /* segment */
     );
 
-    if ( 0 <= intersection && intersection <= 1 ) {
+    if ( 0 < intersection && intersection < 1.5 ) {
       const hitX = curr.x1 + ( curr.x2 - curr.x1 ) * intersection;
       const hitY = curr.y1 + ( curr.y2 - curr.y1 ) * intersection;
 
@@ -58,16 +60,6 @@
       curr.y2 = next.y1 = hitY;
     }
   }
-
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = 'yellow';
-
-  ctx.beginPath();
-  lines.forEach( line => {
-    ctx.lineTo( line.x1, line.y1 );
-    ctx.lineTo( line.x2, line.y2 );
-  } );
-  ctx.stroke();
 
   function getLines( startNode ) {
     const lines = [];
@@ -109,15 +101,27 @@
     );
   }
 
+  const points = [];
 
-  // const curves = Curve.getCurvesThroughPoints( [
-  //   [ 0, 0 ], [ 0, 1 ], [ 1, 1 ], [ 2, 1 ], [ 2, 0 ], [ 3, 0 ], 
-  //   [ 3, 1 ], [ 3, 2 ], [ 3, 3 ], [ 2, 3 ], [ 2, 2 ], [ 1, 2 ], [ 1, 3 ],
-  // ].map( e => 
-  //   e.map( i => SIZE * ( i + 0.25 + 0.5 * Math.random() ) ) 
-  // ) );
+  for ( let i = 0, prev; i < lines.length; i ++ ) {
+    const curr = lines[ i ];
+    if ( !prev || ( prev.x2 != curr.x1 && prev.y2 != curr.y1 ) ) {
+      points.push( [ curr.x1, curr.y1 ] );
+    }
+    points.push( [ curr.x2, curr.y2 ] );
+    prev = curr;
+  }
 
-  // const widths = Array.from( Array( curves.length + 1 ), _ => 20 + 30 * Math.random() );
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'black';
+
+  ctx.beginPath();
+  points.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
+  ctx.stroke();
+
+  const curves = Curve.getLoopThroughPoints( points );
+
+  curves.forEach( curve => curve.draw( ctx ) );
 
   // const left = [], right = [];
 
