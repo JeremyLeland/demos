@@ -1,0 +1,159 @@
+<title>Middle Path</title>
+<link rel="stylesheet" href="../grid.css">
+
+<canvas id="canvas" width="1000px" height="1000px"></canvas>
+
+<script type="module">
+
+  import { Curve } from './Curve.js';
+  import { Line } from './Line.js';
+  import * as CellGrid from './CellGrid.js';
+
+  const canvas = document.getElementById( 'canvas' );
+  const ctx = canvas.getContext( '2d' );
+
+
+  const COLS = 5, ROWS = 5, SIZE = 200;
+
+  const cells = CellGrid.getSquareGrid( COLS, ROWS, SIZE, 0 );
+
+  const start = cells[ 0 ];
+
+  CellGrid.linkMaze( start );
+
+  cells.forEach( cell => {
+    // cell.draw( ctx );
+
+    const width = SIZE * ( 0.1 + 0.2 * Math.random() );
+
+    cell.caveNode = {
+      x: cell.x + ( SIZE - 2 * width ) * ( 0.5 - Math.random() ),
+      y: cell.y + ( SIZE - 2 * width ) * ( 0.5 - Math.random() ),
+      width: width,
+    };
+
+    ctx.beginPath();
+    ctx.arc( cell.caveNode.x, cell.caveNode.y, cell.caveNode.width, 0, Math.PI * 2 );
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
+  } );
+
+
+  const lines = getLines( start );
+
+  for ( let i = 0; i < lines.length; i ++ ) {
+    const curr = lines[ i ];
+    const next = lines[ ( i + 1 ) % lines.length ];
+    
+    const intersection = Line.getIntersection(
+      curr.x1, curr.y1, curr.x2, curr.y2,
+      next.x1, next.y1, next.x2, next.y2,
+      false /* segment */
+    );
+
+    if ( 0 < intersection && intersection < 1.5 ) {
+      const hitX = curr.x1 + ( curr.x2 - curr.x1 ) * intersection;
+      const hitY = curr.y1 + ( curr.y2 - curr.y1 ) * intersection;
+
+      curr.x2 = next.x1 = hitX;
+      curr.y2 = next.y1 = hitY;
+    }
+  }
+
+  function getLines( startNode ) {
+    const lines = [];
+
+    const visited = new Set();
+    let cell = startNode;
+    let index = 0;
+    let edge = cell.edges[ index ];
+
+    while( !visited.has( edge ) ) {
+      visited.add( edge );
+
+      if ( edge.linked ) {
+        lines.push( getLine( edge ) );
+
+        edge = edge.neighbor;
+        cell = edge.parent;
+        index = cell.edges.findIndex( e => e == edge );
+      }
+
+      index = ( index + 1 ) % cell.edges.length;
+      edge = cell.edges[ index ];
+    }
+
+    return lines;
+  }
+
+  function getLine( edge ) {
+    const from = edge.parent.caveNode; 
+    const to = edge.neighbor.parent.caveNode;
+
+    const normal = Math.atan2( to.x - from.x, from.y - to.y );
+
+    return new Line(
+      from.x,// + Math.cos( normal ) * from.width,
+      from.y,// + Math.sin( normal ) * from.width,
+      to.x,//   + Math.cos( normal ) * to.width,
+      to.y,//   + Math.sin( normal ) * to.width
+    );
+  }
+
+  const points = [];
+
+  for ( let i = 0, prev; i < lines.length; i ++ ) {
+    const curr = lines[ i ];
+    if ( !prev || ( prev.x2 != curr.x1 && prev.y2 != curr.y1 ) ) {
+      points.push( [ curr.x1, curr.y1 ] );
+    }
+    points.push( [ curr.x2, curr.y2 ] );
+    prev = curr;
+  }
+
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'black';
+
+  ctx.beginPath();
+  points.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
+  ctx.stroke();
+
+  const curves = Curve.getLoopThroughPoints( points );
+
+  curves.forEach( curve => 
+    curve.draw( ctx ) 
+  );
+
+  // const left = [], right = [];
+
+  // curves.forEach( ( curve, i ) => {   
+  //   const startWidth = widths[ i ], endWidth = widths[ i + 1 ];
+  //   for ( let t = 0; t <= 1; t += 0.1 ) {
+  //     const pos = curve.getPosition( t );
+  //     const norm = curve.getNormal( t );
+      
+  //     const width = startWidth + ( endWidth - startWidth ) * t;
+      
+  //     left.push( {
+  //       x: pos[ 0 ] - norm[ 0 ] * width,
+  //       y: pos[ 1 ] - norm[ 1 ] * width,
+  //     } );
+      
+  //     right.unshift( {
+  //       x: pos[ 0 ] + norm[ 0 ] * width,
+  //       y: pos[ 1 ] + norm[ 1 ] * width,
+  //     } );
+  //   }
+  // } );
+
+  // const path = new Path2D();
+
+  // left.forEach( p => path.lineTo( p.x, p.y ) );
+  // right.forEach( p => path.lineTo( p.x, p.y ) );
+
+  // path.closePath();
+
+  // ctx.fillStyle = 'green';
+  // ctx.fill( path );
+
+</script>
