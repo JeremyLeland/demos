@@ -1,4 +1,4 @@
-<title>Path of varying widths</title>
+<title>Road</title>
 <link rel="stylesheet" href="../grid.css">
 
 <canvas id="canvas" width="1000px" height="1000px"></canvas>
@@ -14,13 +14,13 @@
 
 
 
-  const COLS = 6, ROWS = 6, SIZE = 140;
+  const COLS = 10, ROWS = 10, SIZE = 100;
 
   const cells = CellGrid.getSquareGrid( COLS, ROWS, SIZE, 0 );
 
   const start = cells[ 0 ];
 
-  CellGrid.linkMaze( start, 2 );
+  CellGrid.linkMaze( start );
 
   cells.forEach( cell => {
     // cell.draw( ctx );
@@ -40,71 +40,51 @@
   } );
 
 
-  const loops = getLoops( cells );
+  const lines = getLines( start );
 
-  loops.forEach( lines => {
-    for ( let i = 0; i < lines.length; i ++ ) {
-      const curr = lines[ i ];
-      const next = lines[ ( i + 1 ) % lines.length ];
-      
-      const intersection = Line.getIntersection(
-        curr.x1, curr.y1, curr.x2, curr.y2,
-        next.x1, next.y1, next.x2, next.y2,
-        false /* segment */
-      );
-      
-      if ( 0 < intersection && intersection < 1.1 ) {
-        const hitX = curr.x1 + ( curr.x2 - curr.x1 ) * intersection;
-        const hitY = curr.y1 + ( curr.y2 - curr.y1 ) * intersection;
-        
-        curr.x2 = next.x1 = hitX;
-        curr.y2 = next.y1 = hitY;
-      }
-      else {
-        lines.splice( i, 0, new Line( curr.x2, curr.y2, next.x1, next.y1 ) );
-        i ++;
-      }
-    }
-  } );
+  for ( let i = 0; i < lines.length; i ++ ) {
+    const curr = lines[ i ];
+    const next = lines[ ( i + 1 ) % lines.length ];
     
-  function getLoops( cells ) {
-    const loops = [];
-
-    const unvisited = new Set();
-
-    cells.forEach( cell => 
-      cell.edges.forEach( edge => unvisited.add( edge ) ) 
+    const intersection = Line.getIntersection(
+      curr.x1, curr.y1, curr.x2, curr.y2,
+      next.x1, next.y1, next.x2, next.y2,
+      false /* segment */
     );
 
+    if ( 0 < intersection && intersection < 1.5 ) {
+      const hitX = curr.x1 + ( curr.x2 - curr.x1 ) * intersection;
+      const hitY = curr.y1 + ( curr.y2 - curr.y1 ) * intersection;
+
+      curr.x2 = next.x1 = hitX;
+      curr.y2 = next.y1 = hitY;
+    }
+  }
+
+  function getLines( startNode ) {
+    const lines = [];
+
     const visited = new Set();
+    let cell = startNode;
+    let index = 0;
+    let edge = cell.edges[ index ];
 
-    while ( unvisited.size > 0 ) {
-      const lines = [];
+    while( !visited.has( edge ) ) {
+      visited.add( edge );
 
-      let [ edge ] = unvisited;
-      let cell = edge.parent;
-      let index = cell.edges.findIndex( e => e == edge );
-      
-      while( !visited.has( edge ) ) {
-        unvisited.delete( edge );
-        visited.add( edge );
-        
-        if ( edge.linked ) {
-          lines.push( getLine( edge ) );
-          
-          edge = edge.neighbor;
-          cell = edge.parent;
-          index = cell.edges.findIndex( e => e == edge );
-        }
-        
-        index = ( index + 1 ) % cell.edges.length;
-        edge = cell.edges[ index ];
+      if ( edge.linked ) {
+        lines.push( getLine( edge ) );
+
+        edge = edge.neighbor;
+        cell = edge.parent;
+        index = cell.edges.findIndex( e => e == edge );
       }
 
-      loops.push( lines );
+      index = ( index + 1 ) % cell.edges.length;
+      edge = cell.edges[ index ];
     }
 
-    return loops;
+    return lines;
   }
 
   function getLine( edge ) {
@@ -121,10 +101,27 @@
     );
   }
 
-  ctx.strokeStyle = 'gray';
-  loops.forEach( lines => {
-    lines.forEach( line => line.draw( ctx ) );
-  } );
+  const points = [];
+
+  for ( let i = 0, prev; i < lines.length; i ++ ) {
+    const curr = lines[ i ];
+    if ( !prev || ( prev.x2 != curr.x1 && prev.y2 != curr.y1 ) ) {
+      points.push( [ curr.x1, curr.y1 ] );
+    }
+    points.push( [ curr.x2, curr.y2 ] );
+    prev = curr;
+  }
+
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'black';
+
+  ctx.beginPath();
+  points.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
+  ctx.stroke();
+
+  const curves = Curve.getLoopThroughPoints( points );
+
+  curves.forEach( curve => curve.draw( ctx ) );
 
   // const left = [], right = [];
 

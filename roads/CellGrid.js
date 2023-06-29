@@ -174,20 +174,20 @@ export function getHexTriangleGrid( cols, rows, size = 64, offset = 32 ) {
   return cells;
 }
 
-export function linkMaze( cell ) {
+export function linkMaze( cell, maxLinks = 1 ) {
   const edges = cell.edges.filter( e => e.neighbor ).sort( ( a, b ) => Math.random() > 0.5 ? 1 : -1 );
-  edges.forEach( edge => doEdge( edge ) );
+  edges.forEach( edge => doEdge( edge, maxLinks ) );
 }
 
-function doEdge( edge ) {
+function doEdge( edge, maxLinks ) {
   const nextCell = edge.neighbor.parent;
-  if ( nextCell.edges.find( e => e.linked ) ) {
-    return;   // only allow one link for now
+  if ( nextCell.edges.filter( e => e.linked ).length >= maxLinks ) {
+    return;
   }
   else {
     edge.linked = true;
     edge.neighbor.linked = true;
 
-    linkMaze( nextCell );
+    linkMaze( nextCell, maxLinks );
   }
 }

@@ -39,25 +39,73 @@
   } );
 
 
-  const lines = getLines( start );
+  
 
-  for ( let i = 0; i < lines.length; i ++ ) {
-    const curr = lines[ i ];
-    const next = lines[ ( i + 1 ) % lines.length ];
+  // for ( let i = 0; i < lines.length; i ++ ) {
+  //   const curr = lines[ i ];
+  //   const next = lines[ ( i + 1 ) % lines.length ];
     
-    const intersection = Line.getIntersection(
-      curr.x1, curr.y1, curr.x2, curr.y2,
-      next.x1, next.y1, next.x2, next.y2,
-      false /* segment */
-    );
+  //   const intersection = Line.getIntersection(
+  //     curr.x1, curr.y1, curr.x2, curr.y2,
+  //     next.x1, next.y1, next.x2, next.y2,
+  //     false /* segment */
+  //   );
 
-    if ( 0 < intersection && intersection < 1.5 ) {
-      const hitX = curr.x1 + ( curr.x2 - curr.x1 ) * intersection;
-      const hitY = curr.y1 + ( curr.y2 - curr.y1 ) * intersection;
+  //   if ( 0 < intersection && intersection < 1.5 ) {
+  //     const hitX = curr.x1 + ( curr.x2 - curr.x1 ) * intersection;
+  //     const hitY = curr.y1 + ( curr.y2 - curr.y1 ) * intersection;
 
-      curr.x2 = next.x1 = hitX;
-      curr.y2 = next.y1 = hitY;
+  //     curr.x2 = next.x1 = hitX;
+  //     curr.y2 = next.y1 = hitY;
+  //   }
+  // }
+
+  function getPoints( startNode ) {
+    const points = [];
+
+    const visited = new Set();
+    let cell = startNode;
+    let index = 0;
+    let edge = cell.edges[ index ];
+
+    while( !visited.has( edge ) ) {
+      visited.add( edge );
+
+      if ( edge.linked ) {
+        const from = edge.parent.caveNode; 
+        const to = edge.neighbor.parent.caveNode;
+
+        const slope = Math.atan2( to.y - from.y, to.x - from.x );
+
+        points.push( [
+          from.x + Math.cos( slope ) * from.width,
+          from.y + Math.sin( slope ) * from.width,
+        ] );
+
+        points.push( [
+          to.x - Math.cos( slope ) * to.width,
+          to.y - Math.sin( slope ) * to.width,
+        ] );
+
+        // points.push( [
+        //   ( from.x + to.x ) / 2,
+        //   ( from.y + to.y ) / 2,
+        // ] );
+
+        // if ( edge.neighbor.parent.edges.filter( e => e.linked ) <= 2 ) {
+        //   points.push( [ to.x, to.y ] );
+        // }
+
+        edge = edge.neighbor;
+        cell = edge.parent;
+        index = cell.edges.findIndex( e => e == edge );
+      }
+
+      index = ( index + 1 ) % cell.edges.length;
+      edge = cell.edges[ index ];
     }
+
+    return points;
   }
 
   function getLines( startNode ) {
@@ -73,6 +121,10 @@
 
       if ( edge.linked ) {
         lines.push( getLine( edge ) );
+
+        // TODO: Get points to curve through instead of lines?
+        // TODO: Skip the point for intersections? (so we just curve to the next branch)
+        // TODO: Or go between the midpoints instead of the endpoints? How does that look?
 
         edge = edge.neighbor;
         cell = edge.parent;
@@ -100,16 +152,28 @@
     );
   }
 
-  const points = [];
+  const lines = getLines( start );
+  const points = getPoints( start );
 
-  for ( let i = 0, prev; i < lines.length; i ++ ) {
-    const curr = lines[ i ];
-    if ( !prev || ( prev.x2 != curr.x1 && prev.y2 != curr.y1 ) ) {
-      points.push( [ curr.x1, curr.y1 ] );
-    }
-    points.push( [ curr.x2, curr.y2 ] );
-    prev = curr;
-  }
+  ctx.strokeStyle = 'cyan';
+  ctx.beginPath();
+  lines.forEach( line => {
+    ctx.lineTo( line.x1, line.y1 );
+    ctx.lineTo( line.x2, line.y2 );
+  } );
+  ctx.stroke();
+
+  ctx.fillStyle = 'red';
+  points.forEach( point => ctx.fillRect( point[ 0 ] - 3, point[ 1 ] - 3, 6, 6 ) );
+
+  // for ( let i = 0, prev; i < lines.length; i ++ ) {
+  //   const curr = lines[ i ];
+  //   if ( !prev || ( prev.x2 != curr.x1 && prev.y2 != curr.y1 ) ) {
+  //     points.push( [ curr.x1, curr.y1 ] );
+  //   }
+  //   points.push( [ curr.x2, curr.y2 ] );
+  //   prev = curr;
+  // }
 
   ctx.lineWidth = 1;
   ctx.strokeStyle = 'black';
@@ -120,9 +184,20 @@
 
   const curves = Curve.getLoopThroughPoints( points );
 
-  curves.forEach( curve => 
-    curve.draw( ctx ) 
-  );
+  curves.forEach( curve => curve.draw( ctx ) );
+
+  ctx.strokeStyle = 'white';
+
+  ctx.beginPath();
+  curves.forEach( curve => {
+    for ( let t = 0; t <= 1; t += 0.1 ) {
+      const pos = curve.getPosition( t );
+      const norm = curve.getNormal( t );
+
+      ctx.lineTo( pos[ 0 ] - norm[ 0 ] * 20, pos[ 1 ] - norm[ 1 ] * 20 );
+    }
+  } );
+  ctx.stroke();
 
   // const left = [], right = [];
 
