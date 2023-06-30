@@ -77,14 +77,24 @@
 
         const slope = Math.atan2( to.y - from.y, to.x - from.x );
 
+        // points.push( [
+        //   from.x + Math.cos( slope ) * from.width,
+        //   from.y + Math.sin( slope ) * from.width,
+        // ] );
+
+        // points.push( [
+        //   to.x - Math.cos( slope ) * to.width,
+        //   to.y - Math.sin( slope ) * to.width,
+        // ] );
+
         points.push( [
-          from.x + Math.cos( slope ) * from.width,
-          from.y + Math.sin( slope ) * from.width,
+          from.x + 0.25 * ( to.x - from.x ),
+          from.y + 0.25 * ( to.y - from.y ),
         ] );
 
         points.push( [
-          to.x - Math.cos( slope ) * to.width,
-          to.y - Math.sin( slope ) * to.width,
+          from.x + 0.75 * ( to.x - from.x ),
+          from.y + 0.75 * ( to.y - from.y ),
         ] );
 
         // points.push( [
