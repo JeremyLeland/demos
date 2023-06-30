@@ -70,8 +70,7 @@
         curr.y2 = next.y1 = hitY;
       }
       else {
-        lines.splice( i, 0, new Line( curr.x2, curr.y2, next.x1, next.y1 ) );
-        i ++;
+        lines.splice( ++i, 0, new Line( curr.x2, curr.y2, next.x1, next.y1 ) );
       }
     }
   } );
