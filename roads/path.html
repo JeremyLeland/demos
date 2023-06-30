@@ -20,7 +20,16 @@
 
   const start = cells[ 0 ];
 
-  CellGrid.linkMaze( start, 2 );
+  CellGrid.linkMaze( start );
+
+  // Add some loops
+  for ( let i = 0; i < 10; i ++ ) {
+    const cell = randItem( cells );
+    const edge = randItem( cell.edges.filter( e => e.neighbor && !e.linked ) );
+    if ( edge ) {
+      edge.linked = edge.neighbor.linked = true;
+    }
+  }
 
   cells.forEach( cell => {
     // cell.draw( ctx );
@@ -157,5 +166,9 @@
 
   // ctx.fillStyle = 'green';
   // ctx.fill( path );
+
+  function randItem( list ) {
+    return list[ Math.floor( Math.random() * list.length ) ];
+  }
 
 </script>
