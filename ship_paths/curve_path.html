@@ -1,5 +1,6 @@
 <title>Ship Paths</title>
 <link rel="stylesheet" href="../grid.css">
+<meta charset="utf-8">
 
 <style>
   body {
@@ -17,7 +18,13 @@
     max-height: 100%;
     margin: 0 auto;
 
-    background-color: black;
+    display: grid;
+    grid-template-rows: auto min-content;
+  }
+
+  #playback {
+    display: grid;
+    grid-template-columns: min-content auto 7vmin;
   }
 
   canvas {
@@ -25,11 +32,23 @@
     height: 100%;
   }
 
+  button {
+    margin: 0;
+    border: 0;
+    padding: 0;
+    background: none;
+  }
+
 </style>
 
 <body>
   <div id="wrapper">
     <canvas id="canvas"></canvas>
+    <div id="playback">
+      <button id="playpause">▶️</button>
+      <input id="scrubber" type="range" min="0" max="10000" value="0">
+      <span id="timestamp">0</span>
+    </div>
   </div>
 </body>
 
@@ -43,29 +62,61 @@
   shipPath.closePath();
 
   const SIZE = 10;
+
+  const DOWN = Math.PI / 2;
+
+  const diag = {
+    left: {
+      start: { x: 4,   y: -1,   angle: DOWN },
+      c1:    { x: 4,   y: 3.5, angle: DOWN + 0.75 },
+      c2:    { x: 2.5, y: 3,   angle: DOWN },
+      end:   { x: 1,   y: 11,   angle: DOWN },
+    },
+    right: {
+      start: { x: 6,   y: -1,   angle: DOWN },
+      c1:    { x: 6,   y: 3.5, angle: DOWN - 0.75 },
+      c2:    { x: 7.5, y: 3,   angle: DOWN },
+      end:   { x: 9,  y: 11,   angle: DOWN },
+    },
+  }
   
   const ships = [
+    // 3 slowing waves of scouts
     {
       type: 'Scout',
-      spawnTime: 1000,
-      curve: {
-        start: { x: 4,   y: 1,   angle: Math.PI / 2 },
-        c1:    { x: 4,   y: 2.5, angle: Math.PI / 2 },
-        c2:    { x: 2.5, y: 3,   angle: Math.PI     },
-        end:   { x: 0,   y: 4,   angle: Math.PI     },
-      },
+      time: 1000,
+      curve: diag.left,
       duration: 2000,
     },
     {
       type: 'Scout',
-      spawnTime: 1000,
-      curve: {
-        start: { x: 5,   y: 1,   angle: Math.PI / 2 },
-        c1:    { x: 5,   y: 2.5, angle: Math.PI / 2 },
-        c2:    { x: 7.5, y: 3,   angle: 0           },
-        end:   { x: 10,  y: 4,   angle: 0           },
-      },
+      time: 1000,
+      curve: diag.right,
       duration: 2000,
+    },
+    {
+      type: 'Scout',
+      time: 1500,
+      curve: diag.left,
+      duration: 3000,
+    },
+    {
+      type: 'Scout',
+      time: 1500,
+      curve: diag.right,
+      duration: 3000,
+    },
+    {
+      type: 'Scout',
+      time: 2000,
+      curve: diag.left,
+      duration: 4000,
+    },
+    {
+      type: 'Scout',
+      time: 2000,
+      curve: diag.right,
+      duration: 4000,
     },
   ];
 
@@ -80,10 +131,11 @@
   canvas.draw = ( ctx ) => {
     ctx.scale( 1 / SIZE, 1 / SIZE );
 
-    ctx.clearRect( 0, 0, SIZE, SIZE );
+    ctx.fillStyle = 'black';
+    ctx.fillRect( 0, 0, SIZE, SIZE );
 
     ships.forEach( ship => {
-      const t = ( worldTime - ship.spawnTime ) / ship.duration;
+      const t = ( worldTime - ship.time ) / ship.duration;
 
       if ( 0 <= t && t <= 1 ) {   
         const A =     Math.pow( 1 - t, 3 ) * Math.pow( t, 0 );
@@ -107,6 +159,20 @@
     } );
   }
 
-  canvas.start();
+  const ui = {};
+  [ 'playpause', 'scrubber', 'timestamp' ].forEach( e => ui[ e ] = document.getElementById( e ) );
+
+  ui.scrubber.addEventListener( 'input', e => setTime( e.target.value ) );
+
+  setTime( 0 );
+
+  function setTime( time ) {
+    worldTime = time;
+
+    ui.scrubber.value = time;
+    ui.timestamp.innerText = time;
+    
+    canvas.redraw();
+  }
 
 </script>
