@@ -24,7 +24,19 @@
 
   #playback {
     display: grid;
-    grid-template-columns: min-content auto 7vmin;
+    grid-template-columns: min-content auto 50px;
+  }
+
+  #scrub-wrapper {
+    position: relative;
+    max-height: 25px;
+  }
+
+  #scrubber {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
   }
 
   canvas {
@@ -46,7 +58,10 @@
     <canvas id="canvas"></canvas>
     <div id="playback">
       <button id="playpause">▶️</button>
-      <input id="scrubber" type="range" min="0" max="10000" value="0">
+      <div id="scrub-wrapper">
+        <canvas id="timeline"></canvas>
+        <input id="scrubber" type="range" min="0" max="10000" value="0">
+      </div>
       <span id="timestamp">0</span>
     </div>
   </div>
@@ -64,6 +79,11 @@
   const SIZE = 10;
 
   const DOWN = Math.PI / 2;
+
+  // TODO: What if we made ship angle always be the direction of travel?
+  //       Couldn't do strafing, but they'd look better for curve movement
+  //       Would make curve specification more concise
+  //       Maybe see what we end up liking to use for levels
 
   const diag = {
     left: {
@@ -130,6 +150,7 @@
 
   canvas.draw = ( ctx ) => {
     ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 1 / canvas.scale;
 
     ctx.fillStyle = 'black';
     ctx.fillRect( 0, 0, SIZE, SIZE );
@@ -155,12 +176,27 @@
         ctx.fillStyle = 'green';
         ctx.fill( shipPath );
         ctx.restore();
+
+        ctx.beginPath();
+        ctx.moveTo( c.start.x, c.start.y );
+        ctx.bezierCurveTo( c.c1.x, c.c1.y, c.c2.x, c.c2.y, c.end.x, c.end.y );
+        ctx.strokeStyle = 'yellow';
+        ctx.stroke();
       }
+
     } );
   }
 
-  const ui = {};
-  [ 'playpause', 'scrubber', 'timestamp' ].forEach( e => ui[ e ] = document.getElementById( e ) );
+  const timeline = new Canvas( document.getElementById( 'timeline' ) );
+  timeline.draw = ( ctx ) => {
+    ctx.scale( 1 / 10000, 1 );
+    ctx.fillStyle = '#ff05';
+    ships.forEach( ship => ctx.fillRect( ship.time, 0, ship.duration, 1 ) );
+  }
+
+  timeline.redraw();
+
+  const ui = getUI( 'playpause', 'scrubber', 'timestamp' );
 
   ui.scrubber.addEventListener( 'input', e => setTime( e.target.value ) );
 
@@ -173,6 +209,12 @@
     ui.timestamp.innerText = time;
     
     canvas.redraw();
+  }
+
+  function getUI( ...ids ) {
+    const ui = {};
+    ids.forEach( id => ui[ id ] = document.getElementById( id ) );
+    return ui;
   }
 
 </script>
