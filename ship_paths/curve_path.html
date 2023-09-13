@@ -87,16 +87,16 @@
 
   const diag = {
     left: {
-      start: { x: 4,   y: -1,   angle: DOWN },
-      c1:    { x: 4,   y: 3.5, angle: DOWN + 0.75 },
-      c2:    { x: 2.5, y: 3,   angle: DOWN },
-      end:   { x: 1,   y: 11,   angle: DOWN },
+      start: { x: 4,   y: -1 },
+      c1:    { x: 4,   y: 3.5 },
+      c2:    { x: 2.5, y: 3  },
+      end:   { x: 1,   y: 11 },
     },
     right: {
-      start: { x: 6,   y: -1,   angle: DOWN },
-      c1:    { x: 6,   y: 3.5, angle: DOWN - 0.75 },
-      c2:    { x: 7.5, y: 3,   angle: DOWN },
-      end:   { x: 9,  y: 11,   angle: DOWN },
+      start: { x: 6,   y: -1 },
+      c1:    { x: 6,   y: 3.5 },
+      c2:    { x: 7.5, y: 3 },
+      end:   { x: 9,  y: 11 },
     },
   }
   
@@ -138,6 +138,97 @@
       curve: diag.right,
       duration: 4000,
     },
+
+    // Staggered V formation
+    {
+      type: 'Scout',
+      time: 7000,
+      curve: {
+        start: { x: 1, y: -1 },
+        c1: { x: 1, y: -1 },
+        c2: { x: 1.5, y: 11 },
+        end: { x: 1.5, y: 11 },
+      },
+      duration: 2000,
+    },
+    {
+      type: 'Scout',
+      time: 7000,
+      curve: {
+        start: { x: 2, y: -1 },
+        c1: { x: 2, y: -1 },
+        c2: { x: 2.5, y: 11 },
+        end: { x: 2.5, y: 11 },
+      },
+      duration: 1800,
+    },
+    {
+      type: 'Scout',
+      time: 7000,
+      curve: {
+        start: { x: 3, y: -1 },
+        c1: { x: 3, y: -1 },
+        c2: { x: 3.5, y: 11 },
+        end: { x: 3.5, y: 11 },
+      },
+      duration: 1600,
+    },
+    {
+      type: 'Scout',
+      time: 7000,
+      curve: {
+        start: { x: 4, y: -1 },
+        c1: { x: 4, y: -1 },
+        c2: { x: 4.5, y: 11 },
+        end: { x: 4.5, y: 11 },
+      },
+      duration: 1400,
+    },
+
+    {
+      type: 'Scout',
+      time: 8000,
+      curve: {
+        start: { x: 9, y: -1 },
+        c1: { x: 9, y: -1 },
+        c2: { x: 8.5, y: 11 },
+        end: { x: 8.5, y: 11 },
+      },
+      duration: 2000,
+    },
+    {
+      type: 'Scout',
+      time: 8000,
+      curve: {
+        start: { x: 8, y: -1 },
+        c1: { x: 8, y: -1 },
+        c2: { x: 7.5, y: 11 },
+        end: { x: 7.5, y: 11 },
+      },
+      duration: 1800,
+    },
+    {
+      type: 'Scout',
+      time: 8000,
+      curve: {
+        start: { x: 7, y: -1 },
+        c1: { x: 7, y: -1 },
+        c2: { x: 6.5, y: 11 },
+        end: { x: 6.5, y: 11 },
+      },
+      duration: 1600,
+    },
+    {
+      type: 'Scout',
+      time: 8000,
+      curve: {
+        start: { x: 6, y: -1 },
+        c1: { x: 6, y: -1 },
+        c2: { x: 5.5, y: 11 },
+        end: { x: 5.5, y: 11 },
+      },
+      duration: 1400,
+    },
   ];
 
   const canvas = new Canvas( document.getElementById( 'canvas' ) );
@@ -168,7 +259,14 @@
         
         const x = A * c.start.x + B * c.c1.x + C * c.c2.x + D * c.end.x;
         const y = A * c.start.y + B * c.c1.y + C * c.c2.y + D * c.end.y;
-        const angle = A * c.start.angle + B * c.c1.angle + C * c.c2.angle + D * c.end.angle;
+
+        const E = 3 * Math.pow( 1 - t, 2 ) * Math.pow( t, 0 );
+        const F = 3 * Math.pow( 1 - t, 1 ) * Math.pow( t, 1 );
+        const G = 3 * Math.pow( 1 - t, 0 ) * Math.pow( t, 2 );
+
+        const dx = E * ( c.c1.x - c.start.x ) + F * ( c.c2.x - c.c1.x ) + G * ( c.end.x - c.c2.x );
+        const dy = E * ( c.c1.y - c.start.y ) + F * ( c.c2.y - c.c1.y ) + G * ( c.end.y - c.c2.y );
+        const angle = Math.atan2( dy, dx );
         
         ctx.save();
         ctx.translate( x, y );
