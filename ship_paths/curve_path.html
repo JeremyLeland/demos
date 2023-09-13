@@ -78,12 +78,7 @@
 
   const SIZE = 10;
 
-  const DOWN = Math.PI / 2;
-
-  // TODO: What if we made ship angle always be the direction of travel?
-  //       Couldn't do strafing, but they'd look better for curve movement
-  //       Would make curve specification more concise
-  //       Maybe see what we end up liking to use for levels
+  const ships = [];
 
   const diag = {
     left: {
@@ -100,136 +95,52 @@
     },
   }
   
-  const ships = [
-    // 3 slowing waves of scouts
-    {
-      type: 'Scout',
-      time: 1000,
-      curve: diag.left,
-      duration: 2000,
-    },
-    {
-      type: 'Scout',
-      time: 1000,
-      curve: diag.right,
-      duration: 2000,
-    },
-    {
-      type: 'Scout',
-      time: 1500,
-      curve: diag.left,
-      duration: 3000,
-    },
-    {
-      type: 'Scout',
-      time: 1500,
-      curve: diag.right,
-      duration: 3000,
-    },
-    {
-      type: 'Scout',
-      time: 2000,
-      curve: diag.left,
-      duration: 4000,
-    },
-    {
-      type: 'Scout',
-      time: 2000,
-      curve: diag.right,
-      duration: 4000,
-    },
+  // 3 slowing waves of scouts
+  for ( let i = 0; i < 3; i ++ ) {
+    [ diag.left, diag.right ].forEach( curve => 
+      ships.push( 
+        {
+          type: 'Scout',
+          time: 1000 + i * 500,
+          curve: curve,
+          duration: 2000 + i * 1000,
+        }
+      ) 
+    );
+  }
 
-    // Staggered V formation
-    {
-      type: 'Scout',
-      time: 7000,
-      curve: {
-        start: { x: 1, y: -1 },
-        c1: { x: 1, y: -1 },
-        c2: { x: 1.5, y: 11 },
-        end: { x: 1.5, y: 11 },
-      },
-      duration: 2000,
-    },
-    {
-      type: 'Scout',
-      time: 7000,
-      curve: {
-        start: { x: 2, y: -1 },
-        c1: { x: 2, y: -1 },
-        c2: { x: 2.5, y: 11 },
-        end: { x: 2.5, y: 11 },
-      },
-      duration: 1800,
-    },
-    {
-      type: 'Scout',
-      time: 7000,
-      curve: {
-        start: { x: 3, y: -1 },
-        c1: { x: 3, y: -1 },
-        c2: { x: 3.5, y: 11 },
-        end: { x: 3.5, y: 11 },
-      },
-      duration: 1600,
-    },
-    {
-      type: 'Scout',
-      time: 7000,
-      curve: {
-        start: { x: 4, y: -1 },
-        c1: { x: 4, y: -1 },
-        c2: { x: 4.5, y: 11 },
-        end: { x: 4.5, y: 11 },
-      },
-      duration: 1400,
-    },
+  // Staggered V formation
+  for ( let i = 0; i < 4; i ++ ) {
+    ships.push( 
+      {
+        type: 'Scout',
+        time: 7000,
+        curve: {
+          start: { x: 1 + i, y: -1 },
+          c1: { x: 1 + i, y: -1 },
+          c2: { x: 1.5 + i, y: 11 },
+          end: { x: 1.5 + i, y: 11 },
+        },  
+        duration: 2000 - 200 * i,
+      }
+    );
+  }
 
-    {
-      type: 'Scout',
-      time: 8000,
-      curve: {
-        start: { x: 9, y: -1 },
-        c1: { x: 9, y: -1 },
-        c2: { x: 8.5, y: 11 },
-        end: { x: 8.5, y: 11 },
-      },
-      duration: 2000,
-    },
-    {
-      type: 'Scout',
-      time: 8000,
-      curve: {
-        start: { x: 8, y: -1 },
-        c1: { x: 8, y: -1 },
-        c2: { x: 7.5, y: 11 },
-        end: { x: 7.5, y: 11 },
-      },
-      duration: 1800,
-    },
-    {
-      type: 'Scout',
-      time: 8000,
-      curve: {
-        start: { x: 7, y: -1 },
-        c1: { x: 7, y: -1 },
-        c2: { x: 6.5, y: 11 },
-        end: { x: 6.5, y: 11 },
-      },
-      duration: 1600,
-    },
-    {
-      type: 'Scout',
-      time: 8000,
-      curve: {
-        start: { x: 6, y: -1 },
-        c1: { x: 6, y: -1 },
-        c2: { x: 5.5, y: 11 },
-        end: { x: 5.5, y: 11 },
-      },
-      duration: 1400,
-    },
-  ];
+  for ( let i = 0; i < 4; i ++ ) {
+    ships.push(
+      {
+        type: 'Scout',
+        time: 8000,
+        curve: {
+          start: { x: 9 - i, y: -1 },
+          c1: { x: 9 - i, y: -1 },
+          c2: { x: 8.5 - i, y: 11 },
+          end: { x: 8.5 - i, y: 11 },
+        },
+        duration: 2000 - 200 * i,
+      }
+    );
+  }
 
   const canvas = new Canvas( document.getElementById( 'canvas' ) );
 
@@ -248,6 +159,8 @@
 
     ships.forEach( ship => {
       const t = ( worldTime - ship.time ) / ship.duration;
+
+      // TODO: Allow line or curve (for shorter specification of lines)?
 
       if ( 0 <= t && t <= 1 ) {   
         const A =     Math.pow( 1 - t, 3 ) * Math.pow( t, 0 );
