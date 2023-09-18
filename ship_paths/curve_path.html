@@ -154,31 +154,17 @@
     ctx.fillRect( 0, 0, SIZE, SIZE );
 
     ships.forEach( ship => {
-      const t = ( editorState.worldTime - ship.time ) / ship.duration;
+      const elapsed = editorState.worldTime - ship.time;
+      const t = elapsed / ship.duration;
 
       // TODO: Allow line or curve (for shorter specification of lines)?
 
       if ( 0 <= t && t <= 1 ) {
-        let x, y, angle;
+        let pos;
 
         if ( ship.curve ) {
           const c = ship.curve;
-
-          const A =     Math.pow( 1 - t, 3 ) * Math.pow( t, 0 );
-          const B = 3 * Math.pow( 1 - t, 2 ) * Math.pow( t, 1 );
-          const C = 3 * Math.pow( 1 - t, 1 ) * Math.pow( t, 2 );
-          const D =     Math.pow( 1 - t, 0 ) * Math.pow( t, 3 );
-          
-          x = A * c.start.x + B * c.c1.x + C * c.c2.x + D * c.end.x;
-          y = A * c.start.y + B * c.c1.y + C * c.c2.y + D * c.end.y;
-
-          const E = 3 * Math.pow( 1 - t, 2 ) * Math.pow( t, 0 );
-          const F = 3 * Math.pow( 1 - t, 1 ) * Math.pow( t, 1 );
-          const G = 3 * Math.pow( 1 - t, 0 ) * Math.pow( t, 2 );
-
-          const dx = E * ( c.c1.x - c.start.x ) + F * ( c.c2.x - c.c1.x ) + G * ( c.end.x - c.c2.x );
-          const dy = E * ( c.c1.y - c.start.y ) + F * ( c.c2.y - c.c1.y ) + G * ( c.end.y - c.c2.y );
-          angle = Math.atan2( dy, dx );
+          pos = getCurvePosition( c, t );
 
           ctx.beginPath();
           ctx.moveTo( c.start.x, c.start.y );
@@ -189,12 +175,7 @@
         else if ( ship.line ) {
           const l = ship.line;
 
-          const dx = l.end.x - l.start.x;
-          const dy = l.end.y - l.start.y;
-
-          x = l.start.x + t * dx;
-          y = l.start.y + t * dy;
-          angle = Math.atan2( dy, dx );
+          pos = getLinePosition( l, t );
 
           ctx.beginPath();
           ctx.moveTo( l.start.x, l.start.y );
@@ -204,13 +185,68 @@
         }
         
         ctx.save();
-        ctx.translate( x, y );
-        ctx.rotate( angle );
+        ctx.translate( pos.x, pos.y );
+        ctx.rotate( pos.angle );
         ctx.fillStyle = 'green';
         ctx.fill( shipPath );
         ctx.restore();
+
+        for ( let i = 400; i < elapsed; i += 400 ) {
+          let bulletPos;
+
+          if ( ship.curve ) {
+            bulletPos = getCurvePosition( ship.curve, i / ship.duration );
+          }
+          if ( ship.line ) {
+            bulletPos = getLinePosition( ship.line, i / ship.duration );
+          }
+
+          const bulletElapsed = elapsed - i;
+
+          bulletPos.x += Math.cos( bulletPos.angle ) * 0.01 * bulletElapsed;
+          bulletPos.y += Math.sin( bulletPos.angle ) * 0.01 * bulletElapsed;
+
+          ctx.save();
+          ctx.translate( bulletPos.x, bulletPos.y );
+          ctx.rotate( bulletPos.angle );
+          ctx.scale( 0.5, 0.5 );
+          ctx.fillStyle = 'orange';
+          ctx.fill( shipPath );
+          ctx.restore();
+        }
       }
     } );
+  }
+
+  function getCurvePosition( c, t ) {
+    const A =     Math.pow( 1 - t, 3 ) * Math.pow( t, 0 );
+    const B = 3 * Math.pow( 1 - t, 2 ) * Math.pow( t, 1 );
+    const C = 3 * Math.pow( 1 - t, 1 ) * Math.pow( t, 2 );
+    const D =     Math.pow( 1 - t, 0 ) * Math.pow( t, 3 );
+    
+    const E = 3 * Math.pow( 1 - t, 2 ) * Math.pow( t, 0 );
+    const F = 3 * Math.pow( 1 - t, 1 ) * Math.pow( t, 1 );
+    const G = 3 * Math.pow( 1 - t, 0 ) * Math.pow( t, 2 );
+
+    const dx = E * ( c.c1.x - c.start.x ) + F * ( c.c2.x - c.c1.x ) + G * ( c.end.x - c.c2.x );
+    const dy = E * ( c.c1.y - c.start.y ) + F * ( c.c2.y - c.c1.y ) + G * ( c.end.y - c.c2.y );
+
+    return {
+      x: A * c.start.x + B * c.c1.x + C * c.c2.x + D * c.end.x,
+      y: A * c.start.y + B * c.c1.y + C * c.c2.y + D * c.end.y,
+      angle: Math.atan2( dy, dx ),
+    }
+  }
+
+  function getLinePosition( l, t ) {
+    const dx = l.end.x - l.start.x;
+    const dy = l.end.y - l.start.y;
+
+    return {
+      x: l.start.x + t * dx,
+      y: l.start.y + t * dy,
+      angle: Math.atan2( dy, dx ),
+    }
   }
 
   const timeline = new Canvas( document.getElementById( 'timeline' ) );
