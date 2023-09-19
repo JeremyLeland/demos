@@ -76,6 +76,47 @@
   shipPath.arc( 0, 0, 0.5, 2.2, -2.2 );
   shipPath.closePath();
 
+  const bulletInfo = {
+    size: 0.2,
+    speed: 0.01,
+    draw: ( ctx ) => {
+      ctx.fillStyle = 'orange';
+      ctx.fill( shipPath );
+    }
+  }
+
+  const gunInfo = {
+    delay: {
+      start: 500,
+      shot: 200,
+      salvo: 500,
+    },
+    count: {
+      shots: 3,
+      salvos: 2,
+    },
+    bulletInfo: bulletInfo,
+  }
+
+  const shipGuns = [
+    {
+      offset: {
+        front: 0,
+        side: -0.4,
+        angle: -0.05,
+      },
+      gunInfo: gunInfo,
+    },
+    {
+      offset: {
+        front: 0,
+        side: 0.4,
+        angle: 0.05,
+      },
+      gunInfo: gunInfo,
+    }
+  ]
+
   const SIZE = 10;
 
   const EDITOR_STATE_KEY = 'shipPathEditorState';
@@ -191,28 +232,35 @@
         ctx.fill( shipPath );
         ctx.restore();
 
-        for ( let i = 400; i < elapsed; i += 400 ) {
-          let bulletPos;
+        // TODO: track number of shots, use delay between salvos
+        for ( let i = gunInfo.delay.start; i < elapsed; i += gunInfo.delay.shot ) {
+          shipGuns.forEach( gun => {
+            let bulletPos;
 
-          if ( ship.curve ) {
-            bulletPos = getCurvePosition( ship.curve, i / ship.duration );
-          }
-          if ( ship.line ) {
-            bulletPos = getLinePosition( ship.line, i / ship.duration );
-          }
+            if ( ship.curve ) {
+              bulletPos = getCurvePosition( ship.curve, i / ship.duration );
+            }
+            if ( ship.line ) {
+              bulletPos = getLinePosition( ship.line, i / ship.duration );
+            }
 
-          const bulletElapsed = elapsed - i;
+            bulletPos.x += Math.cos( bulletPos.angle ) * gun.offset.front - Math.sin( bulletPos.angle ) * gun.offset.side;
+            bulletPos.y += Math.sin( bulletPos.angle ) * gun.offset.front + Math.cos( bulletPos.angle ) * gun.offset.side;
+            bulletPos.angle += gun.offset.angle;
 
-          bulletPos.x += Math.cos( bulletPos.angle ) * 0.01 * bulletElapsed;
-          bulletPos.y += Math.sin( bulletPos.angle ) * 0.01 * bulletElapsed;
+            const bulletElapsed = elapsed - i;
 
-          ctx.save();
-          ctx.translate( bulletPos.x, bulletPos.y );
-          ctx.rotate( bulletPos.angle );
-          ctx.scale( 0.5, 0.5 );
-          ctx.fillStyle = 'orange';
-          ctx.fill( shipPath );
-          ctx.restore();
+            // TODO: Account for ship speed at time of firing
+            bulletPos.x += Math.cos( bulletPos.angle ) * bulletInfo.speed * bulletElapsed;
+            bulletPos.y += Math.sin( bulletPos.angle ) * bulletInfo.speed * bulletElapsed;
+
+            ctx.save();
+            ctx.translate( bulletPos.x, bulletPos.y );
+            ctx.rotate( bulletPos.angle );
+            ctx.scale( bulletInfo.size, bulletInfo.size );
+            bulletInfo.draw( ctx );
+            ctx.restore();
+          } );
         }
       }
     } );
