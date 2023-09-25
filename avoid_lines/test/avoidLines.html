@@ -1,0 +1,79 @@
+<title>Avoiding Lines</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from '../src/common/Canvas.js';
+  import { Entity } from '../src/Entity.js';
+  import { Line } from '../src/Line.js';
+  import { AlienInfo } from '../src/entities/Alien.js';
+  
+  const entities = [
+    new Entity( { x: 17, y: 13, size: 1, angle: 1 }, AlienInfo ),
+  ];
+
+  const walls = [
+    new Line( 8, 8, 12, 12 ),
+    new Line( 12, 12, 15, 18 ),
+    new Line( 22, 20, 18, 8 ),
+  ]
+
+  const canvas = new Canvas( document.getElementById( 'canvas' ) );
+
+  let mouseX = 15, mouseY = 15;
+  const SIZE = 30;
+
+  canvas.update = ( dt ) => {
+    entities.forEach( e => {
+      e.targetGoal = { x: mouseX, y: mouseY };
+      e.update( dt, entities );
+    } );
+  };
+  
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = SIZE / canvas.scale;
+
+    entities.forEach( e => e.draw( ctx ) );
+
+    walls.forEach( wall => wall.draw( ctx ) );
+
+    entities.forEach( entity => {
+      walls.forEach( wall => {
+
+        const point = wall.getClosestPoint( entity.x, entity.y );
+
+        const dist = Math.hypot( point.x - entity.x, point.y - entity.y );
+
+        ctx.beginPath();
+        ctx.moveTo( point.x, point.y );
+        ctx.lineTo( entity.x, entity.y );
+
+        ctx.strokeStyle = `rgb( ${ 255 * ( 1 - dist / 10 ) }, 0, 0 )`;
+        ctx.stroke();
+      } )
+    } )
+  };
+
+  canvas.start();
+
+  let mouseDown = false;
+
+  document.addEventListener( 'pointerdown', ( e ) => doMouse( e ) );
+  document.addEventListener( 'pointerup', _ => mouseDown = false );
+  document.addEventListener( 'pointermove', ( e ) => {
+    if ( mouseDown ) {
+      doMouse( e );
+    }
+  } );
+
+  function doMouse( e ) {
+    mouseDown = true;
+
+    mouseX = Math.round( SIZE * e.offsetX / canvas.scale );
+    mouseY = Math.round( SIZE * e.offsetY / canvas.scale );
+    
+    entities[ 0 ].x = mouseX;
+    entities[ 0 ].y = mouseY;
+  }
+  
+</script>
