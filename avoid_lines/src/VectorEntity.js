@@ -38,7 +38,7 @@ export class VectorEntity {
 
       this.x += moveX;
       this.y += moveY;
-      this.angle = Math.atan2( moveY, moveX );
+      // this.angle = Math.atan2( moveY, moveX );
     }
   }
 
