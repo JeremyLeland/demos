@@ -7,45 +7,60 @@
   import { Line } from '../src/Line.js';
   import { AlienInfo } from '../src/entities/Alien.js';
 
+  const Constants = {
+    TargetWeight: 0.25,
+    AvoidDistance: 1,
+    AvoidWeight: 10,
+  };
+
   const entities = [
-    new VectorEntity( { x: 17, y: 12, size: 1, angle: 1 }, AlienInfo ),
-    new VectorEntity( { x: 17, y: 15, size: 1, angle: 2 }, AlienInfo ),
-    new VectorEntity( { x: 14, y: 20, size: 1, angle: 2 }, AlienInfo ),
-    new VectorEntity( { x: 27, y: 21, size: 1, angle: 2 }, AlienInfo ),
-    new VectorEntity( { x: 7, y: 25, size: 1, angle: 2 }, AlienInfo ),
+    new VectorEntity( { x: 17, y: 12 }, AlienInfo ),
+    new VectorEntity( { x: 17, y: 15 }, AlienInfo ),
+    new VectorEntity( { x: 14, y: 20 }, AlienInfo ),
+    new VectorEntity( { x: 27, y: 21 }, AlienInfo ),
+    new VectorEntity( { x: 9, y: 25 }, AlienInfo ),
+    new VectorEntity( { x: 13, y: 14 }, AlienInfo ),
+    new VectorEntity( { x: 11, y: 12 }, AlienInfo ),
   ];
 
-  const walls = [
-    new Line( 1, 1, 1, 29 ),
-    new Line( 1, 29, 29, 29 ),
-    new Line( 29, 29, 29, 1 ),
-    new Line( 29, 1, 1, 1 ),
+  const walls = [];
 
-    new Line( 10, 9, 11, 10 ),
-    new Line( 11, 10, 10, 11 ),
-    new Line( 10, 11, 9, 10 ),
-    new Line( 9, 10, 10, 9 ),
+  addLoop( [ [ 1, 1 ], [ 1, 29 ], [ 29, 29 ], [ 29, 1 ] ] );
+  addLoop( [ [ 8, 9 ], [ 9, 10 ], [ 8, 11 ], [ 7, 10 ] ] );
+  addLoop( [ [ 20, 18 ], [ 22, 20 ], [ 20, 22 ], [ 18, 20 ] ] );
+  addLoop( [ [ 4, 18 ], [ 7, 25 ], [ 5, 23 ] ] );
+  addLoop( [ [ 14, 5 ], [ 25, 4 ], [ 23, 12 ], [ 19, 8 ] ] );
 
-    new Line( 20, 18, 22, 20 ),
-    new Line( 22, 20, 20, 22 ),
-    new Line( 20, 22, 18, 20 ),
-    new Line( 18, 20, 20, 18 ),
-  ]
+  function addLoop( points ) {
+    for ( let i = 0; i < points.length; i ++ ) {
+      const j = ( i + 1 ) % points.length;
+      walls.push( new Line( ...points[ i ], ...points[ j ] ) );
+    }
+  }
 
   const canvas = new Canvas( document.getElementById( 'canvas' ) );
 
   let mouseX = 15, mouseY = 15;
   const SIZE = 30;
 
-  const ENTITY_DIST = 1;
-  const WALL_DIST = 1;
-
   canvas.update = ( dt ) => {
-    entities.forEach( entity => {
+    entities.forEach( ( entity, index ) => {
+     
+      if ( entity.target ) {
+        // TODO: Bias more towards targets that are farther away? 
+        // So someone with a ways to go can bump someone who's basically home, at least a little bit
+        const tx = entity.target.x - entity.x;
+        const ty = entity.target.y - entity.y;
+        const targetAngle = Math.atan2( ty, tx );
+        const targetDist = Math.hypot( tx, ty );
 
-      const targetAngle = Math.atan2( mouseY - entity.y, mouseX - entity.x );
+        const targetForce = Constants.TargetWeight * targetDist;
 
-      entity.addVector( Math.cos( targetAngle ), Math.sin( targetAngle ) );
+        entity.addVector( 
+          Math.cos( targetAngle ) * targetForce,
+          Math.sin( targetAngle ) * targetForce,
+        );
+      }
 
       entities.forEach( other => {
         if ( entity != other ) {
@@ -54,7 +69,9 @@
           const angle = Math.atan2( cy, cx );
           const dist = Math.hypot( cx, cy );
 
-          const force = Math.max( 0, ENTITY_DIST / Math.max( 0.01, dist - entity.size - other.size ) - 1 );
+          const force = Constants.AvoidWeight * Math.max( 0, 
+            Constants.AvoidDistance / Math.max( 0.01, dist - entity.size - other.size ) - 1 
+          );
 
           const x = Math.cos( angle ) * force;
           const y = Math.sin( angle ) * force;
@@ -66,7 +83,9 @@
       walls.forEach( wall => {
 
         const point = wall.getClosestPoint( entity.x, entity.y );
-        const force = Math.max( 0, WALL_DIST / Math.max( 0.01, point.distance - entity.size ) - 1 );
+        const force = Constants.AvoidWeight * Math.max( 0, 
+          Constants.AvoidDistance / Math.max( 0.01, point.distance - entity.size ) - 1
+        );
 
         const x = Math.cos( point.angle ) * force;
         const y = Math.sin( point.angle ) * force;
@@ -110,8 +129,10 @@
     mouseX = SIZE * e.offsetX / canvas.scale;
     mouseY = SIZE * e.offsetY / canvas.scale;
 
-    // entities[ 0 ].x = mouseX;
-    // entities[ 0 ].y = mouseY;
+     // Leave a few stationary for testing
+    for ( let i = 0; i < 4; i ++ ) {
+      entities[ i ].target = { x: mouseX, y: mouseY };
+    }
   }
 
 </script>

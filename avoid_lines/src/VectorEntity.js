@@ -2,7 +2,7 @@ export class VectorEntity {
   x = 0;
   y = 0;
   angle = 0;
-  size = 0;
+  size = 1;
 
   #info;
 
@@ -13,6 +13,8 @@ export class VectorEntity {
   constructor( values, info ) {
     Object.assign( this, values );
     this.#info = info;
+
+    this.target ??= { x: this.x, y: this.y };
   }
 
   addVector( x, y ) {
@@ -23,22 +25,24 @@ export class VectorEntity {
   }
 
   update( dt ) {
-    if ( this.#moveVector.x != 0 || this.#moveVector.y != 0 ) {
-      const totalAngle = Math.atan2( this.#moveVector.y, this.#moveVector.x );
-      const totalDist = Math.hypot( this.#moveVector.x, this.#moveVector.y );
+    const totalAngle = Math.atan2( this.#moveVector.y, this.#moveVector.x );
+    const totalDist = Math.hypot( this.#moveVector.x, this.#moveVector.y );
 
-      this.#debugTotal.x = this.#moveVector.x;
-      this.#debugTotal.y = this.#moveVector.y;
-      this.#moveVector.x = 0;
-      this.#moveVector.y = 0;
+    this.#debugTotal.x = this.#moveVector.x;
+    this.#debugTotal.y = this.#moveVector.y;
+    this.#moveVector.x = 0;
+    this.#moveVector.y = 0;
 
+    // TODO: Can we detect/avoid jitter somehow? We get alternating large totalDists, so we can't just check that
+
+    if ( totalDist > 0.1 ) { 
       const moveDist = Math.min( this.#info.speed * dt, totalDist );
       const moveX = Math.cos( totalAngle ) * moveDist;
       const moveY = Math.sin( totalAngle ) * moveDist;
-
+      
       this.x += moveX;
       this.y += moveY;
-      // this.angle = Math.atan2( moveY, moveX );
+      this.angle = Math.atan2( moveY, moveX );
     }
   }
 
