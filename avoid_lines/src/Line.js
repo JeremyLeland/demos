@@ -95,10 +95,10 @@ export class Line {
     const S = Math.max( 0, Math.min( ( t * uv + ru ) / uu, 1 ) );
     const T = Math.max( 0, Math.min( ( s * uv - rv ) / vv, 1 ) );
 
-    const Ax = a.x1 + S * ux;
-    const Ay = a.y1 + S * uy;
-    const Bx = b.x1 + T * vx;
-    const By = b.y1 + T * vy;
+    const Ax = x1 + S * ux;
+    const Ay = y1 + S * uy;
+    const Bx = x3 + T * vx;
+    const By = y3 + T * vy;
 
     return {
       closestA: { x: Ax, y: Ay },
@@ -116,7 +116,15 @@ export class Line {
     const u = Math.max( 0, Math.min( 1, 
       ( ( x - this.x1 ) * px + ( y - this.y1 ) * py ) / ( ( px * px ) + ( py * py ) ) 
     ) );
+
+    const Ax = this.x1 + u * px;
+    const Ay = this.y1 + u * py;
     
-    return { x: this.x1 + u * px, y: this.y1 + u * py };
+    return {
+      x: Ax, 
+      y: Ay,
+      angle:    Math.atan2( y - Ay, x - Ax ),
+      distance: Math.hypot( x - Ax, y - Ay ),
+    };
   }
 }
