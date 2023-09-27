@@ -19,7 +19,7 @@
     new VectorEntity( { x: 14, y: 20 }, AlienInfo ),
     new VectorEntity( { x: 27, y: 21 }, AlienInfo ),
     new VectorEntity( { x: 9, y: 25 }, AlienInfo ),
-    new VectorEntity( { x: 13, y: 14 }, AlienInfo ),
+    new VectorEntity( { x: 11, y: 16 }, AlienInfo ),
     new VectorEntity( { x: 11, y: 12 }, AlienInfo ),
   ];
 
@@ -45,22 +45,6 @@
 
   canvas.update = ( dt ) => {
     entities.forEach( ( entity, index ) => {
-     
-      if ( entity.target ) {
-        // TODO: Bias more towards targets that are farther away? 
-        // So someone with a ways to go can bump someone who's basically home, at least a little bit
-        const tx = entity.target.x - entity.x;
-        const ty = entity.target.y - entity.y;
-        const targetAngle = Math.atan2( ty, tx );
-        const targetDist = Math.hypot( tx, ty );
-
-        const targetForce = Constants.TargetWeight * targetDist;
-
-        entity.addVector( 
-          Math.cos( targetAngle ) * targetForce,
-          Math.sin( targetAngle ) * targetForce,
-        );
-      }
 
       entities.forEach( other => {
         if ( entity != other ) {

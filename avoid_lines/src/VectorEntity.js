@@ -35,15 +35,32 @@ export class VectorEntity {
 
     // TODO: Can we detect/avoid jitter somehow? We get alternating large totalDists, so we can't just check that
 
-    if ( totalDist > 0.1 ) { 
-      const moveDist = Math.min( this.#info.speed * dt, totalDist );
-      const moveX = Math.cos( totalAngle ) * moveDist;
-      const moveY = Math.sin( totalAngle ) * moveDist;
-      
-      this.x += moveX;
-      this.y += moveY;
-      this.angle = Math.atan2( moveY, moveX );
+    if ( this.target ) {
+      const tx = this.target.x - this.x;
+      const ty = this.target.y - this.y;
+      const targetAngle = Math.atan2( ty, tx );
+      const targetDist = Math.hypot( tx, ty );
+
+      if ( targetDist > 0.05 ) {
+        // Bias more towards targets that are farther away? 
+        // So someone with a ways to go can bump someone who's basically home, at least a little bit
+        const targetForce = 0.25 * targetDist;
+        
+        this.addVector( 
+          Math.cos( targetAngle ) * targetForce,
+          Math.sin( targetAngle ) * targetForce,
+        );
+      }
     }
+
+    const moveDist = Math.min( this.#info.speed * dt, totalDist );
+    const moveX = Math.cos( totalAngle ) * moveDist;
+    const moveY = Math.sin( totalAngle ) * moveDist;
+    
+    this.x += moveX;
+    this.y += moveY;
+    this.angle = Math.atan2( moveY, moveX );
+    
   }
 
 
