@@ -8,7 +8,7 @@ export const AlienInfo = {
   
   maxSpeed: 0.002,
 
-  accel: 4e-6,
+  accel: 4e-5,
 
   // maxMoveSpeed: 0.0005,
   // maxTurnSpeed: 0.005,

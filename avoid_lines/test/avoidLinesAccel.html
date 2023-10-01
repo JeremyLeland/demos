@@ -1,0 +1,122 @@
+<title>Avoiding Lines</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from '../src/common/Canvas.js';
+  import { AccelEntity } from '../src/AccelEntity.js';
+  import { Line } from '../src/Line.js';
+  import { AlienInfo } from '../src/entities/Alien.js';
+
+  const Constants = {
+    TargetWeight: 0.25,
+    AvoidDistance: 1,
+    AvoidWeight: 10,
+  };
+
+  const entities = [
+    new AccelEntity( { x: 17, y: 12 }, AlienInfo ),
+    new AccelEntity( { x: 17, y: 15 }, AlienInfo ),
+    new AccelEntity( { x: 14, y: 20 }, AlienInfo ),
+    new AccelEntity( { x: 27, y: 21 }, AlienInfo ),
+    new AccelEntity( { x: 9, y: 25 }, AlienInfo ),
+    new AccelEntity( { x: 11, y: 16 }, AlienInfo ),
+    new AccelEntity( { x: 11, y: 12 }, AlienInfo ),
+  ];
+
+  const walls = [];
+
+  addLoop( [ [ 1, 1 ], [ 1, 29 ], [ 29, 29 ], [ 29, 1 ] ] );
+  addLoop( [ [ 8, 9 ], [ 9, 10 ], [ 8, 11 ], [ 7, 10 ] ] );
+  addLoop( [ [ 20, 18 ], [ 22, 20 ], [ 20, 22 ], [ 18, 20 ] ] );
+  addLoop( [ [ 4, 18 ], [ 7, 25 ], [ 5, 23 ] ] );
+  addLoop( [ [ 14, 5 ], [ 25, 4 ], [ 23, 12 ], [ 19, 8 ] ] );
+
+  function addLoop( points ) {
+    for ( let i = 0; i < points.length; i ++ ) {
+      const j = ( i + 1 ) % points.length;
+      walls.push( new Line( ...points[ i ], ...points[ j ] ) );
+    }
+  }
+
+  const canvas = new Canvas( document.getElementById( 'canvas' ) );
+
+  let mouseX = 15, mouseY = 15;
+  const SIZE = 30;
+
+  canvas.update = ( dt ) => {
+    entities.forEach( ( entity, index ) => {
+
+      entities.forEach( other => {
+        if ( entity != other ) {
+          const cx = entity.x - other.x;
+          const cy = entity.y - other.y;
+          const angle = Math.atan2( cy, cx );
+          const dist = Math.hypot( cx, cy );
+
+          const force = Constants.AvoidWeight * Math.max( 0, 
+            Constants.AvoidDistance / ( dist - entity.size - other.size ) - 1 
+          );
+
+          const x = Math.cos( angle ) * force;
+          const y = Math.sin( angle ) * force;
+
+          entity.addVector( x, y );
+        }
+      } );
+
+      walls.forEach( wall => {
+
+        const point = wall.getClosestPoint( entity.x, entity.y );
+        const force = Constants.AvoidWeight * Math.max( 0, 
+          Constants.AvoidDistance / Math.max( 0.01, point.distance - entity.size ) - 1
+        );
+
+        const x = Math.cos( point.angle ) * force;
+        const y = Math.sin( point.angle ) * force;
+
+        entity.addVector( x, y );
+      } );
+    } );
+
+    // Figure out all the forces before we move anyone
+    // TODO: Figure out how to avoid quivering? Maybe have minimum threshold for movement?
+    entities.forEach( entity => entity.update( dt ) );
+  };
+
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = SIZE / canvas.scale;
+
+    entities.forEach( e => e.draw( ctx ) );
+
+    ctx.strokeStyle = 'gray';
+    walls.forEach( wall => wall.draw( ctx ) );
+
+    entities.forEach( entity => entity.draw( ctx ) );
+  };
+
+  canvas.start();
+
+  let mouseDown = false;
+
+  document.addEventListener( 'pointerdown', ( e ) => doMouse( e ) );
+  document.addEventListener( 'pointerup', _ => mouseDown = false );
+  document.addEventListener( 'pointermove', ( e ) => {
+    if ( mouseDown ) {
+      doMouse( e );
+    }
+  } );
+
+  function doMouse( e ) {
+    mouseDown = true;
+
+    mouseX = SIZE * e.offsetX / canvas.scale;
+    mouseY = SIZE * e.offsetY / canvas.scale;
+
+     // Leave a few stationary for testing
+    for ( let i = 0; i < 1; i ++ ) {
+      entities[ i ].target = { x: mouseX, y: mouseY };
+    }
+  }
+
+</script>
