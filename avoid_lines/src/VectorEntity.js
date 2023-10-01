@@ -53,7 +53,7 @@ export class VectorEntity {
       }
     }
 
-    const moveDist = Math.min( this.#info.speed * dt, totalDist );
+    const moveDist = Math.min( this.#info.maxSpeed * dt, totalDist );
     const moveX = Math.cos( totalAngle ) * moveDist;
     const moveY = Math.sin( totalAngle ) * moveDist;
     
@@ -65,32 +65,41 @@ export class VectorEntity {
 
 
   draw( ctx ) {
-    ctx.save();
+    ctx.save(); {
+      ctx.translate( this.x, this.y );
 
-    ctx.translate( this.x, this.y );
+      ctx.save(); {
+        ctx.rotate( this.angle );
+        ctx.scale( this.size, this.size );
 
-    ctx.save();
+        this.#info.draw( ctx );
+      }
+      ctx.restore();
 
-    ctx.rotate( this.angle );
-    ctx.scale( this.size, this.size );
+      ctx.beginPath();
+      ctx.arc( 0, 0, this.size, 0, Math.PI * 2 );
+      ctx.fillStyle = '#4444';
+      ctx.fill();
 
-    this.#info.draw( ctx );
+      ctx.fillStyle = ctx.strokeStyle = 'gray';
+      this.#debugVectors.forEach( v => drawArrow( ctx, v ) );
+      this.#debugVectors = [];
 
+      ctx.fillStyle = ctx.strokeStyle = 'white';
+      drawArrow( ctx, this.#debugTotal );
+    }
     ctx.restore();
 
-    ctx.beginPath();
-    ctx.arc( 0, 0, this.size, 0, Math.PI * 2 );
-    ctx.fillStyle = '#4444';
-    ctx.fill();
-
-    ctx.fillStyle = ctx.strokeStyle = 'gray';
-    this.#debugVectors.forEach( v => drawArrow( ctx, v ) );
-    this.#debugVectors = [];
-
-    ctx.fillStyle = ctx.strokeStyle = 'white';
-    drawArrow( ctx, this.#debugTotal );
-
-    ctx.restore();
+    if ( this.target ) {
+      ctx.beginPath();
+      ctx.moveTo( this.target.x, this.target.y );
+      ctx.lineTo( this.x, this.y );
+      
+      ctx.strokeStyle = 'tan';
+      ctx.setLineDash( [ 0.1, 0.1 ] );
+      ctx.stroke();
+      ctx.setLineDash( [] );
+    }
   }
 }
 

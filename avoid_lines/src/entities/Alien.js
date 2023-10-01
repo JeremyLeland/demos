@@ -6,7 +6,9 @@ body.closePath();
 export const AlienInfo = {
   // type: 'alien',
   
-  speed: 0.002,
+  maxSpeed: 0.002,
+
+  accel: 4e-6,
 
   // maxMoveSpeed: 0.0005,
   // maxTurnSpeed: 0.005,

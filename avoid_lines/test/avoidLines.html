@@ -54,7 +54,7 @@
           const dist = Math.hypot( cx, cy );
 
           const force = Constants.AvoidWeight * Math.max( 0, 
-            Constants.AvoidDistance / Math.max( 0.01, dist - entity.size - other.size ) - 1 
+            Constants.AvoidDistance / ( dist - entity.size - other.size ) - 1 
           );
 
           const x = Math.cos( angle ) * force;
