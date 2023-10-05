@@ -29,77 +29,77 @@
 
   const EPSILON = 0.1;
 
-function bump_function( z ) {
-  return z.map( x => {
-    if ( 0 <= x && x < H ) {
-      return 1;
-    }
-    else if ( H <= x && x <= 1 ) {
-      return ( 1 + Math.cos( Math.PI * ( x - H ) / ( 1 - H ) ) ) / 2; 
-    }
-    else {
-      return 0;
-    }
-  } );
-}
+  function bump_function( z ) {
+    return z.map( x => {
+      if ( 0 <= x && x < H ) {
+        return 1;
+      }
+      else if ( H <= x && x <= 1 ) {
+        return ( 1 + Math.cos( Math.PI * ( x - H ) / ( 1 - H ) ) ) / 2; 
+      }
+      else {
+        return 0;
+      }
+    } );
+  }
 
-function phi( z ) {
-  const zPlusC = z.map( x => x + C );
+  function phi( z ) {
+    const zPlusC = z.map( x => x + C );
 
-  return sigma_1( zPlusC ).map( sigma => ( ( A + B ) * sigma + ( A - B ) ) / 2 );
-}
+    return sigma_1( zPlusC ).map( sigma => ( ( A + B ) * sigma + ( A - B ) ) / 2 );
+  }
 
 
 
-function phi_alpha(z) {
-  const r_alpha = sigma_norm([[RANGE]]);
-  const d_alpha = sigma_norm([[DISTANCE]]);
+  function phi_alpha(z) {
+    const r_alpha = sigma_norm([[RANGE]]);
+    const d_alpha = sigma_norm([[DISTANCE]]);
 
-  const bump = bump_function( z.map( x => x / r_alpha ) );
-  const phiVal = phi( z.map( x => x - d_alpha ) );
+    const bump = bump_function( z.map( x => x / r_alpha ) );
+    const phiVal = phi( z.map( x => x - d_alpha ) );
 
-  return bump.map( ( b, index ) => b * phiVal[ index ] );
-}
+    return bump.map( ( b, index ) => b * phiVal[ index ] );
+  }
 
-function sigma_1( z ) {
-  return z.map( x => x / Math.sqrt( 1 + x * x ) );
-}
+  function sigma_1( z ) {
+    return z.map( x => x / Math.sqrt( 1 + x * x ) );
+  }
 
-// Near as I can tell, this is this result of the linalg.norm bullshit below
-// They do a square root, then square the result. The following avoids this.
-// Is it actually faster than calling Math.pow( Math.hypot( ...val ), 2 )?
-function norm( val ) {
-  return val.map( x => x * x ).reduce( ( a, b ) => a + b );
-}
+  // Near as I can tell, this is this result of the linalg.norm bullshit below
+  // They do a square root, then square the result. The following avoids this.
+  // Is it actually faster than calling Math.pow( Math.hypot( ...val ), 2 )?
+  function norm( val ) {
+    return val.map( x => x * x ).reduce( ( a, b ) => a + b );
+  }
 
-function sigma_norm( z ) {
-  return z.map( val =>
-    ( Math.sqrt( 1 + EPSILON * norm( val ) ) - 1 ) / EPSILON
-  );
-}
+  function sigma_norm( z ) {
+    return z.map( val =>
+      ( Math.sqrt( 1 + EPSILON * norm( val ) ) - 1 ) / EPSILON
+    );
+  }
 
-function sigma_grad( z ) {
-  return z.map( val => 
-    val.map( x => x / Math.sqrt( 1 + EPSILON * norm( val ) ) )
-  );
-}
+  function sigma_grad( z ) {
+    return z.map( val => 
+      val.map( x => x / Math.sqrt( 1 + EPSILON * norm( val ) ) )
+    );
+  }
 
-function get_adjacency_matrix( nodes, r ) {
-  return nodes.map( node => Math.hypot( node[ 0 ], node[ 1 ] ) <= r );
-}
+  function get_adjacency_matrix( nodes, r ) {
+    return nodes.map( node => Math.hypot( node[ 0 ], node[ 1 ] ) <= r );
+  }
 
-function get_a_ij( q_i, q_js ) {
-  const r_alpha = sigma_norm( [ [ RANGE ] ] );
-  const offsets = q_js.map( x => [ x[ 0 ] - q_i[ 0 ], x[ 1 ] - q_i[ 1 ] ] );
-  return bump_function( sigma_norm( offsets ).map( x => x / r_alpha ) );
-}
+  function get_a_ij( q_i, q_js ) {
+    const r_alpha = sigma_norm( [ [ RANGE ] ] );
+    const offsets = q_js.map( x => [ x[ 0 ] - q_i[ 0 ], x[ 1 ] - q_i[ 1 ] ] );
+    return bump_function( sigma_norm( offsets ).map( x => x / r_alpha ) );
+  }
 
-function get_n_ij( q_i, q_js ) {
-  const offsets = q_js.map( x => [ x[ 0 ] - q_i[ 0 ], x[ 1 ] - q_i[ 1 ] ] );
-  return sigma_grad( offsets );
-}
+  function get_n_ij( q_i, q_js ) {
+    const offsets = q_js.map( x => [ x[ 0 ] - q_i[ 0 ], x[ 1 ] - q_i[ 1 ] ] );
+    return sigma_grad( offsets );
+  }
 
-const C1_alpha = 3;
+  const C1_alpha = 3;
   const C2_alpha = 2 * Math.sqrt( C1_alpha );
   const C1_gamma = 5;
   const C2_gamma = 0.2 * Math.sqrt( C1_gamma );
@@ -113,6 +113,8 @@ const C1_alpha = 3;
       // term1
       const neighbors = agents.filter( other => Math.hypot( other[ 0 ] - agent[ 0 ], other[ 1 ] - agent[ 1 ] ) <= RANGE );
       
+      let u_alpha;
+
       if ( neighbors.length > 1 ) {
           const neighbors_p = neighbors.map( n => [ n[ 0 ], n[ 1 ] ] );
           const neighbors_q = neighbors.map( n => [ n[ 2 ], n[ 3 ] ] );
@@ -131,26 +133,38 @@ const C1_alpha = 3;
           const a_ij = get_a_ij( agent_p, neighbors_p );
 
           const diff2 = neighbors_q.map( n => [ n[ 0 ] - agent_q[ 0 ], n[ 1 ] - agent_q[ 1 ] ] );
-          const mult2 = diff2.map( x => [ x[ 0 ] * a_ij[ 0 ], x[ 1 ] * a_ij[ 1 ] ] );
+          const mult2 = diff2.map( ( x, index ) => [ x[ 0 ] * a_ij[ index ], x[ 1 ] * a_ij[ index ] ] );
           const sum2 = mult2.reduce( ( acc, x ) => [ acc[ 0 ] + x[ 0 ], acc[ 1 ] + x[ 1 ] ] );
           const term2 = [ C2_alpha * sum2[ 0 ], C2_alpha * sum2[ 1 ] ];
 
           // u_alpha
-          u_alpha = term1 + term2
+          u_alpha = [
+            term1[ 0 ] + term2[ 0 ],
+            term1[ 1 ] + term2[ 1 ],
+          ];
       }
       else {
-          u_alpha=0
+          u_alpha= [ 0, 0 ]       // TODO: What about here?
       }
-      u_gamma = -C1_gamma*sigma_1(agent_p-[50,50]) -C2_gamma*(agent_q-0)
-      u = u_alpha+u_gamma
+
+      const sig = sigma_1( [ agent_p[ 0 ] - 50, agent_p[ 1 ] - 50 ] );
+
+      const u_gamma = [
+        -C1_gamma * sig[ 0 ] -C2_gamma * agent_q[ 0 ],
+        -C1_gamma * sig[ 1 ] -C2_gamma * agent_q[ 1 ]
+      ];
+      
+      agent[ 4 ] = u_alpha[ 0 ] + u_gamma[ 0 ];
+      agent[ 5 ] = u_alpha[ 1 ] + u_gamma[ 1 ];
+      
       // agent[ 4 ], agent[ 5 ]. Save as accel, apply later after all calculations done
     } );
 
     agents.forEach( agent => {
-      agent[ 2 ] += agent[ 4 ] * dt;
-      agent[ 3 ] += agent[ 5 ] * dt;
-      agent[ 0 ] += agent[ 2 ] * dt;
-      agent[ 1 ] += agent[ 3 ] * dt;
+      agent[ 2 ] += agent[ 4 ] * 0.1;
+      agent[ 3 ] += agent[ 5 ] * 0.1;
+      agent[ 0 ] += agent[ 2 ] * 0.1;
+      agent[ 1 ] += agent[ 3 ] * 0.1;
     } );
 
   };
@@ -166,7 +180,6 @@ const C1_alpha = 3;
     } );
   };
 
-  canvas.redraw();
-  canvas.update( 10 );
+  canvas.start();
 
 </script>
