@@ -9,11 +9,14 @@
   const SIZE = 100;
   const canvas = new Canvas();
 
-  // TODO: x,y dx,dy ddx,ddy
-  const agents = [
-    { p: [ 10, 10 ], q: [ 0, 0 ], u: [ 0, 0 ] },
-    { p: [ 15, 15 ], q: [ 0, 0 ], u: [ 0, 0 ] },
-  ];
+  // TODO: x,y dx,dy ddx,ddy?
+  const agents = Array.from( Array( 50 ), _ => [ Math.random() * 100, Math.random() * 100 ] ).map( pos => ( { p: pos, q: [ 0, 0 ], u: [ 0, 0 ] } ) );
+  //[
+  //  [ 10, 10 ], [ 15, 15 ], [ 15, 10 ], [ 10, 15 ],
+  //]
+
+  let targetX = 50, targetY = 50;
+  
 
   const Nt = 1000;
   const RANGE = 12;
@@ -130,7 +133,7 @@
           u_alpha= [ 0, 0 ]       // TODO: What about here?
       }
 
-      const sig = sigma_1( [ agent_p[ 0 ] - 50, agent_p[ 1 ] - 50 ] );
+      const sig = sigma_1( [ agent_p[ 0 ] - targetX, agent_p[ 1 ] - targetY ] );
 
       const u_gamma = [
         -C1_gamma * sig[ 0 ] -C2_gamma * agent_q[ 0 ],
@@ -164,5 +167,22 @@
   };
 
   canvas.start();
+
+  let mouseDown = false;
+
+  document.addEventListener( 'pointerdown', ( e ) => doMouse( e ) );
+  document.addEventListener( 'pointerup', _ => mouseDown = false );
+  document.addEventListener( 'pointermove', ( e ) => {
+    if ( mouseDown ) {
+      doMouse( e );
+    }
+  } );
+
+  function doMouse( e ) {
+    mouseDown = true;
+
+    targetX = SIZE * e.offsetX / canvas.scale;
+    targetY = SIZE * e.offsetY / canvas.scale;
+  }
 
 </script>
