@@ -17,18 +17,13 @@
 
   let targetX = 50, targetY = 50;
   
-
-  const Nt = 1000;
-  const RANGE = 12;
-  const DISTANCE = 10;
+  const RANGE = 6;
+  const DISTANCE = 6;
 
 
   const A = 5, B = 5;  // 0<A<=B 
   const C = Math.abs( A - B ) / Math.sqrt( 4 * A * B ); // phi
   const H = 0.2; // Bump function
-
-  // const RANGE = 12;
-  // const DISTANCE = 10;
 
   const EPSILON = 0.1;
 
@@ -95,6 +90,7 @@
       const agent_q = agent.q;
 
       // term1
+      // TODO: Should this be distance instead of range? What is the difference between distance and range?
       const neighbors = agents.filter( other => Math.hypot( other.p[ 0 ] - agent.p[ 0 ], other.p[ 1 ] - agent.p[ 1 ] ) <= RANGE );
       
       let u_alpha;
@@ -103,10 +99,9 @@
           const neighbors_p = neighbors.map( n => n.p );
           const neighbors_q = neighbors.map( n => n.q );
 
-          const offsets_p = neighbors_p.map( x => [ x[ 0 ] - agent_p[ 0 ], x[ 1 ] - agent_p[ 1 ] ] );
-          const n_ij = sigma_grad( offsets_p );
-
           const diff = neighbors_p.map( n => [ n[ 0 ] - agent_p[ 0 ], n[ 1 ] - agent_p[ 1 ] ] );
+          const n_ij = sigma_grad( diff );
+          
           const pasn = phi_alpha( sigma_norm( diff ) );
           const mult = pasn.map( ( x, index ) => [ x * n_ij[ index ][ 0 ], x * n_ij[ index ][ 1 ] ] );
 
@@ -116,7 +111,7 @@
 
           // term2
           const r_alpha = sigma_norm( [ [ RANGE ] ] );
-          const a_ij = bump_function( sigma_norm( offsets_p ).map( x => x / r_alpha ) );
+          const a_ij = bump_function( sigma_norm( diff ).map( x => x / r_alpha ) );
 
           const diff2 = neighbors_q.map( n => [ n[ 0 ] - agent_q[ 0 ], n[ 1 ] - agent_q[ 1 ] ] );
           const mult2 = diff2.map( ( x, index ) => [ x[ 0 ] * a_ij[ index ], x[ 1 ] * a_ij[ index ] ] );
