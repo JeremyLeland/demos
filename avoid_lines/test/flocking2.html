@@ -1,0 +1,168 @@
+<!-- Based on https://github.com/amirhosseinh77/Flocking-Multi-Agent -->
+
+<title>Flocking Multi Agent port</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from '../src/common/Canvas.js';
+
+  const SIZE = 100;
+  const canvas = new Canvas();
+
+  // TODO: x,y dx,dy ddx,ddy
+  const agents = [
+    { p: [ 10, 10 ], q: [ 0, 0 ], u: [ 0, 0 ] },
+    { p: [ 15, 15 ], q: [ 0, 0 ], u: [ 0, 0 ] },
+  ];
+
+  const Nt = 1000;
+  const RANGE = 12;
+  const DISTANCE = 10;
+
+
+  const A = 5, B = 5;  // 0<A<=B 
+  const C = Math.abs( A - B ) / Math.sqrt( 4 * A * B ); // phi
+  const H = 0.2; // Bump function
+
+  // const RANGE = 12;
+  // const DISTANCE = 10;
+
+  const EPSILON = 0.1;
+
+  function bump_function( z ) {
+    return z.map( x => {
+      if ( 0 <= x && x < H ) {
+        return 1;
+      }
+      else if ( H <= x && x <= 1 ) {
+        return ( 1 + Math.cos( Math.PI * ( x - H ) / ( 1 - H ) ) ) / 2; 
+      }
+      else {
+        return 0;
+      }
+    } );
+  }
+
+
+  function phi_alpha(z) {
+    const r_alpha = sigma_norm([[RANGE]]);
+    const d_alpha = sigma_norm([[DISTANCE]]);
+
+    const bump = bump_function( z.map( x => x / r_alpha ) );
+    
+    const zPlusC = z.map( x => x - d_alpha ).map( x => x + C );
+    const phi = sigma_1( zPlusC ).map( sigma => ( ( A + B ) * sigma + ( A - B ) ) / 2 );
+
+    return bump.map( ( b, index ) => b * phi[ index ] );
+  }
+
+  function sigma_1( z ) {
+    return z.map( x => x / Math.sqrt( 1 + x * x ) );
+  }
+
+  // Near as I can tell, this is this result of the linalg.norm bullshit below
+  // They do a square root, then square the result. The following avoids this.
+  // Is it actually faster than calling Math.pow( Math.hypot( ...val ), 2 )?
+  function norm( val ) {
+    return val.map( x => x * x ).reduce( ( a, b ) => a + b );
+  }
+
+  function sigma_norm( z ) {
+    return z.map( val =>
+      ( Math.sqrt( 1 + EPSILON * norm( val ) ) - 1 ) / EPSILON
+    );
+  }
+
+  function sigma_grad( z ) {
+    return z.map( val => 
+      val.map( x => x / Math.sqrt( 1 + EPSILON * norm( val ) ) )
+    );
+  }
+
+
+  const C1_alpha = 3;
+  const C2_alpha = 2 * Math.sqrt( C1_alpha );
+  const C1_gamma = 5;
+  const C2_gamma = 0.2 * Math.sqrt( C1_gamma );
+
+  canvas.update = ( dt ) => {
+
+    agents.forEach( agent => {
+      const agent_p = agent.p;
+      const agent_q = agent.q;
+
+      // term1
+      const neighbors = agents.filter( other => Math.hypot( other.p[ 0 ] - agent.p[ 0 ], other.p[ 1 ] - agent.p[ 1 ] ) <= RANGE );
+      
+      let u_alpha;
+
+      if ( neighbors.length > 1 ) {
+          const neighbors_p = neighbors.map( n => n.p );
+          const neighbors_q = neighbors.map( n => n.q );
+
+          const offsets_p = neighbors_p.map( x => [ x[ 0 ] - agent_p[ 0 ], x[ 1 ] - agent_p[ 1 ] ] );
+          const n_ij = sigma_grad( offsets_p );
+
+          const diff = neighbors_p.map( n => [ n[ 0 ] - agent_p[ 0 ], n[ 1 ] - agent_p[ 1 ] ] );
+          const pasn = phi_alpha( sigma_norm( diff ) );
+          const mult = pasn.map( ( x, index ) => [ x * n_ij[ index ][ 0 ], x * n_ij[ index ][ 1 ] ] );
+
+          const sum = mult.reduce( ( acc, x ) => [ acc[ 0 ] + x[ 0 ], acc[ 1 ] + x[ 1 ] ] );
+
+          const term1 = [ C2_alpha * sum[ 0 ], C2_alpha * sum[ 1 ] ];
+
+          // term2
+          const r_alpha = sigma_norm( [ [ RANGE ] ] );
+          const a_ij = bump_function( sigma_norm( offsets_p ).map( x => x / r_alpha ) );
+
+          const diff2 = neighbors_q.map( n => [ n[ 0 ] - agent_q[ 0 ], n[ 1 ] - agent_q[ 1 ] ] );
+          const mult2 = diff2.map( ( x, index ) => [ x[ 0 ] * a_ij[ index ], x[ 1 ] * a_ij[ index ] ] );
+          const sum2 = mult2.reduce( ( acc, x ) => [ acc[ 0 ] + x[ 0 ], acc[ 1 ] + x[ 1 ] ] );
+          const term2 = [ C2_alpha * sum2[ 0 ], C2_alpha * sum2[ 1 ] ];
+
+          // u_alpha
+          u_alpha = [
+            term1[ 0 ] + term2[ 0 ],
+            term1[ 1 ] + term2[ 1 ],
+          ];
+      }
+      else {
+          u_alpha= [ 0, 0 ]       // TODO: What about here?
+      }
+
+      const sig = sigma_1( [ agent_p[ 0 ] - 50, agent_p[ 1 ] - 50 ] );
+
+      const u_gamma = [
+        -C1_gamma * sig[ 0 ] -C2_gamma * agent_q[ 0 ],
+        -C1_gamma * sig[ 1 ] -C2_gamma * agent_q[ 1 ]
+      ];
+      
+      agent.u[ 0 ] = u_alpha[ 0 ] + u_gamma[ 0 ];
+      agent.u[ 1 ] = u_alpha[ 1 ] + u_gamma[ 1 ];
+    } );
+
+    const time = dt / 200;     // code needs to run in small time chunks, it seems
+
+    agents.forEach( agent => {
+      agent.q[ 0 ] += agent.u[ 0 ] * time;
+      agent.q[ 1 ] += agent.u[ 1 ] * time;
+      agent.p[ 0 ] += agent.q[ 0 ] * time;
+      agent.p[ 1 ] += agent.q[ 1 ] * time;
+    } );
+
+  };
+
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+
+    ctx.fillStyle = '#aaaa';
+    agents.forEach( agent => {
+      ctx.beginPath();
+      ctx.arc( agent.p[ 0 ], agent.p[ 1 ], 1, 0, Math.PI * 2 );
+      ctx.fill();
+    } );
+  };
+
+  canvas.start();
+
+</script>
