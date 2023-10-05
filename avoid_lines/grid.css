@@ -10,7 +10,7 @@ body {
   background-color: #222222;
   color: white;
 
-  --light: #aaa3;
+  --light: #6663;
 
   background-image: linear-gradient(   0deg, var( --light ) 1px, transparent 1px ), 
                     linear-gradient(  90deg, var( --light ) 1px, transparent 1px ),
