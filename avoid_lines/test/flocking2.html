@@ -109,18 +109,17 @@
 
         const sum = mult.reduce( ( acc, x ) => [ acc[ 0 ] + x[ 0 ], acc[ 1 ] + x[ 1 ] ] );
 
-        const term1 = [ C2_alpha * sum[ 0 ], C2_alpha * sum[ 1 ] ];
 
         // term2
         const diff2 = neighbors_q.map( n => [ n[ 0 ] - agent_q[ 0 ], n[ 1 ] - agent_q[ 1 ] ] );
         const mult2 = diff2.map( ( x, index ) => [ x[ 0 ] * bump[ index ], x[ 1 ] * bump[ index ] ] );
         const sum2 = mult2.reduce( ( acc, x ) => [ acc[ 0 ] + x[ 0 ], acc[ 1 ] + x[ 1 ] ] );
-        const term2 = [ C2_alpha * sum2[ 0 ], C2_alpha * sum2[ 1 ] ];
+
 
         // u_alpha
         u_alpha = [
-          term1[ 0 ] + term2[ 0 ],
-          term1[ 1 ] + term2[ 1 ],
+          C2_alpha * ( sum[ 0 ] + sum2[ 0 ] ),
+          C2_alpha * ( sum[ 1 ] + sum2[ 1 ] ),
         ];
       }
       else {
