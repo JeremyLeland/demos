@@ -1,4 +1,6 @@
-<!-- Based on https://github.com/amirhosseinh77/Flocking-Multi-Agent -->
+<!-- Confusing: https://github.com/amirhosseinh77/Flocking-Multi-Agent -->
+<!-- Clearer code: https://docs.ros.org/en/kinetic/api/olfati_saber_flocking/html/olfati__saber__flocking_8cpp_source.html -->
+<!-- Better documentation: https://github.com/zhubiii/mj-SaberFlocking/blob/main/src/algo1.py -->
 
 <title>Flocking Multi Agent port</title>
 <link rel="stylesheet" href="../grid.css">
@@ -39,23 +41,30 @@
     }
   }
 
-  function sigma_1( x ) {
-    return x / Math.sqrt( 1 + x * x );
+  function sigma_1( z ) {
+    return z / Math.sqrt( 1 + z * z );
   }
 
-  function sigma_norm( val ) {
-    return ( Math.sqrt( 1 + EPSILON * norm( val ) ) - 1 ) / EPSILON
+  function sqrtEpsilonVector( v ) {
+    return Math.sqrt( 1 + EPSILON * ( v[ 0 ] * v[ 0 ] + v[ 1 ] * v[ 1 ] ) );
   }
 
-  function sigma_grad( val ) {
-    return val.map( x => x / Math.sqrt( 1 + EPSILON * norm( val ) ) );
+  function sigma_norm( v ) {
+    return ( sqrtEpsilonVector( v ) - 1 ) / EPSILON;
   }
 
-  // Near as I can tell, this is this result of the linalg.norm bullshit below
-  // They do a square root, then square the result. The following avoids this.
-  // Is it actually faster than calling Math.pow( Math.hypot( ...val ), 2 )?
-  function norm( val ) {
-    return val.map( x => x * x ).reduce( ( a, b ) => a + b );
+  function sigma_grad( v ) {
+    return v.map( z => z / sqrtEpsilonVector( v ) );
+  }
+
+  function phi( z ) {
+    return 0.5 * ( ( A + B ) * sigma_1( z + C ) + A - B );
+  }
+
+  function rho( z ) {
+    if ( z < H )  return 1;
+    if ( z > 1 )  return 0;
+    return 0.5 * ( 1 + Math.cos( Math.PI * ( z - H ) / ( 1 - H ) ) );
   }
 
   // Alpha: Movement relative to neighbors?
@@ -80,13 +89,14 @@
         const n_ij = sigma_grad( diff );
         const sigNormDiff = sigma_norm( diff );
         
-        const r_alpha = sigma_norm( [ RANGE ] );
-        const d_alpha = sigma_norm( [ DISTANCE ] );
+        const r_alpha = sigma_norm( [ RANGE, 0 ] );
+        const d_alpha = sigma_norm( [ DISTANCE, 0 ] );
         
-        const bump = bumpFunc( sigNormDiff / r_alpha );
-        const phi = ( ( A + B ) * sigma_1( sigNormDiff - d_alpha + C ) + ( A - B ) ) / 2;
-        sum[ 0 ] += bump * ( phi * n_ij[ 0 ] + neighbor.q[ 0 ] - agent.q[ 0 ] );
-        sum[ 1 ] += bump * ( phi * n_ij[ 1 ] + neighbor.q[ 1 ] - agent.q[ 1 ] );
+        const bump = rho( sigNormDiff / r_alpha );
+        const phiVal = phi( sigNormDiff - d_alpha );
+        
+        sum[ 0 ] += bump * ( phiVal * n_ij[ 0 ] + neighbor.q[ 0 ] - agent.q[ 0 ] );
+        sum[ 1 ] += bump * ( phiVal * n_ij[ 1 ] + neighbor.q[ 1 ] - agent.q[ 1 ] );
       } );
       
       agent.u[ 0 ] = C2_alpha * sum[ 0 ] + -C1_gamma * sigma_1( agent.p[ 0 ] - targetX ) - C2_gamma * agent.q[ 0 ];
