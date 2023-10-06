@@ -73,7 +73,7 @@
       // TODO: Should this be distance instead of range? What is the difference between distance and range?
       const neighbors = agents.filter( other => Math.hypot( other.p[ 0 ] - agent.p[ 0 ], other.p[ 1 ] - agent.p[ 1 ] ) <= RANGE );
       
-      let sum = [ 0, 0 ], sum2 = [ 0, 0 ];
+      let sum = [ 0, 0 ];
 
       neighbors.forEach( neighbor => {
         const diff = [ neighbor.p[ 0 ] - agent.p[ 0 ], neighbor.p[ 1 ] - agent.p[ 1 ] ];
@@ -84,25 +84,13 @@
         const d_alpha = sigma_norm( [ DISTANCE ] );
         
         const bump = bumpFunc( sigNormDiff / r_alpha );
-        const pasn = bump * ( ( ( A + B ) * sigma_1( sigNormDiff - d_alpha + C ) + ( A - B ) ) / 2 );
-        sum[ 0 ] += pasn * n_ij[ 0 ];
-        sum[ 1 ] += pasn * n_ij[ 1 ];
-        sum2[ 0 ] += bump * ( neighbor.q[ 0 ] - agent.q[ 0 ] );
-        sum2[ 1 ] += bump * ( neighbor.q[ 1 ] - agent.q[ 1 ] );
+        const phi = ( ( A + B ) * sigma_1( sigNormDiff - d_alpha + C ) + ( A - B ) ) / 2;
+        sum[ 0 ] += bump * ( phi * n_ij[ 0 ] + neighbor.q[ 0 ] - agent.q[ 0 ] );
+        sum[ 1 ] += bump * ( phi * n_ij[ 1 ] + neighbor.q[ 1 ] - agent.q[ 1 ] );
       } );
-
-      const u_alpha = [
-        C2_alpha * ( sum[ 0 ] + sum2[ 0 ] ),
-        C2_alpha * ( sum[ 1 ] + sum2[ 1 ] ),
-      ];
-
-      const u_gamma = [
-        -C1_gamma * sigma_1( agent.p[ 0 ] - targetX ) - C2_gamma * agent.q[ 0 ],
-        -C1_gamma * sigma_1( agent.p[ 1 ] - targetY ) - C2_gamma * agent.q[ 1 ],
-      ];
       
-      agent.u[ 0 ] = u_alpha[ 0 ] + u_gamma[ 0 ];
-      agent.u[ 1 ] = u_alpha[ 1 ] + u_gamma[ 1 ];
+      agent.u[ 0 ] = C2_alpha * sum[ 0 ] + -C1_gamma * sigma_1( agent.p[ 0 ] - targetX ) - C2_gamma * agent.q[ 0 ];
+      agent.u[ 1 ] = C2_alpha * sum[ 1 ] + -C1_gamma * sigma_1( agent.p[ 1 ] - targetY ) - C2_gamma * agent.q[ 1 ];
     } );
 
     const time = dt / 200;     // code needs to run in small time chunks, it seems
