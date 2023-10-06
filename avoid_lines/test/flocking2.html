@@ -27,12 +27,28 @@
 
   const EPSILON = 0.1;
 
-  function sigma_1( z ) {
-    return z.map( x => x / Math.sqrt( 1 + x * x ) );
+  function bumpFunc( x ) {
+    if ( 0 <= x && x < H ) {
+      return 1;
+    }
+    else if ( H <= x && x <= 1 ) {
+      return ( 1 + Math.cos( Math.PI * ( x - H ) / ( 1 - H ) ) ) / 2; 
+    }
+    else {
+      return 0;
+    }
   }
 
-  function SINGLE_sigma_1( x ) {
+  function sigma_1( x ) {
     return x / Math.sqrt( 1 + x * x );
+  }
+
+  function sigma_norm( val ) {
+    return ( Math.sqrt( 1 + EPSILON * norm( val ) ) - 1 ) / EPSILON
+  }
+
+  function sigma_grad( val ) {
+    return val.map( x => x / Math.sqrt( 1 + EPSILON * norm( val ) ) );
   }
 
   // Near as I can tell, this is this result of the linalg.norm bullshit below
@@ -40,18 +56,6 @@
   // Is it actually faster than calling Math.pow( Math.hypot( ...val ), 2 )?
   function norm( val ) {
     return val.map( x => x * x ).reduce( ( a, b ) => a + b );
-  }
-
-  function sigma_norm( z ) {
-    return z.map( val =>
-      ( Math.sqrt( 1 + EPSILON * norm( val ) ) - 1 ) / EPSILON
-    );
-  }
-
-  function sigma_grad( z ) {
-    return z.map( val => 
-      val.map( x => x / Math.sqrt( 1 + EPSILON * norm( val ) ) )
-    );
   }
 
   // Alpha: Movement relative to neighbors?
@@ -65,70 +69,36 @@
   canvas.update = ( dt ) => {
 
     agents.forEach( agent => {
-      const agent_p = agent.p;
-      const agent_q = agent.q;
 
-      // term1
       // TODO: Should this be distance instead of range? What is the difference between distance and range?
       const neighbors = agents.filter( other => Math.hypot( other.p[ 0 ] - agent.p[ 0 ], other.p[ 1 ] - agent.p[ 1 ] ) <= RANGE );
       
-      let u_alpha;
+      let sum = [ 0, 0 ], sum2 = [ 0, 0 ];
 
-      // TODO: Make this a loop through neighbors and summing of terms (instead of making a big loop of diffs up front)
-
-      if ( neighbors.length > 1 ) {
-        const neighbors_p = neighbors.map( n => n.p );
-        const neighbors_q = neighbors.map( n => n.q );
-
-        const diff = neighbors_p.map( n => [ n[ 0 ] - agent_p[ 0 ], n[ 1 ] - agent_p[ 1 ] ] );
+      neighbors.forEach( neighbor => {
+        const diff = [ neighbor.p[ 0 ] - agent.p[ 0 ], neighbor.p[ 1 ] - agent.p[ 1 ] ];
         const n_ij = sigma_grad( diff );
-        
-        const r_alpha = sigma_norm( [ [ RANGE ] ] );
-        const d_alpha = sigma_norm( [ [ DISTANCE ] ] );
         const sigNormDiff = sigma_norm( diff );
         
-        const bump = sigNormDiff.map( val => {
-          const x = val / r_alpha;
-
-          if ( 0 <= x && x < H ) {
-            return 1;
-          }
-          else if ( H <= x && x <= 1 ) {
-            return ( 1 + Math.cos( Math.PI * ( x - H ) / ( 1 - H ) ) ) / 2; 
-          }
-          else {
-            return 0;
-          }
-        } );
+        const r_alpha = sigma_norm( [ RANGE ] );
+        const d_alpha = sigma_norm( [ DISTANCE ] );
         
-        const zPlusC = sigNormDiff.map( x => x - d_alpha + C );
-        const phi = sigma_1( zPlusC ).map( sigma => ( ( A + B ) * sigma + ( A - B ) ) / 2 );
+        const bump = bumpFunc( sigNormDiff / r_alpha );
+        const pasn = bump * ( ( ( A + B ) * sigma_1( sigNormDiff - d_alpha + C ) + ( A - B ) ) / 2 );
+        sum[ 0 ] += pasn * n_ij[ 0 ];
+        sum[ 1 ] += pasn * n_ij[ 1 ];
+        sum2[ 0 ] += bump * ( neighbor.q[ 0 ] - agent.q[ 0 ] );
+        sum2[ 1 ] += bump * ( neighbor.q[ 1 ] - agent.q[ 1 ] );
+      } );
 
-        const pasn = bump.map( ( b, index ) => b * phi[ index ] );
-        const mult = pasn.map( ( x, index ) => [ x * n_ij[ index ][ 0 ], x * n_ij[ index ][ 1 ] ] );
-
-        const sum = mult.reduce( ( acc, x ) => [ acc[ 0 ] + x[ 0 ], acc[ 1 ] + x[ 1 ] ] );
-
-
-        // term2
-        const diff2 = neighbors_q.map( n => [ n[ 0 ] - agent_q[ 0 ], n[ 1 ] - agent_q[ 1 ] ] );
-        const mult2 = diff2.map( ( x, index ) => [ x[ 0 ] * bump[ index ], x[ 1 ] * bump[ index ] ] );
-        const sum2 = mult2.reduce( ( acc, x ) => [ acc[ 0 ] + x[ 0 ], acc[ 1 ] + x[ 1 ] ] );
-
-
-        // u_alpha
-        u_alpha = [
-          C2_alpha * ( sum[ 0 ] + sum2[ 0 ] ),
-          C2_alpha * ( sum[ 1 ] + sum2[ 1 ] ),
-        ];
-      }
-      else {
-          u_alpha= [ 0, 0 ]       // TODO: What about here?
-      }
+      const u_alpha = [
+        C2_alpha * ( sum[ 0 ] + sum2[ 0 ] ),
+        C2_alpha * ( sum[ 1 ] + sum2[ 1 ] ),
+      ];
 
       const u_gamma = [
-        -C1_gamma * SINGLE_sigma_1( agent_p[ 0 ] - targetX ) - C2_gamma * agent_q[ 0 ],
-        -C1_gamma * SINGLE_sigma_1( agent_p[ 1 ] - targetY ) - C2_gamma * agent_q[ 1 ],
+        -C1_gamma * sigma_1( agent.p[ 0 ] - targetX ) - C2_gamma * agent.q[ 0 ],
+        -C1_gamma * sigma_1( agent.p[ 1 ] - targetY ) - C2_gamma * agent.q[ 1 ],
       ];
       
       agent.u[ 0 ] = u_alpha[ 0 ] + u_gamma[ 0 ];
