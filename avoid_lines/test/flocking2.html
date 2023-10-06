@@ -41,19 +41,6 @@
     } );
   }
 
-
-  function phi_alpha(z) {
-    const r_alpha = sigma_norm([[RANGE]]);
-    const d_alpha = sigma_norm([[DISTANCE]]);
-
-    const bump = bump_function( z.map( x => x / r_alpha ) );
-    
-    const zPlusC = z.map( x => x - d_alpha ).map( x => x + C );
-    const phi = sigma_1( zPlusC ).map( sigma => ( ( A + B ) * sigma + ( A - B ) ) / 2 );
-
-    return bump.map( ( b, index ) => b * phi[ index ] );
-  }
-
   function sigma_1( z ) {
     return z.map( x => x / Math.sqrt( 1 + x * x ) );
   }
@@ -96,33 +83,42 @@
       let u_alpha;
 
       if ( neighbors.length > 1 ) {
-          const neighbors_p = neighbors.map( n => n.p );
-          const neighbors_q = neighbors.map( n => n.q );
+        const neighbors_p = neighbors.map( n => n.p );
+        const neighbors_q = neighbors.map( n => n.q );
 
-          const diff = neighbors_p.map( n => [ n[ 0 ] - agent_p[ 0 ], n[ 1 ] - agent_p[ 1 ] ] );
-          const n_ij = sigma_grad( diff );
-          
-          const pasn = phi_alpha( sigma_norm( diff ) );
-          const mult = pasn.map( ( x, index ) => [ x * n_ij[ index ][ 0 ], x * n_ij[ index ][ 1 ] ] );
+        const diff = neighbors_p.map( n => [ n[ 0 ] - agent_p[ 0 ], n[ 1 ] - agent_p[ 1 ] ] );
+        const n_ij = sigma_grad( diff );
+        
+        const r_alpha = sigma_norm( [ [ RANGE ] ] );
+        const d_alpha = sigma_norm( [ [ DISTANCE ] ] );
+        const sigNormDiff = sigma_norm( diff );
+        
+        const bump = bump_function( sigNormDiff.map( x => x / r_alpha ) );
+        
+        const zPlusC = sigNormDiff.map( x => x - d_alpha + C );
+        const phi = sigma_1( zPlusC ).map( sigma => ( ( A + B ) * sigma + ( A - B ) ) / 2 );
 
-          const sum = mult.reduce( ( acc, x ) => [ acc[ 0 ] + x[ 0 ], acc[ 1 ] + x[ 1 ] ] );
+        const pasn = bump.map( ( b, index ) => b * phi[ index ] );
+        const mult = pasn.map( ( x, index ) => [ x * n_ij[ index ][ 0 ], x * n_ij[ index ][ 1 ] ] );
 
-          const term1 = [ C2_alpha * sum[ 0 ], C2_alpha * sum[ 1 ] ];
+        const sum = mult.reduce( ( acc, x ) => [ acc[ 0 ] + x[ 0 ], acc[ 1 ] + x[ 1 ] ] );
 
-          // term2
-          const r_alpha = sigma_norm( [ [ RANGE ] ] );
-          const a_ij = bump_function( sigma_norm( diff ).map( x => x / r_alpha ) );
+        const term1 = [ C2_alpha * sum[ 0 ], C2_alpha * sum[ 1 ] ];
 
-          const diff2 = neighbors_q.map( n => [ n[ 0 ] - agent_q[ 0 ], n[ 1 ] - agent_q[ 1 ] ] );
-          const mult2 = diff2.map( ( x, index ) => [ x[ 0 ] * a_ij[ index ], x[ 1 ] * a_ij[ index ] ] );
-          const sum2 = mult2.reduce( ( acc, x ) => [ acc[ 0 ] + x[ 0 ], acc[ 1 ] + x[ 1 ] ] );
-          const term2 = [ C2_alpha * sum2[ 0 ], C2_alpha * sum2[ 1 ] ];
+        // term2
+        // const r_alpha = sigma_norm( [ [ RANGE ] ] );
+        // const a_ij = bump_function( sigNormDiff.map( x => x / r_alpha ) );
 
-          // u_alpha
-          u_alpha = [
-            term1[ 0 ] + term2[ 0 ],
-            term1[ 1 ] + term2[ 1 ],
-          ];
+        const diff2 = neighbors_q.map( n => [ n[ 0 ] - agent_q[ 0 ], n[ 1 ] - agent_q[ 1 ] ] );
+        const mult2 = diff2.map( ( x, index ) => [ x[ 0 ] * bump[ index ], x[ 1 ] * bump[ index ] ] );
+        const sum2 = mult2.reduce( ( acc, x ) => [ acc[ 0 ] + x[ 0 ], acc[ 1 ] + x[ 1 ] ] );
+        const term2 = [ C2_alpha * sum2[ 0 ], C2_alpha * sum2[ 1 ] ];
+
+        // u_alpha
+        u_alpha = [
+          term1[ 0 ] + term2[ 0 ],
+          term1[ 1 ] + term2[ 1 ],
+        ];
       }
       else {
           u_alpha= [ 0, 0 ]       // TODO: What about here?
