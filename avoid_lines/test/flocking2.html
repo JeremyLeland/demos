@@ -27,20 +27,6 @@
 
   const EPSILON = 0.1;
 
-  function bump_function( z ) {
-    return z.map( x => {
-      if ( 0 <= x && x < H ) {
-        return 1;
-      }
-      else if ( H <= x && x <= 1 ) {
-        return ( 1 + Math.cos( Math.PI * ( x - H ) / ( 1 - H ) ) ) / 2; 
-      }
-      else {
-        return 0;
-      }
-    } );
-  }
-
   function sigma_1( z ) {
     return z.map( x => x / Math.sqrt( 1 + x * x ) );
   }
@@ -93,7 +79,19 @@
         const d_alpha = sigma_norm( [ [ DISTANCE ] ] );
         const sigNormDiff = sigma_norm( diff );
         
-        const bump = bump_function( sigNormDiff.map( x => x / r_alpha ) );
+        const bump = sigNormDiff.map( val => {
+          const x = val / r_alpha;
+
+          if ( 0 <= x && x < H ) {
+            return 1;
+          }
+          else if ( H <= x && x <= 1 ) {
+            return ( 1 + Math.cos( Math.PI * ( x - H ) / ( 1 - H ) ) ) / 2; 
+          }
+          else {
+            return 0;
+          }
+        } );
         
         const zPlusC = sigNormDiff.map( x => x - d_alpha + C );
         const phi = sigma_1( zPlusC ).map( sigma => ( ( A + B ) * sigma + ( A - B ) ) / 2 );
@@ -106,9 +104,6 @@
         const term1 = [ C2_alpha * sum[ 0 ], C2_alpha * sum[ 1 ] ];
 
         // term2
-        // const r_alpha = sigma_norm( [ [ RANGE ] ] );
-        // const a_ij = bump_function( sigNormDiff.map( x => x / r_alpha ) );
-
         const diff2 = neighbors_q.map( n => [ n[ 0 ] - agent_q[ 0 ], n[ 1 ] - agent_q[ 1 ] ] );
         const mult2 = diff2.map( ( x, index ) => [ x[ 0 ] * bump[ index ], x[ 1 ] * bump[ index ] ] );
         const sum2 = mult2.reduce( ( acc, x ) => [ acc[ 0 ] + x[ 0 ], acc[ 1 ] + x[ 1 ] ] );
