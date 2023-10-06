@@ -19,32 +19,15 @@
 
   let targetX = 50, targetY = 50;
   
-  const RANGE = 12;
-  const DISTANCE = 10;
+  const RANGE = 12;       // radius of FOV
+  const DISTANCE = 10;    // distance between agents
 
-
-  const A = 5, B = 5;  // 0<A<=B 
-  const C = Math.abs( A - B ) / Math.sqrt( 4 * A * B ); // phi
-  const H = 0.2; // Bump function
-
-  const EPSILON = 0.1;
-
-  function bumpFunc( x ) {
-    if ( 0 <= x && x < H ) {
-      return 1;
-    }
-    else if ( H <= x && x <= 1 ) {
-      return ( 1 + Math.cos( Math.PI * ( x - H ) / ( 1 - H ) ) ) / 2; 
-    }
-    else {
-      return 0;
-    }
-  }
 
   function sigma_1( z ) {
-    return z / Math.sqrt( 1 + z * z );
+    return z / Math.sqrt( 1 + z * z );    // TODO: Should epsilon go here as well?
   }
 
+  const EPSILON = 0.1;    // how smooth the function is
   function sqrtEpsilonVector( v ) {
     return Math.sqrt( 1 + EPSILON * ( v[ 0 ] * v[ 0 ] + v[ 1 ] * v[ 1 ] ) );
   }
@@ -57,10 +40,13 @@
     return v.map( z => z / sqrtEpsilonVector( v ) );
   }
 
+  const A = 5, B = 5;  // 0<A<=B 
+  const C = Math.abs( A - B ) / Math.sqrt( 4 * A * B );
   function phi( z ) {
     return 0.5 * ( ( A + B ) * sigma_1( z + C ) + A - B );
   }
 
+  const H = 0.2;
   function rho( z ) {
     if ( z < H )  return 1;
     if ( z > 1 )  return 0;
@@ -79,7 +65,6 @@
 
     agents.forEach( agent => {
 
-      // TODO: Should this be distance instead of range? What is the difference between distance and range?
       const neighbors = agents.filter( other => Math.hypot( other.p[ 0 ] - agent.p[ 0 ], other.p[ 1 ] - agent.p[ 1 ] ) <= RANGE );
       
       let sum = [ 0, 0 ];
@@ -94,13 +79,13 @@
         
         const bump = rho( sigNormDiff / r_alpha );
         const phiVal = phi( sigNormDiff - d_alpha );
-        
+
         sum[ 0 ] += bump * ( phiVal * n_ij[ 0 ] + neighbor.q[ 0 ] - agent.q[ 0 ] );
         sum[ 1 ] += bump * ( phiVal * n_ij[ 1 ] + neighbor.q[ 1 ] - agent.q[ 1 ] );
       } );
       
-      agent.u[ 0 ] = C2_alpha * sum[ 0 ] + -C1_gamma * sigma_1( agent.p[ 0 ] - targetX ) - C2_gamma * agent.q[ 0 ];
-      agent.u[ 1 ] = C2_alpha * sum[ 1 ] + -C1_gamma * sigma_1( agent.p[ 1 ] - targetY ) - C2_gamma * agent.q[ 1 ];
+      agent.u[ 0 ] = C2_alpha * sum[ 0 ] - C1_gamma * sigma_1( agent.p[ 0 ] - targetX ) - C2_gamma * agent.q[ 0 ];
+      agent.u[ 1 ] = C2_alpha * sum[ 1 ] - C1_gamma * sigma_1( agent.p[ 1 ] - targetY ) - C2_gamma * agent.q[ 1 ];
     } );
 
     const time = dt / 200;     // code needs to run in small time chunks, it seems
