@@ -17,8 +17,8 @@
 
   let targetX = 50, targetY = 50;
   
-  const RANGE = 6;
-  const DISTANCE = 6;
+  const RANGE = 12;
+  const DISTANCE = 10;
 
 
   const A = 5, B = 5;  // 0<A<=B 
@@ -29,6 +29,10 @@
 
   function sigma_1( z ) {
     return z.map( x => x / Math.sqrt( 1 + x * x ) );
+  }
+
+  function SINGLE_sigma_1( x ) {
+    return x / Math.sqrt( 1 + x * x );
   }
 
   // Near as I can tell, this is this result of the linalg.norm bullshit below
@@ -50,10 +54,12 @@
     );
   }
 
+  // Alpha: Movement relative to neighbors?
+  // Gamma: movement toward target?
 
-  const C1_alpha = 3;
+  const C1_alpha = 4;
   const C2_alpha = 2 * Math.sqrt( C1_alpha );
-  const C1_gamma = 5;
+  const C1_gamma = 4;
   const C2_gamma = 0.2 * Math.sqrt( C1_gamma );
 
   canvas.update = ( dt ) => {
@@ -67,6 +73,8 @@
       const neighbors = agents.filter( other => Math.hypot( other.p[ 0 ] - agent.p[ 0 ], other.p[ 1 ] - agent.p[ 1 ] ) <= RANGE );
       
       let u_alpha;
+
+      // TODO: Make this a loop through neighbors and summing of terms (instead of making a big loop of diffs up front)
 
       if ( neighbors.length > 1 ) {
         const neighbors_p = neighbors.map( n => n.p );
@@ -119,11 +127,9 @@
           u_alpha= [ 0, 0 ]       // TODO: What about here?
       }
 
-      const sig = sigma_1( [ agent_p[ 0 ] - targetX, agent_p[ 1 ] - targetY ] );
-
       const u_gamma = [
-        -C1_gamma * sig[ 0 ] -C2_gamma * agent_q[ 0 ],
-        -C1_gamma * sig[ 1 ] -C2_gamma * agent_q[ 1 ]
+        -C1_gamma * SINGLE_sigma_1( agent_p[ 0 ] - targetX ) - C2_gamma * agent_q[ 0 ],
+        -C1_gamma * SINGLE_sigma_1( agent_p[ 1 ] - targetY ) - C2_gamma * agent_q[ 1 ],
       ];
       
       agent.u[ 0 ] = u_alpha[ 0 ] + u_gamma[ 0 ];
