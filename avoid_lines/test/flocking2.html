@@ -29,6 +29,7 @@
   const agents = Array.from( Array( 50 ), _ => [ Math.random() * 100, Math.random() * 100 ] ).map( pos => ( { 
     p: pos, q: [ 0, 0 ], u: [ 0, 0 ],
     size: Math.random() * 4 + 1,
+    flocks: Math.random() < 0.75,
   } ) );
   //[
   //  [ 10, 10 ], [ 15, 15 ], [ 15, 10 ], [ 10, 15 ],
@@ -69,7 +70,7 @@
 
     const RANGE = 1.25 * Constants.Distance;
 
-    agents.forEach( agent => {
+    agents.filter( a => a.flocks ).forEach( agent => {
 
       const neighbors = agents.filter( other => Math.hypot( other.p[ 0 ] - agent.p[ 0 ], other.p[ 1 ] - agent.p[ 1 ] ) <= other.size + agent.size + RANGE );
       
@@ -119,8 +120,8 @@
   canvas.draw = ( ctx ) => {
     ctx.scale( 1 / SIZE, 1 / SIZE );
 
-    ctx.fillStyle = '#aaaa';
     agents.forEach( agent => {
+      ctx.fillStyle = agent.flocks ? '#aaaa' : '#842';
       ctx.beginPath();
       ctx.arc( agent.p[ 0 ], agent.p[ 1 ], agent.size, 0, Math.PI * 2 );
       ctx.fill();
