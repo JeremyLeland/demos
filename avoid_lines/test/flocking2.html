@@ -7,14 +7,28 @@
 
 <script type="module">
   import { Canvas } from '../src/common/Canvas.js';
+  import { ValuesPanel } from './ValuesPanel.js';
+
+  
+  // Alpha: Movement relative to neighbors?
+  // Gamma: movement toward target?
+  const Constants = {
+    Distance: 3.5,
+    C1_alpha: 4,
+    C2_alpha: 2,
+    C1_gamma: 4,
+    C2_gamma: 0.2,
+  };
 
   const SIZE = 100;
   const canvas = new Canvas();
 
+  new ValuesPanel( Constants );
+
   // TODO: x,y dx,dy ddx,ddy?
   const agents = Array.from( Array( 50 ), _ => [ Math.random() * 100, Math.random() * 100 ] ).map( pos => ( { 
     p: pos, q: [ 0, 0 ], u: [ 0, 0 ],
-    size: Math.random() * 2 + 1,
+    size: Math.random() * 4 + 1,
   } ) );
   //[
   //  [ 10, 10 ], [ 15, 15 ], [ 15, 10 ], [ 10, 15 ],
@@ -22,12 +36,9 @@
 
   let targetX = 50, targetY = 50;
   
-  const RANGE = 3;       // radius of FOV
-  const DISTANCE = 2;    // distance between agents
-
 
   function sigma_1( z ) {
-    return z / Math.sqrt( 1 + z * z );    // TODO: Should epsilon go here as well?
+    return z / Math.sqrt( 1 + z * z );
   }
 
   const EPSILON = 0.1;    // how smooth the function is
@@ -53,15 +64,10 @@
     return 0.5 * ( 1 + Math.cos( Math.PI * ( z - H ) / ( 1 - H ) ) );
   }
 
-  // Alpha: Movement relative to neighbors?
-  // Gamma: movement toward target?
-
-  const C1_alpha = 4;
-  const C2_alpha = 2 * Math.sqrt( C1_alpha );
-  const C1_gamma = 4;
-  const C2_gamma = 0.2 * Math.sqrt( C1_gamma );
 
   canvas.update = ( dt ) => {
+
+    const RANGE = 1.25 * Constants.Distance;
 
     agents.forEach( agent => {
 
@@ -75,7 +81,7 @@
         const sigNormDiff = sigma_norm( diff );
         
         const r_alpha = sigma_norm( [ RANGE + neighbor.size + agent.size, 0 ] );
-        const d_alpha = sigma_norm( [ DISTANCE + neighbor.size + agent.size, 0 ] );
+        const d_alpha = sigma_norm( [ Constants.Distance + neighbor.size + agent.size, 0 ] );
         
         const bump = rho( sigNormDiff / r_alpha );
         const phiVal = phi( sigNormDiff - d_alpha );
@@ -84,8 +90,8 @@
         sum[ 1 ] += bump * ( phiVal * n_ij[ 1 ] + neighbor.q[ 1 ] - agent.q[ 1 ] );
       } );
       
-      agent.u[ 0 ] = C2_alpha * sum[ 0 ] - C1_gamma * sigma_1( agent.p[ 0 ] - targetX ) - C2_gamma * agent.q[ 0 ];
-      agent.u[ 1 ] = C2_alpha * sum[ 1 ] - C1_gamma * sigma_1( agent.p[ 1 ] - targetY ) - C2_gamma * agent.q[ 1 ];
+      agent.u[ 0 ] = Constants.C2_alpha * sum[ 0 ] - Constants.C1_gamma * sigma_1( agent.p[ 0 ] - targetX ) - Constants.C2_gamma * agent.q[ 0 ];
+      agent.u[ 1 ] = Constants.C2_alpha * sum[ 1 ] - Constants.C1_gamma * sigma_1( agent.p[ 1 ] - targetY ) - Constants.C2_gamma * agent.q[ 1 ];
     } );
 
     const time = dt / 200;     // code needs to run in small time chunks, it seems
@@ -125,9 +131,9 @@
 
   let mouseDown = false;
 
-  document.addEventListener( 'pointerdown', ( e ) => doMouse( e ) );
-  document.addEventListener( 'pointerup', _ => mouseDown = false );
-  document.addEventListener( 'pointermove', ( e ) => {
+  canvas.canvas.addEventListener( 'pointerdown', ( e ) => doMouse( e ) );
+  canvas.canvas.addEventListener( 'pointerup', _ => mouseDown = false );
+  canvas.canvas.addEventListener( 'pointermove', ( e ) => {
     if ( mouseDown ) {
       doMouse( e );
     }
