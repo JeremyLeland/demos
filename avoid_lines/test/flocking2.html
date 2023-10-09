@@ -12,15 +12,18 @@
   const canvas = new Canvas();
 
   // TODO: x,y dx,dy ddx,ddy?
-  const agents = Array.from( Array( 50 ), _ => [ Math.random() * 100, Math.random() * 100 ] ).map( pos => ( { p: pos, q: [ 0, 0 ], u: [ 0, 0 ] } ) );
+  const agents = Array.from( Array( 50 ), _ => [ Math.random() * 100, Math.random() * 100 ] ).map( pos => ( { 
+    p: pos, q: [ 0, 0 ], u: [ 0, 0 ],
+    size: Math.random() * 2 + 1,
+  } ) );
   //[
   //  [ 10, 10 ], [ 15, 15 ], [ 15, 10 ], [ 10, 15 ],
   //]
 
   let targetX = 50, targetY = 50;
   
-  const RANGE = 12;       // radius of FOV
-  const DISTANCE = 10;    // distance between agents
+  const RANGE = 3;       // radius of FOV
+  const DISTANCE = 2;    // distance between agents
 
 
   function sigma_1( z ) {
@@ -28,16 +31,13 @@
   }
 
   const EPSILON = 0.1;    // how smooth the function is
-  function sqrtEpsilonVector( v ) {
-    return Math.sqrt( 1 + EPSILON * ( v[ 0 ] * v[ 0 ] + v[ 1 ] * v[ 1 ] ) );
-  }
 
   function sigma_norm( v ) {
-    return ( sqrtEpsilonVector( v ) - 1 ) / EPSILON;
+    return ( Math.sqrt( 1 + EPSILON * ( v[ 0 ] * v[ 0 ] + v[ 1 ] * v[ 1 ] ) ) - 1 ) / EPSILON;
   }
 
   function sigma_grad( v ) {
-    return v.map( z => z / sqrtEpsilonVector( v ) );
+    return v.map( z => z / Math.sqrt( 1 + EPSILON * ( v[ 0 ] * v[ 0 ] + v[ 1 ] * v[ 1 ] ) ) );
   }
 
   const A = 5, B = 5;  // 0<A<=B 
@@ -65,7 +65,7 @@
 
     agents.forEach( agent => {
 
-      const neighbors = agents.filter( other => Math.hypot( other.p[ 0 ] - agent.p[ 0 ], other.p[ 1 ] - agent.p[ 1 ] ) <= RANGE );
+      const neighbors = agents.filter( other => Math.hypot( other.p[ 0 ] - agent.p[ 0 ], other.p[ 1 ] - agent.p[ 1 ] ) <= other.size + agent.size + RANGE );
       
       let sum = [ 0, 0 ];
 
@@ -74,8 +74,8 @@
         const n_ij = sigma_grad( diff );
         const sigNormDiff = sigma_norm( diff );
         
-        const r_alpha = sigma_norm( [ RANGE, 0 ] );
-        const d_alpha = sigma_norm( [ DISTANCE, 0 ] );
+        const r_alpha = sigma_norm( [ RANGE + neighbor.size + agent.size, 0 ] );
+        const d_alpha = sigma_norm( [ DISTANCE + neighbor.size + agent.size, 0 ] );
         
         const bump = rho( sigNormDiff / r_alpha );
         const phiVal = phi( sigNormDiff - d_alpha );
@@ -93,6 +93,17 @@
     agents.forEach( agent => {
       agent.q[ 0 ] += agent.u[ 0 ] * time;
       agent.q[ 1 ] += agent.u[ 1 ] * time;
+
+      // NOTE: This didn't have as noticeable an effect as I thought
+      //       Maybe speed is already maintained by the C#_gamma variables above?
+      // const speed = Math.hypot( agent.q[ 0 ], agent.q[ 1 ] );
+      // const MAX_SPEED = 100;
+      // if ( speed > MAX_SPEED ) {
+      //   const slowRatio = MAX_SPEED / speed;
+      //   agent.q[ 0 ] *= slowRatio;
+      //   agent.q[ 1 ] *= slowRatio;
+      // }
+
       agent.p[ 0 ] += agent.q[ 0 ] * time;
       agent.p[ 1 ] += agent.q[ 1 ] * time;
     } );
@@ -105,7 +116,7 @@
     ctx.fillStyle = '#aaaa';
     agents.forEach( agent => {
       ctx.beginPath();
-      ctx.arc( agent.p[ 0 ], agent.p[ 1 ], 1, 0, Math.PI * 2 );
+      ctx.arc( agent.p[ 0 ], agent.p[ 1 ], agent.size, 0, Math.PI * 2 );
       ctx.fill();
     } );
   };
