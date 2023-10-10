@@ -1,0 +1,183 @@
+<!-- Confusing: https://github.com/amirhosseinh77/Flocking-Multi-Agent -->
+<!-- Clearer code: https://docs.ros.org/en/kinetic/api/olfati_saber_flocking/html/olfati__saber__flocking_8cpp_source.html -->
+<!-- Better documentation: https://github.com/zhubiii/mj-SaberFlocking/blob/main/src/algo1.py -->
+
+<title>Flocking Multi Agent port</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from '../src/common/Canvas.js';
+  import { ValuesPanel } from './ValuesPanel.js';
+
+  
+  // Alpha: Movement relative to neighbors?
+  // Gamma: movement toward target?
+  const Constants = {
+    Distance: 3.5,
+    A: 5,
+    B: 5,
+    H: 0.2,
+    C2_alpha: 0.1,
+    C1_gamma: 0.1,
+    C2_gamma: 0.4,
+  };
+
+  const SIZE = 100;
+  const canvas = new Canvas();
+
+  new ValuesPanel( Constants );
+
+  const agents = Array.from( Array( 50 ), _ => [ Math.random() * 100, Math.random() * 100 ] ).map( pos => ( { 
+    x: pos[ 0 ],
+    y: pos[ 1 ],
+    dx: 0,
+    dy: 0, 
+    ddx: 0,
+    ddy: 0,
+    size: 2,
+    flocks: Math.random() < 0.75,
+  } ) );
+  //[
+  //  [ 10, 10 ], [ 15, 15 ], [ 15, 10 ], [ 10, 15 ],
+  //]
+
+  let targetX = 50, targetY = 50;
+  
+
+  function sigma_1( z ) {
+    return z / Math.sqrt( 1 + z * z );
+  }
+
+  const EPSILON = 0.1;    // how smooth the function is
+
+  function sigma_norm( x, y ) {
+    return ( Math.sqrt( 1 + EPSILON * ( x * x + y * y ) ) - 1 ) / EPSILON;
+  }
+
+  // const A = 5, B = 5;  // 0<A<=B 
+  // const C = Math.abs( A - B ) / Math.sqrt( 4 * A * B );
+  function phi( z ) {
+    const A = Constants.A;
+    const B = Constants.B;
+    const C = Math.abs( A - B ) / Math.sqrt( 4 * A * B );
+    return 0.5 * ( ( A + B ) * sigma_1( z + C ) + A - B );
+  }
+
+  function rho( z ) {
+    const H = Constants.H;
+    if ( z < H )  return 1;
+    if ( z > 1 )  return 0;
+    return 0.5 * ( 1 + Math.cos( Math.PI * ( z - H ) / ( 1 - H ) ) );
+  }
+
+
+  canvas.update = ( dt ) => {
+
+    const RANGE = 1.25 * Constants.Distance;
+
+    agents.filter( a => a.flocks ).forEach( agent => {
+
+      const neighbors = agents.filter( other => Math.hypot( other.x - agent.x, other.y - agent.y ) <= other.size + agent.size + RANGE );
+      
+      let sumX = 0, sumY = 0;
+
+      neighbors.forEach( neighbor => {
+        const cx = neighbor.x - agent.x;
+        const cy = neighbor.y - agent.y;
+        
+        const sigNormDiff = sigma_norm( cx, cy );
+        const r_alpha = sigma_norm( RANGE + neighbor.size + agent.size, 0 );
+        const d_alpha = sigma_norm( Constants.Distance + neighbor.size + agent.size, 0 );
+        
+        const bump = rho( sigNormDiff / r_alpha );
+        const phiVal = phi( sigNormDiff - d_alpha );
+
+        const sigma_grad_denom = Math.sqrt( 1 + EPSILON * ( cx * cx + cy * cy ) );
+
+        sumX += bump * ( phiVal * cx / sigma_grad_denom + neighbor.dx - agent.dx );
+        sumY += bump * ( phiVal * cy / sigma_grad_denom + neighbor.dy - agent.dy );
+      } );
+
+      // sumX /= neighbors.length;
+      // sumY /= neighbors.length;
+      
+      // TODO: Account for braking time in target movement?
+      agent.ddx = Constants.C2_alpha * sumX - Constants.C1_gamma * sigma_1( agent.x - targetX ) - Constants.C2_gamma * agent.dx;
+      agent.ddy = Constants.C2_alpha * sumY - Constants.C1_gamma * sigma_1( agent.y - targetY ) - Constants.C2_gamma * agent.dy;
+
+      const accel = Math.hypot( agent.ddx, agent.ddy );
+      const MAX_ACCEL = 0.05;
+      if ( accel > MAX_ACCEL ) {
+        const slowRatio = MAX_ACCEL / accel;
+        agent.ddx *= slowRatio;
+        agent.ddy *= slowRatio;
+      }
+    } );
+
+    const time = dt / 20;     // code needs to run in small time chunks, it seems
+
+    agents.forEach( agent => {
+      agent.dx += agent.ddx * time;
+      agent.dy += agent.ddy * time;
+
+      const speed = Math.hypot( agent.dx, agent.dy );
+      const MAX_SPEED = 0.4;
+      if ( speed > MAX_SPEED ) {
+        const slowRatio = MAX_SPEED / speed;
+        agent.dx *= slowRatio;
+        agent.dy *= slowRatio;
+      }
+
+      agent.x += agent.dx * time;
+      agent.y += agent.dy * time;
+
+      // agent.dx *= 0.99;
+      // agent.dy *= 0.99;
+    } );
+
+  };
+
+  const body = new Path2D();
+  body.moveTo( -1, 0 );
+  body.arc( 0, 0, 1, -1, 1 );
+  body.closePath();
+
+  const circle = new Path2D();
+  circle.arc( 0, 0, 1, 0, Math.PI * 2 );
+
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+
+    agents.forEach( agent => {
+      ctx.save(); {
+        ctx.translate( agent.x, agent.y );
+        ctx.rotate( Math.atan2( agent.dy, agent.dx ) );
+        ctx.scale( agent.size, agent.size );
+
+        ctx.fillStyle = agent.flocks ? '#aaaa' : '#842';
+        ctx.fill( circle );
+      }
+      ctx.restore();
+    } );
+  };
+
+  canvas.start();
+
+  let mouseDown = false;
+
+  canvas.canvas.addEventListener( 'pointerdown', ( e ) => doMouse( e ) );
+  canvas.canvas.addEventListener( 'pointerup', _ => mouseDown = false );
+  canvas.canvas.addEventListener( 'pointermove', ( e ) => {
+    if ( mouseDown ) {
+      doMouse( e );
+    }
+  } );
+
+  function doMouse( e ) {
+    mouseDown = true;
+
+    targetX = SIZE * e.offsetX / canvas.scale;
+    targetY = SIZE * e.offsetY / canvas.scale;
+  }
+
+</script>
