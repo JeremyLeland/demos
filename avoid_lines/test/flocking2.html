@@ -111,15 +111,13 @@
       agent.dx += agent.ddx * time;
       agent.dy += agent.ddy * time;
 
-      // NOTE: This didn't have as noticeable an effect as I thought
-      //       Maybe speed is already maintained by the C#_gamma variables above?
-      // const speed = Math.hypot( agent.q[ 0 ], agent.q[ 1 ] );
-      // const MAX_SPEED = 100;
-      // if ( speed > MAX_SPEED ) {
-      //   const slowRatio = MAX_SPEED / speed;
-      //   agent.q[ 0 ] *= slowRatio;
-      //   agent.q[ 1 ] *= slowRatio;
-      // }
+      const speed = Math.hypot( agent.dx, agent.dy );
+      const MAX_SPEED = 4;
+      if ( speed > MAX_SPEED ) {
+        const slowRatio = MAX_SPEED / speed;
+        agent.dx *= slowRatio;
+        agent.dy *= slowRatio;
+      }
 
       agent.x += agent.dx * time;
       agent.y += agent.dy * time;
