@@ -16,11 +16,11 @@
     Distance: 3.5,
     A: 5,
     B: 5,   // 0<A<=B 
-    H: 0,   // having this zero cuts down on jittering when dt is closer to normal, why?
+    H: 0,   // having this zero cuts down on jittering when dt is closer to normal
     EPSILON: 0.1,   // how smooth the sigmoid functions are
-    C2_alpha: 0.04,   // having this below 0.05 cuts down on jittering when dt is closer to normal
-    C1_gamma: 0.04,
-    C2_gamma: 0.4,
+    C2_alpha: 4e-4,   // lowering this cuts down on jittering when dt is closer to normal
+    C1_gamma: 6e-4,
+    C2_gamma: 0.05,
   };
 
   const SIZE = 100;
@@ -35,12 +35,9 @@
     dy: 0, 
     ddx: 0,
     ddy: 0,
-    size: 2,
+    size: 2 + 2 * Math.random(),
     flocks: Math.random() < 0.75,
   } ) );
-  //[
-  //  [ 10, 10 ], [ 15, 15 ], [ 15, 10 ], [ 10, 15 ],
-  //]
 
   let targetX = 50, targetY = 50;
   
@@ -111,11 +108,9 @@
       // }
     } );
 
-    const time = dt / 10;     // code needs to run in small time chunks, it seems
-
     agents.forEach( agent => {
-      agent.dx += agent.ddx * time;
-      agent.dy += agent.ddy * time;
+      agent.dx += agent.ddx * dt;
+      agent.dy += agent.ddy * dt;
 
       // const speed = Math.hypot( agent.dx, agent.dy );
       // const MAX_SPEED = 0.4;
@@ -125,8 +120,8 @@
       //   agent.dy *= slowRatio;
       // }
 
-      agent.x += agent.dx * time;
-      agent.y += agent.dy * time;
+      agent.x += agent.dx * dt;
+      agent.y += agent.dy * dt;
 
       // agent.dx *= 0.99;
       // agent.dy *= 0.99;
