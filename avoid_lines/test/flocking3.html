@@ -16,7 +16,7 @@
     Distance: 3.5,
     A: 5,
     B: 5,   // 0<A<=B 
-    H: 0,   // having this zero cuts down on jittering when dt is closer to normal
+    H: 0.2,
     EPSILON: 0.1,   // how smooth the sigmoid functions are
     C2_alpha: 4e-4,   // lowering this cuts down on jittering when dt is closer to normal
     C1_gamma: 6e-4,
@@ -28,15 +28,16 @@
 
   new ValuesPanel( Constants );
 
-  const agents = Array.from( Array( 50 ), _ => [ Math.random() * 100, Math.random() * 100 ] ).map( pos => ( { 
-    x: pos[ 0 ],
-    y: pos[ 1 ],
+  const agents = Array.from( Array( 50 ), _ => ( { 
+    x: Math.random() * 100, 
+    y: Math.random() * 100, 
+    flocks: Math.random() < 0.75,
+  } ) ).map( e => Object.assign( e, { 
     dx: 0,
     dy: 0, 
     ddx: 0,
     ddy: 0,
-    size: 2 + 2 * Math.random(),
-    flocks: Math.random() < 0.75,
+    size: e.flocks ? 2 + Math.random() : 4 + 2 * Math.random(),
   } ) );
 
   let targetX = 50, targetY = 50;
@@ -129,9 +130,10 @@
 
   };
 
+  const BODY_ANGLE = 0.75;
   const body = new Path2D();
   body.moveTo( -1, 0 );
-  body.arc( 0, 0, 1, -1, 1 );
+  body.arc( 0, 0, 1, -BODY_ANGLE, BODY_ANGLE );
   body.closePath();
 
   const circle = new Path2D();
@@ -147,6 +149,7 @@
         ctx.scale( agent.size, agent.size );
 
         ctx.fillStyle = agent.flocks ? '#aaaa' : '#842';
+        // ctx.fill( agent.flocks ? body : circle );
         ctx.fill( circle );
       }
       ctx.restore();
