@@ -15,10 +15,11 @@
   const Constants = {
     Distance: 3.5,
     A: 5,
-    B: 5,
-    H: 0.2,
-    C2_alpha: 0.1,
-    C1_gamma: 0.1,
+    B: 5,   // 0<A<=B 
+    H: 0,   // having this zero cuts down on jittering when dt is closer to normal, why?
+    EPSILON: 0.1,   // how smooth the sigmoid functions are
+    C2_alpha: 0.04,   // having this below 0.05 cuts down on jittering when dt is closer to normal
+    C1_gamma: 0.04,
     C2_gamma: 0.4,
   };
 
@@ -48,14 +49,10 @@
     return z / Math.sqrt( 1 + z * z );
   }
 
-  const EPSILON = 0.1;    // how smooth the function is
-
   function sigma_norm( x, y ) {
-    return ( Math.sqrt( 1 + EPSILON * ( x * x + y * y ) ) - 1 ) / EPSILON;
+    return ( Math.sqrt( 1 + Constants.EPSILON * ( x * x + y * y ) ) - 1 ) / Constants.EPSILON;
   }
 
-  // const A = 5, B = 5;  // 0<A<=B 
-  // const C = Math.abs( A - B ) / Math.sqrt( 4 * A * B );
   function phi( z ) {
     const A = Constants.A;
     const B = Constants.B;
@@ -92,7 +89,7 @@
         const bump = rho( sigNormDiff / r_alpha );
         const phiVal = phi( sigNormDiff - d_alpha );
 
-        const sigma_grad_denom = Math.sqrt( 1 + EPSILON * ( cx * cx + cy * cy ) );
+        const sigma_grad_denom = Math.sqrt( 1 + Constants.EPSILON * ( cx * cx + cy * cy ) );
 
         sumX += bump * ( phiVal * cx / sigma_grad_denom + neighbor.dx - agent.dx );
         sumY += bump * ( phiVal * cy / sigma_grad_denom + neighbor.dy - agent.dy );
@@ -105,28 +102,28 @@
       agent.ddx = Constants.C2_alpha * sumX - Constants.C1_gamma * sigma_1( agent.x - targetX ) - Constants.C2_gamma * agent.dx;
       agent.ddy = Constants.C2_alpha * sumY - Constants.C1_gamma * sigma_1( agent.y - targetY ) - Constants.C2_gamma * agent.dy;
 
-      const accel = Math.hypot( agent.ddx, agent.ddy );
-      const MAX_ACCEL = 0.05;
-      if ( accel > MAX_ACCEL ) {
-        const slowRatio = MAX_ACCEL / accel;
-        agent.ddx *= slowRatio;
-        agent.ddy *= slowRatio;
-      }
+      // const accel = Math.hypot( agent.ddx, agent.ddy );
+      // const MAX_ACCEL = 0.05;
+      // if ( accel > MAX_ACCEL ) {
+      //   const slowRatio = MAX_ACCEL / accel;
+      //   agent.ddx *= slowRatio;
+      //   agent.ddy *= slowRatio;
+      // }
     } );
 
-    const time = dt / 20;     // code needs to run in small time chunks, it seems
+    const time = dt / 10;     // code needs to run in small time chunks, it seems
 
     agents.forEach( agent => {
       agent.dx += agent.ddx * time;
       agent.dy += agent.ddy * time;
 
-      const speed = Math.hypot( agent.dx, agent.dy );
-      const MAX_SPEED = 0.4;
-      if ( speed > MAX_SPEED ) {
-        const slowRatio = MAX_SPEED / speed;
-        agent.dx *= slowRatio;
-        agent.dy *= slowRatio;
-      }
+      // const speed = Math.hypot( agent.dx, agent.dy );
+      // const MAX_SPEED = 0.4;
+      // if ( speed > MAX_SPEED ) {
+      //   const slowRatio = MAX_SPEED / speed;
+      //   agent.dx *= slowRatio;
+      //   agent.dy *= slowRatio;
+      // }
 
       agent.x += agent.dx * time;
       agent.y += agent.dy * time;
