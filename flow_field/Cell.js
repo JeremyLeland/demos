@@ -97,7 +97,7 @@ export class Cell {
 
   draw( ctx, color = 'cyan' ) {
     ctx.beginPath();
-    ctx.arc( this.x, this.y, 0.1, 0, Math.PI * 2 );
+    ctx.arc( this.x, this.y, 1, 0, Math.PI * 2 );
     ctx.fillStyle = 'red';
     ctx.fill();
 
