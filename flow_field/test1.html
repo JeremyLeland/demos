@@ -1,0 +1,25 @@
+<title>Flocking Multi Agent port</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import * as CellGrid from './CellGrid.js';
+
+  const canvas = new Canvas();
+
+  const COLS = 6, ROWS = 6, SIZE = 100;
+
+  const cells = CellGrid.getSquareGrid( COLS, ROWS, 10, 0 );
+  cells.forEach( cell => cell.linkAll() );
+
+  [ 5, 9, 12, 14 ].forEach( e => cells[ e ].unlinkAll() );
+
+
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+
+    cells.forEach( cell => cell.draw( ctx ) );
+  };
+
+  canvas.redraw();
+</script>
