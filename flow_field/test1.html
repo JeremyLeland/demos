@@ -7,19 +7,35 @@
 
   const canvas = new Canvas();
 
-  const COLS = 6, ROWS = 6, SIZE = 100;
+  const COLS = 10, ROWS = 10, SIZE = 100;
 
   const cells = CellGrid.getSquareGrid( COLS, ROWS, 10, 0 );
   cells.forEach( cell => cell.linkAll() );
 
-  [ 5, 9, 12, 14 ].forEach( e => cells[ e ].unlinkAll() );
+  [ 15, 19, 22, 23, 24, 44, 45, 57, 58, 59 ].forEach( e => cells[ e ].unlinkAll() );
 
 
   canvas.draw = ( ctx ) => {
     ctx.scale( 1 / SIZE, 1 / SIZE );
 
+    const flowField = CellGrid.getFlowField( cells[ 33 ] );
+
     cells.forEach( cell => cell.draw( ctx ) );
+
+    cells.forEach( cell => {
+      const bestEdge = flowField.get( cell )?.edge;
+      if ( bestEdge ) {
+        ctx.beginPath();
+        ctx.moveTo( cell.x, cell.y );
+        
+        ctx.lineTo( ( bestEdge.x1 + bestEdge.x2 ) / 2, ( bestEdge.y1 + bestEdge.y2 ) / 2 );
+        ctx.strokeStyle = 'yellow';
+        ctx.stroke();
+      }
+    } );
+
   };
 
   canvas.redraw();
+
 </script>

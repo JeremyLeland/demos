@@ -191,3 +191,37 @@ function doEdge( edge ) {
     linkMaze( nextCell );
   }
 }
+
+// See: http://leifnode.com/2013/12/flow-field-pathfinding/
+export function getFlowField( target ) {
+  const bestEdge = new Map();
+
+  bestEdge.set( target, { edge: null, cost: 0 } );
+  const open = new Set( [ target ] );
+
+  while ( open.size > 0 ) {
+    const [ cell ] = open;
+    open.delete( cell );
+
+    const cellInfo = bestEdge.get( cell );
+
+    cell.edges.filter( e => e.linked ).forEach( edge => {
+      const neighborCell = edge.neighbor.parent;
+
+      if ( !bestEdge.has( neighborCell ) ) {
+        bestEdge.set( neighborCell, { edge: null, cost: Infinity } );
+      }
+      const neighborCellInfo = bestEdge.get( neighborCell );
+
+      const endNodeCost = cellInfo.cost + Math.hypot( cell.x - neighborCell.x, cell.y - neighborCell.y );
+
+      if ( endNodeCost < neighborCellInfo.cost ) {
+        open.add( neighborCell );
+        neighborCellInfo.edge = edge.neighbor;
+        neighborCellInfo.cost = endNodeCost;
+      }
+    } );
+  }
+
+  return bestEdge;
+}
