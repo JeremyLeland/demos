@@ -194,31 +194,32 @@ function doEdge( edge ) {
 
 // See: http://leifnode.com/2013/12/flow-field-pathfinding/
 export function getFlowField( target ) {
+  const bestCost = new Map();
   const bestEdge = new Map();
 
-  bestEdge.set( target, { edge: null, cost: 0 } );
+  bestCost.set( target, 0 );
+  bestEdge.set( target, null );
+
   const open = new Set( [ target ] );
 
   while ( open.size > 0 ) {
     const [ cell ] = open;
     open.delete( cell );
 
-    const cellInfo = bestEdge.get( cell );
-
     cell.edges.filter( e => e.linked ).forEach( edge => {
       const neighborCell = edge.neighbor.parent;
 
-      if ( !bestEdge.has( neighborCell ) ) {
-        bestEdge.set( neighborCell, { edge: null, cost: Infinity } );
+      if ( !bestCost.has( neighborCell ) ) {
+        bestCost.set( neighborCell, Infinity );
+        // bestEdge.set( neighborCell, null );
       }
-      const neighborCellInfo = bestEdge.get( neighborCell );
 
-      const endNodeCost = cellInfo.cost + Math.hypot( cell.x - neighborCell.x, cell.y - neighborCell.y );
+      const endNodeCost = bestCost.get( cell ) + Math.hypot( cell.x - neighborCell.x, cell.y - neighborCell.y );
 
-      if ( endNodeCost < neighborCellInfo.cost ) {
+      if ( endNodeCost < bestCost.get( neighborCell ) ) {
         open.add( neighborCell );
-        neighborCellInfo.edge = edge.neighbor;
-        neighborCellInfo.cost = endNodeCost;
+        bestCost.set( neighborCell, endNodeCost );
+        bestEdge.set( neighborCell, edge.neighbor );
       }
     } );
   }
