@@ -40,154 +40,154 @@ export function getSquareGrid( cols, rows, size = 1, offset = 0 ) {
   return cells;
 }
 
-export function getHexGrid( cols, rows, size = 64, offset = 0 ) {
-  const cellPoints = Array.from(
-    Array( cols * 2 + 1 ), ( _, col ) => Array.from(
-      Array( rows + 2 ), ( _, row ) => ( [
-        ( col + ( ( col + ( row + 1 ) % 2 ) % 2 ) * 0.3 ) * size + ( Math.random() - 0.5 ) * offset,
-        row * 0.6 * size + ( Math.random() - 0.5 ) * offset,
-      ] )
-    )
-  );
+// export function getHexGrid( cols, rows, size = 64, offset = 0 ) {
+//   const cellPoints = Array.from(
+//     Array( cols * 2 + 1 ), ( _, col ) => Array.from(
+//       Array( rows + 2 ), ( _, row ) => ( [
+//         ( col + ( ( col + ( row + 1 ) % 2 ) % 2 ) * 0.3 ) * size + ( Math.random() - 0.5 ) * offset,
+//         row * 0.6 * size + ( Math.random() - 0.5 ) * offset,
+//       ] )
+//     )
+//   );
 
-  const cellGrid = Array.from(
-    Array( cols ), ( _, col ) => Array.from(
-      Array( rows ), ( _, row ) => {
-        const c = col * 2 + ( row % 2 ), r = row;
-        return new Cell( [
-          cellPoints[ c ][ r ],
-          cellPoints[ c ][ r + 1 ],
-          cellPoints[ c ][ r + 2 ],
-          cellPoints[ c + 1 ][ r + 2 ],
-          cellPoints[ c + 1 ][ r + 1 ],
-          cellPoints[ c + 1 ][ r ],
-        ] );
-      }
-    )
-  );
+//   const cellGrid = Array.from(
+//     Array( cols ), ( _, col ) => Array.from(
+//       Array( rows ), ( _, row ) => {
+//         const c = col * 2 + ( row % 2 ), r = row;
+//         return new Cell( [
+//           cellPoints[ c ][ r ],
+//           cellPoints[ c ][ r + 1 ],
+//           cellPoints[ c ][ r + 2 ],
+//           cellPoints[ c + 1 ][ r + 2 ],
+//           cellPoints[ c + 1 ][ r + 1 ],
+//           cellPoints[ c + 1 ][ r ],
+//         ] );
+//       }
+//     )
+//   );
 
-  const cells = [];
+//   const cells = [];
 
-  for ( let row = 0; row < rows; row ++ ) {
-    for ( let col = 0; col < cols; col ++ ) {
-      const cell = cellGrid[ col ][ row ];
+//   for ( let row = 0; row < rows; row ++ ) {
+//     for ( let col = 0; col < cols; col ++ ) {
+//       const cell = cellGrid[ col ][ row ];
 
-      // TODO: Make these point to edges, not cells
-      if ( col > -1 * row % 2 ) {
-        if ( row > 0 )        cell.edges[ 0 ].neighbor = cellGrid[ col - 1 * ( row - 1 ) % 2 ][ row - 1 ];
-        if ( row < rows - 1 ) cell.edges[ 1 ].neighbor = cellGrid[ col - 1 * ( row + 1 ) % 2 ][ row + 1 ];
-      }
-      if ( row < rows - 2 )   cell.edges[ 2 ].neighbor = cellGrid[ col ][ row + 2 ];
-      if ( col < cols - 1 * row % 2 ) {
-        if ( row < rows - 1 ) cell.edges[ 3 ].neighbor = cellGrid[ col + 1 * row % 2 ][ row + 1 ];
-        if ( row > 0 )        cell.edges[ 4 ].neighbor = cellGrid[ col + 1 * row % 2 ][ row - 1 ];
-      }
-      if ( row > 1 )          cell.edges[ 5 ].neighbor = cellGrid[ col ][ row - 2 ];
+//       // TODO: Make these point to edges, not cells
+//       if ( col > -1 * row % 2 ) {
+//         if ( row > 0 )        cell.edges[ 0 ].neighbor = cellGrid[ col - 1 * ( row - 1 ) % 2 ][ row - 1 ];
+//         if ( row < rows - 1 ) cell.edges[ 1 ].neighbor = cellGrid[ col - 1 * ( row + 1 ) % 2 ][ row + 1 ];
+//       }
+//       if ( row < rows - 2 )   cell.edges[ 2 ].neighbor = cellGrid[ col ][ row + 2 ];
+//       if ( col < cols - 1 * row % 2 ) {
+//         if ( row < rows - 1 ) cell.edges[ 3 ].neighbor = cellGrid[ col + 1 * row % 2 ][ row + 1 ];
+//         if ( row > 0 )        cell.edges[ 4 ].neighbor = cellGrid[ col + 1 * row % 2 ][ row - 1 ];
+//       }
+//       if ( row > 1 )          cell.edges[ 5 ].neighbor = cellGrid[ col ][ row - 2 ];
 
-      cells.push( cell );
-    }
-  }
+//       cells.push( cell );
+//     }
+//   }
 
-  return cells;
-}
+//   return cells;
+// }
 
-export function getHexTriangleGrid( cols, rows, size = 64, offset = 32 ) {
-  const cellPoints = Array.from(
-    Array( cols + 1 ), ( _, col ) => Array.from(
-      Array( rows + 1 ), ( _, row ) => ( [
-        ( col + ( ( /*col +*/ ( row + 1 ) % 2 ) /*% 2*/ ) * 0.5 ) * size + ( Math.random() - 0.5 ) * offset,
-        row * size + ( Math.random() - 0.5 ) * offset,
-      ] )
-    )
-  );
+// export function getHexTriangleGrid( cols, rows, size = 64, offset = 32 ) {
+//   const cellPoints = Array.from(
+//     Array( cols + 1 ), ( _, col ) => Array.from(
+//       Array( rows + 1 ), ( _, row ) => ( [
+//         ( col + ( ( /*col +*/ ( row + 1 ) % 2 ) /*% 2*/ ) * 0.5 ) * size + ( Math.random() - 0.5 ) * offset,
+//         row * size + ( Math.random() - 0.5 ) * offset,
+//       ] )
+//     )
+//   );
 
-  const cellGrid = Array.from( Array( cols * 2 ), _ => Array.from( Array( rows ).fill() ) );
+//   const cellGrid = Array.from( Array( cols * 2 ), _ => Array.from( Array( rows ).fill() ) );
 
-  for ( let row = 0; row < rows; row ++ ) {
-    for ( let col = 0; col < cols; col ++ ) {
-      cellGrid[ col * 2 ][ row ] = new Cell( [
-        cellPoints[ col ][ row ],
-        cellPoints[ col ][ row + 1 ],
-        cellPoints[ col + 1 ][ row + 1 ],
-      ] );
-      cellGrid[ col * 2 + 1 ][ row ] = new Cell( [
-        cellPoints[ col ][ row ],
-        cellPoints[ col + 1 ][ row + 1 ],
-        cellPoints[ col + 1 ][ row ],
-      ] );
-    }
+//   for ( let row = 0; row < rows; row ++ ) {
+//     for ( let col = 0; col < cols; col ++ ) {
+//       cellGrid[ col * 2 ][ row ] = new Cell( [
+//         cellPoints[ col ][ row ],
+//         cellPoints[ col ][ row + 1 ],
+//         cellPoints[ col + 1 ][ row + 1 ],
+//       ] );
+//       cellGrid[ col * 2 + 1 ][ row ] = new Cell( [
+//         cellPoints[ col ][ row ],
+//         cellPoints[ col + 1 ][ row + 1 ],
+//         cellPoints[ col + 1 ][ row ],
+//       ] );
+//     }
     
-    row ++;
+//     row ++;
 
-    for ( let col = 0; col < cols; col ++ ) {
-      cellGrid[ col * 2 ][ row ] = new Cell( [
-        cellPoints[ col ][ row ],
-        cellPoints[ col ][ row + 1 ],
-        cellPoints[ col + 1 ][ row ],
-      ] );
-      cellGrid[ col * 2 + 1 ][ row ] = new Cell( [
-        cellPoints[ col + 1 ][ row ],
-        cellPoints[ col ][ row + 1 ],
-        cellPoints[ col + 1 ][ row + 1 ],
-      ] );
-    }
-  }
+//     for ( let col = 0; col < cols; col ++ ) {
+//       cellGrid[ col * 2 ][ row ] = new Cell( [
+//         cellPoints[ col ][ row ],
+//         cellPoints[ col ][ row + 1 ],
+//         cellPoints[ col + 1 ][ row ],
+//       ] );
+//       cellGrid[ col * 2 + 1 ][ row ] = new Cell( [
+//         cellPoints[ col + 1 ][ row ],
+//         cellPoints[ col ][ row + 1 ],
+//         cellPoints[ col + 1 ][ row + 1 ],
+//       ] );
+//     }
+//   }
 
-  const cells = [];
+//   const cells = [];
 
-  // TODO: Make these point to edges, not cells
-  for ( let row = 0; row < rows; row ++ ) {
-    for ( let col = 0; col < cols; col ++ ) {
-      let cell = cellGrid[ col * 2 ][ row ];
-      if ( col > 0 )    cell.edges[ 0 ].neighbor = cellGrid[ col * 2 - 1 ][ row ];
-      if ( row < rows ) cell.edges[ 1 ].neighbor = cellGrid[ col * 2 ][ row + 1 ];
-      if ( col < cols ) cell.edges[ 2 ].neighbor = cellGrid[ col * 2 + 1 ][ row ];
+//   // TODO: Make these point to edges, not cells
+//   for ( let row = 0; row < rows; row ++ ) {
+//     for ( let col = 0; col < cols; col ++ ) {
+//       let cell = cellGrid[ col * 2 ][ row ];
+//       if ( col > 0 )    cell.edges[ 0 ].neighbor = cellGrid[ col * 2 - 1 ][ row ];
+//       if ( row < rows ) cell.edges[ 1 ].neighbor = cellGrid[ col * 2 ][ row + 1 ];
+//       if ( col < cols ) cell.edges[ 2 ].neighbor = cellGrid[ col * 2 + 1 ][ row ];
 
-      cells.push( cell );
+//       cells.push( cell );
 
-      cell = cellGrid[ col * 2 + 1 ][ row ];
-                            cell.edges[ 0 ].neighbor = cellGrid[ col * 2 ][ row ];
-      if ( col < cols - 1 ) cell.edges[ 1 ].neighbor = cellGrid[ col * 2 + 2 ][ row ];
-      if ( row > 0 )        cell.edges[ 2 ].neighbor = cellGrid[ col * 2 + 1 ][ row - 1 ];
+//       cell = cellGrid[ col * 2 + 1 ][ row ];
+//                             cell.edges[ 0 ].neighbor = cellGrid[ col * 2 ][ row ];
+//       if ( col < cols - 1 ) cell.edges[ 1 ].neighbor = cellGrid[ col * 2 + 2 ][ row ];
+//       if ( row > 0 )        cell.edges[ 2 ].neighbor = cellGrid[ col * 2 + 1 ][ row - 1 ];
 
-      cells.push( cell );
-    }
+//       cells.push( cell );
+//     }
     
-    row ++;
+//     row ++;
 
-    for ( let col = 0; col < cols; col ++ ) {
-      let cell = cellGrid[ col * 2 ][ row ];
-      if ( col > 0 )    cell.edges[ 0 ].neighbor = cellGrid[ col * 2 - 1 ][ row ];
-      if ( col < cols ) cell.edges[ 1 ].neighbor = cellGrid[ col * 2 + 1 ][ row ];
-      if ( row > 0 )    cell.edges[ 2 ].neighbor = cellGrid[ col * 2 ][ row - 1 ];
+//     for ( let col = 0; col < cols; col ++ ) {
+//       let cell = cellGrid[ col * 2 ][ row ];
+//       if ( col > 0 )    cell.edges[ 0 ].neighbor = cellGrid[ col * 2 - 1 ][ row ];
+//       if ( col < cols ) cell.edges[ 1 ].neighbor = cellGrid[ col * 2 + 1 ][ row ];
+//       if ( row > 0 )    cell.edges[ 2 ].neighbor = cellGrid[ col * 2 ][ row - 1 ];
 
-      cells.push( cell );
+//       cells.push( cell );
 
-      cell = cellGrid[ col * 2 + 1 ][ row ];
-                            cell.edges[ 0 ].neighbor = cellGrid[ col * 2 ][ row ];
-      if ( row < rows - 1 ) cell.edges[ 1 ].neighbor = cellGrid[ col * 2 + 1 ][ row + 1 ];
-      if ( col < cols - 1 ) cell.edges[ 2 ].neighbor = cellGrid[ col * 2 + 2 ][ row ];
+//       cell = cellGrid[ col * 2 + 1 ][ row ];
+//                             cell.edges[ 0 ].neighbor = cellGrid[ col * 2 ][ row ];
+//       if ( row < rows - 1 ) cell.edges[ 1 ].neighbor = cellGrid[ col * 2 + 1 ][ row + 1 ];
+//       if ( col < cols - 1 ) cell.edges[ 2 ].neighbor = cellGrid[ col * 2 + 2 ][ row ];
 
-      cells.push( cell );
-    }
-  }
+//       cells.push( cell );
+//     }
+//   }
 
-  return cells;
-}
+//   return cells;
+// }
 
-export function fromPoints( points, holes ) {
-  const contour = points.map( p => new poly2tri.Point( p[ 0 ], p[ 1 ] ) );
+export function fromPoints( pointArrays ) {
+  const contour = pointArrays[ 0 ].map( p => new poly2tri.Point( ...p ) );
   const swctx = new poly2tri.SweepContext( contour );
 
-  holes?.forEach( holePoints => {
-    const hole = holePoints.map( p => new poly2tri.Point( p[ 0 ], p[ 1 ] ) );
+  for ( let i = 1; i < pointArrays.length; i ++ ) { 
+    const hole = pointArrays[ i ].map( p => new poly2tri.Point( ...p ) );
     swctx.addHole( hole );
-  } );
+  }
 
   swctx.triangulate();
   const triangles = swctx.getTriangles();
 
-  const cells = [];
+  let cells = [];
 
   triangles.forEach( triangle => {
     const [ a, b, c ] = triangle.getPoints();
@@ -215,6 +215,26 @@ export function fromPoints( points, holes ) {
     } );
   } );
 
+  cells.forEach( cell => cell.linkAll() );
+
+  //
+  // Merge triangles into convex shapes
+  //
+  console.log( `${ cells.length } cells before merge` );
+
+  cells.forEach( cell => {
+    for ( let i = 0; i < cell.edges?.length; i ++ ) {
+      if ( cell.isConvexEdge( i ) ) {
+        cell.merge( i );
+        i = -1;   // start this cell over
+      }
+    }
+  } );
+
+  cells = cells.filter( c => c.edges );   // remove edge-less cells
+
+  console.log( `${ cells.length } cells after merge` );
+
   return cells;
 }
 
@@ -236,8 +256,14 @@ function doEdge( edge ) {
   }
 }
 
+export function getFlowMap( cells ) {
+  const flowMap = new Map();
+  cells.forEach( cell => flowMap.set( cell, getFlowField( cell ) ) );
+  return flowMap;
+}
+
 // See: http://leifnode.com/2013/12/flow-field-pathfinding/
-export function getFlowField( target ) {
+function getFlowField( target ) {
   const bestCost = new Map();
   const bestEdge = new Map();
 
