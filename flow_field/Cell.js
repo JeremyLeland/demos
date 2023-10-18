@@ -53,35 +53,22 @@ export class Cell {
   //   return false;
   // }
 
-  // merge( index ) {
-  //   const other = this.links[ index ];
-  //   other.links.forEach( ( otherLink, i ) => {
-  //     if ( otherLink == this ) {
-  //       const extract = ( arr ) => arr.slice( i + 1 ).concat( arr.slice( 0, i ) );
+  merge( index ) {
+    const other = this.edges[ index ].neighbor?.parent;
 
-  //       this.edges.splice( index, 1, ...extract( other.edges ) );
-  //       this.links.splice( index, 1, ...extract( other.links ) );
+    if ( other ) {
+      const otherIndex = other.edges.findIndex( e => e.neighbor?.parent == this );
+      const otherEdges = other.edges.slice( otherIndex + 1 ).concat( other.edges.slice( 0, otherIndex ) );  
+      
+      this.edges.splice( index, 1, ...otherEdges );
+      otherEdges.forEach( e => e.parent = this );
 
-  //       this.#updateCenter();
-  //     }
-  //     // Update other linked cells to point to us
-  //     else if ( otherLink ) {
-  //       const neighborLinkIndex = otherLink.links.findIndex( l => l == other );
-  //       otherLink.links[ neighborLinkIndex ] = this;
-  //     }
-  //   } );
-  // }
+      other.edges = null;
+
+      this.#updateCenter();
+    }
+  }
   
-
-  // unlink( index ) {
-  //   const other = this.links[ index ];
-  //   if ( other ) {
-  //     const otherIndex = other.links.findIndex( link => link == this );
-  //     other.links[ otherIndex ] = null;
-  //   }
-
-  //   this.links[ index ] = null;
-  // }
 
   linkAll() {
     this.edges.filter( e => e.neighbor ).forEach( edge =>
