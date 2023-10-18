@@ -1,0 +1,70 @@
+<title>Flowmaps for non-grid maps</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import * as CellGrid from './CellGrid.js';
+
+  // TODO: Load up a more interesting map and create CellMap from triangulation
+  //       We should have existing code for most of this...
+
+  const canvas = new Canvas();
+
+  const COLS = 10, ROWS = 10, SIZE = 100;
+
+  const cells = CellGrid.fromPoints( 
+    [ [ 10, 10 ], [ 40, 10 ], [ 75, 20 ], [ 70, 40 ], [ 100, 70 ], [ 90, 80 ], [ 45, 70 ], [ 32, 40 ], [ 10, 30 ] ],
+    [
+      [ [ 20, 20 ], [ 20, 26 ], [ 26, 26 ], [ 26, 20 ] ],
+      [ [ 60, 50 ], [ 50, 55 ], [ 60, 60 ], [ 70, 55 ] ],
+    ]
+  );
+  cells.forEach( cell => cell.linkAll() );
+
+  // [ 15, 19, 22, 23, 24, 25, 35, 44, 45, 57, 58, 59, 71, 72, 73, 77, 87, 88 ].forEach( e => cells[ e ].unlinkAll() );
+
+  const flowMap = new Map();
+  cells.forEach( cell => flowMap.set( cell, CellGrid.getFlowField( cell ) ) );
+
+  let targetCell = cells[ 0 ];
+
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 2 * SIZE / canvas.scale;
+
+    cells.forEach( cell => cell.draw( ctx ) );
+
+    cells.filter( c => c.edges.find( e => e.linked ) ).forEach( cell => cell.draw( ctx ) );
+
+    if ( targetCell ) {
+      const flowField = flowMap.get( targetCell );
+      
+      cells.forEach( cell => {
+        const bestEdge = flowField.get( cell );
+        if ( bestEdge ) {
+          ctx.beginPath();
+          ctx.moveTo( cell.x, cell.y );
+          
+          ctx.lineTo( ( bestEdge.x1 + bestEdge.x2 ) / 2, ( bestEdge.y1 + bestEdge.y2 ) / 2 );
+          ctx.strokeStyle = 'yellow';
+          ctx.stroke();
+        }
+      } );
+    }
+    
+  };
+
+  canvas.redraw();
+
+  canvas.canvas.addEventListener( 'pointermove', ( e ) => {
+    const x = SIZE * e.offsetX / canvas.scale;
+    const y = SIZE * e.offsetY / canvas.scale;
+
+    const lastTarget = targetCell;
+    targetCell = cells.find( c => c.contains( x, y ) );
+    if ( targetCell && lastTarget != targetCell ) {
+      canvas.redraw();
+    }
+  } );
+
+</script>

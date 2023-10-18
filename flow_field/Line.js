@@ -20,7 +20,7 @@ export class Line {
     const normalX = Math.cos( normalAngle );
     const normalY = Math.sin( normalAngle );
 
-    const NORM_LEN = 0.5;
+    const NORM_LEN = 2;
     ctx.beginPath();
     ctx.moveTo( midX, midY );
     ctx.lineTo( midX + normalX * NORM_LEN, midY + normalY * NORM_LEN );
@@ -126,5 +126,9 @@ export class Line {
       angle:    Math.atan2( y - Ay, x - Ax ),
       distance: Math.hypot( x - Ax, y - Ay ),
     };
+  }
+
+  isOutsideOfPoint( x, y ) {
+    return ( x - this.x1 ) * ( this.y1 - this.y2 ) + ( y - this.y1 ) * ( this.x2 - this.x1 ) < 0;
   }
 }

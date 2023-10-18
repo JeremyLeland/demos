@@ -32,7 +32,7 @@ export class Cell {
   }
 
   contains( x, y ) {
-    return this.edges.every( edge => edge.distanceTo( x, y ) > 0 );
+    return this.edges.every( edge => edge.isOutsideOfPoint( x, y ) );
   }
 
   // isConvexEdge( index ) {

@@ -1,4 +1,5 @@
 import { Cell } from './Cell.js';
+import './lib/poly2tri.js';
 
 export function getSquareGrid( cols, rows, size = 1, offset = 0 ) {
   const cellPoints = Array.from(
@@ -170,6 +171,49 @@ export function getHexTriangleGrid( cols, rows, size = 64, offset = 32 ) {
       cells.push( cell );
     }
   }
+
+  return cells;
+}
+
+export function fromPoints( points, holes ) {
+  const contour = points.map( p => new poly2tri.Point( p[ 0 ], p[ 1 ] ) );
+  const swctx = new poly2tri.SweepContext( contour );
+
+  holes?.forEach( holePoints => {
+    const hole = holePoints.map( p => new poly2tri.Point( p[ 0 ], p[ 1 ] ) );
+    swctx.addHole( hole );
+  } );
+
+  swctx.triangulate();
+  const triangles = swctx.getTriangles();
+
+  const cells = [];
+
+  triangles.forEach( triangle => {
+    const [ a, b, c ] = triangle.getPoints();
+
+    // Altering order so normals point inward
+    const cell = new Cell( [ [ b.x, b.y ], [ a.x, a.y ], [ c.x, c.y ] ] );
+
+    triangle.cell = cell;
+
+    cells.push( cell );
+  } );
+
+  triangles.forEach( triangle => {
+    triangle.cell.edges.forEach( ( edge, index ) => {
+      // Account for reverse edge order due to above
+      const neighbor = triangle.getNeighbor( 2 - index );
+      if ( neighbor?.cell ) {
+        for ( let i = 0; i < 3; i ++ ) {
+          const neighborNeighbor = neighbor.getNeighbor( 2 - i );
+          if ( neighborNeighbor == triangle ) {
+            edge.neighbor = neighbor.cell.edges[ i ];
+          }
+        }
+      }
+    } );
+  } );
 
   return cells;
 }
