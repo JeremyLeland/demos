@@ -35,23 +35,31 @@ export class Cell {
     return this.edges.every( edge => edge.isOutsideOfPoint( x, y ) );
   }
 
-  // isConvexEdge( index ) {
-  //   const other = this.links[ index ];
-  //   if ( other ) {
-  //     const otherIndex = other.links.findIndex( l => l == this );
+  isConvexEdge( index ) {
+    const other = this.edges[ index ].neighbor?.parent;
 
-  //     const thisBeforeEdgeStart = this.edges.at( index - 1 ).slope.angle;
-  //     const otherAfterEdgeStart = other.edges[ ( otherIndex + 1 ) % other.edges.length ].slope.angle;
+    if ( other ) {
+      const otherIndex = other.edges.findIndex( e => e.neighbor?.parent == this );
 
-  //     const otherBeforeEdgeEnd = other.edges.at( otherIndex - 1 ).slope.angle;
-  //     const thisAfterEdgeEnd = this.edges[ ( index + 1 ) % this.edges.length ].slope.angle;
+      const thisBeforeEdgeStart = this.edges.at( index - 1 );
+      const otherAfterEdgeStart = other.edges.at( ( otherIndex + 1 ) % other.edges.length );
 
-  //     return ( Math.PI + deltaAngle( thisBeforeEdgeStart, otherAfterEdgeStart ) < Math.PI && 
-  //              Math.PI + deltaAngle( otherBeforeEdgeEnd,  thisAfterEdgeEnd    ) < Math.PI );
-  //   }
+      const otherBeforeEdgeEnd = other.edges.at( otherIndex - 1 );
+      const thisAfterEdgeEnd = this.edges.at( ( index + 1 ) % this.edges.length );
 
-  //   return false;
-  // }
+      const startConvex = !Line.pointInsideLine( 
+        thisBeforeEdgeStart.x2, thisBeforeEdgeStart.y2,
+        thisBeforeEdgeStart.x1, thisBeforeEdgeStart.y1, otherAfterEdgeStart.x2, otherAfterEdgeStart.y2
+      );
+
+      const endConvex = !Line.pointInsideLine( 
+        thisAfterEdgeEnd.x1, thisAfterEdgeEnd.y1,
+        otherBeforeEdgeEnd.x1, otherBeforeEdgeEnd.y1, thisAfterEdgeEnd.x2, thisAfterEdgeEnd.y2,
+      );
+
+      return startConvex && endConvex;
+    }
+  }
 
   merge( index ) {
     const other = this.edges[ index ].neighbor?.parent;

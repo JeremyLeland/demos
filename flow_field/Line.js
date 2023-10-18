@@ -108,6 +108,10 @@ export class Line {
     }
   }
 
+  static pointInsideLine( x, y, x1, y1, x2, y2 ) {
+    return ( x - x1 ) * ( y1 - y2 ) + ( y - y1 ) * ( x2 - x1 ) < 0;
+  }
+
   // Based on: https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
   // See also: http://paulbourke.net/geometry/pointlineplane/
   getClosestPoint( x, y ) {
@@ -129,6 +133,6 @@ export class Line {
   }
 
   isOutsideOfPoint( x, y ) {
-    return ( x - this.x1 ) * ( this.y1 - this.y2 ) + ( y - this.y1 ) * ( this.x2 - this.x1 ) < 0;
+    return Line.pointInsideLine( x, y, this.x1, this.y1, this.x2, this.y2 );
   }
 }
