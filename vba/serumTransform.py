@@ -5,7 +5,7 @@ analyte_replace = {
   '(': '', 
   ')': '', 
   '/': '_to_',
-  'non-afr.': 'non_african'
+  'non-afr.': 'non_african',
 }
 
 units_replace = {
@@ -13,10 +13,11 @@ units_replace = {
   'mL/min/1.73m2': 'milliliter_per_minute_per_1.73_meter_squared',
   'mmol/L': 'millimol_per_liter',
   'g/dL': 'gram_per_deciliter',
-  'U/L': 'units_per_liter'
+  'U/L': 'units_per_liter',
+  '(calc)': '',
 }
 
-column_names = set()
+analytes = {}
 values = {}
 
 with open( 'C:\\Users\\iggam\\Downloads\\serum\\CMP.upload_SUBMITTED.csv' ) as csv_file:
@@ -41,19 +42,28 @@ with open( 'C:\\Users\\iggam\\Downloads\\serum\\CMP.upload_SUBMITTED.csv' ) as c
       for before, after in units_replace.items():
         units = units.replace( before, after )
       
-      column_names.add( f'{ analyte }_value_{ units }' )
-      column_names.add( f'{ analyte }_range_min_{ units }' )
-      column_names.add( f'{ analyte }_range_max_{ units }' )
+      # Avoid dangling '_' if units is empty
+      if ( units != '' ):
+        units = '_' + units
+      
+      analytes.setdefault( analyte, {} )    # using dictionary of None to preserve insertion order
+      analytes[ analyte ][ '_value' + units ] = None
+      analytes[ analyte ][ '_range_min' + units ] = None
+      analytes[ analyte ][ '_range_max' + units ] = None
 
       values.setdefault( sample_name, {} )
-      values[ sample_name ][ f'{ analyte }_value_{ units }' ] = row[ 'VALUE' ]
-      values[ sample_name ][ f'{ analyte }_range_min_{ units }' ] = row[ 'RANGE_MIN' ]
-      values[ sample_name ][ f'{ analyte }_range_max_{ units }' ] = row[ 'RANGE_MAX' ]
+      values[ sample_name ][ f'{ analyte }_value{ units }' ] = row[ 'VALUE' ]
+      values[ sample_name ][ f'{ analyte }_range_min{ units }' ] = row[ 'RANGE_MIN' ]
+      values[ sample_name ][ f'{ analyte }_range_max{ units }' ] = row[ 'RANGE_MAX' ]
 
-# TODO: This gives us max, min, (...potentially other analytes...), value
-# Group these by analyte somehow? we want value, min, max
+fieldnames = [ 'Sample Name' ]
+for analyte in sorted( analytes.keys() ):
+  for rest_of_column in analytes[ analyte ].keys():
+    fieldnames.append( analyte + rest_of_column )
+  
+print( fieldnames )
 
-fieldnames = [ 'Sample Name' ] + sorted( list( column_names ) )
+# TODO: Modify input filename (NOT PATH) to replace TRANSFORMED, etc
 
 with open( 'transformed.csv', mode='w', newline='' ) as csv_file:
   writer = csv.DictWriter( csv_file, fieldnames = fieldnames )
