@@ -8,12 +8,15 @@
 
   const canvas = new Canvas();
 
-  const COLS = 10, ROWS = 10, SIZE = 100;
+  const COLS = 10, ROWS = 10, SIZE = 10;
 
-  const points = Array.from( Array( 100 ), _ => ( {
-    x: Math.random() * SIZE,
-    y: Math.random() * SIZE,
-  } ) );
+  const points = [];
+  for ( let i = 0; i < 100; i ++ ) {
+    points.push( { 
+      x: Math.random() * SIZE,
+      y: Math.random() * SIZE,
+    } );
+  }
 
   const bbox = { xl: 0, xr: SIZE, yt: 0, yb: SIZE };
 
@@ -21,10 +24,36 @@
 
   const diagram = voronoi.compute( points, bbox );
 
+  function relax( diagram, times ) {
+    let result = diagram;
+
+    for ( let i = 0; i < times; i ++ ) {
+      const points = [];
+
+      result.cells.forEach( cell => {
+        let x = 0, y = 0;
+        cell.halfedges.forEach( half => {
+          x += half.edge.va.x;
+          y += half.edge.va.y;
+        } );
+        x /= cell.halfedges.length;
+        y /= cell.halfedges.length;
+
+        points.push( { x: x, y: y } );
+      } );
+
+      result = voronoi.compute( points, bbox );
+    }
+
+    return result;
+  }
+
+  let diagram2 = relax( diagram, 1 );
+
   canvas.draw = ( ctx ) => {
     ctx.scale( 1 / SIZE, 1 / SIZE );
     ctx.lineWidth = 2 * SIZE / canvas.scale;
-    
+
     ctx.beginPath();
 
     diagram.cells.forEach( cell => {
@@ -34,9 +63,27 @@
       } );
     } );
 
+    ctx.strokeStyle = 'red';
+    ctx.stroke();
+    
+    ctx.beginPath();
+
+    diagram2.cells.forEach( cell => {
+      cell.halfedges.forEach( half => {
+        ctx.moveTo( half.edge.va.x, half.edge.va.y );
+        ctx.lineTo( half.edge.vb.x, half.edge.vb.y );
+      } );
+    } );
+
+    ctx.strokeStyle = 'yellow';
     ctx.stroke();
   };
 
   canvas.redraw();
+
+  canvas.canvas.addEventListener( 'pointerdown', ( e ) => {
+    diagram2 = relax( diagram2, 1 );
+    canvas.redraw();
+  } );
 
 </script>
