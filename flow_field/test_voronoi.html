@@ -1,0 +1,42 @@
+<title>Voronoi to generate maps</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import * as CellGrid from './CellGrid.js';
+  import Voronoi from './lib/rhill-voronoi-core.js';
+
+  const canvas = new Canvas();
+
+  const COLS = 10, ROWS = 10, SIZE = 100;
+
+  const points = Array.from( Array( 100 ), _ => ( {
+    x: Math.random() * SIZE,
+    y: Math.random() * SIZE,
+  } ) );
+
+  const bbox = { xl: 0, xr: SIZE, yt: 0, yb: SIZE };
+
+  const voronoi = new Voronoi();
+
+  const diagram = voronoi.compute( points, bbox );
+
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 2 * SIZE / canvas.scale;
+    
+    ctx.beginPath();
+
+    diagram.cells.forEach( cell => {
+      cell.halfedges.forEach( half => {
+        ctx.moveTo( half.edge.va.x, half.edge.va.y );
+        ctx.lineTo( half.edge.vb.x, half.edge.vb.y );
+      } );
+    } );
+
+    ctx.stroke();
+  };
+
+  canvas.redraw();
+
+</script>
