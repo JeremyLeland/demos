@@ -1,14 +1,20 @@
 import csv
+from pathlib import Path
+import sys
 
 analyte_replace = {
   ' ': '_', 
   '(': '', 
   ')': '', 
-  '/': '_to_',
+  'albumin/globulin' : 'albumin_to_globulin',
+  'bun/createinine' : 'bun_to_creatinine',
   'non-afr.': 'non_african',
   '-': '_',
   '+': '_plus_',
-  # '/': '_per_',     # in EvePanel file, used 'per'    # TODO: Hardcode these full replacements? IL17_per_IL25, etc
+  # These will already be transformed by - to _ above
+  'il_17e/il_25': 'il_17e_per_il_25',
+  'mig/cxcl9' : 'mig_per_cxcl9',
+  'pdgf_ab/bb' : 'pdgf_ab_per_bb',
 }
 
 units_replace = {
@@ -25,9 +31,9 @@ units_replace = {
 analytes = {}
 values = {}
 
-# with open( 'C:\\Users\\iggam\\Downloads\\serum\\CMP.upload_SUBMITTED.csv' ) as csv_file:
-# with open( 'C:\\Users\\iggam\\Downloads\\serum\\curation_serum.immune.AlamarPanel_SUBMITTED.csv' ) as csv_file:
-with open( 'C:\\Users\\iggam\\Downloads\\serum\\serum.immune.EvePanel_SUBMITTED.csv', encoding='utf-8-sig' ) as csv_file:
+inPath = Path( sys.argv[ 1 ] )
+
+with open( inPath, encoding='utf-8-sig' ) as csv_file:
   csv_reader = csv.DictReader( csv_file )
 
   for row in csv_reader:
@@ -70,17 +76,15 @@ fieldnames = [ 'Sample Name' ]
 for analyte in sorted( analytes.keys() ):
   for rest_of_column in analytes[ analyte ].keys():
     fieldnames.append( analyte + rest_of_column )
-  
-print( fieldnames )
 
-# TODO: Modify input filename (NOT PATH) to replace TRANSFORMED, etc
 
-with open( 'transformed.csv', mode='w', newline='', encoding='utf-8' ) as csv_file:
+outPath = Path( inPath.parent, inPath.stem + '_TRANSFORMED' + inPath.suffix )
+print( 'Saving to ' + str( outPath ) )
+
+with open( outPath, mode='w', newline='', encoding='utf-8' ) as csv_file:
   writer = csv.DictWriter( csv_file, fieldnames = fieldnames )
 
   writer.writeheader()
 
   for sample_name in sorted( values.keys() ):
     writer.writerow( { 'Sample Name': sample_name } | values[ sample_name ] )
-
-# TODO: Why an extra newline? Something from utf-8? does it do it for all files?
