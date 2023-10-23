@@ -33,8 +33,8 @@
       result.cells.forEach( cell => {
         let x = 0, y = 0;
         cell.halfedges.forEach( half => {
-          x += half.edge.va.x;
-          y += half.edge.va.y;
+          x += half.getStartpoint().x;
+          y += half.getStartpoint().y;
         } );
         x /= cell.halfedges.length;
         y /= cell.halfedges.length;
@@ -54,34 +54,30 @@
     ctx.scale( 1 / SIZE, 1 / SIZE );
     ctx.lineWidth = 2 * SIZE / canvas.scale;
 
-    ctx.beginPath();
-
-    diagram.cells.forEach( cell => {
-      cell.halfedges.forEach( half => {
-        ctx.moveTo( half.edge.va.x, half.edge.va.y );
-        ctx.lineTo( half.edge.vb.x, half.edge.vb.y );
-      } );
-    } );
-
-    ctx.strokeStyle = 'red';
-    ctx.stroke();
-    
-    ctx.beginPath();
-
-    diagram2.cells.forEach( cell => {
-      cell.halfedges.forEach( half => {
-        ctx.moveTo( half.edge.va.x, half.edge.va.y );
-        ctx.lineTo( half.edge.vb.x, half.edge.vb.y );
-      } );
-    } );
-
-    ctx.strokeStyle = 'yellow';
-    ctx.stroke();
+    drawDiagram( ctx, diagram, 'gray' );
+    drawDiagram( ctx, diagram2, 'yellow' );
   };
+
+  function drawDiagram( ctx, diagram, color ) {
+    diagram.cells.forEach( cell => {
+      ctx.beginPath();
+      cell.halfedges.forEach( half => {
+        ctx.moveTo( half.edge.va.x, half.edge.va.y );
+        ctx.lineTo( half.edge.vb.x, half.edge.vb.y );
+      } );
+      ctx.strokeStyle = color;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc( cell.site.x, cell.site.y, 0.05, 0, Math.PI * 2 );
+      ctx.fillStyle = color;
+      ctx.fill();
+    } );
+  }
 
   canvas.redraw();
 
-  canvas.canvas.addEventListener( 'pointerdown', ( e ) => {
+  canvas.canvas.addEventListener( 'pointermove', ( e ) => {
     diagram2 = relax( diagram2, 1 );
     canvas.redraw();
   } );
