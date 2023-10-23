@@ -1,6 +1,14 @@
 import csv
 from pathlib import Path
-import sys
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument( 'filename' )
+parser.add_argument( '-t', '--type', default='serum' )
+args = parser.parse_args()
+
+inPath = Path( args.filename )
+typeStr = '_' + args.type + '_'
 
 analyte_replace = {
   ' ': '_', 
@@ -31,15 +39,13 @@ units_replace = {
 analytes = {}
 values = {}
 
-inPath = Path( sys.argv[ 1 ] )
-
 with open( inPath, encoding='utf-8-sig' ) as csv_file:
   csv_reader = csv.DictReader( csv_file )
 
   for row in csv_reader:
     # CMP, AlamarPanel, and EvePanel use different column names
     sample_name = row.get( 'SUBJECT_ID', '' ) + row.get( 'ID', '' )
-    sample_name += '_serum_'    # TODO: Not always serum -- get this from command line?
+    sample_name += typeStr
     sample_name += row.get( 'timepoint', '' ) + row.get( 'Timepoint', '' )
     
     analyte = row.get( 'ANALYTE', '' ) + row.get( 'Analyte', '' )
