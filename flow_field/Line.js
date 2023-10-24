@@ -20,7 +20,7 @@ export class Line {
     const normalX = Math.cos( normalAngle );
     const normalY = Math.sin( normalAngle );
 
-    const NORM_LEN = 2;
+    const NORM_LEN = 1;
     ctx.beginPath();
     ctx.moveTo( midX, midY );
     ctx.lineTo( midX + normalX * NORM_LEN, midY + normalY * NORM_LEN );

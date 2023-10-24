@@ -1,0 +1,92 @@
+<title>Voronoi to generate maps</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import * as CellGrid from './CellGrid.js';
+  import { Cell } from './Cell.js';
+  import Voronoi from './lib/rhill-voronoi-core.js';
+
+  const canvas = new Canvas();
+
+  const COLS = 10, ROWS = 10, SIZE = 100;
+  const MIN_LENGTH = 4;
+
+  const points = [];
+  for ( let i = 0; i < 100; i ++ ) {
+    points.push( { 
+      x: Math.random() * SIZE,
+      y: Math.random() * SIZE,
+    } );
+  }
+
+  const bbox = { xl: 0, xr: SIZE, yt: 0, yb: SIZE };
+
+  const voronoi = new Voronoi();
+
+  let diagram = voronoi.compute( points, bbox );
+
+  for ( let i = 0; i < 20; i ++ ) {
+    const points = [];
+
+    diagram.cells.forEach( cell => {
+      let x = 0, y = 0;
+      cell.halfedges.forEach( half => {
+        x += half.getStartpoint().x;
+        y += half.getStartpoint().y;
+      } );
+      x /= cell.halfedges.length;
+      y /= cell.halfedges.length;
+
+      points.push( { x: x, y: y } );
+    } );
+
+    diagram = voronoi.compute( points, bbox );
+  }
+
+  let cells = [];
+
+  diagram.cells.forEach( cell => {
+    // Leave off boundry edges
+    if ( cell.halfedges.every( e => e.edge.lSite != null && e.edge.rSite != null ) ) {
+      const mapCell = new Cell( 
+        cell.halfedges.map( e => {
+          const point = e.getStartpoint();
+          return [ point.x, point.y ];
+        } )
+      );
+
+      cell.halfedges.forEach( ( halfEdge, index ) => {
+        halfEdge.mapEdge = mapCell.edges[ index ];
+      } );
+
+      cell.mapCell = mapCell;
+
+      cells.push( mapCell );
+    }
+  } );
+
+  diagram.cells.forEach( cell => {
+    if ( cell.mapCell ) {
+      cell.halfedges.forEach( ( halfedge, index ) => {
+        const otherSite = halfedge.edge.rSite == cell.site ? halfedge.edge.lSite : halfedge.edge.rSite;
+        const otherCell = diagram.cells[ otherSite.voronoiId ];
+
+        if ( otherCell?.mapCell ) {
+          const otherEdgeIndex = otherCell.halfedges.findIndex( he => he.edge.lSite == cell.site || he.edge.rSite == cell.site );
+          cell.mapCell.edges[ index ].neighbor = otherCell.mapCell.edges[ otherEdgeIndex ];
+        }
+      } )
+    }
+  } );
+
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 2 * SIZE / canvas.scale;
+
+    cells.forEach( cell => cell.draw( ctx ) );
+  };
+
+  canvas.redraw();
+
+</script>
