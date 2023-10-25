@@ -99,7 +99,11 @@
 
   cells = cells.filter( c => c.edges.some( e => e.linked ) );   // remove unlinked cells
 
-  cells = CellGrid.fromPoints( CellGrid.getLoops( cells ) );
+  const loops = CellGrid.getLoops( cells );
+
+  console.log( JSON.stringify( loops ) );
+
+  cells = CellGrid.fromPoints( loops );
 
   const flowMap = CellGrid.getFlowMap( cells );
 

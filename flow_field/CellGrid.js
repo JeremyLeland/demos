@@ -220,7 +220,7 @@ export function fromPoints( pointArrays ) {
   //
   // Merge triangles into convex shapes
   //
-  console.log( `${ cells.length } cells before merge` );
+  // console.log( `${ cells.length } cells before merge` );
 
   cells.forEach( cell => {
     for ( let i = 0; i < cell.edges?.length; i ++ ) {
@@ -233,7 +233,7 @@ export function fromPoints( pointArrays ) {
 
   cells = cells.filter( c => c.edges );   // remove edge-less cells
 
-  console.log( `${ cells.length } cells after merge` );
+  // console.log( `${ cells.length } cells after merge` );
 
   return cells;
 }

@@ -1,0 +1,114 @@
+<title>Move around flow field</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import * as CellGrid from './CellGrid.js';
+  import { Cell } from './Cell.js';
+
+  const canvas = new Canvas();
+
+  const SIZE = 100;
+
+  const level = await ( await fetch( './levels/test1.json' ) ).json();
+  const cells = CellGrid.fromPoints( level );
+
+  const flowMap = CellGrid.getFlowMap( cells );
+
+  let targetCell = cells[ 0 ];
+
+  const agentBody = new Path2D();
+  agentBody.arc( 0, 0, 1, 0, Math.PI * 2 );
+
+  const Agent = {
+    size: 1,
+    maxSpeed: 0.0004,
+    draw: ( ctx ) => {
+      ctx.fillStyle = 'orange';
+      ctx.fill( agentBody );
+      ctx.stroke( agentBody );
+    }
+  }
+
+  const agents = [
+    { x: 25, y: 25 },
+  ];
+
+  canvas.update = ( dt ) => {
+
+    const flowField = flowMap.get( targetCell );
+
+    if ( flowField ) {   
+      agents.forEach( agent => {
+        const cell = cells.find( c => c.contains( agent.x, agent.y ) );
+        const bestEdge = flowField.get( cell );
+        
+        if ( bestEdge ) {
+          const edgeX = ( bestEdge.x1 + bestEdge.x2 ) / 2;
+          const edgeY = ( bestEdge.y1 + bestEdge.y2 ) / 2;
+          
+          const goalMoveX = edgeX - agent.x;
+          const goalMoveY = edgeY - agent.y;
+          
+          const goalSpeed = Math.hypot( goalMoveX, goalMoveY ) / dt;
+          const fixSpeed = goalSpeed > Agent.maxSpeed ? Agent.maxSpeed / goalSpeed : 1;
+          
+          agent.x += goalMoveX * fixSpeed * dt;
+          agent.y += goalMoveY * fixSpeed * dt;
+        }
+      } );
+    }
+  };
+
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 2 * SIZE / canvas.scale;
+
+    cells.filter( c => c.edges.some( e => e.linked ) ).forEach( cell => cell.draw( ctx ) );
+
+    if ( targetCell ) {
+      const flowField = flowMap.get( targetCell );
+      
+      cells.forEach( cell => {
+        const bestEdge = flowField.get( cell );
+        if ( bestEdge ) {
+          ctx.beginPath();
+          ctx.moveTo( cell.x, cell.y );
+          
+          ctx.lineTo( ( bestEdge.x1 + bestEdge.x2 ) / 2, ( bestEdge.y1 + bestEdge.y2 ) / 2 );
+          ctx.strokeStyle = 'yellow';
+          ctx.stroke();
+        }
+      } );
+    }
+
+    ctx.fillStyle = 'orange';
+    ctx.strokeStyle = 'black';
+
+    agents.forEach( agent => {
+      ctx.save();
+      ctx.translate( agent.x, agent.y );
+      // ctx.rotate( agent.angle );
+      // ctx.scale( agent.size );
+
+      ctx.fill( agentBody );
+      ctx.stroke( agentBody );
+
+      ctx.restore();
+    } );
+  };
+
+  canvas.start();
+
+  canvas.canvas.addEventListener( 'pointermove', ( e ) => {
+    const x = SIZE * e.offsetX / canvas.scale;
+    const y = SIZE * e.offsetY / canvas.scale;
+
+    const lastTarget = targetCell;
+    targetCell = cells.find( c => c.contains( x, y ) );
+    // if ( targetCell && lastTarget != targetCell ) {
+    //   canvas.redraw();
+    // }
+  } );
+
+</script>
