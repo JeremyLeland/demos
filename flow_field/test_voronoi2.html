@@ -91,7 +91,8 @@
 
   // Remove fully linked cells (what does this look like?)
   cells.forEach( cell => {
-    if ( cell.edges./*filter( e => e.neighbor ).*/every( e => e.linked ) ) {
+    // if ( cell.edges./*filter( e => e.neighbor ).*/every( e => e.linked ) ) {
+    if ( cell.edges.filter( e => e.linked ).length > 5 ) {
       cell.unlinkAll();
     }
   } );
