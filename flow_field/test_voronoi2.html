@@ -96,13 +96,44 @@
     }
   } );
 
+  const flowMap = CellGrid.getFlowMap( cells );
+
+  let targetCell = cells[ 0 ];
+
   canvas.draw = ( ctx ) => {
     ctx.scale( 1 / SIZE, 1 / SIZE );
     ctx.lineWidth = 2 * SIZE / canvas.scale;
 
     cells.filter( c => c.edges.some( e => e.linked ) ).forEach( cell => cell.draw( ctx ) );
+
+    if ( targetCell ) {
+      const flowField = flowMap.get( targetCell );
+      
+      cells.forEach( cell => {
+        const bestEdge = flowField.get( cell );
+        if ( bestEdge ) {
+          ctx.beginPath();
+          ctx.moveTo( cell.x, cell.y );
+          
+          ctx.lineTo( ( bestEdge.x1 + bestEdge.x2 ) / 2, ( bestEdge.y1 + bestEdge.y2 ) / 2 );
+          ctx.strokeStyle = 'yellow';
+          ctx.stroke();
+        }
+      } );
+    }
   };
 
   canvas.redraw();
+
+  canvas.canvas.addEventListener( 'pointermove', ( e ) => {
+    const x = SIZE * e.offsetX / canvas.scale;
+    const y = SIZE * e.offsetY / canvas.scale;
+
+    const lastTarget = targetCell;
+    targetCell = cells.find( c => c.contains( x, y ) );
+    if ( targetCell && lastTarget != targetCell ) {
+      canvas.redraw();
+    }
+  } );
 
 </script>
