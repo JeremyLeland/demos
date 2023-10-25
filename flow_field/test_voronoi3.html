@@ -1,0 +1,144 @@
+<title>Voronoi to generate maps</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import * as CellGrid from './CellGrid.js';
+  import { Cell } from './Cell.js';
+  import Voronoi from './lib/rhill-voronoi-core.js';
+
+  const canvas = new Canvas();
+
+  const COLS = 10, ROWS = 10, SIZE = 100;
+  const MIN_LENGTH = 2;
+
+  const points = [];
+  for ( let i = 0; i < 200; i ++ ) {
+    points.push( { 
+      x: Math.random() * SIZE,
+      y: Math.random() * SIZE,
+    } );
+  }
+
+  const bbox = { xl: 0, xr: SIZE, yt: 0, yb: SIZE };
+
+  const voronoi = new Voronoi();
+
+  let diagram = voronoi.compute( points, bbox );
+
+  for ( let i = 0; i < 5; i ++ ) {
+    const points = [];
+
+    diagram.cells.forEach( cell => {
+      let x = 0, y = 0;
+      cell.halfedges.forEach( half => {
+        x += half.getStartpoint().x;
+        y += half.getStartpoint().y;
+      } );
+      x /= cell.halfedges.length;
+      y /= cell.halfedges.length;
+
+      points.push( { x: x, y: y } );
+    } );
+
+    diagram = voronoi.compute( points, bbox );
+  }
+
+  let cells = [];
+
+  diagram.cells.forEach( cell => {
+    // Leave off boundry edges
+    if ( cell.halfedges.every( e => e.edge.lSite != null && e.edge.rSite != null ) ) {
+      const mapCell = new Cell( 
+        cell.halfedges.map( e => {
+          const point = e.getStartpoint();
+          return [ point.x, point.y ];
+        } )
+      );
+
+      cell.halfedges.forEach( ( halfEdge, index ) => {
+        halfEdge.mapEdge = mapCell.edges[ index ];
+      } );
+
+      cell.mapCell = mapCell;
+
+      cells.push( mapCell );
+    }
+  } );
+
+  diagram.cells.forEach( cell => {
+    if ( cell.mapCell ) {
+      cell.halfedges.forEach( ( halfedge, index ) => {
+        const otherSite = halfedge.edge.rSite == cell.site ? halfedge.edge.lSite : halfedge.edge.rSite;
+        const otherCell = diagram.cells[ otherSite.voronoiId ];
+
+        if ( otherCell?.mapCell ) {
+          const otherEdgeIndex = otherCell.halfedges.findIndex( he => he.edge.lSite == cell.site || he.edge.rSite == cell.site );
+          cell.mapCell.edges[ index ].neighbor = otherCell.mapCell.edges[ otherEdgeIndex ];
+        }
+      } )
+    }
+  } );
+
+  cells.forEach( cell => cell.linkAll() );
+
+  // Unlink cells with short edges
+  cells.forEach( cell => {
+    if ( cell.edges.some( e => e.linked && Math.hypot( e.x1 - e.x2, e.y1 - e.y2 ) < MIN_LENGTH ) ) {
+      cell.unlinkAll();
+    }
+  } );
+
+  // Remove fully linked cells (what does this look like?)
+  cells.forEach( cell => {
+    // if ( cell.edges./*filter( e => e.neighbor ).*/every( e => e.linked ) ) {
+    if ( cell.edges.filter( e => e.linked ).length > 5 ) {
+      cell.unlinkAll();
+    }
+  } );
+
+  cells = cells.filter( c => c.edges.some( e => e.linked ) );   // remove unlinked cells
+
+  cells = CellGrid.fromPoints( CellGrid.getLoops( cells ) );
+
+  const flowMap = CellGrid.getFlowMap( cells );
+
+  let targetCell = cells[ 0 ];
+
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 2 * SIZE / canvas.scale;
+
+    cells.filter( c => c.edges.some( e => e.linked ) ).forEach( cell => cell.draw( ctx ) );
+
+    if ( targetCell ) {
+      const flowField = flowMap.get( targetCell );
+      
+      cells.forEach( cell => {
+        const bestEdge = flowField.get( cell );
+        if ( bestEdge ) {
+          ctx.beginPath();
+          ctx.moveTo( cell.x, cell.y );
+          
+          ctx.lineTo( ( bestEdge.x1 + bestEdge.x2 ) / 2, ( bestEdge.y1 + bestEdge.y2 ) / 2 );
+          ctx.strokeStyle = 'yellow';
+          ctx.stroke();
+        }
+      } );
+    }
+  };
+
+  canvas.redraw();
+
+  canvas.canvas.addEventListener( 'pointermove', ( e ) => {
+    const x = SIZE * e.offsetX / canvas.scale;
+    const y = SIZE * e.offsetY / canvas.scale;
+
+    const lastTarget = targetCell;
+    targetCell = cells.find( c => c.contains( x, y ) );
+    if ( targetCell && lastTarget != targetCell ) {
+      canvas.redraw();
+    }
+  } );
+
+</script>

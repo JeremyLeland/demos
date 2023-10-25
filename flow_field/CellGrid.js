@@ -296,3 +296,82 @@ function getFlowField( target ) {
 
   return bestEdge;
 }
+
+export function getLoops( cells ) {
+  const loops = [];
+
+  const unvisited = new Set();
+
+  cells.forEach( cell => 
+    cell.edges.filter( e => !e.linked ).forEach( edge => unvisited.add( edge ) ) 
+  );
+
+  const visited = new Set();
+
+  while ( unvisited.size > 0 ) {
+    const lines = [];
+
+    let [ edge ] = unvisited;
+    let cell = edge.parent;
+    let index = cell.edges.findIndex( e => e == edge );
+    
+    while( !visited.has( edge ) ) {
+      unvisited.delete( edge );
+      visited.add( edge );
+      
+      lines.push( [ edge.x1, edge.y1 ] );
+
+      index = ( index + 1 ) % cell.edges.length;
+      edge = cell.edges[ index ];
+
+      if ( edge.linked ) {
+        edge = edge.neighbor;
+        cell = edge.parent;
+        index = cell.edges.findIndex( e => e == edge );
+
+        index = ( index + 1 ) % cell.edges.length;
+        edge = cell.edges[ index ];
+      }
+    }
+
+    loops.push( lines );
+  }
+
+  // TODO: Put counter-clockwise loop first
+  // TODO: How to represent multiple discrete regions?
+  // [
+  //   {
+  //     outer:
+  //     holes:
+  //   },
+  //   {
+  //     outer:
+  //     holes:
+  //   },
+  // ]
+ 
+  // TODO: Assumes one outer loop for now
+  
+  // https://en.wikipedia.org/wiki/Curve_orientation#Practical_considerations
+  const outerIndex = loops.findIndex( points => {
+    let hullPoint, hullPointIndex;
+    points.forEach( ( p, index ) => {
+      if ( !hullPoint || p[ 0 ] < hullPoint[ 0 ] || p[ 0 ] == hullPoint[ 0 ] && p[ 1 ] < hullPoint[ 1 ] ) {
+        hullPoint = p;
+        hullPointIndex = index;
+      }
+    } );
+    
+    const a = points.at( hullPointIndex - 1 );
+    const b = hullPoint;
+    const c = points.at( ( hullPointIndex + 1 ) % points.length );
+    
+    const det = ( b[ 0 ] - a[ 0 ] ) * ( c[ 1 ] - a[ 1 ] ) - ( c[ 0 ] - a[ 0 ] ) * ( b[ 1 ] - a[ 1 ] );
+    return det < 0;
+  } );
+
+  // Put out loop first
+  loops.splice( 0, 0, loops.splice( outerIndex, 1 )[ 0 ] );
+
+  return loops;
+}
