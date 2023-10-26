@@ -22,7 +22,8 @@
 
   const Agent = {
     size: 1,
-    maxSpeed: 0.0004,
+    maxSpeed: 0.004,
+    accel: 2e-5,
     draw: ( ctx ) => {
       ctx.fillStyle = 'orange';
       ctx.fill( agentBody );
@@ -31,15 +32,18 @@
   }
 
   const agents = [
-    { x: 25, y: 25 },
+    { x: 25, y: 25, dx: 0, dy: 0, ddx: 0, ddy: 0 },
+    { x: 45, y: 45, dx: 0, dy: 0, ddx: 0, ddy: 0 },
   ];
 
   canvas.update = ( dt ) => {
 
     const flowField = flowMap.get( targetCell );
 
-    if ( flowField ) {   
-      agents.forEach( agent => {
+    agents.forEach( agent => {
+      agent.ddx = agent.ddy = 0;
+
+      if ( flowField ) {   
         const cell = cells.find( c => c.contains( agent.x, agent.y ) );
         const bestEdge = flowField.get( cell );
         
@@ -47,17 +51,24 @@
           const edgeX = ( bestEdge.x1 + bestEdge.x2 ) / 2;
           const edgeY = ( bestEdge.y1 + bestEdge.y2 ) / 2;
           
-          const goalMoveX = edgeX - agent.x;
-          const goalMoveY = edgeY - agent.y;
+          const goalAngle = Math.atan2( edgeY - agent.y, edgeX - agent.x );
           
-          const goalSpeed = Math.hypot( goalMoveX, goalMoveY ) / dt;
-          const fixSpeed = goalSpeed > Agent.maxSpeed ? Agent.maxSpeed / goalSpeed : 1;
-          
-          agent.x += goalMoveX * fixSpeed * dt;
-          agent.y += goalMoveY * fixSpeed * dt;
+          agent.ddx += Math.cos( goalAngle ) * Agent.accel;
+          agent.ddy += Math.sin( goalAngle ) * Agent.accel;
         }
-      } );
-    }
+      }
+
+      agent.dx += agent.ddx * dt;
+      agent.dy += agent.ddy * dt;
+
+      const fixSpeed = Math.min( 1, Agent.maxSpeed / Math.hypot( agent.dx, agent.dy ) );
+      agent.dx *= fixSpeed;
+      agent.dy *= fixSpeed;
+      
+      agent.x += agent.dx * dt;
+      agent.y += agent.dy * dt;
+
+    } );
   };
 
   canvas.draw = ( ctx ) => {
