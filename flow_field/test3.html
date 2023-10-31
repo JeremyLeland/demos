@@ -91,11 +91,8 @@
         const bestEdge = flowField.get( cell );
         
         if ( bestEdge ) {
-          // TODO: Closest point on bestEdge, not midpoint
-          const edgeX = ( bestEdge.x1 + bestEdge.x2 ) / 2;
-          const edgeY = ( bestEdge.y1 + bestEdge.y2 ) / 2;
-          
-          const goalAngle = Math.atan2( edgeY - agent.y, edgeX - agent.x );
+          const point = bestEdge.getClosestPoint( agent.x, agent.y );
+          const goalAngle = Math.atan2( point.y - agent.y, point.x - agent.x );
           
           agent.ddx += Math.cos( goalAngle );
           agent.ddy += Math.sin( goalAngle );
