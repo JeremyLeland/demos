@@ -31,13 +31,13 @@
 
         const GOAL_SIZE = 1.5;
 
-        const segments = Math.ceil( dist / GOAL_SIZE );
-        
-        const radius = dist / segments / 2;
+        let total = 0;
 
-        for ( let j = 0; j < segments; j ++ ) {
+        while ( total < dist ) {
+          const segments = Math.ceil( ( dist - total ) / GOAL_SIZE );
+          const radius = ( dist - total ) / segments / 2;     // TODO: Add randomness to this somehow?
 
-          const u = ( j + 0.5 ) / segments;
+          const u = ( total + radius ) / dist;
 
           const x = curr[ 0 ] + u * cx;
           const y = curr[ 1 ] + u * cy;
@@ -46,6 +46,8 @@
           ctx.ellipse( x, y, radius, 0.5, angle, 0, Math.PI * 2 );
           ctx.fill();
           ctx.stroke();
+
+          total += radius * 2;
         }
       }
     } );
