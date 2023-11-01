@@ -14,7 +14,7 @@
   
   canvas.draw = ( ctx ) => {
     ctx.scale( 1 / SIZE, 1 / SIZE );
-    ctx.lineWidth = 2 * SIZE / canvas.scale;
+    ctx.lineWidth = SIZE / canvas.scale;
 
     ctx.strokeStyle = 'black';
     ctx.fillStyle = 'gray';
@@ -29,13 +29,13 @@
         const dist = Math.hypot( cx, cy );
         const angle = Math.atan2( cy, cx );
 
-        const GOAL_SIZE = 1.5;
+        const GOAL_LENGTH = 1, LENGTH_VARIANCE = 0.2;
 
         let total = 0;
 
         while ( total < dist ) {
-          const segments = Math.ceil( ( dist - total ) / GOAL_SIZE );
-          const radius = ( dist - total ) / segments / 2;     // TODO: Add randomness to this somehow?
+          const remaining = dist - total;
+          const radius = remaining < GOAL_LENGTH ? remaining / 2 : GOAL_LENGTH / 2 + LENGTH_VARIANCE * ( 0.5 - Math.random() );
 
           const u = ( total + radius ) / dist;
 
@@ -43,7 +43,7 @@
           const y = curr[ 1 ] + u * cy;
 
           ctx.beginPath();
-          ctx.ellipse( x, y, radius, 0.5, angle, 0, Math.PI * 2 );
+          ctx.ellipse( x, y, radius, 0.3, angle, 0, Math.PI * 2 );
           ctx.fill();
           ctx.stroke();
 
