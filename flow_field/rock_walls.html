@@ -1,0 +1,46 @@
+<title>Draw rocks along walls</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import { Line } from './Line.js';
+
+  
+  const canvas = new Canvas();
+
+  const SIZE = 100;
+
+  const level = await ( await fetch( './levels/test1.json' ) ).json();
+  
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 2 * SIZE / canvas.scale;
+
+    ctx.strokeStyle = 'black';
+    ctx.fillStyle = 'gray';
+
+    level.forEach( loop => {
+      for ( let i = 0; i < loop.length; i ++ ) {
+        const curr = loop[ i ];
+        const next = loop[ ( i + 1 ) % loop.length ];
+
+        const cx = next[ 0 ] - curr[ 0 ];
+        const cy = next[ 1 ] - curr[ 1 ];
+        const dist = Math.hypot( cx, cy );
+
+        
+        const radius = 0.5;
+
+        for ( let u = 0; u < 1; u += radius * 2 / dist ) {
+          ctx.beginPath();
+          ctx.arc( curr[ 0 ] + u * cx, curr[ 1 ] + u * cy, radius, 0, Math.PI * 2 );
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+    } );
+  };
+
+  canvas.redraw();
+
+</script>
