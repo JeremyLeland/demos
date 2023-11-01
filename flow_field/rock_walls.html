@@ -27,13 +27,23 @@
         const cx = next[ 0 ] - curr[ 0 ];
         const cy = next[ 1 ] - curr[ 1 ];
         const dist = Math.hypot( cx, cy );
+        const angle = Math.atan2( cy, cx );
 
+        const GOAL_SIZE = 1.5;
+
+        const segments = Math.ceil( dist / GOAL_SIZE );
         
-        const radius = 0.5;
+        const radius = dist / segments / 2;
 
-        for ( let u = 0; u < 1; u += radius * 2 / dist ) {
+        for ( let j = 0; j < segments; j ++ ) {
+
+          const u = ( j + 0.5 ) / segments;
+
+          const x = curr[ 0 ] + u * cx;
+          const y = curr[ 1 ] + u * cy;
+
           ctx.beginPath();
-          ctx.arc( curr[ 0 ] + u * cx, curr[ 1 ] + u * cy, radius, 0, Math.PI * 2 );
+          ctx.ellipse( x, y, radius, 0.5, angle, 0, Math.PI * 2 );
           ctx.fill();
           ctx.stroke();
         }
