@@ -125,7 +125,8 @@
         }
       } );
 
-      // TODO: Avoid walls, too
+      // Should this push back harder somehow, to make up for fact that wall won't move?
+      // Agents are still ending up outside the walls somehow
       walls.forEach( wall => {
         const point = wall.getClosestPoint( agent.x, agent.y );
 

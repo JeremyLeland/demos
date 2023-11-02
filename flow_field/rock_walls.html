@@ -30,15 +30,18 @@
         const angle = Math.atan2( cy, cx );
 
         const GOAL_LENGTH = 1, LENGTH_VARIANCE = 0.2;
+      
+        const segments = Math.ceil( dist / GOAL_LENGTH );
 
         let total = 0;
 
-        while ( total < dist ) {
-          const remaining = dist - total;
-          const radius = remaining < GOAL_LENGTH ? remaining / 2 : GOAL_LENGTH / 2 + LENGTH_VARIANCE * ( 0.5 - Math.random() );
+        const radius = dist / segments / 2;
 
-          const u = ( total + radius ) / dist;
+        // TODO: Redistribute the lengths so some are smaller or larger
+        // TODO: Tweak angles to create local in-out variation? (But end up in same place)
 
+        for ( let j = 0; j < segments; j ++ ) {
+          const u = ( j + 0.5 ) / segments;
           const x = curr[ 0 ] + u * cx;
           const y = curr[ 1 ] + u * cy;
 
