@@ -36,28 +36,42 @@
         
           const segments = Math.ceil( dist / GOAL_LENGTH );
 
-          let total = 0;
-
-          const radius = dist / segments / 2;
-
-          // TODO: Redistribute the lengths so some are smaller or larger
           // TODO: Tweak angles to create local in-out variation? (But end up in same place)
+          
+          const radii = Array( segments ).fill( dist / segments / 2 );
 
-          for ( let j = 0; j < segments; j ++ ) {
-            const u = ( j + 0.5 ) / segments;
-            const x = curr[ 0 ] + u * cx;
-            const y = curr[ 1 ] + u * cy;
+          for ( let i = 0; i < radii.length - 1; i ++ ) {
+            const shift = 0.1 * ( 0.5 - Math.random() );
+            radii[ Math.floor( Math.random() * radii.length ) ] -= shift;
+            radii[ Math.floor( Math.random() * radii.length ) ] += shift;
+          }
+          
+          let total = 0;
+          radii.forEach( radius => {
+            total += radius;
+            const x = curr[ 0 ] + ( total / dist ) * cx;
+            const y = curr[ 1 ] + ( total / dist ) * cy;
+
+            const offset = 0.1 * Math.random();
 
             ctx.beginPath();
-            ctx.ellipse( x, y, radius, 0.3, angle, 0, Math.PI * 2 );
+            ctx.ellipse(
+              x + Math.sin( angle ) * offset, 
+              y - Math.cos( angle ) * offset, 
+              radius, 
+              0.3 + 0.1 * Math.random(), 
+              angle, 
+              0, 
+              Math.PI * 2
+            );
 
-            const shade = 128 - 50 * Math.random();
+            const shade = 100 - 30 * Math.random();
             ctx.fillStyle = `rgb( ${ shade }, ${ shade }, ${ shade } )`;
             ctx.fill();
             ctx.stroke();
 
-            total += radius * 2;
-          }
+            total += radius;
+          } );
         }
       }
     } );
