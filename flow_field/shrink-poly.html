@@ -8,28 +8,108 @@
   
   const canvas = new Canvas();
 
-  const SIZE = 10;
+  const SIZE = 70;
 
-  const points = [
-    [ 2, 2 ],
-    [ 2.1, 1.8 ],
-    [ 6, 1 ],
-    [ 6.1, 1.4 ],
-    [ 9, 6 ],
-    [ 8.8, 7 ], 
-    [ 6, 8.2 ],
-    [ 5.6, 8.2 ],
-    [ 5, 8 ],
-    [ 3, 6 ],
-  ];
+  const points = 
+  // [
+  //   [ 2, 2 ],
+  //   [ 2.1, 1.8 ],
+  //   [ 4, 4 ], 
+  //   [ 6, 1 ],
+  //   [ 6.1, 1.4 ],
+  //   [ 9, 6 ],
+  //   [ 8.8, 7 ], 
+  //   [ 6, 8.2 ],
+  //   [ 5.6, 8.2 ],
+  //   [ 5, 8 ],
+  //   [ 3, 6 ],
+  // ];
+  [
+    // [
+    //   32.383888031843696,
+    //   47.540758029227895
+    // ],
+    // [
+    //   37.17688891101727,
+    //   47.696657974034046
+    // ],
+    // [
+    //   38.632647681908516,
+    //   51.55482818668611
+    // ],
+    // [
+    //   42.74335930675464,
+    //   52.48471345492789
+    // ],
+    // [
+    //   43.562022515436894,
+    //   56.06587615306152
+    // ],
+    // [
+    //   39.15513083775792,
+    //   59.24865454819668
+    // ],
+    // [
+    //   37.822908093902775,
+    //   58.44907474264375
+    // ],
+    // [
+    //   36.85698330453634,
+    //   53.74681225097837
+    // ],
+    // [
+    //   31.715595314315998,
+    //   53.80899687196192
+    // ],
+    // [
+    //   32.44248848234791,
+    //   59.73251888389108
+    // ],
+    [
+      31.563429772214167,
+      60.984950855812784
+    ],
+    [
+      27.02073480539211,
+      61.00686590949587
+    ],
+    [
+      25.41225884623458,
+      66.08866117574675
+    ],
+    [
+      19.128137829920146,
+      66.71336729812622
+    ],
+    // [
+    //   18.23699869825133,
+    //   65.31810102167158
+    // ],
+    // [
+    //   21.396586572320786,
+    //   58.7623035409716
+    // ],
+    // [
+    //   25.115331617163456,
+    //   58.8406508425287
+    // ],
+    [
+      27.203663757101303,
+      52.98915949587208
+    ],
+    // [
+    //   30.3232548876427,
+    //   52.55172148640258
+    // ]
+  ]
 
   canvas.draw = ( ctx ) => {
     ctx.scale( 1 / SIZE, 1 / SIZE );
     ctx.lineWidth = 2 * SIZE / canvas.scale;
 
-    for ( let scale = 1; scale > -3; scale -= 0.1 ) {
+    for ( let scale = 0; scale >= -1; scale -= 0.1 ) {
       ctx.beginPath();
-      scalePoly( points, scale ).forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
+      offsetPoints( points, scale ).forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
       ctx.closePath();
 
       ctx.strokeStyle = `rgb( ${ 255 - Math.abs( scale ) * 100 }, ${ 255 + scale * 200 }, 0 )`;
@@ -42,12 +122,16 @@
   // NOTE: This is called "offsetting" or "buffering" a polygon
   // https://stackoverflow.com/questions/1109536/an-algorithm-for-inflating-deflating-offsetting-buffering-polygons
 
-  function scalePoly( points, scale ) {
+  function offsetPoints( points, offset ) {
+    if ( offset == 0 ) {
+      return points;
+    }
+
     const scaled = [];
 
     const info = [];
 
-    let soonestLimit = scale;
+    let soonestLimit = offset;
 
     for ( let i = 0; i < points.length; i ++ ) {
       const prev = points.at( i - 1 );
@@ -71,7 +155,7 @@
       // The cosine part is same as below, accounting for point movement being greater than scale value
       const u = ( dx2 * ( curr[ 1 ] - next[ 1 ] ) - dy2 * ( curr[ 0 ] - next[ 0 ] ) ) / ( dy2 * dx1 - dx2 * dy1 ) * Math.cos( deltaAngle( ang1, normalAngle ) );
       
-      if ( u > soonestLimit ) {
+      if ( closerToZero( u, soonestLimit ) ) {
         soonestLimit = u;
       }
 
@@ -83,7 +167,7 @@
     }
 
     for ( let i = 0; i < points.length; i ++ ) {
-      if ( info[ i ].limit < soonestLimit ) {
+      if ( Math.sign( offset ) != Math.sign( info[ i ].limit ) || closerToZero( soonestLimit, info[ i ].limit ) ) {
         const H = soonestLimit / Math.cos( deltaAngle( info[ i ].pointNormal, info[ i ].lineNormal ) );
         
         scaled.push( [
@@ -93,8 +177,8 @@
       }
     }
 
-    if ( scale < soonestLimit ) {
-      return scalePoly( scaled, scale - soonestLimit );
+    if ( closerToZero( soonestLimit, offset ) ) {
+      return offsetPoints( scaled, offset - soonestLimit );
     }
     else {
       return scaled;
@@ -107,6 +191,10 @@
 
   function deltaAngle( a, b ) {
     return fixAngle( b - a );
+  }
+
+  function closerToZero( a, b ) {
+    return b < 0 ? ( b < a && a < 0 ) : ( 0 < a && a < b );
   }
 
 </script>
