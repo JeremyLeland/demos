@@ -36,6 +36,9 @@
 
   canvas.redraw();
 
+  // NOTE: This is called "offsetting" or "buffering" a polygon
+  // https://stackoverflow.com/questions/1109536/an-algorithm-for-inflating-deflating-offsetting-buffering-polygons
+
   function scalePoly( points, scale ) {
     const scaled = [];
 
