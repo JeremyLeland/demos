@@ -61,6 +61,8 @@
       const dx2 = Math.cos( ang2 );
       const dy2 = Math.sin( ang2 );
 
+      // Find intersection of normals from both points of line
+      // The cosine part is same as below, accounting for point movement being greater than scale value
       const u = ( dx2 * ( curr[ 1 ] - next[ 1 ] ) - dy2 * ( curr[ 0 ] - next[ 0 ] ) ) / ( dy2 * dx1 - dx2 * dy1 ) * Math.cos( deltaAngle( ang1, normalAngle ) );
       
       if ( u > soonestLimit ) {
@@ -99,16 +101,6 @@
 
   function deltaAngle( a, b ) {
     return fixAngle( b - a );
-  }
-
-  function moo( x1, y1, x2, y2, x3, y3, x4, y4 ) {
-    const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
-
-    if ( D != 0 ) {
-      const uA = ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D;
-
-      return uA;
-    }
   }
 
 </script>
