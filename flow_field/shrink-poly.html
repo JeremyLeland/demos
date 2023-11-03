@@ -24,7 +24,7 @@
     ctx.scale( 1 / SIZE, 1 / SIZE );
     ctx.lineWidth = 2 * SIZE / canvas.scale;
 
-    for ( let scale = 0; scale > -1; scale -= 0.816913147063133 ) {
+    for ( let scale = 0; scale > -2; scale -= 0.5 ) {
       ctx.beginPath();
       scalePoly( points, scale ).forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
       ctx.closePath();
@@ -39,6 +39,10 @@
   function scalePoly( points, scale ) {
     const scaled = [];
 
+    const info = [];
+
+    let soonestLimit = scale;
+
     for ( let i = 0; i < points.length; i ++ ) {
       const prev = points.at( i - 1 );
       const curr = points[ i ];
@@ -50,25 +54,40 @@
       const nextNormalAngle = Math.atan2( next[ 0 ] - next2[ 0 ], next2[ 1 ] - next[ 1 ] );
 
       const ang1 = prevNormalAngle + deltaAngle( prevNormalAngle, normalAngle ) / 2;
-      const H1 = scale / Math.cos( deltaAngle( ang1, normalAngle ) );
+      // const H1 = scale / Math.cos( deltaAngle( ang1, normalAngle ) );
 
       const ang2 = normalAngle + deltaAngle( normalAngle, nextNormalAngle ) / 2;
-      const H2 = scale / Math.cos( deltaAngle( ang2, nextNormalAngle ) );
 
       const dx1 = Math.cos( ang1 );
       const dy1 = Math.sin( ang1 );
       const dx2 = Math.cos( ang2 );
       const dy2 = Math.sin( ang2 );
 
-      const u = ( dx2 * ( curr[ 1 ] - next[ 1 ] ) - dy2 * ( curr[ 0 ] - next[ 0 ] ) ) / ( dy2 * dx1 - dx2 * dy1 );
+      const u = ( dx2 * ( curr[ 1 ] - next[ 1 ] ) - dy2 * ( curr[ 0 ] - next[ 0 ] ) ) / ( dy2 * dx1 - dx2 * dy1 ) * Math.cos( deltaAngle( ang1, normalAngle ) );
       console.log( u * Math.cos( deltaAngle( ang1, normalAngle ) ) );
 
-      scaled.push( [ 
-        curr[ 0 ] + Math.cos( ang1 ) * H1,
-        curr[ 1 ] + Math.sin( ang1 ) * H1
-      ] );
+      if ( u > soonestLimit ) {
+        soonestLimit = u;
+      }
+
+      info.push( {
+        lineNormal: normalAngle,
+        pointNormal: ang1,
+        limit: u,
+      } );
     }
 
+    for ( let i = 0; i < points.length; i ++ ) {
+      if ( info[ i ].limit < soonestLimit ) {
+        const H = soonestLimit / Math.cos( deltaAngle( info[ i ].pointNormal, info[ i ].lineNormal ) );
+        
+        scaled.push( [
+          points[ i ][ 0 ] + Math.cos( info[ i ].pointNormal ) * H,
+          points[ i ][ 1 ] + Math.sin( info[ i ].pointNormal ) * H,
+        ] );
+      }
+    }
+    
     return scaled;
   }
 
