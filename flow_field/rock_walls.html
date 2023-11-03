@@ -4,6 +4,7 @@
 <script type="module">
   import { Canvas } from './Canvas.js';
   import { Line } from './Line.js';
+  import * as Util from './Util.js';
 
   
   const canvas = new Canvas();
@@ -17,40 +18,46 @@
     ctx.lineWidth = SIZE / canvas.scale;
 
     ctx.strokeStyle = 'black';
-    ctx.fillStyle = 'gray';
 
     level.forEach( loop => {
-      for ( let i = 0; i < loop.length; i ++ ) {
-        const curr = loop[ i ];
-        const next = loop[ ( i + 1 ) % loop.length ];
+      for ( let layer = 0; layer < 3; layer ++ ) {
+        const points = Util.offsetPoints( loop, -0.3 * layer );
 
-        const cx = next[ 0 ] - curr[ 0 ];
-        const cy = next[ 1 ] - curr[ 1 ];
-        const dist = Math.hypot( cx, cy );
-        const angle = Math.atan2( cy, cx );
+        for ( let i = 0; i < points.length; i ++ ) {
+          const curr = points[ i ];
+          const next = points[ ( i + 1 ) % points.length ];
 
-        const GOAL_LENGTH = 1, LENGTH_VARIANCE = 0.2;
-      
-        const segments = Math.ceil( dist / GOAL_LENGTH );
+          const cx = next[ 0 ] - curr[ 0 ];
+          const cy = next[ 1 ] - curr[ 1 ];
+          const dist = Math.hypot( cx, cy );
+          const angle = Math.atan2( cy, cx );
 
-        let total = 0;
+          const GOAL_LENGTH = 1, LENGTH_VARIANCE = 0.2;
+        
+          const segments = Math.ceil( dist / GOAL_LENGTH );
 
-        const radius = dist / segments / 2;
+          let total = 0;
 
-        // TODO: Redistribute the lengths so some are smaller or larger
-        // TODO: Tweak angles to create local in-out variation? (But end up in same place)
+          const radius = dist / segments / 2;
 
-        for ( let j = 0; j < segments; j ++ ) {
-          const u = ( j + 0.5 ) / segments;
-          const x = curr[ 0 ] + u * cx;
-          const y = curr[ 1 ] + u * cy;
+          // TODO: Redistribute the lengths so some are smaller or larger
+          // TODO: Tweak angles to create local in-out variation? (But end up in same place)
 
-          ctx.beginPath();
-          ctx.ellipse( x, y, radius, 0.3, angle, 0, Math.PI * 2 );
-          ctx.fill();
-          ctx.stroke();
+          for ( let j = 0; j < segments; j ++ ) {
+            const u = ( j + 0.5 ) / segments;
+            const x = curr[ 0 ] + u * cx;
+            const y = curr[ 1 ] + u * cy;
 
-          total += radius * 2;
+            ctx.beginPath();
+            ctx.ellipse( x, y, radius, 0.3, angle, 0, Math.PI * 2 );
+
+            const shade = 128 - 50 * Math.random();
+            ctx.fillStyle = `rgb( ${ shade }, ${ shade }, ${ shade } )`;
+            ctx.fill();
+            ctx.stroke();
+
+            total += radius * 2;
+          }
         }
       }
     } );
