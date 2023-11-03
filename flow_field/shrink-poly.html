@@ -13,7 +13,7 @@
   const loop = [
     [ 2, 2 ],
     [ 6, 1 ],
-    [ 7, 5 ],
+    [ 9, 6 ],
     [ 6, 8.2 ],
     [ 5, 8 ],
     [ 3, 6 ],
@@ -50,41 +50,20 @@
       const prevNormalAngle = Math.atan2( prev[ 0 ] - curr[ 0 ], curr[ 1 ] - prev[ 1 ] );
       const nextNormalAngle = Math.atan2( next[ 0 ] - next2[ 0 ], next2[ 1 ] - next[ 1 ] );
 
-      for ( let shrink = 0.3; shrink < 1; shrink += 0.3 ) {
+      for ( let scale = 0; scale > -1; scale -= 0.2 ) {
+        const ang1 = prevNormalAngle + deltaAngle( prevNormalAngle, normalAngle ) / 2;
+        const H1 = scale / Math.cos( deltaAngle( ang1, normalAngle ) );
+
+        const ang2 = normalAngle + deltaAngle( normalAngle, nextNormalAngle ) / 2;
+        const H2 = scale / Math.cos( deltaAngle( ang2, nextNormalAngle ) );
+
         ctx.beginPath();
-        ctx.moveTo( curr[ 0 ] - Math.cos( normalAngle ) * shrink, curr[ 1 ] - Math.sin( normalAngle ) * shrink );
-        ctx.lineTo( next[ 0 ] - Math.cos( normalAngle ) * shrink, next[ 1 ] - Math.sin( normalAngle ) * shrink );
+        ctx.moveTo( curr[ 0 ] + Math.cos( ang1 ) * H1, curr[ 1 ] + Math.sin( ang1 ) * H1 );
+        ctx.lineTo( next[ 0 ] + Math.cos( ang2 ) * H2, next[ 1 ] + Math.sin( ang2 ) * H2 );
         
-        ctx.strokeStyle = `rgb( ${ 255 - shrink * 100 }, ${ 255 - shrink * 200 }, 0 )`;
+        ctx.strokeStyle = `rgb( ${ 255 + scale * 100 }, ${ 255 + scale * 200 }, 0 )`;
         ctx.stroke();
       }
-
-      const uA = moo( 
-        prev[ 0 ] + Math.cos( prevNormalAngle ) * -0.3, prev[ 1 ] + Math.sin( prevNormalAngle ) * -0.3, 
-        curr[ 0 ] + Math.cos( prevNormalAngle ) * -0.3, curr[ 1 ] + Math.sin( prevNormalAngle ) * -0.3, 
-        curr[ 0 ] + Math.cos( normalAngle ) * -0.3, curr[ 1 ] + Math.sin( normalAngle ) * -0.3, 
-        next[ 0 ] + Math.cos( normalAngle ) * -0.3, next[ 1 ] + Math.sin( normalAngle ) * -0.3,
-      );
-
-      const A = prev[ 0 ] + Math.cos( prevNormalAngle ) * -0.3 + ( curr[ 0 ] - prev[ 0 ] ) * uA;
-      const B = prev[ 1 ] + Math.sin( prevNormalAngle ) * -0.3 + ( curr[ 1 ] - prev[ 1 ] ) * uA;
-
-      const uB = moo( 
-        curr[ 0 ] + Math.cos( normalAngle ) * -0.3, curr[ 1 ] + Math.sin( normalAngle ) * -0.3, 
-        next[ 0 ] + Math.cos( normalAngle ) * -0.3, next[ 1 ] + Math.sin( normalAngle ) * -0.3,
-        next[ 0 ] + Math.cos( nextNormalAngle ) * -0.3, next[ 1 ] + Math.sin( nextNormalAngle ) * -0.3, 
-        next2[ 0 ] + Math.cos( nextNormalAngle ) * -0.3, next2[ 1 ] + Math.sin( nextNormalAngle ) * -0.3,
-      );
-
-      const C = curr[ 0 ] + Math.cos( normalAngle ) * -0.3 + ( next[ 0 ] - curr[ 0 ] ) * uB;
-      const D = curr[ 1 ] + Math.sin( normalAngle ) * -0.3 + ( next[ 1 ] - curr[ 1 ] ) * uB;
-
-      ctx.beginPath();
-      ctx.moveTo( A, B );
-      ctx.lineTo( C, D );
-      
-      ctx.strokeStyle = 'red';
-      ctx.stroke();
     }
   };
 
