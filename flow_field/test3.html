@@ -3,6 +3,8 @@
 
 <script type="module">
   import { Canvas } from './Canvas.js';
+  import { ValuesPanel } from './ValuesPanel.js';
+
   import * as CellGrid from './CellGrid.js';
   import { Cell } from './Cell.js';
   import { Line } from './Line.js';
@@ -15,12 +17,14 @@
     B: 5,   // 0<A<=B 
     H: 0.2,
     EPSILON: 0.1,   // how smooth the sigmoid functions are
-    C2_alpha: 4e-4,   // lowering this cuts down on jittering when dt is closer to normal
-    C1_gamma: 6e-4,
-    C2_gamma: 0.05,
+    TargetWeight: 6e-4,
+    FlockWeight: 4e-4,   // lowering this cuts down on jittering when dt is closer to normal
+    WallWeight: 8e-4,
+    C2_gamma: 0.2,
   };
 
   const canvas = new Canvas();
+  new ValuesPanel( Constants );
 
   const SIZE = 100;
 
@@ -94,8 +98,8 @@
           const point = bestEdge.getClosestPoint( agent.x, agent.y );
           const goalAngle = Math.atan2( point.y - agent.y, point.x - agent.x );
           
-          agent.ddx += Math.cos( goalAngle );
-          agent.ddy += Math.sin( goalAngle );
+          agent.ddx += Constants.TargetWeight * Math.cos( goalAngle );
+          agent.ddy += Constants.TargetWeight * Math.sin( goalAngle );
         }
       }
 
@@ -115,7 +119,7 @@
           const lengthSquared = cx * cx + cy * cy;
 
           const sigNormDiff = sigma_norm( lengthSquared );
-          const bump = rho( sigNormDiff / r_alpha );
+          const bump = Constants.FlockWeight * rho( sigNormDiff / r_alpha );
           const phiVal = phi( sigNormDiff - d_alpha );
           
           const phi_sigma_grad = phiVal / Math.sqrt( 1 + Constants.EPSILON * lengthSquared );
@@ -139,7 +143,7 @@
         const lengthSquared = Math.pow( point.distance, 2 );
 
         const sigNormDiff = sigma_norm( lengthSquared );
-        const bump = rho( sigNormDiff / r_alpha );
+        const bump = Constants.WallWeight * rho( sigNormDiff / r_alpha );
         const phiVal = phi( sigNormDiff - d_alpha );
 
         const phi_sigma_grad = phiVal / Math.sqrt( 1 + Constants.EPSILON * lengthSquared );
@@ -147,6 +151,10 @@
         agent.ddx += bump * ( phi_sigma_grad * cx - agent.dx );
         agent.ddy += bump * ( phi_sigma_grad * cy - agent.dy );
       } );
+
+      // Smooth it out somehow? (Not totaly sure what this does)
+      agent.ddx -= Constants.C2_gamma * agent.dx;
+      agent.ddy -= Constants.C2_gamma * agent.dy;
 
       const fixAccel = Math.min( 1, Agent.accel / Math.hypot( agent.ddx, agent.ddy ) );
       agent.ddx *= fixAccel;
@@ -209,11 +217,10 @@
     const x = SIZE * e.offsetX / canvas.scale;
     const y = SIZE * e.offsetY / canvas.scale;
 
-    const lastTarget = targetCell;
-    targetCell = cells.find( c => c.contains( x, y ) );
-    // if ( targetCell && lastTarget != targetCell ) {
-    //   canvas.redraw();
-    // }
+    const nextTarget = cells.find( c => c.contains( x, y ) );
+    if ( nextTarget ) {
+      targetCell = nextTarget;
+    }
   } );
 
 </script>
