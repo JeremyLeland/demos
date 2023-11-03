@@ -24,12 +24,12 @@
     ctx.scale( 1 / SIZE, 1 / SIZE );
     ctx.lineWidth = 2 * SIZE / canvas.scale;
 
-    for ( let scale = 0; scale > -2; scale -= 0.5 ) {
+    for ( let scale = 1; scale > -3; scale -= 0.1 ) {
       ctx.beginPath();
       scalePoly( points, scale ).forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
       ctx.closePath();
 
-      ctx.strokeStyle = `rgb( ${ 255 + scale * 100 }, ${ 255 + scale * 200 }, 0 )`;
+      ctx.strokeStyle = `rgb( ${ 255 - Math.abs( scale ) * 100 }, ${ 255 + scale * 200 }, 0 )`;
       ctx.stroke();
     }
   };
@@ -54,8 +54,6 @@
       const nextNormalAngle = Math.atan2( next[ 0 ] - next2[ 0 ], next2[ 1 ] - next[ 1 ] );
 
       const ang1 = prevNormalAngle + deltaAngle( prevNormalAngle, normalAngle ) / 2;
-      // const H1 = scale / Math.cos( deltaAngle( ang1, normalAngle ) );
-
       const ang2 = normalAngle + deltaAngle( normalAngle, nextNormalAngle ) / 2;
 
       const dx1 = Math.cos( ang1 );
@@ -64,8 +62,7 @@
       const dy2 = Math.sin( ang2 );
 
       const u = ( dx2 * ( curr[ 1 ] - next[ 1 ] ) - dy2 * ( curr[ 0 ] - next[ 0 ] ) ) / ( dy2 * dx1 - dx2 * dy1 ) * Math.cos( deltaAngle( ang1, normalAngle ) );
-      console.log( u * Math.cos( deltaAngle( ang1, normalAngle ) ) );
-
+      
       if ( u > soonestLimit ) {
         soonestLimit = u;
       }
@@ -87,8 +84,13 @@
         ] );
       }
     }
-    
-    return scaled;
+
+    if ( scale < soonestLimit ) {
+      return scalePoly( scaled, scale - soonestLimit );
+    }
+    else {
+      return scaled;
+    }
   }
 
   function fixAngle( a ) {
