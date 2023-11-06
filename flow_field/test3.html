@@ -12,7 +12,8 @@
   // Alpha: Movement relative to neighbors?
   // Gamma: movement toward target?
   const Constants = {
-    Distance: 1,
+    FlockDistance: 1,
+    WallDistance: 0.5,
     A: 5,
     B: 5,   // 0<A<=B 
     H: 0.2,
@@ -36,7 +37,7 @@
   const walls = [];
   cells.forEach( c => c.edges.filter( e => !e.linked ).forEach( e => walls.push( e ) ) );
 
-  let targetCell = cells[ 0 ];
+  let targetCell = cells[ 10 ];
 
   const agentBody = new Path2D();
   agentBody.arc( 0, 0, 1, 0, Math.PI * 2 );
@@ -52,7 +53,16 @@
     }
   }
 
-  const agents = cells.map( e => ( { x: e.x, y: e.y, dx: 0, dy: 0, ddx: 0, ddy: 0 } ) );
+  // const agents = cells.map( e => ( { x: e.x, y: e.y, dx: 0, dy: 0, ddx: 0, ddy: 0 } ) );
+  const agents = [];
+  for ( let i = 0; i < 10; i ++ ) {
+    agents.push( { 
+      x: cells[ i ].x, 
+      y: cells[ i ].y, 
+      dx: 0, dy: 0, ddx: 0, ddy: 0,
+      debug: {}
+    } );
+  }
 
   function sigma_1( z ) {
     return z / Math.sqrt( 1 + z * z );
@@ -84,8 +94,6 @@
 
     const flowField = flowMap.get( targetCell );
 
-    const RANGE = 1.25 * Constants.Distance;
-
     agents.forEach( agent => {
       agent.ddx = agent.ddy = 0;
 
@@ -95,7 +103,10 @@
         const bestEdge = flowField.get( cell );
         
         if ( bestEdge ) {
-          const point = bestEdge.getClosestPoint( agent.x, agent.y );
+          const point = bestEdge.getClosestPoint( agent.x, agent.y, Agent.size + Constants.WallDistance );
+
+          agent.debug.point = point;
+
           const goalAngle = Math.atan2( point.y - agent.y, point.x - agent.x );
           
           agent.ddx += Constants.TargetWeight * Math.cos( goalAngle );
@@ -113,8 +124,8 @@
           const cx = neighbor.x - agent.x;
           const cy = neighbor.y - agent.y;
           
-          const r_alpha = sigma_norm( Math.pow( RANGE + Agent.size + Agent.size, 2 ) );   // neighbor.size + agent.size
-          const d_alpha = sigma_norm( Math.pow( Constants.Distance + Agent.size + Agent.size, 2 ) );
+          const r_alpha = sigma_norm( Math.pow( 1.25 * Constants.FlockDistance + Agent.size + Agent.size, 2 ) );   // neighbor.size + agent.size
+          const d_alpha = sigma_norm( Math.pow( Constants.FlockDistance + Agent.size + Agent.size, 2 ) );
           
           const lengthSquared = cx * cx + cy * cy;
 
@@ -137,8 +148,8 @@
         const cx = point.x - agent.x;
         const cy = point.y - agent.y;
         
-        const r_alpha = sigma_norm( Math.pow( RANGE + Agent.size, 2 ) );
-        const d_alpha = sigma_norm( Math.pow( Constants.Distance + Agent.size, 2 ) );
+        const r_alpha = sigma_norm( Math.pow( 1.25 * Constants.WallDistance + Agent.size, 2 ) );
+        const d_alpha = sigma_norm( Math.pow( Constants.WallDistance + Agent.size, 2 ) );
         
         const lengthSquared = Math.pow( point.distance, 2 );
 
@@ -196,8 +207,7 @@
     }
 
     ctx.fillStyle = 'orange';
-    ctx.strokeStyle = 'black';
-
+    
     agents.forEach( agent => {
       ctx.save();
       ctx.translate( agent.x, agent.y );
@@ -205,9 +215,21 @@
       // ctx.scale( agent.size );
 
       ctx.fill( agentBody );
+      
+      ctx.strokeStyle = 'black';
       ctx.stroke( agentBody );
 
       ctx.restore();
+
+      ctx.beginPath();
+      ctx.moveTo( agent.debug.point.x, agent.debug.point.y );
+      ctx.lineTo( agent.x, agent.y );
+
+      ctx.setLineDash( [ 0.5, 0.5 ] );
+      ctx.strokeStyle = 'orange';
+      ctx.stroke();
+      ctx.setLineDash( [] );
+
     } );
   };
 
