@@ -37,7 +37,7 @@
   const walls = [];
   cells.forEach( c => c.edges.filter( e => !e.linked ).forEach( e => walls.push( e ) ) );
 
-  let targetCell = cells[ 10 ];
+  let target = { x: 70, y: 40 };
 
   const agentBody = new Path2D();
   agentBody.arc( 0, 0, 1, 0, Math.PI * 2 );
@@ -53,7 +53,7 @@
     }
   }
 
-  new ValuesPanel( Agent );
+  // new ValuesPanel( Agent );
 
   // const agents = cells.map( e => ( { x: e.x, y: e.y, dx: 0, dy: 0, ddx: 0, ddy: 0 } ) );
   const agents = [];
@@ -93,7 +93,7 @@
   }
 
   canvas.update = ( dt ) => {
-
+    const targetCell = cells.find( c => c.contains( target.x, target.y ) );
     const flowField = flowMap.get( targetCell );
 
     agents.forEach( agent => {
@@ -104,18 +104,15 @@
         const cell = cells.find( c => c.contains( agent.x, agent.y ) );
         const bestEdge = flowField.get( cell );
         
-        if ( bestEdge ) {
-          const point = bestEdge.getClosestPoint( agent.x, agent.y, Agent.size + Constants.WallDistance );
+        const point = bestEdge ? bestEdge.getClosestPoint( agent.x, agent.y, Agent.size + Constants.WallDistance ) : target;
 
-          agent.debug.point = point;
+        agent.debug.point = point;
 
-          const goalAngle = Math.atan2( point.y - agent.y, point.x - agent.x );
-          
-          agent.ddx += Constants.TargetWeight * Math.cos( goalAngle );
-          agent.ddy += Constants.TargetWeight * Math.sin( goalAngle );
-        }
+        const goalAngle = Math.atan2( point.y - agent.y, point.x - agent.x );
+        
+        agent.ddx += Constants.TargetWeight * Math.cos( goalAngle );
+        agent.ddy += Constants.TargetWeight * Math.sin( goalAngle );
       }
-
 
       // TODO: Combine below somehow?
 
@@ -192,6 +189,7 @@
 
     cells.filter( c => c.edges.some( e => e.linked ) ).forEach( cell => cell.draw( ctx ) );
 
+    const targetCell = cells.find( c => c.contains( target.x, target.y ) );
     if ( targetCell ) {
       const flowField = flowMap.get( targetCell );
       
@@ -237,14 +235,9 @@
 
   canvas.start();
 
-  canvas.canvas.addEventListener( 'pointermove', ( e ) => {
-    const x = SIZE * e.offsetX / canvas.scale;
-    const y = SIZE * e.offsetY / canvas.scale;
-
-    const nextTarget = cells.find( c => c.contains( x, y ) );
-    if ( nextTarget ) {
-      targetCell = nextTarget;
-    }
+  canvas.canvas.addEventListener( 'pointerdown', ( e ) => {
+    target.x = SIZE * e.offsetX / canvas.scale;
+    target.y = SIZE * e.offsetY / canvas.scale;
   } );
 
 </script>
