@@ -17,10 +17,10 @@
     A: 5,
     B: 5,   // 0<A<=B 
     H: 0.2,
-    EPSILON: 0.1,   // how smooth the sigmoid functions are
-    TargetWeight: 6e-4,
-    FlockWeight: 4e-4,   // lowering this cuts down on jittering when dt is closer to normal
-    WallWeight: 8e-4,
+    EPSILON: 1, //0.1,   // how smooth the sigmoid functions are -- closer to one makes them settle in better when stopped
+    TargetWeight: 0.02,
+    FlockWeight: 0.04,   // lowering this cuts down on jittering when dt is closer to normal
+    WallWeight: 0.08,
     C2_gamma: 0.2,
   };
 
@@ -44,14 +44,16 @@
 
   const Agent = {
     size: 1,
-    maxSpeed: 0.004,
-    accel: 2e-5,
+    maxSpeed: 0.005,
+    accel: 8e-5,
     draw: ( ctx ) => {
       ctx.fillStyle = 'orange';
       ctx.fill( agentBody );
       ctx.stroke( agentBody );
     }
   }
+
+  new ValuesPanel( Agent );
 
   // const agents = cells.map( e => ( { x: e.x, y: e.y, dx: 0, dy: 0, ddx: 0, ddy: 0 } ) );
   const agents = [];
