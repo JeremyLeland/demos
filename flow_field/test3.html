@@ -37,7 +37,7 @@
   const walls = [];
   cells.forEach( c => c.edges.filter( e => !e.linked ).forEach( e => walls.push( e ) ) );
 
-  let target = { x: 70, y: 40 };
+  let target = { x: 15, y: 40 };
 
   const agentBody = new Path2D();
   agentBody.arc( 0, 0, 1, 0, Math.PI * 2 );
@@ -108,34 +108,43 @@
 
         agent.debug.point = point;
 
-        const goalAngle = Math.atan2( point.y - agent.y, point.x - agent.x );
         
-        agent.ddx += Constants.TargetWeight * Math.cos( goalAngle );
-        agent.ddy += Constants.TargetWeight * Math.sin( goalAngle );
+        // TODO: Use a sigma function of the distance here? This is one difference between this
+        //       implementation and the original.
+        // TODO: Incorporate braking here? Reverse accel if within stopping distance?
+        
+        // const goalAngle = Math.atan2( point.y - agent.y, point.x - agent.x );
+        // agent.ddx += Constants.TargetWeight * Math.cos( goalAngle );
+        // agent.ddy += Constants.TargetWeight * Math.sin( goalAngle );
+
+        agent.ddx += Constants.TargetWeight * sigma_1( point.x - agent.x );
+        agent.ddy += Constants.TargetWeight * sigma_1( point.y - agent.y );
       }
 
       // TODO: Combine below somehow?
 
       // Flocking
-      // TODO: only nearby neighbors?
       agents.forEach( neighbor => {
         if ( neighbor != agent ) {
           const cx = neighbor.x - agent.x;
           const cy = neighbor.y - agent.y;
           
-          const r_alpha = sigma_norm( Math.pow( 1.25 * Constants.FlockDistance + Agent.size + Agent.size, 2 ) );   // neighbor.size + agent.size
-          const d_alpha = sigma_norm( Math.pow( Constants.FlockDistance + Agent.size + Agent.size, 2 ) );
           
           const lengthSquared = cx * cx + cy * cy;
 
-          const sigNormDiff = sigma_norm( lengthSquared );
-          const bump = Constants.FlockWeight * rho( sigNormDiff / r_alpha );
-          const phiVal = phi( sigNormDiff - d_alpha );
-          
-          const phi_sigma_grad = phiVal / Math.sqrt( 1 + Constants.EPSILON * lengthSquared );
-          
-          agent.ddx += bump * ( phi_sigma_grad * cx + neighbor.dx - agent.dx );
-          agent.ddy += bump * ( phi_sigma_grad * cy + neighbor.dy - agent.dy );
+          if ( Math.sqrt( lengthSquared ) < 1.25 * Constants.FlockDistance + Agent.size + Agent.size ) { 
+            const r_alpha = sigma_norm( Math.pow( 1.25 * Constants.FlockDistance + Agent.size + Agent.size, 2 ) );   // neighbor.size + agent.size
+            const d_alpha = sigma_norm( Math.pow( Constants.FlockDistance + Agent.size + Agent.size, 2 ) );
+
+            const sigNormDiff = sigma_norm( lengthSquared );
+            const bump = Constants.FlockWeight * rho( sigNormDiff / r_alpha );
+            const phiVal = phi( sigNormDiff - d_alpha );
+            
+            const phi_sigma_grad = phiVal / Math.sqrt( 1 + Constants.EPSILON * lengthSquared );
+            
+            agent.ddx += bump * ( phi_sigma_grad * cx + neighbor.dx - agent.dx );
+            agent.ddy += bump * ( phi_sigma_grad * cy + neighbor.dy - agent.dy );
+          }
         }
       } );
 
@@ -165,6 +174,11 @@
       // Smooth it out somehow? (Not totaly sure what this does)
       agent.ddx -= Constants.C2_gamma * agent.dx;
       agent.ddy -= Constants.C2_gamma * agent.dy;
+
+
+      // TODO: Maybe we can't mix methods like this. What if we use the flocking to figure out
+      //       the ideal position for everyone, then move toward that? Applying our movement limits
+      //       to it seems to hit the same swaying problem as every other method
 
       const fixAccel = Math.min( 1, Agent.accel / Math.hypot( agent.ddx, agent.ddy ) );
       agent.ddx *= fixAccel;
