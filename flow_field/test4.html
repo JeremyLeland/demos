@@ -1,0 +1,256 @@
+<title>Move around flow field</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import { ValuesPanel } from './ValuesPanel.js';
+
+  import * as CellGrid from './CellGrid.js';
+  import { Cell } from './Cell.js';
+  import { Line } from './Line.js';
+
+  // Alpha: Movement relative to neighbors?
+  // Gamma: movement toward target?
+  const Constants = {
+    FlockDistance: 1,
+    WallDistance: 0.5,
+    A: 5,
+    B: 5,   // 0<A<=B 
+    H: 0.2,
+    EPSILON: 1, //0.1,   // how smooth the sigmoid functions are -- closer to one makes them settle in better when stopped
+    TargetWeight: 0.02,
+    FlockWeight: 0.04,   // lowering this cuts down on jittering when dt is closer to normal
+    WallWeight: 0.08,
+    C2_gamma: 0.2,
+  };
+
+  const canvas = new Canvas();
+  new ValuesPanel( Constants );
+
+  const SIZE = 100;
+
+  const level = await ( await fetch( './levels/test1.json' ) ).json();
+  const cells = CellGrid.fromPoints( level );
+
+  const flowMap = CellGrid.getFlowMap( cells );
+
+  const walls = [];
+  cells.forEach( c => c.edges.filter( e => !e.linked ).forEach( e => walls.push( e ) ) );
+
+  let target = { x: 15, y: 40 };
+
+  const agentBody = new Path2D();
+  agentBody.arc( 0, 0, 1, 0, Math.PI * 2 );
+
+  const Agent = {
+    size: 1,
+    maxSpeed: 0.005,
+    accel: 8e-5,
+    draw: ( ctx ) => {
+      ctx.fillStyle = 'orange';
+      ctx.fill( agentBody );
+      ctx.stroke( agentBody );
+    }
+  }
+
+  // new ValuesPanel( Agent );
+
+  // const agents = cells.map( e => ( { x: e.x, y: e.y, dx: 0, dy: 0, ddx: 0, ddy: 0 } ) );
+  const agents = [];
+  for ( let i = 0; i < 10; i ++ ) {
+    agents.push( { 
+      x: cells[ i ].x, 
+      y: cells[ i ].y, 
+      dx: 0, dy: 0, ddx: 0, ddy: 0,
+      debug: {}
+    } );
+  }
+
+  function sigma_1( z ) {
+    return z / Math.sqrt( 1 + z * z );
+  }
+
+  // function sigma_norm( x, y ) {
+  //   return ( Math.sqrt( 1 + Constants.EPSILON * ( x * x + y * y ) ) - 1 ) / Constants.EPSILON;
+  // }
+
+  function sigma_norm( lengthSquared ) {
+    return ( Math.sqrt( 1 + Constants.EPSILON * lengthSquared ) - 1 ) / Constants.EPSILON;
+  }
+
+  function phi( z ) {
+    const A = Constants.A;
+    const B = Constants.B;
+    const C = Math.abs( A - B ) / Math.sqrt( 4 * A * B );
+    return 0.5 * ( ( A + B ) * sigma_1( z + C ) + A - B );
+  }
+
+  function rho( z ) {
+    const H = Constants.H;
+    if ( z < H )  return 1;
+    if ( z > 1 )  return 0;
+    return 0.5 * ( 1 + Math.cos( Math.PI * ( z - H ) / ( 1 - H ) ) );
+  }
+
+  canvas.update = ( dt ) => {
+    const targetCell = cells.find( c => c.contains( target.x, target.y ) );
+    const flowField = flowMap.get( targetCell );
+
+    agents.forEach( agent => {
+      agent.ddx = agent.ddy = 0;
+
+      // Navigation
+      if ( flowField ) {   
+        const cell = cells.find( c => c.contains( agent.x, agent.y ) );
+        const bestEdge = flowField.get( cell );
+
+        // TODO: This has issues if agent is right on an edge. Can we avoid point if we have line of sight to target?
+        
+        const point = bestEdge ? bestEdge.getClosestPoint( agent.x, agent.y, Agent.size + Constants.WallDistance ) : target;
+
+        agent.debug.point = point;
+
+        const goalAngle = Math.atan2( point.y - agent.y, point.x - agent.x );
+        const targetDist = Math.hypot( target.x - agent.x, target.y - agent.y );
+        const weight = Constants.TargetWeight * sigma_1( targetDist );
+
+        agent.ddx += weight * Math.cos( goalAngle );
+        agent.ddy += weight * Math.sin( goalAngle );
+      }
+
+      // TODO: Combine below somehow?
+
+      // Flocking
+      agents.forEach( neighbor => {
+        if ( neighbor != agent ) {
+          const cx = neighbor.x - agent.x;
+          const cy = neighbor.y - agent.y;
+          
+          
+          const lengthSquared = cx * cx + cy * cy;
+
+          if ( Math.sqrt( lengthSquared ) < 1.25 * Constants.FlockDistance + Agent.size + Agent.size ) { 
+            const r_alpha = sigma_norm( Math.pow( 1.25 * Constants.FlockDistance + Agent.size + Agent.size, 2 ) );   // neighbor.size + agent.size
+            const d_alpha = sigma_norm( Math.pow( Constants.FlockDistance + Agent.size + Agent.size, 2 ) );
+
+            const sigNormDiff = sigma_norm( lengthSquared );
+            const bump = Constants.FlockWeight * rho( sigNormDiff / r_alpha );
+            const phiVal = phi( sigNormDiff - d_alpha );
+            
+            const phi_sigma_grad = phiVal / Math.sqrt( 1 + Constants.EPSILON * lengthSquared );
+            
+            agent.ddx += bump * ( phi_sigma_grad * cx + neighbor.dx - agent.dx );
+            agent.ddy += bump * ( phi_sigma_grad * cy + neighbor.dy - agent.dy );
+          }
+        }
+      } );
+
+      // Should this push back harder somehow, to make up for fact that wall won't move?
+      // Agents are still ending up outside the walls somehow
+      walls.forEach( wall => {
+        const point = wall.getClosestPoint( agent.x, agent.y );
+
+        const cx = point.x - agent.x;
+        const cy = point.y - agent.y;
+        
+        const r_alpha = sigma_norm( Math.pow( 1.25 * Constants.WallDistance + Agent.size, 2 ) );
+        const d_alpha = sigma_norm( Math.pow( Constants.WallDistance + Agent.size, 2 ) );
+        
+        const lengthSquared = Math.pow( point.distance, 2 );
+
+        const sigNormDiff = sigma_norm( lengthSquared );
+        const bump = Constants.WallWeight * rho( sigNormDiff / r_alpha );
+        const phiVal = phi( sigNormDiff - d_alpha );
+
+        const phi_sigma_grad = phiVal / Math.sqrt( 1 + Constants.EPSILON * lengthSquared );
+
+        agent.ddx += bump * ( phi_sigma_grad * cx - agent.dx );
+        agent.ddy += bump * ( phi_sigma_grad * cy - agent.dy );
+      } );
+
+      // Smooth it out somehow? (Not totaly sure what this does)
+      agent.ddx -= Constants.C2_gamma * agent.dx;
+      agent.ddy -= Constants.C2_gamma * agent.dy;
+
+
+      // TODO: Maybe we can't mix methods like this. What if we use the flocking to figure out
+      //       the ideal position for everyone, then move toward that? Applying our movement limits
+      //       to it seems to hit the same swaying problem as every other method
+
+      // const fixAccel = Math.min( 1, Agent.accel / Math.hypot( agent.ddx, agent.ddy ) );
+      // agent.ddx *= fixAccel;
+      // agent.ddy *= fixAccel;
+
+      const time = dt / 10;
+
+      agent.dx += agent.ddx * time;
+      agent.dy += agent.ddy * time;
+
+      // const fixSpeed = Math.min( 1, Agent.maxSpeed / Math.hypot( agent.dx, agent.dy ) );
+      // agent.dx *= fixSpeed;
+      // agent.dy *= fixSpeed;
+      
+      agent.x += agent.dx * time;
+      agent.y += agent.dy * time;
+
+    } );
+  };
+
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 2 * SIZE / canvas.scale;
+
+    cells.filter( c => c.edges.some( e => e.linked ) ).forEach( cell => cell.draw( ctx ) );
+
+    const targetCell = cells.find( c => c.contains( target.x, target.y ) );
+    if ( targetCell ) {
+      const flowField = flowMap.get( targetCell );
+      
+      cells.forEach( cell => {
+        const bestEdge = flowField.get( cell );
+        if ( bestEdge ) {
+          ctx.beginPath();
+          ctx.moveTo( cell.x, cell.y );
+          
+          ctx.lineTo( ( bestEdge.x1 + bestEdge.x2 ) / 2, ( bestEdge.y1 + bestEdge.y2 ) / 2 );
+          ctx.strokeStyle = 'yellow';
+          ctx.stroke();
+        }
+      } );
+    }
+
+    ctx.fillStyle = 'orange';
+    
+    agents.forEach( agent => {
+      ctx.save();
+      ctx.translate( agent.x, agent.y );
+      // ctx.rotate( agent.angle );
+      // ctx.scale( agent.size );
+
+      ctx.fill( agentBody );
+      
+      ctx.strokeStyle = 'black';
+      ctx.stroke( agentBody );
+
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.moveTo( agent.debug.point.x, agent.debug.point.y );
+      ctx.lineTo( agent.x, agent.y );
+
+      ctx.setLineDash( [ 0.5, 0.5 ] );
+      ctx.strokeStyle = 'orange';
+      ctx.stroke();
+      ctx.setLineDash( [] );
+
+    } );
+  };
+
+  canvas.start();
+
+  canvas.canvas.addEventListener( 'pointerdown', ( e ) => {
+    target.x = SIZE * e.offsetX / canvas.scale;
+    target.y = SIZE * e.offsetY / canvas.scale;
+  } );
+
+</script>
