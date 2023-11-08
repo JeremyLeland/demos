@@ -18,9 +18,9 @@
     B: 5,   // 0<A<=B 
     H: 0.2,
     EPSILON: 1, //0.1,   // how smooth the sigmoid functions are -- closer to one makes them settle in better when stopped
-    TargetWeight: 0.02,
-    FlockWeight: 0.04,   // lowering this cuts down on jittering when dt is closer to normal
-    WallWeight: 0.08,
+    TargetWeight: 0.015,
+    FlockWeight: 0.02,   // lowering this cuts down on jittering when dt is closer to normal
+    WallWeight: 0.04,
     C2_gamma: 0.2,
   };
 
@@ -106,6 +106,8 @@
 
         // TODO: This has issues if agent is right on an edge. Can we avoid point if we have line of sight to target?
         
+        // TODO: Don't go to closest point, go to intersection of current movement vector (clamped within line)
+
         const point = bestEdge ? bestEdge.getClosestPoint( agent.x, agent.y, Agent.size + Constants.WallDistance ) : target;
 
         agent.debug.point = point;
@@ -181,14 +183,14 @@
       // agent.ddx *= fixAccel;
       // agent.ddy *= fixAccel;
 
-      const time = dt / 10;
+      const time = dt / 5;
 
       agent.dx += agent.ddx * time;
       agent.dy += agent.ddy * time;
 
-      // const fixSpeed = Math.min( 1, Agent.maxSpeed / Math.hypot( agent.dx, agent.dy ) );
-      // agent.dx *= fixSpeed;
-      // agent.dy *= fixSpeed;
+      const fixSpeed = Math.min( 1, 5 * Agent.maxSpeed / Math.hypot( agent.dx, agent.dy ) );
+      agent.dx *= fixSpeed;
+      agent.dy *= fixSpeed;
       
       agent.x += agent.dx * time;
       agent.y += agent.dy * time;
