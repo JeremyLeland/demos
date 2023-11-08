@@ -22,6 +22,7 @@
     FlockWeight: 0.02,   // lowering this cuts down on jittering when dt is closer to normal
     WallWeight: 0.04,
     C2_gamma: 0.2,
+    WTF: 10,
   };
 
   const canvas = new Canvas();
@@ -175,20 +176,21 @@
       agent.ddy -= Constants.C2_gamma * agent.dy;
 
 
-      // TODO: Maybe we can't mix methods like this. What if we use the flocking to figure out
-      //       the ideal position for everyone, then move toward that? Applying our movement limits
-      //       to it seems to hit the same swaying problem as every other method
-
+      // Attempting to limit accel makes us springy
       // const fixAccel = Math.min( 1, Agent.accel / Math.hypot( agent.ddx, agent.ddy ) );
       // agent.ddx *= fixAccel;
       // agent.ddy *= fixAccel;
 
-      const time = dt / 5;
+      // WTF factor stabilizes the system. 
+      // Seems like slowing the acceleration changes is the important part, but just dividing accel isn't enough?
+      // If I divide everything by 1000 to put in terms of seconds, then it's way too slow
+      //  - need to scale up accel as well at that point? -- then it gets all springy again
+      const time = dt / Constants.WTF;
 
       agent.dx += agent.ddx * time;
       agent.dy += agent.ddy * time;
 
-      const fixSpeed = Math.min( 1, 5 * Agent.maxSpeed / Math.hypot( agent.dx, agent.dy ) );
+      const fixSpeed = Math.min( 1, Constants.WTF * Agent.maxSpeed / Math.hypot( agent.dx, agent.dy ) );
       agent.dx *= fixSpeed;
       agent.dy *= fixSpeed;
       
