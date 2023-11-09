@@ -1,3 +1,5 @@
+import * as Util from './Util.js';
+
 export class Line {
   constructor( x1, y1, x2, y2 ) {
     this.x1 = x1;
@@ -137,5 +139,17 @@ export class Line {
 
   isOutsideOfPoint( x, y ) {
     return Line.pointInsideLine( x, y, this.x1, this.y1, this.x2, this.y2 );
+  }
+
+  clampAngle( angle, x, y, radius = 0 ) {
+    const tangent = Math.atan2( this.y2 - this.y1, this.x2 - this.x1 );
+    const offsetX = radius * Math.cos( tangent );
+    const offsetY = radius * Math.sin( tangent );
+    
+    return Util.clampAngle( 
+      angle, 
+      Math.atan2( this.y2 - offsetY - y, this.x2 - offsetX - x ), 
+      Math.atan2( this.y1 + offsetY - y, this.x1 + offsetX - x ),
+    );
   }
 }
