@@ -42,7 +42,10 @@
   let target = { x: 15, y: 40 };
 
   const agentBody = new Path2D();
-  agentBody.arc( 0, 0, 1, 0, Math.PI * 2 );
+  // agentBody.arc( 0, 0, 1, 0, Math.PI * 2 );
+  agentBody.moveTo( -1, 0 );
+  agentBody.arc( 0, 0, 1, -1, 1 );
+  agentBody.closePath();
 
   const Agent = {
     size: 1,
@@ -50,6 +53,7 @@
     accel: 8e-5,
     draw: ( ctx ) => {
       ctx.fillStyle = 'orange';
+      ctx.strokeStyle = 'black';
       ctx.fill( agentBody );
       ctx.stroke( agentBody );
     }
@@ -59,11 +63,10 @@
 
   // const agents = cells.map( e => ( { x: e.x, y: e.y, dx: 0, dy: 0, ddx: 0, ddy: 0 } ) );
   const agents = [];
-  for ( let i = 0; i < 10; i ++ ) {
+  for ( let i = 0; i < 20; i ++ ) {
     agents.push( { 
       x: cells[ i ].x, 
-      y: cells[ i ].y, 
-      dx: 0, dy: 0, ddx: 0, ddy: 0,
+      y: cells[ i ].y,
       debug: {}
     } );
   }
@@ -99,6 +102,8 @@
     const flowField = flowMap.get( targetCell );
 
     agents.forEach( agent => {
+      agent.dx ??= 0;
+      agent.dy ??= 0;
       agent.ddx = agent.ddy = 0;
 
       // Navigation
@@ -195,6 +200,8 @@
       agent.x += agent.dx * time;
       agent.y += agent.dy * time;
 
+      agent.angle = Math.atan2( agent.dy, agent.dx );
+
     } );
   };
 
@@ -226,24 +233,21 @@
     agents.forEach( agent => {
       ctx.save();
       ctx.translate( agent.x, agent.y );
-      // ctx.rotate( agent.angle );
+      ctx.rotate( agent.angle );
       // ctx.scale( agent.size );
 
-      ctx.fill( agentBody );
-      
-      ctx.strokeStyle = 'black';
-      ctx.stroke( agentBody );
+      Agent.draw( ctx );
 
       ctx.restore();
 
-      ctx.beginPath();
-      ctx.moveTo( agent.debug.point.x, agent.debug.point.y );
-      ctx.lineTo( agent.x, agent.y );
+      // ctx.beginPath();
+      // ctx.moveTo( agent.debug.point.x, agent.debug.point.y );
+      // ctx.lineTo( agent.x, agent.y );
 
-      ctx.setLineDash( [ 0.5, 0.5 ] );
-      ctx.strokeStyle = 'orange';
-      ctx.stroke();
-      ctx.setLineDash( [] );
+      // ctx.setLineDash( [ 0.5, 0.5 ] );
+      // ctx.strokeStyle = 'orange';
+      // ctx.stroke();
+      // ctx.setLineDash( [] );
 
     } );
   };
