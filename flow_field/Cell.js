@@ -77,7 +77,6 @@ export class Cell {
     }
   }
   
-
   linkAll() {
     this.edges.filter( e => e.neighbor ).forEach( edge =>
       edge.linked = edge.neighbor.linked = true
@@ -88,6 +87,13 @@ export class Cell {
     this.edges.filter( e => e.neighbor ).forEach( edge =>
       edge.linked = edge.neighbor.linked = false
     );
+  }
+
+  remove() {
+    this.edges.filter( e => e.neighbor ).forEach( edge => {
+      edge.linked = edge.neighbor.linked = false;
+      edge.neighbor = edge.neighbor.neighbor = null;
+    } );
   }
 
   draw( ctx, color = 'cyan' ) {
