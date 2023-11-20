@@ -7,13 +7,15 @@
   import { Cell } from './Cell.js';
   import Voronoi from './lib/rhill-voronoi-core.js';
 
+  Cell.Debug = false;
+
   const canvas = new Canvas();
 
   const SIZE = 100;
   const MIN_LENGTH = 2.5;
 
   const points = [];
-  for ( let i = 0; i < 200; i ++ ) {
+  for ( let i = 0; i < 400; i ++ ) {
     points.push( { 
       x: Math.random() * SIZE,
       y: Math.random() * SIZE,
@@ -26,7 +28,7 @@
 
   let diagram = voronoi.compute( points, bbox );
 
-  for ( let i = 0; i < 2; i ++ ) {
+  for ( let i = 0; i < 10; i ++ ) {
     const points = [];
 
     diagram.cells.forEach( cell => {
@@ -98,20 +100,34 @@
 
   cells = cells.filter( c => c.edges.some( e => e.neighbor ) );   // remove unlinked cells
 
+  const open = new Set( cells );
 
-  const region = new Set();
+  const regions = Array.from( Array( 10 ), _ => new Set() );
 
-  region.add( cells[ Math.floor( Math.random() * cells.length ) ] );
-  for ( let i = 0; i < 10; i ++ ) {
-    const unlinked = [];
-    region.forEach( cell => unlinked.push( ...cell.edges.filter( e => e.neighbor && !e.linked ) ) );
+  while ( open.size > 0 ) {
+    regions.forEach( region => {
+      if ( region.size == 0 ) {
+        const openList = Array.from( open );
+        const cell = openList[ Math.floor( Math.random() * openList.length ) ];
 
-    const edge = unlinked[ Math.floor( Math.random() * unlinked.length ) ];
-    const cell = edge.neighbor.parent;
+        open.delete( cell );
+        region.add( cell );
+      }
+      else {
+        const unlinked = [];
+        region.forEach( cell => unlinked.push( ...cell.edges.filter( e => e.neighbor && open.has( e.neighbor.parent ) && !e.linked ) ) );
 
-    cell.edges.filter( e => region.has( e.neighbor?.parent ) ).forEach( e => e.linked = e.neighbor.linked = true );
+        if ( unlinked.length > 0 ) {
+          const edge = unlinked[ Math.floor( Math.random() * unlinked.length ) ];
+          const cell = edge.neighbor.parent;
 
-    region.add( edge.neighbor.parent );
+          cell.edges.filter( e => region.has( e.neighbor?.parent ) ).forEach( e => e.linked = e.neighbor.linked = true );
+
+          open.delete( cell );
+          region.add( cell );
+        }
+      }
+    } );
   }
 
   canvas.draw = ( ctx ) => {
@@ -120,14 +136,14 @@
 
     cells.forEach( cell => cell.draw( ctx ) );
 
-    region.forEach( cell => cell.draw( ctx, 'orange' ) );
+    const colors = [ 'red', 'green', 'blue', 'orange', 'purple', 'yellow' ];
+
+    regions.forEach( ( region, index ) => {
+      const color = colors[ index % colors.length ];
+      region.forEach( cell => cell.draw( ctx, color ) );
+    } );
   };
 
   canvas.redraw();
-
-  function randomNeighbor( cell ) {
-    const neighbors = cell.edges.filter( e => e.neighbor );
-    return neighbors[ Math.floor( Math.random() * neighbors.length ) ].neighbor.parent;
-  }
 
 </script>

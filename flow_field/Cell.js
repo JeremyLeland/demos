@@ -1,6 +1,9 @@
 import { Line } from './Line.js';
 
 export class Cell {
+
+  static Debug = true;
+
   x = 0;
   y = 0;
   edges = [];
@@ -97,34 +100,36 @@ export class Cell {
   }
 
   draw( ctx, color = 'cyan' ) {
-    ctx.beginPath();
-    ctx.arc( this.x, this.y, 1, 0, Math.PI * 2 );
-    ctx.fillStyle = 'red';
-    ctx.fill();
 
-    ctx.fillStyle = color;
-
-    ctx.save();
-    ctx.globalAlpha = 0.2;
-    
-    ctx.beginPath();
-    this.edges.forEach( edge => ctx.lineTo( edge.x1, edge.y1 ) );
-    ctx.fill();
-
+    ctx.save(); {
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.2;
+      
+      ctx.beginPath();
+      this.edges.forEach( edge => ctx.lineTo( edge.x1, edge.y1 ) );
+      ctx.fill();     
+    }
     ctx.restore();
 
-    this.edges.forEach( edge => {
-      ctx.strokeStyle = color;
-      edge.draw( ctx );
+    if ( Cell.Debug ) {
+      ctx.beginPath();
+      ctx.arc( this.x, this.y, 1, 0, Math.PI * 2 );
+      ctx.fillStyle = 'red';
+      ctx.fill();
 
-      if ( edge.neighbor ) {
-        ctx.beginPath();
-        ctx.moveTo( this.x, this.y );
-        ctx.lineTo( edge.neighbor.parent.x, edge.neighbor.parent.y );
-
-        ctx.strokeStyle = edge.linked ? 'green' : 'maroon';
-        ctx.stroke();
-      }
-    } );
+      this.edges.forEach( edge => {
+        ctx.strokeStyle = color;
+        edge.draw( ctx );
+        
+        if ( edge.neighbor ) {
+          ctx.beginPath();
+          ctx.moveTo( this.x, this.y );
+          ctx.lineTo( edge.neighbor.parent.x, edge.neighbor.parent.y );
+          
+          ctx.strokeStyle = edge.linked ? 'green' : 'maroon';
+          ctx.stroke();
+        }
+      } );
+    }
   }
 }
