@@ -9,13 +9,19 @@
 
   Cell.Debug = false;
 
+  const Settings = {
+    Seeds: 2000,
+    Lloyds: 10,
+    Regions: 32,
+  }
+
   const canvas = new Canvas();
 
   const SIZE = 100;
   const MIN_LENGTH = 2.5;
 
   const points = [];
-  for ( let i = 0; i < 400; i ++ ) {
+  for ( let i = 0; i < 1400; i ++ ) {
     points.push( { 
       x: Math.random() * SIZE,
       y: Math.random() * SIZE,
@@ -28,7 +34,7 @@
 
   let diagram = voronoi.compute( points, bbox );
 
-  for ( let i = 0; i < 10; i ++ ) {
+  for ( let i = 0; i < Settings.Lloyds; i ++ ) {
     const points = [];
 
     diagram.cells.forEach( cell => {
@@ -102,7 +108,7 @@
 
   const open = new Set( cells );
 
-  const regions = Array.from( Array( 10 ), _ => new Set() );
+  const regions = Array.from( Array( Settings.Regions ), _ => new Set() );
 
   while ( open.size > 0 ) {
     regions.forEach( region => {
