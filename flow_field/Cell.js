@@ -65,10 +65,11 @@ export class Cell {
   }
 
   merge( index ) {
-    const other = this.edges[ index ].neighbor?.parent;
+    const edge = this.edges[ index ];
+    const other = edge.neighbor?.parent;
 
     if ( other ) {
-      const otherIndex = other.edges.findIndex( e => e.neighbor?.parent == this );
+      const otherIndex = other.edges.findIndex( e => e == edge.neighbor );
       const otherEdges = other.edges.slice( otherIndex + 1 ).concat( other.edges.slice( 0, otherIndex ) );  
       
       this.edges.splice( index, 1, ...otherEdges );
@@ -78,6 +79,52 @@ export class Cell {
 
       this.#updateCenter();
     }
+  }
+
+  collapse( edge ) {
+    const midX = ( edge.x1 + edge.x2 ) / 2;
+    const midY = ( edge.y1 + edge.y2 ) / 2;
+
+    [ edge ].forEach( e => {
+      if ( e ) {
+        const index = e.parent.edges.indexOf( e );
+
+        let before = e.parent.edges.at( index - 1 );
+        let after = e.parent.edges.at( ( index + 1 ) % e.parent.edges.length );
+    
+        before.x2 = after.x1 = midX;
+        before.y2 = after.y1 = midY;
+    
+        while ( before.neighbor && before.neighbor != e ) {
+          const edge1 = before.neighbor;
+          const index1 = edge1.parent.edges.indexOf( edge1 );
+          before = edge1.parent.edges.at( index1 - 1 );
+    
+          before.x2 = edge1.x1 = midX;
+          before.y2 = edge1.y1 = midY;
+        }
+    
+        while ( after.neighbor && after.neighbor != e ) {
+          const edge2 = after.neighbor;
+          const index2 = edge2.parent.edges.indexOf( edge2 );
+          after = edge2.parent.edges.at( ( index2 + 1 ) % edge2.parent.edges.length );
+    
+          edge2.x2 = after.x1 = midX;
+          edge2.y2 = after.y1 = midY;
+        }
+
+        if ( e.neighbor ) {
+          const other = e.neighbor;
+          const otherIndex = other.parent.edges.indexOf( other );
+
+          other.neighbor = null;
+          other.parent.edges.splice( otherIndex, 1 );
+        }
+        
+        e.neighbor = null;
+        e.parent.edges.splice( index, 1 );
+      }
+    } );
   }
   
   linkAll() {
