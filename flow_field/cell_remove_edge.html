@@ -8,7 +8,7 @@
   import Voronoi from './lib/rhill-voronoi-core.js';
 
   const Settings = {
-    Seeds: 20,
+    Seeds: 40,
     Lloyds: 10,
     Regions: 32,
   }
@@ -128,6 +128,7 @@
   canvas.canvas.addEventListener( 'pointerdown', ( e ) => {
 
     hoverEdge.parent.collapse( hoverEdge );
+    cells = cells.filter( c => c.edges );   // remove any empty cells resulting from edge collapse
 
     canvas.redraw();
   } );

@@ -98,6 +98,9 @@ export class Cell {
     
         before.x2 = after.x1 = midX;
         before.y2 = after.y1 = midY;
+
+        // visited.add( before );
+        // visited.add( after );
     
         while ( before.neighbor && !visited.has( before.neighbor ) ) {
           const edge1 = before.neighbor;
@@ -106,6 +109,9 @@ export class Cell {
     
           before.x2 = edge1.x1 = midX;
           before.y2 = edge1.y1 = midY;
+
+          // visited.add( before );
+          // visited.add( edge1 );
         }
     
         while ( after.neighbor && !visited.has( after.neighbor ) ) {
@@ -115,12 +121,27 @@ export class Cell {
     
           edge2.x2 = after.x1 = midX;
           edge2.y2 = after.y1 = midY;
+
+          // visited.add( edge2 );
+          // visited.add( after );
         }
     
         // e.neighbor = null;
         e.parent.edges.splice( index, 1 );
+
+        if ( e.parent.edges.length == 2 ) {
+          const A = e.parent.edges[ 0 ].neighbor;
+          const B = e.parent.edges[ 1 ].neighbor;
+
+          if ( A )  A.neighbor = B;
+          if ( B )  B.neighbor = A;
+
+          e.parent.edges = null;
+        }
       }
     } );
+
+    
   }
   
   linkAll() {
@@ -149,7 +170,7 @@ export class Cell {
       ctx.globalAlpha = 0.2;
       
       ctx.beginPath();
-      this.edges.forEach( edge => ctx.lineTo( edge.x1, edge.y1 ) );
+      this.edges?.forEach( edge => ctx.lineTo( edge.x1, edge.y1 ) );
       ctx.fill();     
     }
     ctx.restore();
@@ -160,7 +181,7 @@ export class Cell {
       ctx.fillStyle = 'red';
       ctx.fill();
 
-      this.edges.forEach( edge => {
+      this.edges?.forEach( edge => {
         ctx.strokeStyle = color;
         edge.draw( ctx );
         
