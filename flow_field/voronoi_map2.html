@@ -1,0 +1,86 @@
+<title>Voronoi region maps</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import { Cell } from './Cell.js';
+  import { getVoronoiGrid } from './VoronoiCellGrid.js';
+
+  // Cell.Debug = false;
+
+  const Settings = {
+    Seeds: 150,
+    Lloyds: 10,
+    Regions: 32,
+  }
+
+  const canvas = new Canvas();
+
+  const SIZE = 100;
+  const MIN_LENGTH = 5;
+
+  let cells = getVoronoiGrid( SIZE, SIZE, Settings.Seeds, Settings.Lloyds );
+  removeSmallEdges();
+
+  // // Remove weakly linked cells (does this get rid of some edges?)
+  // TODO: Do this as part of a loop to reflect weakly linked cells after removals?
+  // cells.forEach( cell => {
+  //   if ( cell.edges.filter( e => e.neighbor ).length < 4 ) {
+  //     cell.remove();
+  //   }
+  // } );
+
+  cells = cells.filter( c => c.edges.some( e => e.neighbor ) );   // remove unlinked cells
+
+  // TODO: Randomly merge adjacent cells until we have the desired number of regions
+
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 2 * SIZE / canvas.scale;
+
+    cells.forEach( cell => cell.draw( ctx ) );
+
+    ctx.strokeStyle = 'red';
+    cells.forEach( cell => {
+      cell.edges.forEach( edge => {
+        if ( Math.hypot( edge.x1 - edge.x2, edge.y1 - edge.y2 ) < MIN_LENGTH ) {
+          edge.draw( ctx );
+        }
+      } );
+    } );
+
+    // const colors = [ 'red', 'green', 'blue', 'orange', 'purple', 'yellow' ];
+
+    // regions.forEach( ( region, index ) => {
+    //   const color = colors[ index % colors.length ];
+    //   region.forEach( cell => cell.draw( ctx, color ) );
+    // } );
+  };
+
+  canvas.redraw();
+
+  // canvas.canvas.addEventListener( 'pointerdown', ( e ) => {
+  //   removeSmallEdges();
+  //   canvas.redraw();
+  // } );
+
+  function removeSmallEdges() {
+    for ( let c = 0; c < cells.length; c ++ ) {
+      const cell = cells[ c ];
+
+      for ( let e = 0; e < cell.edges.length; e ++ ) {
+        const edge = cell.edges[ e ];
+
+        if ( /*edge.neighbor && */ Math.hypot( edge.x1 - edge.x2, edge.y1 - edge.y2 ) < MIN_LENGTH ) {
+          cell.collapse( edge );
+          
+          // start over just to be sure, since we may have destroyed cells
+          cells = cells.filter( x => x.edges );
+          c = -1;
+          break;
+        }
+      }
+    }
+  }
+
+</script>

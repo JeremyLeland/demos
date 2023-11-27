@@ -110,6 +110,8 @@ export class Cell {
           before.x2 = edge1.x1 = midX;
           before.y2 = edge1.y1 = midY;
 
+          edge1.parent.#updateCenter();
+
           // visited.add( before );
           // visited.add( edge1 );
         }
@@ -121,6 +123,8 @@ export class Cell {
     
           edge2.x2 = after.x1 = midX;
           edge2.y2 = after.y1 = midY;
+
+          edge2.parent.#updateCenter();
 
           // visited.add( edge2 );
           // visited.add( after );
@@ -137,6 +141,9 @@ export class Cell {
           if ( B )  B.neighbor = A;
 
           e.parent.edges = null;
+        }
+        else {
+          e.parent.#updateCenter();
         }
       }
     } );
