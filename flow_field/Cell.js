@@ -85,8 +85,12 @@ export class Cell {
     const midX = ( edge.x1 + edge.x2 ) / 2;
     const midY = ( edge.y1 + edge.y2 ) / 2;
 
-    [ edge ].forEach( e => {
+    const visited = new Set();
+
+    [ edge, edge.neighbor ].forEach( e => {
       if ( e ) {
+        visited.add( e );
+
         const index = e.parent.edges.indexOf( e );
 
         let before = e.parent.edges.at( index - 1 );
@@ -95,7 +99,7 @@ export class Cell {
         before.x2 = after.x1 = midX;
         before.y2 = after.y1 = midY;
     
-        while ( before.neighbor && before.neighbor != e ) {
+        while ( before.neighbor && !visited.has( before.neighbor ) ) {
           const edge1 = before.neighbor;
           const index1 = edge1.parent.edges.indexOf( edge1 );
           before = edge1.parent.edges.at( index1 - 1 );
@@ -104,7 +108,7 @@ export class Cell {
           before.y2 = edge1.y1 = midY;
         }
     
-        while ( after.neighbor && after.neighbor != e ) {
+        while ( after.neighbor && !visited.has( after.neighbor ) ) {
           const edge2 = after.neighbor;
           const index2 = edge2.parent.edges.indexOf( edge2 );
           after = edge2.parent.edges.at( ( index2 + 1 ) % edge2.parent.edges.length );
@@ -112,16 +116,8 @@ export class Cell {
           edge2.x2 = after.x1 = midX;
           edge2.y2 = after.y1 = midY;
         }
-
-        if ( e.neighbor ) {
-          const other = e.neighbor;
-          const otherIndex = other.parent.edges.indexOf( other );
-
-          other.neighbor = null;
-          other.parent.edges.splice( otherIndex, 1 );
-        }
-        
-        e.neighbor = null;
+    
+        // e.neighbor = null;
         e.parent.edges.splice( index, 1 );
       }
     } );
