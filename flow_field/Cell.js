@@ -165,9 +165,10 @@ export class Cell {
 
   remove() {
     this.edges.filter( e => e.neighbor ).forEach( edge => {
-      edge.linked = edge.neighbor.linked = false;
-      edge.neighbor = edge.neighbor.neighbor = null;
+      edge.neighbor.linked = false;
+      edge.neighbor.neighbor = null;
     } );
+    this.edges = null;
   }
 
   draw( ctx, color = 'cyan' ) {

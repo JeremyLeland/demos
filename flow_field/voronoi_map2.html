@@ -24,13 +24,13 @@
 
   // // Remove weakly linked cells (does this get rid of some edges?)
   // TODO: Do this as part of a loop to reflect weakly linked cells after removals?
-  // cells.forEach( cell => {
-  //   if ( cell.edges.filter( e => e.neighbor ).length < 4 ) {
-  //     cell.remove();
-  //   }
-  // } );
+  cells.forEach( cell => {
+    if ( cell.edges.filter( e => e.neighbor ).length < 3 ) {
+      cell.remove();
+    }
+  } );
 
-  cells = cells.filter( c => c.edges.some( e => e.neighbor ) );   // remove unlinked cells
+  cells = cells.filter( c => c.edges );   // remove unlinked cells
 
   // TODO: Randomly merge adjacent cells until we have the desired number of regions
 
