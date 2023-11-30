@@ -64,15 +64,20 @@ export class Cell {
     }
   }
 
+  // TODO: What if we completely surround another cell? 
+  // Either need to swallow it up, or handle two separate loops of edges
+
   merge( index ) {
     const edge = this.edges[ index ];
     const other = edge.neighbor?.parent;
 
     if ( other ) {
-      const otherIndex = other.edges.findIndex( e => e == edge.neighbor );
-      const otherEdges = other.edges.slice( otherIndex + 1 ).concat( other.edges.slice( 0, otherIndex ) );  
+      const otherIndex = other.edges.indexOf( edge.neighbor );
+      const otherEdges = other.edges.slice( otherIndex + 1 ).concat( other.edges.slice( 0, otherIndex ) );
       
       this.edges.splice( index, 1, ...otherEdges );
+      this.edges = this.edges.filter( e => e.neighbor?.parent != this && e.neighbor?.parent != other );
+
       otherEdges.forEach( e => e.parent = this );
 
       other.edges = null;

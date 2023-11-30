@@ -32,22 +32,18 @@
 
   cells = cells.filter( c => c.edges );   // remove unlinked cells
 
-  // TODO: Randomly merge adjacent cells until we have the desired number of regions
+  // Randomly merge adjacent cells until we have the desired number of regions
+  while ( cells.length > Settings.Regions ) {
+    const toExpand = cells[ Math.floor( Math.random() * cells.length ) ];
+    toExpand.merge( Math.floor( Math.random() * toExpand.edges.length ) );
+    cells = cells.filter( e => e.edges );   // remove merged cell
+  }
 
   canvas.draw = ( ctx ) => {
     ctx.scale( 1 / SIZE, 1 / SIZE );
     ctx.lineWidth = 2 * SIZE / canvas.scale;
 
     cells.forEach( cell => cell.draw( ctx ) );
-
-    ctx.strokeStyle = 'red';
-    cells.forEach( cell => {
-      cell.edges.forEach( edge => {
-        if ( Math.hypot( edge.x1 - edge.x2, edge.y1 - edge.y2 ) < MIN_LENGTH ) {
-          edge.draw( ctx );
-        }
-      } );
-    } );
 
     // const colors = [ 'red', 'green', 'blue', 'orange', 'purple', 'yellow' ];
 
