@@ -13,7 +13,9 @@
     Seeds: 150,
     Lloyds: 10,
     Regions: 22,
+    SegmentLength: 1,
     Offset: 1,
+    NoiseScale: 1,
   }
 
   const canvas = new Canvas();
@@ -53,28 +55,29 @@
 
     ctx.strokeStyle = 'gray';
     cells.forEach( cell => {
+      ctx.beginPath();
       cell.edges.forEach( edge => {
         if ( edge.border ) {
-          ctx.beginPath();
           edge.border.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
-          ctx.stroke();
         }
       } );
+
+      ctx.stroke();
     } );
 
-    ctx.fillStyle = 'orange';
-    ctx.beginPath();
-    cells.forEach( cell => {
-      cell.edges.forEach( edge => {
-        if ( edge.border ) {
-          edge.border.forEach( p => {
-            ctx.moveTo( p[ 0 ], p[ 1 ] );
-            ctx.arc( p[ 0 ], p[ 1 ], 0.3, 0, Math.PI * 2 );
-          });
-        }
-      } );
-    } );
-    ctx.fill();
+    // ctx.fillStyle = 'orange';
+    // ctx.beginPath();
+    // cells.forEach( cell => {
+    //   cell.edges.forEach( edge => {
+    //     if ( edge.border ) {
+    //       edge.border.forEach( p => {
+    //         ctx.moveTo( p[ 0 ], p[ 1 ] );
+    //         ctx.arc( p[ 0 ], p[ 1 ], 0.3, 0, Math.PI * 2 );
+    //       });
+    //     }
+    //   } );
+    // } );
+    // ctx.fill();
     
     // const colors = [ 'red', 'green', 'blue', 'orange', 'purple', 'yellow' ];
 
@@ -128,28 +131,32 @@
       const angle = Math.atan2( cy, cx );
       const length = Math.hypot( cx, cy );
 
-      const GOAL_LENGTH = 2;
-      const segments = Math.ceil( length / GOAL_LENGTH );
+      const segments = Math.ceil( length / Settings.SegmentLength );
 
       const border = [];
 
-      for ( let len = 0; len <= length; len += length / segments ) {
+      border.push( [ edge.x1, edge.y1 ] );
+
+      for ( let i = 1; i < segments; i ++ ) {
+        const len = i * length / segments;
         const x = edge.x1 + Math.cos( angle ) * len;
         const y = edge.y1 + Math.sin( angle ) * len;
 
-        const height = Settings.Offset * noise( x, y );
+        const height = Settings.Offset * noise( Settings.NoiseScale * x, Settings.NoiseScale * y );
         border.push( [
           x + Math.sin( angle ) * height, 
           y - Math.cos( angle ) * height,
         ] );
       }
 
+      border.push( [ edge.x2, edge.y2 ] );
+
       edge.border = border;
       closed.add( edge );
       open.delete( edge );
 
       if ( edge.neighbor ) {
-        edge.neighbor.border = border.reverse();
+        edge.neighbor.border = border.slice().reverse();
         closed.add( edge.neighbor );
         open.delete( edge.neighbor );
       }
