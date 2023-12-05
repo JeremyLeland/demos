@@ -11,7 +11,8 @@
   const Settings = {
     Seeds: 150,
     Lloyds: 10,
-    Regions: 32,
+    Regions: 22,
+    Offset: 2,
   }
 
   const canvas = new Canvas();
@@ -45,7 +46,7 @@
     ctx.scale( 1 / SIZE, 1 / SIZE );
     ctx.lineWidth = 2 * SIZE / canvas.scale;
 
-    cells.forEach( cell => cell.draw( ctx ) );
+    // cells.forEach( cell => cell.draw( ctx ) );
 
     ctx.strokeStyle = 'yellow';
     cells.forEach( cell => {
@@ -102,37 +103,39 @@
       } );
     } );
 
-    const [ edge ] = open;
+    while ( open.size > 0 ) { 
+      const [ edge ] = open;
 
-    const cx = edge.x2 - edge.x1;
-    const cy = edge.y2 - edge.y1;
-    const angle = Math.atan2( cy, cx );
-    const length = Math.hypot( cx, cy );
+      const cx = edge.x2 - edge.x1;
+      const cy = edge.y2 - edge.y1;
+      const angle = Math.atan2( cy, cx );
+      const length = Math.hypot( cx, cy );
 
-    const offsets = [
-      [ 0, 0 ],
-      [ 0.5 * length, 1 ],
-      [ 1 * length, 0 ],
-    ];
+      const offsets = [
+        [ 0, 0 ],
+        [ 0.5 * length, Settings.Offset * ( Math.random() - 0.5 ) ],
+        [ 1 * length, 0 ],
+      ];
 
-    const prev = offsets.slice( 1, 2 )[ 0 ][ 1 ];
+      const prev = offsets.slice( 1, 2 )[ 0 ][ 1 ];
 
-    offsets.splice( 1, 0, [ 0.25 * length, prev + 1 ] );
-    offsets.splice( 3, 0, [ 0.75 * length, prev + 1 ] );
- 
-    const border = offsets.map( e => [ 
-      edge.x1 + Math.cos( angle ) * e[ 0 ] + Math.sin( angle ) * e[ 1 ], 
-      edge.y1 + Math.sin( angle ) * e[ 0 ] - Math.cos( angle ) * e[ 1 ],
-    ] );
+      offsets.splice( 1, 0, [ 0.25 * length, prev + Settings.Offset * ( Math.random() - 0.5 ) ] );
+      offsets.splice( 3, 0, [ 0.75 * length, prev + Settings.Offset * ( Math.random() - 0.5 ) ] );
+  
+      const border = offsets.map( e => [ 
+        edge.x1 + Math.cos( angle ) * e[ 0 ] + Math.sin( angle ) * e[ 1 ], 
+        edge.y1 + Math.sin( angle ) * e[ 0 ] - Math.cos( angle ) * e[ 1 ],
+      ] );
 
-    edge.border = border;
-    closed.add( edge );
-    open.delete( edge );
+      edge.border = border;
+      closed.add( edge );
+      open.delete( edge );
 
-    if ( edge.neighbor ) {
-      edge.neighbor.border = border.reverse();
-      closed.add( edge.neighbor );
-      open.delete( edge.neighbor );
+      if ( edge.neighbor ) {
+        edge.neighbor.border = border.reverse();
+        closed.add( edge.neighbor );
+        open.delete( edge.neighbor );
+      }
     }
   }
 
