@@ -5,6 +5,7 @@
   import { Canvas } from './Canvas.js';
   import { Cell } from './Cell.js';
   import { getVoronoiGrid } from './VoronoiCellGrid.js';
+  import { makeNoise2D } from './lib/noise2d.js';
 
   // Cell.Debug = false;
 
@@ -12,10 +13,12 @@
     Seeds: 150,
     Lloyds: 10,
     Regions: 22,
-    Offset: 2,
+    Offset: 1,
   }
 
   const canvas = new Canvas();
+
+  const noise = makeNoise2D();
 
   const SIZE = 100;
   const MIN_LENGTH = 5;
@@ -48,7 +51,7 @@
 
     // cells.forEach( cell => cell.draw( ctx ) );
 
-    ctx.strokeStyle = 'yellow';
+    ctx.strokeStyle = 'gray';
     cells.forEach( cell => {
       cell.edges.forEach( edge => {
         if ( edge.border ) {
@@ -59,6 +62,20 @@
       } );
     } );
 
+    ctx.fillStyle = 'orange';
+    ctx.beginPath();
+    cells.forEach( cell => {
+      cell.edges.forEach( edge => {
+        if ( edge.border ) {
+          edge.border.forEach( p => {
+            ctx.moveTo( p[ 0 ], p[ 1 ] );
+            ctx.arc( p[ 0 ], p[ 1 ], 0.3, 0, Math.PI * 2 );
+          });
+        }
+      } );
+    } );
+    ctx.fill();
+    
     // const colors = [ 'red', 'green', 'blue', 'orange', 'purple', 'yellow' ];
 
     // regions.forEach( ( region, index ) => {
@@ -111,21 +128,21 @@
       const angle = Math.atan2( cy, cx );
       const length = Math.hypot( cx, cy );
 
-      const offsets = [
-        [ 0, 0 ],
-        [ 0.5 * length, Settings.Offset * ( Math.random() - 0.5 ) ],
-        [ 1 * length, 0 ],
-      ];
+      const GOAL_LENGTH = 2;
+      const segments = Math.ceil( length / GOAL_LENGTH );
 
-      const prev = offsets.slice( 1, 2 )[ 0 ][ 1 ];
+      const border = [];
 
-      offsets.splice( 1, 0, [ 0.25 * length, prev + Settings.Offset * ( Math.random() - 0.5 ) ] );
-      offsets.splice( 3, 0, [ 0.75 * length, prev + Settings.Offset * ( Math.random() - 0.5 ) ] );
-  
-      const border = offsets.map( e => [ 
-        edge.x1 + Math.cos( angle ) * e[ 0 ] + Math.sin( angle ) * e[ 1 ], 
-        edge.y1 + Math.sin( angle ) * e[ 0 ] - Math.cos( angle ) * e[ 1 ],
-      ] );
+      for ( let len = 0; len <= length; len += length / segments ) {
+        const x = edge.x1 + Math.cos( angle ) * len;
+        const y = edge.y1 + Math.sin( angle ) * len;
+
+        const height = Settings.Offset * noise( x, y );
+        border.push( [
+          x + Math.sin( angle ) * height, 
+          y - Math.cos( angle ) * height,
+        ] );
+      }
 
       edge.border = border;
       closed.add( edge );
