@@ -13,8 +13,8 @@
     Seeds: 150,
     Lloyds: 10,
     Regions: 22,
-    SegmentLength: 1,
-    Offset: 1,
+    SegmentLength: 0.25,
+    Offset: 2,
     NoiseScale: 1,
   }
 
@@ -40,6 +40,9 @@
 
   // Randomly merge adjacent cells until we have the desired number of regions
   while ( cells.length > Settings.Regions ) {
+
+    // TODO: Try to grow smaller regions first? (so we don't end up with so many tiny ones)
+
     const toExpand = cells[ Math.floor( Math.random() * cells.length ) ];
     toExpand.merge( Math.floor( Math.random() * toExpand.edges.length ) );
     cells = cells.filter( e => e.edges );   // remove merged cell
@@ -142,7 +145,8 @@
         const x = edge.x1 + Math.cos( angle ) * len;
         const y = edge.y1 + Math.sin( angle ) * len;
 
-        const height = Settings.Offset * noise( Settings.NoiseScale * x, Settings.NoiseScale * y );
+        const height = Settings.Offset * getFractalNoise( Settings.NoiseScale * x, Settings.NoiseScale * y );
+
         border.push( [
           x + Math.sin( angle ) * height, 
           y - Math.cos( angle ) * height,
@@ -161,6 +165,23 @@
         open.delete( edge.neighbor );
       }
     }
+  }
+
+  function getFractalNoise( x, y, octaves = 8, frequency = 0.2, persistance = 0.5 ) {
+    let total = 0;
+    let freq = frequency;
+    let amplitude = 1;
+    let maxValue = 0;
+
+    for ( let i = 0; i < octaves; i++ ) {
+      total += noise( x * freq, y * freq ) * amplitude;
+
+      maxValue += amplitude;
+      amplitude *= persistance;
+      freq *= 2;
+    }
+
+    return total / maxValue;
   }
 
 </script>
