@@ -35,6 +35,8 @@
         out vec3 outColor;
 
         // https://www.geogebra.org/m/JA9vHxWT
+        // d = sqrt( ( y - b )^2 + ( x - a )^2 )
+        // d = sqrt( ( x^2 - b )^2 + ( x - a )^2 )
         // d' = ( x^2 - b ) * 2x + ( x - a )
         // d' = 2x^3 + 0x^2 + ( 1 - 2b )x - a
         // a = 2, b = 0, c = ( 1 - 2b ), d = -a
@@ -42,6 +44,10 @@
         float cubeRoot( float val ) {
           float fixNeg = val < 0.0 ? -1.0 : 1.0;
           return fixNeg * pow( fixNeg * val, 1.0 / 3.0 );
+        }
+
+        vec2 curvePoint( float x ) {
+          return vec2( x, x * x );
         }
 
         void main() {
@@ -66,7 +72,6 @@
 
           float term1 = b / 3.0;
 
-
           float root = 0.0;
           float dist = 0.0;
 
@@ -78,17 +83,15 @@
             root = -term1 + s + t;
             // ignore complex roots
 
-            dist = sqrt( pow( root * root - v_pos.y, 2.0 ) + pow( root - v_pos.x, 2.0 ) );
+            dist = distance( curvePoint( root ), v_pos.xy );
           }
 
           // All roots real, at least two are equal
           else if ( discrim == 0.0 ) {
-            float r13 = cubeRoot( r );
-
-            root = -term1 + 2.0 * r13;
+            root = -term1 + 2.0 * cubeRoot( r );
             // ignore complex roots
 
-            dist = sqrt( pow( root * root - v_pos.y, 2.0 ) + pow( root - v_pos.x, 2.0 ) );
+            dist = distance( curvePoint( root ), v_pos.xy );
           }
 
           // All roots are real and unequal
@@ -100,14 +103,22 @@
             float root2 = temp * cos( ( dum1 + 2.0 * PI ) / 3.0 );
             float root3 = temp * cos( ( dum1 + 4.0 * PI ) / 3.0 );
 
-            float dist1 = sqrt( pow( root1 * root1 - v_pos.y, 2.0 ) + pow( root1 - v_pos.x, 2.0 ) );
-            float dist2 = sqrt( pow( root2 * root2 - v_pos.y, 2.0 ) + pow( root2 - v_pos.x, 2.0 ) );
-            float dist3 = sqrt( pow( root3 * root3 - v_pos.y, 2.0 ) + pow( root3 - v_pos.x, 2.0 ) );
+            float dist1 = distance( curvePoint( root1 ), v_pos.xy );
+            float dist2 = distance( curvePoint( root2 ), v_pos.xy );
+            float dist3 = distance( curvePoint( root3 ), v_pos.xy );
 
             dist = min( dist1, min( dist2, dist3 ) );
           }
 
-          outColor = vec3( 1.0 - dist, 0.0, 0.0 );
+          if ( dist < 1.0 ) {
+            outColor = vec3( 0.0, cos( PI / 2.0 * dist ), 0.0 );
+          }
+          else if ( dist < 1.05 ) {
+            outColor = vec3( 0.0, 0.0, 0.0 );
+          }
+          else {
+            discard;
+          }
         }
       `,
       glslVersion: THREE.GLSL3,
