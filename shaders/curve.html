@@ -5,7 +5,7 @@
   import * as MeshDemo from './meshDemo.js';
 
   const uniforms = {
-    magnitude: { value: 2 },
+    magnitude: { value: 1.5 },
   };
 
   // Trying to shade and fill a parabola based on point's distance from curve
@@ -109,23 +109,38 @@
             float dum1 = acos(r / sqrt(-q * -q * -q));
             float temp = -term1 + 2.0 * sqrt(-q);
 
-            float root1 = clamp( temp * cos( dum1 / 3.0 ), -LIMIT, LIMIT );
+            // TODO: Make a for loop (for readability)?
+            float root1 = clamp( temp * cos( ( dum1 + 0.0 * PI ) / 3.0 ), -LIMIT, LIMIT );
             float root2 = clamp( temp * cos( ( dum1 + 2.0 * PI ) / 3.0 ), -LIMIT, LIMIT );
             float root3 = clamp( temp * cos( ( dum1 + 4.0 * PI ) / 3.0 ), -LIMIT, LIMIT );
-
-            
 
             float dist1 = distance( curvePoint( root1 ), v_pos.xy );
             float dist2 = distance( curvePoint( root2 ), v_pos.xy );
             float dist3 = distance( curvePoint( root3 ), v_pos.xy );
 
-            dist = min( dist1, min( dist2, dist3 ) );
+            root = root1;
+            dist = dist1;
+
+            if ( dist2 < dist ) {
+              root = root2;
+              dist = dist2;
+            }
+            if ( dist3 < dist ) {
+              root = root3;
+              dist = dist3;
+            }
+
+            // dist = min( dist1, min( dist2, dist3 ) );
           }
 
-          if ( dist < WIDTH ) {
-            outColor = vec3( 0.0, cos( PI / 2.0 * dist / WIDTH ), 0.0 );
+          const float START_WIDTH = 0.35, END_WIDTH = 0.1;
+
+          float width = END_WIDTH + ( LIMIT - abs( root ) ) * ( START_WIDTH - END_WIDTH );
+
+          if ( dist < width ) {
+            outColor = vec3( 0.0, cos( PI / 2.0 * dist / width ), 0.0 );
           }
-          else if ( dist < WIDTH + STROKE ) {
+          else if ( dist < width + STROKE ) {
             outColor = vec3( 0.0, 0.0, 0.0 );
           }
           else {
