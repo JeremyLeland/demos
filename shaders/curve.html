@@ -4,6 +4,8 @@
   import * as THREE from '../lib/three.module.js';
   import * as MeshDemo from './meshDemo.js';
 
+  let animationTime = 0;
+
   const uniforms = {
     magnitude: { value: 1.5 },
   };
@@ -133,7 +135,7 @@
             // dist = min( dist1, min( dist2, dist3 ) );
           }
 
-          const float START_WIDTH = 0.35, END_WIDTH = 0.1;
+          const float START_WIDTH = 0.3, END_WIDTH = 0.1;
 
           float width = END_WIDTH + ( LIMIT - abs( root ) ) * ( START_WIDTH - END_WIDTH );
 
@@ -150,6 +152,9 @@
       `,
       glslVersion: THREE.GLSL3,
     } )
-  ) );
+  ), ( dt ) => {
+    animationTime += dt / 100;
+    uniforms.magnitude.value = 0.75 + 0.25 * Math.sin( animationTime );
+  } );
 
 </script>

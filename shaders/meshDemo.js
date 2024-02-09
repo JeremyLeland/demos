@@ -1,7 +1,7 @@
 import * as THREE from '../lib/three.module.js';
 import { OrbitControls } from '../lib/controls/OrbitControls.js';
 
-export function meshDemo( mesh ) {
+export function meshDemo( mesh, updateFunc ) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color( 0x111111 );
 
@@ -37,6 +37,21 @@ export function meshDemo( mesh ) {
   controls.target.set( 0, 0, 0 );
   controls.update();
   controls.addEventListener( 'change', render );
+
+  if ( updateFunc ) {
+    let lastTime;
+    const animate = ( now ) => {
+      lastTime ??= now;  // for first call only
+      updateFunc( now - lastTime );
+      lastTime = now;
+  
+      render();
+  
+      requestAnimationFrame( animate );
+    };
+
+    requestAnimationFrame( animate );
+  }
 
   return render;
 }
