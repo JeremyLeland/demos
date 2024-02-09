@@ -5,6 +5,7 @@
   import * as MeshDemo from './meshDemo.js';
 
   const uniforms = {
+    magnitude: { value: 2 },
   };
 
   // Trying to shade and fill a parabola based on point's distance from curve
@@ -34,25 +35,32 @@
 
         out vec3 outColor;
 
+        uniform float magnitude;
+
         // https://www.geogebra.org/m/JA9vHxWT
         // d = sqrt( ( y - b )^2 + ( x - a )^2 )
         // d = sqrt( ( x^2 - b )^2 + ( x - a )^2 )
         // d' = ( x^2 - b ) * 2x + ( x - a )
         // d' = 2x^3 + 0x^2 + ( 1 - 2b )x - a
-        // a = 2, b = 0, c = ( 1 - 2b ), d = -a
+
+        // Helpful: https://www.symbolab.com/solver/partial-derivative-calculator/
+
+        // A = 2, B = 0, C = ( 1 - 2b ), D = -a
 
         float cubeRoot( float val ) {
           float fixNeg = val < 0.0 ? -1.0 : 1.0;
           return fixNeg * pow( fixNeg * val, 1.0 / 3.0 );
         }
 
+        // NOTE: When this didn't match A/B/C/D above, we got some interesting results
+        // e.g. when derivatives were for 2x^2 but this was for x^2, it looked like a heart *shrug*
+
         vec2 curvePoint( float x ) {
-          return vec2( x, x * x );
+          return vec2( x, magnitude * x * x );
         }
 
         void main() {
-
-          float a = 2.0, b = 0.0, c = ( 1.0 - 2.0 * v_pos.y ), d = -v_pos.x;
+          float a = 2.0 * magnitude * magnitude, b = 0.0, c = ( 1.0 - 2.0 * magnitude * v_pos.y ), d = -v_pos.x;
 
           // https://github.com/BaseMax/CubicEquationCalculator
           b /= a;
@@ -75,7 +83,7 @@
           float root = 0.0;
           float dist = 0.0;
 
-          const float LIMIT = 1.5, WIDTH = 0.5, STROKE = 0.05;
+          const float LIMIT = 1.0, WIDTH = 0.25, STROKE = 0.05;
 
           // One real root, two complex
           if ( discrim > 0.0 ) {
