@@ -4,157 +4,185 @@
   import * as THREE from '../lib/three.module.js';
   import * as MeshDemo from './meshDemo.js';
 
+
+  const vert = /* glsl */ `
+    out vec3 v_pos;
+    out vec3 v_normal;
+
+    void main() {
+      v_pos = position;
+      v_normal = normal;
+      
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }
+  `;
+
+  const frag = /* glsl */ `
+    #define PI 3.14159265359
+
+    in vec3 v_pos;
+    in vec3 v_normal;
+
+    out vec3 outColor;
+
+    uniform float magnitude;
+
+    // https://www.geogebra.org/m/JA9vHxWT
+    // d = sqrt( ( y - b )^2 + ( x - a )^2 )
+    // d = sqrt( ( x^2 - b )^2 + ( x - a )^2 )
+    // d' = ( x^2 - b ) * 2x + ( x - a )
+    // d' = 2x^3 + 0x^2 + ( 1 - 2b )x - a
+
+    // Helpful: https://www.symbolab.com/solver/partial-derivative-calculator/
+
+    // A = 2, B = 0, C = ( 1 - 2b ), D = -a
+
+    float cubeRoot( float val ) {
+      float fixNeg = val < 0.0 ? -1.0 : 1.0;
+      return fixNeg * pow( fixNeg * val, 1.0 / 3.0 );
+    }
+
+    // NOTE: When this didn't match A/B/C/D above, we got some interesting results
+    // e.g. when derivatives were for 2x^2 but this was for x^2, it looked like a heart *shrug*
+
+    vec2 curvePoint( float x ) {
+      return vec2( x, magnitude * x * x );
+    }
+
+    void main() {
+      float a = 2.0 * magnitude * magnitude, b = 0.0, c = ( 1.0 - 2.0 * magnitude * v_pos.y ), d = -v_pos.x;
+
+      // https://github.com/BaseMax/CubicEquationCalculator
+      b /= a;
+      c /= a;
+      d /= a;
+
+      float q = (
+          3.0 * c - (b * b)
+      ) / 9.0;
+      float r = (
+          -(27.0 * d) + b * (
+              9.0 * c - 2.0 * (b * b)
+          )
+      ) / 54.0;
+
+      float discrim = q * q * q + r * r;
+
+      float term1 = b / 3.0;
+
+      float root = 0.0;
+      float dist = 0.0;
+
+      const float LIMIT = 1.0, WIDTH = 0.25, STROKE = 0.05;
+
+      // One real root, two complex
+      if ( discrim > 0.0 ) {
+        float s = cubeRoot( r + sqrt( discrim ) );
+        float t = cubeRoot( r - sqrt( discrim ) );
+
+        root = clamp( -term1 + s + t, -LIMIT, LIMIT );
+        // ignore complex roots
+
+        dist = distance( curvePoint( root ), v_pos.xy );
+      }
+
+      // All roots real, at least two are equal
+      else if ( discrim == 0.0 ) {
+        root = clamp( -term1 + 2.0 * cubeRoot( r ), -LIMIT, LIMIT );
+        // ignore complex roots
+
+        dist = distance( curvePoint( root ), v_pos.xy );
+      }
+
+      // All roots are real and unequal
+      else {
+        float dum1 = acos(r / sqrt(-q * -q * -q));
+        float temp = -term1 + 2.0 * sqrt(-q);
+
+        // TODO: Make a for loop (for readability)?
+        float root1 = clamp( temp * cos( ( dum1 + 0.0 * PI ) / 3.0 ), -LIMIT, LIMIT );
+        float root2 = clamp( temp * cos( ( dum1 + 2.0 * PI ) / 3.0 ), -LIMIT, LIMIT );
+        float root3 = clamp( temp * cos( ( dum1 + 4.0 * PI ) / 3.0 ), -LIMIT, LIMIT );
+
+        float dist1 = distance( curvePoint( root1 ), v_pos.xy );
+        float dist2 = distance( curvePoint( root2 ), v_pos.xy );
+        float dist3 = distance( curvePoint( root3 ), v_pos.xy );
+
+        root = root1;
+        dist = dist1;
+
+        if ( dist2 < dist ) {
+          root = root2;
+          dist = dist2;
+        }
+        if ( dist3 < dist ) {
+          root = root3;
+          dist = dist3;
+        }
+
+        // dist = min( dist1, min( dist2, dist3 ) );
+      }
+
+      const float START_WIDTH = 0.3, END_WIDTH = 0.1;
+
+      float width = END_WIDTH + ( LIMIT - abs( root ) ) * ( START_WIDTH - END_WIDTH );
+
+      if ( dist < width ) {
+        outColor = vec3( 0.0, cos( PI / 2.0 * dist / width ), 0.0 );
+      }
+      else if ( dist < width + STROKE ) {
+        outColor = vec3( 0.0, 0.0, 0.0 );
+      }
+      else {
+        discard;
+      }
+    }
+  `;
+
+
   let animationTime = 0;
 
-  const uniforms = {
+  const frontUniforms = {
     magnitude: { value: 1.5 },
   };
 
-  // Trying to shade and fill a parabola based on point's distance from curve
-  // Eventually, find arc length between start and end and set curve width
-  // based on start and end width?
+  const backUniforms = {
+    magnitude: { value: 1.5 },
+  };
 
-  MeshDemo.meshDemo( new THREE.Mesh(
+  const frontLegs = new THREE.Mesh(
     new THREE.PlaneGeometry( 10, 10 ),
     new THREE.ShaderMaterial( {
-      uniforms: uniforms,
-      vertexShader: /* glsl */ `
-        out vec3 v_pos;
-        out vec3 v_normal;
-
-        void main() {
-          v_pos = position;
-          v_normal = normal;
-          
-          gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-        }
-      `,
-      fragmentShader: /* glsl */ `
-        #define PI 3.14159265359
-
-        in vec3 v_pos;
-        in vec3 v_normal;
-
-        out vec3 outColor;
-
-        uniform float magnitude;
-
-        // https://www.geogebra.org/m/JA9vHxWT
-        // d = sqrt( ( y - b )^2 + ( x - a )^2 )
-        // d = sqrt( ( x^2 - b )^2 + ( x - a )^2 )
-        // d' = ( x^2 - b ) * 2x + ( x - a )
-        // d' = 2x^3 + 0x^2 + ( 1 - 2b )x - a
-
-        // Helpful: https://www.symbolab.com/solver/partial-derivative-calculator/
-
-        // A = 2, B = 0, C = ( 1 - 2b ), D = -a
-
-        float cubeRoot( float val ) {
-          float fixNeg = val < 0.0 ? -1.0 : 1.0;
-          return fixNeg * pow( fixNeg * val, 1.0 / 3.0 );
-        }
-
-        // NOTE: When this didn't match A/B/C/D above, we got some interesting results
-        // e.g. when derivatives were for 2x^2 but this was for x^2, it looked like a heart *shrug*
-
-        vec2 curvePoint( float x ) {
-          return vec2( x, magnitude * x * x );
-        }
-
-        void main() {
-          float a = 2.0 * magnitude * magnitude, b = 0.0, c = ( 1.0 - 2.0 * magnitude * v_pos.y ), d = -v_pos.x;
-
-          // https://github.com/BaseMax/CubicEquationCalculator
-          b /= a;
-          c /= a;
-          d /= a;
-
-          float q = (
-              3.0 * c - (b * b)
-          ) / 9.0;
-          float r = (
-              -(27.0 * d) + b * (
-                  9.0 * c - 2.0 * (b * b)
-              )
-          ) / 54.0;
-
-          float discrim = q * q * q + r * r;
-
-          float term1 = b / 3.0;
-
-          float root = 0.0;
-          float dist = 0.0;
-
-          const float LIMIT = 1.0, WIDTH = 0.25, STROKE = 0.05;
-
-          // One real root, two complex
-          if ( discrim > 0.0 ) {
-            float s = cubeRoot( r + sqrt( discrim ) );
-            float t = cubeRoot( r - sqrt( discrim ) );
-
-            root = clamp( -term1 + s + t, -LIMIT, LIMIT );
-            // ignore complex roots
-
-            dist = distance( curvePoint( root ), v_pos.xy );
-          }
-
-          // All roots real, at least two are equal
-          else if ( discrim == 0.0 ) {
-            root = clamp( -term1 + 2.0 * cubeRoot( r ), -LIMIT, LIMIT );
-            // ignore complex roots
-
-            dist = distance( curvePoint( root ), v_pos.xy );
-          }
-
-          // All roots are real and unequal
-          else {
-            float dum1 = acos(r / sqrt(-q * -q * -q));
-            float temp = -term1 + 2.0 * sqrt(-q);
-
-            // TODO: Make a for loop (for readability)?
-            float root1 = clamp( temp * cos( ( dum1 + 0.0 * PI ) / 3.0 ), -LIMIT, LIMIT );
-            float root2 = clamp( temp * cos( ( dum1 + 2.0 * PI ) / 3.0 ), -LIMIT, LIMIT );
-            float root3 = clamp( temp * cos( ( dum1 + 4.0 * PI ) / 3.0 ), -LIMIT, LIMIT );
-
-            float dist1 = distance( curvePoint( root1 ), v_pos.xy );
-            float dist2 = distance( curvePoint( root2 ), v_pos.xy );
-            float dist3 = distance( curvePoint( root3 ), v_pos.xy );
-
-            root = root1;
-            dist = dist1;
-
-            if ( dist2 < dist ) {
-              root = root2;
-              dist = dist2;
-            }
-            if ( dist3 < dist ) {
-              root = root3;
-              dist = dist3;
-            }
-
-            // dist = min( dist1, min( dist2, dist3 ) );
-          }
-
-          const float START_WIDTH = 0.3, END_WIDTH = 0.1;
-
-          float width = END_WIDTH + ( LIMIT - abs( root ) ) * ( START_WIDTH - END_WIDTH );
-
-          if ( dist < width ) {
-            outColor = vec3( 0.0, cos( PI / 2.0 * dist / width ), 0.0 );
-          }
-          else if ( dist < width + STROKE ) {
-            outColor = vec3( 0.0, 0.0, 0.0 );
-          }
-          else {
-            discard;
-          }
-        }
-      `,
+      uniforms: frontUniforms,
+      vertexShader: vert,
+      fragmentShader: frag,
       glslVersion: THREE.GLSL3,
     } )
-  ), ( dt ) => {
-    animationTime += dt / 100;
-    uniforms.magnitude.value = 0.75 + 0.25 * Math.sin( animationTime );
-  } );
+  );
+
+  const backLegs = new THREE.Mesh(
+    new THREE.PlaneGeometry( 10, 10 ),
+    new THREE.ShaderMaterial( {
+      uniforms: backUniforms,
+      vertexShader: vert,
+      fragmentShader: frag,
+      glslVersion: THREE.GLSL3,
+    } )
+  );
+
+  frontLegs.position.y = 0.4;
+  backLegs.position.y = -0.4;
+    
+  const group = new THREE.Group();
+  group.add( frontLegs, backLegs );
+    
+  MeshDemo.meshDemo( 
+    group, 
+    ( dt ) => {
+      animationTime += dt / 100;
+      frontUniforms.magnitude.value = 0.75 + 0.25 * Math.sin( animationTime );
+      backUniforms.magnitude.value = -1 + 0.25 * Math.sin( animationTime );
+    }
+  );
 
 </script>
