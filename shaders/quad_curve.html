@@ -1,0 +1,160 @@
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import * as THREE from '../lib/three.module.js';
+  import * as MeshDemo from './meshDemo.js';
+
+
+  const vert = /* glsl */ `
+    out vec2 v_pos;
+
+    void main() {
+      v_pos = position.xy;
+      
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }
+  `;
+
+  const frag = /* glsl */ `
+    #define PI 3.14159265359
+
+    in vec2 v_pos;
+
+    out vec3 outColor;
+
+    uniform vec2 P0, P1, P2;
+    uniform float strokeWidth;
+
+    float cubeRoot( float val ) {
+      float fixNeg = val < 0.0 ? -1.0 : 1.0;
+      return fixNeg * pow( fixNeg * val, 1.0 / 3.0 );
+    }
+
+    vec2 getPos( float t ) {
+      float a = ( 1.0 - t ) * ( 1.0 - t );
+      float b = 2.0 * t * ( 1.0 - t );
+      float c = t * t;
+
+      return a * P0 + b * P1 + c * P2;
+    }
+
+    void main() {
+      vec2 A = P1 - P0;
+      vec2 B = P2 - P1 - A;
+
+      vec2 MP = P0 - v_pos;
+
+      float a = B.x * B.x + B.y * B.y;
+      float b = 3.0 * ( A.x * B.x + A.y * B.y );
+      float c = 2.0 * ( A.x * A.x + A.y * A.y ) + MP.x * B.x + MP.y * B.y;
+      float d = MP.x * A.x + MP.y * A.y;
+
+      // https://github.com/BaseMax/CubicEquationCalculator
+      b /= a;
+      c /= a;
+      d /= a;
+
+      float q = (
+          3.0 * c - (b * b)
+      ) / 9.0;
+      float r = (
+          -(27.0 * d) + b * (
+              9.0 * c - 2.0 * (b * b)
+          )
+      ) / 54.0;
+
+      float discrim = q * q * q + r * r;
+
+      float term1 = b / 3.0;
+
+      float root = 0.0;
+      float dist = 0.0;
+
+      // One real root, two complex
+      if ( discrim > 0.0 ) {
+        float s = cubeRoot( r + sqrt( discrim ) );
+        float t = cubeRoot( r - sqrt( discrim ) );
+
+        root = clamp( -term1 + s + t, 0.0, 1.0 );
+        // ignore complex roots
+
+        dist = distance( getPos( root ), v_pos );
+      }
+
+      // All roots real, at least two are equal
+      else if ( discrim == 0.0 ) {
+        root = clamp( -term1 + 2.0 * cubeRoot( r ), 0.0, 1.0 );
+        // ignore complex roots
+
+        dist = distance( getPos( root ), v_pos );
+      }
+
+      // All roots are real and unequal
+      else {
+        float dum1 = acos(r / sqrt(-q * -q * -q));
+        float temp = -term1 + 2.0 * sqrt(-q);
+
+        // TODO: Make a for loop (for readability)?
+        for ( float i = 0.0; i <= 4.0; i += 2.0 ) {
+          float testRoot = clamp( temp * cos( ( dum1 + i * PI ) / 3.0 ), 0.0, 1.0 );
+          float testDist = distance( getPos( testRoot ), v_pos );
+
+          if ( i == 0.0 || testDist < dist ) {
+            root = testRoot;
+            dist = testDist;
+          }
+        }
+      }
+
+      // const float START_WIDTH = 0.3, END_WIDTH = 0.1;
+
+      // float width = END_WIDTH + ( LIMIT - abs( root ) ) * ( START_WIDTH - END_WIDTH );
+      float width = 0.4;
+
+      if ( dist < width ) {
+        outColor = vec3( 0.0, cos( PI / 2.0 * dist / width ), 0.0 );
+      }
+      else if ( dist < width + strokeWidth ) {
+        outColor = vec3( 0.0, 0.0, 0.0 );
+      }
+      else {
+        discard;
+      }
+    }
+  `;
+
+
+  let animationTime = 0;
+
+  const frontUniforms = {
+    PO: { value: new THREE.Vector2( 1, 1 ) },
+    P1: { value: new THREE.Vector2( -1.5, 2.5 ) },
+    P2: { value: new THREE.Vector2( 2, 2 ) },
+    strokeWidth: { value: 0.01 },
+  };
+
+  const frontLegs = new THREE.Mesh(
+    new THREE.PlaneGeometry( 5, 5 ),
+    new THREE.ShaderMaterial( {
+      uniforms: frontUniforms,
+      vertexShader: vert,
+      fragmentShader: frag,
+      glslVersion: THREE.GLSL3,
+    } )
+  );
+
+  frontLegs.position.y = 0.4;
+    
+  const group = new THREE.Group();
+  group.add( frontLegs );
+    
+  MeshDemo.meshDemo( 
+    group, 
+    // ( dt ) => {
+    //   animationTime += dt / 100;
+    //   frontUniforms.magnitude.value = 0.75 + 0.25 * Math.sin( animationTime );
+    //   backUniforms.magnitude.value = -1 + 0.25 * Math.sin( animationTime );
+    // }
+  );
+
+</script>

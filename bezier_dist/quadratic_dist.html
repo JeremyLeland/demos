@@ -113,14 +113,12 @@
     const t = cubeRoot( r - sqrt( discrim ) );
 
     root = clamp( -term1 + s + t, 0.0, 1.0 );
-
     dist = distance( getPos( root ), v_pos );
   }
 
   // All roots real, at least two are equal
   else if ( discrim == 0.0 ) {
     root = clamp( -term1 + 2.0 * cubeRoot( r ), 0.0, 1.0 );
-
     dist = distance( getPos( root ), v_pos );
   }
 
@@ -129,28 +127,16 @@
     const dum1 = acos(r / sqrt(-q * -q * -q));
     const temp = -term1 + 2.0 * sqrt(-q);
 
-    // TODO: Make a for loop (for readability)?
-    const root1 = clamp( temp * cos( ( dum1 + 0.0 * PI ) / 3.0 ), 0.0, 1.0 );
-    const root2 = clamp( temp * cos( ( dum1 + 2.0 * PI ) / 3.0 ), 0.0, 1.0 );
-    const root3 = clamp( temp * cos( ( dum1 + 4.0 * PI ) / 3.0 ), 0.0, 1.0 );
+    let root = 0.0, dist = 0.0;
+    for ( let i = 0.0; i <= 4.0; i += 2.0 ) {
+      const testRoot = clamp( temp * cos( ( dum1 + i * PI ) / 3.0 ), 0.0, 1.0 );
+      const testDist = distance( getPos( testRoot ), v_pos );
 
-    const dist1 = distance( getPos( root1 ), v_pos );
-    const dist2 = distance( getPos( root2 ), v_pos );
-    const dist3 = distance( getPos( root3 ), v_pos );
-
-    root = root1;
-    dist = dist1;
-
-    if ( dist2 < dist ) {
-      root = root2;
-      dist = dist2;
+      if ( i == 0.0 || testDist < dist ) {
+        root = testRoot;
+        dist = testDist;
+      }
     }
-    if ( dist3 < dist ) {
-      root = root3;
-      dist = dist3;
-    }
-
-    // dist = min( dist1, min( dist2, dist3 ) );
   }
 
   const closestPos = getPos( root );
