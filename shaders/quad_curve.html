@@ -23,6 +23,7 @@
     out vec3 outColor;
 
     uniform vec2 P0, P1, P2;
+    uniform float startWidth, endWidth;
     uniform float strokeWidth;
 
     float cubeRoot( float val ) {
@@ -106,11 +107,9 @@
         }
       }
 
-      // const float START_WIDTH = 0.3, END_WIDTH = 0.1;
 
-      // float width = END_WIDTH + ( LIMIT - abs( root ) ) * ( START_WIDTH - END_WIDTH );
-      float width = 0.4;
-
+      float width = endWidth + ( 1.0 - root ) * ( startWidth - endWidth );
+     
       if ( dist < width ) {
         outColor = vec3( 0.0, cos( PI / 2.0 * dist / width ), 0.0 );
       }
@@ -128,9 +127,11 @@
 
   const frontUniforms = {
     PO: { value: new THREE.Vector2( 1, 1 ) },
-    P1: { value: new THREE.Vector2( -1.5, 2.5 ) },
+    P1: { value: new THREE.Vector2( -1.5, 1.5 ) },
     P2: { value: new THREE.Vector2( 2, 2 ) },
-    strokeWidth: { value: 0.01 },
+    startWidth:  { value: 0.3 },
+    endWidth:    { value: 0.1 },
+    strokeWidth: { value: 0.05 },
   };
 
   const frontLegs = new THREE.Mesh(
