@@ -1,0 +1,128 @@
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import * as THREE from '../lib/three.module.js';
+  import * as MeshDemo from './meshDemo.js';
+
+
+  const vert = /* glsl */ `
+    out vec2 v_pos;
+
+    void main() {
+      v_pos = position.xy;
+      
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }
+  `;
+
+  const frag = /* glsl */ `
+    #define PI 3.14159265359
+
+    in vec2 v_pos;
+
+    out vec3 outColor;
+
+    uniform int tiles[ 25 ];
+    uniform int layerIndex;
+
+    const vec3[ 3 ] colors = vec3[ 3 ](
+      vec3( 0.0 ),
+      vec3( 0.0, 0.5, 0.0 ),
+      vec3( 0.3 )
+    );
+
+    void main() {
+
+      vec2 mapPos = ( v_pos + 0.5 ) * 5.0;
+
+      int tile = tiles[ int( mapPos.x ) + int( mapPos.y ) * 5 ];
+
+      outColor = colors[ layerIndex ];
+
+      vec2 fromCenter = fract( mapPos ) - vec2( 0.5 );
+      vec2 neighborPos = mapPos + sign( fromCenter );
+      
+      if ( tile == layerIndex ) {
+        if ( 0.0 < neighborPos.x && neighborPos.x < 5.0 &&
+            0.0 < neighborPos.y && neighborPos.y < 5.0 ) {
+
+          int neighbor_x = tiles[ int( neighborPos.x ) + int( mapPos.y ) * 5 ];
+          int neighbor_y = tiles[ int( mapPos.x ) + int( neighborPos.y ) * 5 ];
+          int neighbor_xy = tiles[ int( neighborPos.x ) + int( neighborPos.y ) * 5 ];
+
+          if ( neighbor_x != layerIndex && neighbor_y != layerIndex ) {
+            float dist = length( fromCenter );
+
+            if ( dist > 0.5 ) {
+              discard;
+            }
+          }
+        }
+      }
+      else { 
+        if ( 0.0 < neighborPos.x && neighborPos.x < 5.0 &&
+            0.0 < neighborPos.y && neighborPos.y < 5.0 ) {
+
+          int neighbor_x = tiles[ int( neighborPos.x ) + int( mapPos.y ) * 5 ];
+          int neighbor_y = tiles[ int( mapPos.x ) + int( neighborPos.y ) * 5 ];
+          int neighbor_xy = tiles[ int( neighborPos.x ) + int( neighborPos.y ) * 5 ];
+
+          if ( neighbor_x == layerIndex && neighbor_y == layerIndex ) {
+            float dist = length( fromCenter );
+
+            if ( dist < 0.5 ) {
+              discard;
+            }
+          }
+
+          if ( neighbor_xy != layerIndex || neighbor_x != layerIndex || neighbor_y != layerIndex ) {
+            discard;
+            // outColor = vec3( 1.0, 0.0, 0.0 );
+          }
+        }
+        else {
+          discard;
+        }
+      }
+    }
+  `;
+
+
+  let animationTime = 0;
+
+  const map = new THREE.Mesh(
+    new THREE.PlaneGeometry( 1, 1 ),
+    new THREE.ShaderMaterial( {
+      uniforms: {
+        tiles: { value: [
+          1, 0, 2, 2, 1,
+          1, 1, 1, 0, 1,
+          1, 1, 0, 0, 0,
+          0, 0, 1, 1, 1,
+          1, 0, 1, 1, 0
+        ] },
+        layerIndex: { value: 1 },
+      },
+      vertexShader: vert,
+      fragmentShader: frag,
+      glslVersion: THREE.GLSL3,
+    } ),
+  );
+
+  map.scale.set( 5, 5, 5 );   // make it easier to see
+  
+  // NOTE: Will need to flip camera or projection or whatever in final version so 0,0 is upper left (for my sanity)
+
+  const group = new THREE.Group();
+  group.add( map );
+    
+  MeshDemo.meshDemo( 
+    group, 
+    // ( dt ) => {
+    //   animationTime += dt / 500;
+
+    //   logs.forEach( ( log, index ) => log.position.x = index - 1 + Math.sin( animationTime ) );
+    // }
+  );
+
+</script>
