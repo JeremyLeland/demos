@@ -9,13 +9,13 @@ args = parser.parse_args()
 
 r = requests.get( args.url )
 
-title = re.search( '"video_title":".+?"', r.text )[ 0 ].split( ':' )[ 1 ].replace( '\\/', '' )
+title = re.findall( '"video_title":"([^"]+)"', r.text )[ 0 ].replace( '\\/', '' )
 chunklistURL = re.search( '[^"]+m3u8[^"]+', r.text )[ 0 ].replace( '\\', '' )
 
 print( 'Found chunk list URL: ' + chunklistURL )
 print()
 
-ffmpegCmd = 'ffmpeg -i "' + chunklistURL + '" -codec copy ' + title + '.mp4'
+ffmpegCmd = 'ffmpeg -i "' + chunklistURL + '" -codec copy "' + title + '.mp4"'
 
 print( 'Running command: ' + ffmpegCmd )
 
