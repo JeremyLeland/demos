@@ -10,7 +10,7 @@ args = parser.parse_args()
 r = requests.get( args.url )
 
 title = re.findall( '"video_title":"([^"]+)"', r.text )[ 0 ].replace( '\\/', '' )
-chunklistURL = re.search( '[^"]+m3u8[^"]+', r.text )[ 0 ].replace( '\\', '' )
+chunklistURL = re.findall( '"defaultQuality":true.+?([^"]+m3u8[^"]+)', r.text )[ 0 ].replace( '\\', '' )
 
 print( 'Found chunk list URL: ' + chunklistURL )
 print()
