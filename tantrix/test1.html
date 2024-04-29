@@ -1,0 +1,28 @@
+<title>Tantrix tiles</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+
+  const SIZE = 10;
+
+  const canvas = new Canvas();
+
+  canvas.draw = ( ctx ) => {
+    ctx.translate( 0.5, 0.5 );
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+
+    ctx.beginPath();
+    for ( let i = 0; i < 6; i ++ ) {
+      const angle = i * Math.PI * 2 / 6;
+      ctx.lineTo( Math.cos( angle ), Math.sin( angle ) );
+    }
+    ctx.closePath();
+
+    ctx.fillStyle = 'black';
+    ctx.fill();
+  }
+
+  canvas.redraw();
+
+</script>
