@@ -6,6 +6,73 @@
 
   const SIZE = 10;
 
+  // http://www.tantrix.com/english/TantrixTiles.html
+  const ColorSequences = [
+    'YYBRBR',
+    'YYBRRB',
+    'RRBBYY',
+    'YRBRYB',
+    'YYRBBR',
+    'RBYBRY',
+    'BBYRYR',
+    'BBRYRY',
+    'YBRBYR',
+    'YYRBRB',
+    'RRBYBY',
+    'RRYBYB',
+    'BBYRRY',
+    'YYBBRR',
+    'GGRYYR',
+    'GGYRRY',
+    'YYGRGR',
+    'YYRGRG',
+    'RRGYGY',
+    'RRYGYG',
+    'GGRRYY',
+    'YYGRRG',
+    'GYYRRG',
+    'GGBRRB',
+    'GGRRBB',
+    'BBGRRG',
+    'RRBGBG',
+    'GGBBRR',
+    'RRGBGB',
+    'GGRBBR',
+    'GGRYRY',
+    'RYGYRG',
+    'GGYRYR',
+    'GYRYGR',
+    'GRYRGY',
+    'GGRBRB',
+    'BBGRGR',
+    'BBRGRG',
+    'RBGBRG',
+    'RGBGRB',
+    'GGBRBR',
+    'BGRGBR',
+    'GGBBYY',
+    'BGYGBY',
+    'GGYYBB',
+    'GGBYBY',
+    'GGYBBY',
+    'GGBYYB',
+    'YYGBBG',
+    'YGBGYB',
+    'BYGYBG',
+    'GGYBYB',
+    'YYGBGB',
+    'YYBGBG',
+    'BBGYGY',
+    'BBYGYG',
+  ];
+
+  const Colors = {
+    'Y': 'yellow',
+    'G': 'green',
+    'B': 'blue',
+    'R': 'red',
+  };
+
   const canvas = new Canvas();
 
   canvas.draw = ( ctx ) => {
@@ -21,6 +88,34 @@
 
     ctx.fillStyle = 'black';
     ctx.fill();
+
+    const tileIndex = 0;
+
+    let start = 0, end = 0;
+    for ( let i = 0; i < 3; i ++ ) {
+      for ( end = start + 1; end < 6; end ++ ) {
+        if ( ColorSequences[ tileIndex ][ start ] == ColorSequences[ tileIndex ][ end ] ) {
+          break;
+        }
+      }
+
+      ctx.beginPath();
+
+      const angle1 = ( start - 0.5 ) * Math.PI * 2 / 6;
+      ctx.moveTo( Math.cos( angle1 ), Math.sin( angle1 ) );
+
+      const angle2 = ( end - 0.5 ) * Math.PI * 2 / 6;
+      ctx.lineTo( Math.cos( angle2 ), Math.sin( angle2 ) );
+
+      ctx.strokeStyle = Colors[ ColorSequences[ tileIndex ][ start ] ];
+      ctx.lineWidth = 0.1;
+      ctx.stroke();
+
+      start ++;
+      if ( start == end ) {
+        start ++;
+      }
+    }
   }
 
   canvas.redraw();
