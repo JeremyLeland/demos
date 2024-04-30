@@ -4,7 +4,7 @@
 <script type="module">
   import { Canvas } from './Canvas.js';
 
-  const SIZE = 10;
+  const SIZE = 16;
 
   // http://www.tantrix.com/english/TantrixTiles.html
   const ColorSequences = [
@@ -76,38 +76,54 @@
   const canvas = new Canvas();
 
   canvas.draw = ( ctx ) => {
-    ctx.translate( 0.5, 0.5 );
+    // ctx.translate( 0.5, 0.5 );
+    ctx.translate( 0.08, 0.08 );
     ctx.scale( 1 / SIZE, 1 / SIZE );
 
-    ctx.beginPath();
-    for ( let i = 0; i < 6; i ++ ) {
-      const angle = i * Math.PI * 2 / 6;
-      ctx.lineTo( Math.cos( angle ), Math.sin( angle ) );
-    }
-    ctx.closePath();
+    const DEMO_COLS = 7;
 
+    ColorSequences.forEach( ( colorSequence, index ) => {
+      const col = index % DEMO_COLS;
+      const row = Math.floor( index / DEMO_COLS );
+
+      ctx.save();
+      ctx.translate( col * 2, row * 2 );
+      drawTile( ctx, colorSequence );
+      ctx.restore();
+    } );
+  }
+
+  const hexagon = new Path2D();
+  for ( let i = 0; i < 6; i ++ ) {
+    const angle = i * Math.PI * 2 / 6;
+    hexagon.lineTo( Math.cos( angle ), Math.sin( angle ) );
+  }
+  hexagon.closePath();
+
+  function drawTile( ctx, colorSequence ) {
     ctx.fillStyle = 'black';
-    ctx.fill();
+    ctx.fill( hexagon );
 
     const tileIndex = 0;
 
     let start = 0, end = 0;
     for ( let i = 0; i < 3; i ++ ) {
       for ( end = start + 1; end < 6; end ++ ) {
-        if ( ColorSequences[ tileIndex ][ start ] == ColorSequences[ tileIndex ][ end ] ) {
+        if ( colorSequence[ start ] == colorSequence[ end ] ) {
           break;
         }
       }
 
       ctx.beginPath();
 
+      const DIST = 0.8;
       const angle1 = ( start - 0.5 ) * Math.PI * 2 / 6;
-      ctx.moveTo( Math.cos( angle1 ), Math.sin( angle1 ) );
+      ctx.moveTo( Math.cos( angle1 ) * DIST, Math.sin( angle1 ) * DIST );
 
       const angle2 = ( end - 0.5 ) * Math.PI * 2 / 6;
-      ctx.lineTo( Math.cos( angle2 ), Math.sin( angle2 ) );
+      ctx.lineTo( Math.cos( angle2 ) * DIST, Math.sin( angle2 ) * DIST );
 
-      ctx.strokeStyle = Colors[ ColorSequences[ tileIndex ][ start ] ];
+      ctx.strokeStyle = Colors[ colorSequence[ start ] ];
       ctx.lineWidth = 0.1;
       ctx.stroke();
 
