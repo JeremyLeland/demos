@@ -1,0 +1,32 @@
+<title>Tantrix tiles</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import * as Tantrix from './Tantrix.js';
+
+  const SIZE = 16;
+
+  const canvas = new Canvas();
+
+  canvas.draw = ( ctx ) => {
+    // ctx.translate( 0.5, 0.5 );
+    ctx.translate( 0.08, 0.08 );
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+
+    const DEMO_COLS = 4;
+
+    for ( let i = 0; i < Tantrix.NumTiles; i ++ ) {
+      const col = i % DEMO_COLS;
+      const row = Math.floor( i / DEMO_COLS );
+
+      ctx.save();
+      ctx.translate( 3 * ( col + ( row % 2 ) / 2 ), Math.sin( Math.PI / 3 ) * row );
+      Tantrix.drawTile( ctx, i );
+      ctx.restore();
+    }
+  }
+
+  canvas.redraw();
+
+</script>
