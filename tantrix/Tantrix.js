@@ -97,6 +97,10 @@ export function drawTile( ctx, tileIndex ) {
     const angle2 = ( end - 0.5 ) * Math.PI * 2 / 6;
     ctx.quadraticCurveTo( 0, 0, Math.cos( angle2 ) * DIST, Math.sin( angle2 ) * DIST );
 
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 0.15;
+    ctx.stroke();
+
     ctx.strokeStyle = Colors[ colorSequence[ start ] ];
     ctx.lineWidth = 0.1;
     ctx.stroke();
