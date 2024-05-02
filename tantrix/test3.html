@@ -30,6 +30,35 @@
     } );
   }
 
+  function isValidMove( board, move ) {
+    const isOdd = move.row % 2;
+
+    board.forEach( m => {
+      if ( m.col == move.col && m.row == move.row ) {
+        console.log( 'Existing move at { m.col },{ m.row }!' );
+        return false;
+      }
+      // NE
+      if ( m.col == move.col + isOdd && m.row == move.row - 1 ) {
+      }
+      // SE
+      if ( m.col == move.col + isOdd && m.row == move.row + 1 ) {
+      }
+      // S
+      if ( m.col == move.col && m.row == move.row + 2 ) {
+      }
+      // SW
+      if ( m.col == move.col - 1 + isOdd && m.row == move.row + 1 ) {
+      }
+      // NW
+      if ( m.col == move.col - 1 + isOdd && m.row == move.row - 1 ) {
+      }
+      // N
+      if ( m.col == move.col && m.row == move.row - 2 ) {
+      }
+    } );
+  }
+
   canvas.redraw();
 
 </script>
