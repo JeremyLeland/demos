@@ -23,6 +23,16 @@
       ctx.save();
       ctx.translate( 3 * ( col + ( row % 2 ) / 2 ), Math.sin( Math.PI / 3 ) * row );
       Tantrix.drawTile( ctx, i );
+
+      ctx.font = '0.4px Arial';
+      ctx.textAlign = 'center';
+
+      [ 'black', 'white' ].forEach( color => {
+        ctx.fillStyle = color;
+        ctx.fillText( `(${ col }, ${ row })`, 0, 0 );
+        ctx.translate( -0.02, -0.02 );
+      } );
+
       ctx.restore();
     }
   }

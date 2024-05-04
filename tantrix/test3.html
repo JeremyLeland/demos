@@ -9,7 +9,7 @@
     { id:  0, rot:  0, col:  0, row:  0 },
     { id: 10, rot: -1, col:  0, row:  1 },
     { id:  5, rot:  3, col:  1, row:  0 },
-    { id:  1, rot:  2, col:  0, row: -1 },
+    { id:  1, rot:  2, col: -1, row: -1 },
     { id:  2, rot:  2, col: -1, row:  0 },
   ];
 
@@ -21,43 +21,14 @@
     ctx.translate( 0.5, 0.5 );
     ctx.scale( 1 / SIZE, 1 / SIZE );
 
-    board.forEach( piece => {
-      ctx.save();
-      ctx.translate( 3 * ( piece.col + ( piece.row % 2 ) / 2 ), Math.sin( Math.PI / 3 ) * piece.row );
-      ctx.rotate( piece.rot * Math.PI / 3 );
-      Tantrix.drawTile( ctx, piece.id );
-      ctx.restore();
-    } );
+    board.forEach( piece => Tantrix.drawPiece( ctx, piece ) );
   }
 
-  function isValidMove( board, move ) {
-    const isOdd = move.row % 2;
+  console.log( Tantrix.isValidMove( board, { id: 4, rot: 0, col: 0, row: -1 } ) );
+  console.log( Tantrix.isValidMove( board, { id: 4, rot: 3, col: 0, row: -1 } ) );
 
-    board.forEach( m => {
-      if ( m.col == move.col && m.row == move.row ) {
-        console.log( 'Existing move at { m.col },{ m.row }!' );
-        return false;
-      }
-      // NE
-      if ( m.col == move.col + isOdd && m.row == move.row - 1 ) {
-      }
-      // SE
-      if ( m.col == move.col + isOdd && m.row == move.row + 1 ) {
-      }
-      // S
-      if ( m.col == move.col && m.row == move.row + 2 ) {
-      }
-      // SW
-      if ( m.col == move.col - 1 + isOdd && m.row == move.row + 1 ) {
-      }
-      // NW
-      if ( m.col == move.col - 1 + isOdd && m.row == move.row - 1 ) {
-      }
-      // N
-      if ( m.col == move.col && m.row == move.row - 2 ) {
-      }
-    } );
-  }
+  console.log( Tantrix.isValidMove( board, { id: 4, rot: 0, col: -1, row: 1 } ) );
+  console.log( Tantrix.isValidMove( board, { id: 4, rot: 4, col: -1, row: 1 } ) );
 
   canvas.redraw();
 
