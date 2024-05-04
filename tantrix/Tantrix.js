@@ -147,76 +147,55 @@ const Direction = {
   N:  5,
 };
 
-export function isValidMove( board, move ) {
-  const oddOffset = Math.abs( move.row ) % 2;
+const DirName = [
+  'NE',
+  'SE',
+  'S',
+  'SW',
+  'NW',
+  'N',
+]
 
+function colFrom( col, row, dir ) {
+  const oddOffset = Math.abs( row ) % 2;
+
+  switch( dir ) {
+    case Direction.NW: case Direction.SW: return col + oddOffset - 1;
+    case Direction.NE: case Direction.SE: return col + oddOffset;
+    default: return col;
+  }
+}
+
+function rowFrom( row, dir ) {
+  switch( dir ) {
+    case Direction.N: return row - 2;
+    case Direction.NW: case Direction.NE: return row - 1;
+    case Direction.SW: case Direction.SE: return row + 1;
+    case Direction.S: return row + 2;
+  }
+}
+
+export function isValidMove( board, move ) {
+  console.log( `isValidMove( board, ${ JSON.stringify( move ) } )` );
   return board.every( m => {
     if ( m.col == move.col && m.row == move.row ) {
       console.log( `Existing move at ${ m.col },${ m.row }!` );
       return false;
     }
 
-    // NE
-    if ( m.col == move.col + oddOffset && m.row == move.row - 1 ) {
-      console.log( 'Found NE: ' + JSON.stringify( m ) );
-      const us   = ColorSequences[ move.id ][ fixRot( Direction.NE - move.rot ) ];
-      const them = ColorSequences[    m.id ][ fixRot( Direction.SW - m.rot ) ];
-      console.log( `Our NE is ${ us }, their SW is ${ them }` );
-      if ( us != them ) {
-        return false;
+    for ( let dir = 0; dir < 6; dir ++ ) {
+      // console.log( `testing ${ DirName[ dir ] } @ ${ colFrom( move.col, move.row, dir ) },${ rowFrom( move.row, dir ) }` );
+      if ( m.col == colFrom( move.col, move.row, dir ) && m.row == rowFrom( move.row, dir ) ) {
+        console.log( `Found ${ DirName[ dir ] }: ${ JSON.stringify( m ) }` );
+        const us   = ColorSequences[ move.id ][ fixRot( dir - move.rot ) ];
+        const them = ColorSequences[    m.id ][ fixRot( dir + 3 - m.rot ) ];
+        console.log( `Our ${ DirName[ dir ] } is ${ us }, their ${ DirName[ fixRot( dir + 3 ) ] } is ${ them }` );
+        if ( us != them ) {
+          return false;
+        }
       }
     }
-    // SE
-    if ( m.col == move.col + oddOffset && m.row == move.row + 1 ) {
-      console.log( 'Found SE: ' + JSON.stringify( m ) );
-      const us   = ColorSequences[ move.id ][ fixRot( Direction.SE - move.rot ) ];
-      const them = ColorSequences[    m.id ][ fixRot( Direction.NW - m.rot ) ];
-      console.log( `Our SE is ${ us }, their NW is ${ them }` );
-      if ( us != them ) {
-        return false;
-      }
-    }
-    // S
-    if ( m.col == move.col && m.row == move.row + 2 ) {
-      console.log( 'Found S: ' + JSON.stringify( m ) );
-      const us   = ColorSequences[ move.id ][ fixRot( Direction.S - move.rot ) ];
-      const them = ColorSequences[    m.id ][ fixRot( Direction.N - m.rot ) ];
-      console.log( `Our S is ${ us }, their N is ${ them }` );
-      if ( us != them ) {
-        return false;
-      }
-    }
-    // SW
-    if ( m.col == move.col - 1 + oddOffset && m.row == move.row + 1 ) {
-      console.log( 'Found SW: ' + JSON.stringify( m ) );
-      const us   = ColorSequences[ move.id ][ fixRot( Direction.SW - move.rot ) ];
-      const them = ColorSequences[    m.id ][ fixRot( Direction.NE - m.rot ) ];
-      console.log( `Our SW is ${ us }, their NE is ${ them }` );
-      if ( us != them ) {
-        return false;
-      }
-    }
-    // NW
-    if ( m.col == move.col - 1 + oddOffset && m.row == move.row - 1 ) {
-      console.log( 'Found NW: ' + JSON.stringify( m ) );
-      const us   = ColorSequences[ move.id ][ fixRot( Direction.NW - move.rot ) ];
-      const them = ColorSequences[    m.id ][ fixRot( Direction.SE - m.rot ) ];
-      console.log( `Our NW is ${ us }, their SE is ${ them }` );
-      if ( us != them ) {
-        return false;
-      }
-    }
-    // N
-    if ( m.col == move.col && m.row == move.row - 2 ) {
-      console.log( 'Found N: ' + JSON.stringify( m ) );
-      const us   = ColorSequences[ move.id ][ fixRot( Direction.N - move.rot ) ];
-      const them = ColorSequences[    m.id ][ fixRot( Direction.S - m.rot ) ];
-      console.log( `Our N is ${ us }, their S is ${ them }` );
-      if ( us != them ) {
-        return false;
-      }
-    }
-    
+
     return true;
   } );
 }

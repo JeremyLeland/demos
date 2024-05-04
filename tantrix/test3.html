@@ -11,6 +11,11 @@
     { id:  5, rot:  3, col:  1, row:  0 },
     { id:  1, rot:  2, col: -1, row: -1 },
     { id:  2, rot:  2, col: -1, row:  0 },
+    { id:  7, rot:  2, col:  1, row: -1 },
+    { id:  8, rot:  2, col:  1, row:  1 },
+    { id: 11, rot: -2, col:  2, row:  2 },
+    { id: 12, rot:  5, col:  2, row: -2 },
+    { id: 3, rot: -2, col:  2, row: -1 },
   ];
 
   const SIZE = 16;
@@ -29,6 +34,10 @@
 
   console.log( Tantrix.isValidMove( board, { id: 4, rot: 0, col: -1, row: 1 } ) );
   console.log( Tantrix.isValidMove( board, { id: 4, rot: 4, col: -1, row: 1 } ) );
+
+  console.log( Tantrix.isValidMove( board, { id: 4, rot: 0, col: 2, row: 0 } ) );
+  console.log( Tantrix.isValidMove( board, { id: 4, rot: 3, col: 2, row: 0 } ) );
+
 
   canvas.redraw();
 
