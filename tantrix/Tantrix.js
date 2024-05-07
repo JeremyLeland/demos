@@ -1,3 +1,5 @@
+// Useful hexagon info: https://www.redblobgames.com/grids/hexagons/
+
 // http://www.tantrix.com/english/TantrixTiles.html
 const ColorSequences = [
   'YYBRBR',
@@ -67,16 +69,24 @@ const Colors = {
   'R': 'red',
 };
 
-const hexagon = new Path2D();
+export const HexagonPath = new Path2D();
 for ( let i = 0; i < 6; i ++ ) {
   const angle = i * Math.PI * 2 / 6;
-  hexagon.lineTo( Math.cos( angle ), Math.sin( angle ) );
+  HexagonPath.lineTo( Math.cos( angle ), Math.sin( angle ) );
 }
-hexagon.closePath();
+HexagonPath.closePath();
+
+export function gridX( col, row ) {
+  return 1.5 * col;
+}
+
+export function gridY( col, row ) {
+  return Math.sqrt( 3 ) * ( row + ( Math.abs( col ) % 2 ) / 2 );
+}
 
 export function drawPiece( ctx, piece ) {
-  const x = 3 * ( piece.col + ( Math.abs( piece.row ) % 2 ) / 2 );
-  const y = Math.sin( Math.PI / 3 ) * piece.row;
+  const x = gridX( piece.col, piece.row );
+  const y = gridY( piece.row );
   const ang = piece.rot * Math.PI / 3;
 
   ctx.translate( x, y );
@@ -104,7 +114,7 @@ export function drawTile( ctx, tileIndex ) {
   const colorSequence = ColorSequences[ tileIndex ];
 
   ctx.fillStyle = 'black';
-  ctx.fill( hexagon );
+  ctx.fill( HexagonPath );
 
   let start = 0, end = 0;
   for ( let i = 0; i < 3; i ++ ) {
