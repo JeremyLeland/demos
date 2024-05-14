@@ -24,6 +24,7 @@
   const canvas = new Canvas();
 
   let mouseX = 0, mouseY = 0;
+  let testPiece = { id: 4, rot: 3, col: 0, row: 0 };
 
   canvas.draw = ( ctx ) => {
     ctx.translate( scrollX, scrollY );
@@ -35,7 +36,8 @@
     const x = Tantrix.gridX( hexCoord.col, hexCoord.row );
     const y = Tantrix.gridY( hexCoord.col, hexCoord.row );
 
-    const testPiece = { id: 4, rot: 3, col: hexCoord.col, row: hexCoord.row };
+    testPiece.col = hexCoord.col;
+    testPiece.row = hexCoord.row;
 
     Tantrix.drawGrid( ctx, -5, -4, 5, 4 );
     board.forEach( piece => Tantrix.drawPiece( ctx, piece ) );
@@ -57,6 +59,11 @@
   document.addEventListener( 'pointermove', e => {
     mouseX = SIZE * ( e.clientX / canvas.scale - scrollX )
     mouseY = SIZE * ( e.clientY / canvas.scale - scrollY );
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'wheel', e => {
+    testPiece.rot = testPiece.rot - Math.sign( e.wheelDelta ) % 6;
     canvas.redraw();
   } );
 

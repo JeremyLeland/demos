@@ -264,22 +264,22 @@ function rowFrom( col, row, dir ) {
 }
 
 export function isValidMove( board, move ) {
-  // console.log( `isValidMove( board, ${ JSON.stringify( move ) } )` );
+  debug( `isValidMove( board, ${ JSON.stringify( move ) } )` );
   return board.every( m => {
     if ( m.col == move.col && m.row == move.row ) {
-      console.log( `Existing move at ${ m.col },${ m.row }!` );
+      debug( `Existing move at ${ m.col },${ m.row }!` );
       return false;
     }
 
-    // console.log( `Checking ${ JSON.stringify( m ) }...` );
+    debug( `Checking ${ JSON.stringify( m ) }...` );
 
     for ( let dir = 0; dir < 6; dir ++ ) {
-      // console.log( `Testing for ${ DirName[ dir ] } ( ${ colFrom( move.col, move.row, dir ) }, ${ rowFrom( move.col, move.row, dir ) } )` );
+      debug( `Testing for ${ DirName[ dir ] } ( ${ colFrom( move.col, move.row, dir ) }, ${ rowFrom( move.col, move.row, dir ) } )` );
 
       if ( m.col == colFrom( move.col, move.row, dir ) && m.row == rowFrom( move.col, move.row, dir ) ) {
         const us   = ColorSequences[ move.id ][ fixRot( dir - move.rot ) ];
         const them = ColorSequences[    m.id ][ fixRot( dir + 3 - m.rot ) ];
-        // console.log( `Our ${ DirName[ dir ] } is ${ us }, their ${ DirName[ fixRot( dir + 3 ) ] } is ${ them }` );
+        debug( `Our ${ DirName[ dir ] } is ${ us }, their ${ DirName[ fixRot( dir + 3 ) ] } is ${ them }` );
         if ( us != them ) {
           return false;
         }
@@ -291,5 +291,12 @@ export function isValidMove( board, move ) {
 }
 
 function fixRot( rot ) {
-  return rot < 0 ? rot + 6 : rot % 6;
+  return rot % 6 + ( rot < 0 ? 6 : 0 );
+}
+
+export let Debug = false;
+function debug( str ) {
+  if ( Debug ) {
+    console.log( str );
+  }
 }
