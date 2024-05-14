@@ -84,9 +84,99 @@ export function gridY( col, row ) {
   return Math.sqrt( 3 ) * ( row + ( Math.abs( col ) % 2 ) / 2 );
 }
 
+export function getHexCoord( mouseX, mouseY ) {
+  const HALF_WIDTH = 0.5;
+  const HALF_HEIGHT = 0.5 * Math.sqrt( 3 );
+
+  const halfCol = Math.floor( mouseX / HALF_WIDTH );
+  const halfRow = Math.floor( mouseY / HALF_HEIGHT );
+
+  // console.log( `mouseX = ${ mouseX }, halfCol = ${ halfCol } )` );
+  // console.log( `mouseY = ${ mouseY }, halfRow = ${ halfRow } )` );
+
+  let mouseCol, mouseRow;
+
+  mouseCol = Math.floor( ( halfCol + 1 ) / 3 );
+  mouseRow = Math.floor( mouseY / Math.sqrt( 3 ) + ( Math.abs( mouseCol + 1 ) % 2 ) / 2 );
+
+  if ( ( halfCol - 1 ) % 3 == 0 ) {
+    let x1, y1, w, h;
+
+    const oddCol = Math.abs( halfCol ) % 2;
+    const oddRow = Math.abs( halfRow ) % 2;
+
+    if ( oddRow == oddCol ) {
+      x1 = HALF_WIDTH * halfCol;
+      y1 = HALF_HEIGHT * halfRow;
+      w = HALF_WIDTH;
+      h = HALF_HEIGHT;
+    }
+    else {
+      x1 = HALF_WIDTH * ( halfCol + 1 );
+      y1 = HALF_HEIGHT * halfRow;
+      w = -HALF_WIDTH;
+      h = HALF_HEIGHT;
+    }
+
+    // ( x - x1 ) * ( y1 - y2 ) + ( y - y1 ) * ( x2 - x1 ) < 0;
+    const dist = ( mouseX - x1 ) * -h + ( mouseY - y1 ) * w;
+
+    // console.log( `dist = ${ dist }` );
+
+    if ( dist < 0 ) {
+      mouseCol ++;
+      mouseRow += ( oddCol == 1 ? -1 : 1 ) * oddRow;
+    }
+  }
+
+  return {
+    col: mouseCol,
+    row: mouseRow,
+  }
+}
+
+export function drawGrid( ctx, startCol, startRow, endCol, endRow ) {
+  for ( let row = startRow; row <= endRow; row ++ ) {
+    for ( let col = startCol; col <= endCol; col ++ ) {
+      const x = gridX( col, row );
+      const y = gridY( col, row );
+
+      ctx.translate( x, y );
+
+      ctx.strokeStyle = 'black';
+      ctx.stroke( HexagonPath );
+
+      ctx.translate( -x, -y );
+    }
+  }
+}
+
+export function drawCoords( ctx, startCol, startRow, endCol, endRow ) {
+  for ( let row = startRow; row <= endRow; row ++ ) {
+    for ( let col = startCol; col <= endCol; col ++ ) {
+      const x = gridX( col, row );
+      const y = gridY( col, row );
+
+      ctx.translate( x, y );
+      
+      ctx.font = '0.4px Arial';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'black';
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+
+      ctx.fillStyle = 'white';
+      ctx.fillText( `(${ col }, ${ row })`, 0, 0 );
+
+      ctx.shadowColor = 'transparent';
+      ctx.translate( -x, -y );
+    }
+  }
+}
+
 export function drawPiece( ctx, piece ) {
   const x = gridX( piece.col, piece.row );
-  const y = gridY( piece.row );
+  const y = gridY( piece.col, piece.row );
   const ang = piece.rot * Math.PI / 3;
 
   ctx.translate( x, y );
@@ -95,18 +185,6 @@ export function drawPiece( ctx, piece ) {
   drawTile( ctx, piece.id );
 
   ctx.rotate( -ang );
-
-  ctx.font = '0.4px Arial';
-  ctx.textAlign = 'center';
-  ctx.shadowColor = 'black';
-  ctx.shadowOffsetX = 2;
-  ctx.shadowOffsetY = 2;
-
-  ctx.fillStyle = 'white';
-  ctx.fillText( `(${ piece.col }, ${ piece.row })`, 0, 0 );
-
-  ctx.shadowColor = 'transparent';
-  
   ctx.translate( -x, -y );
 }
 
@@ -164,42 +242,44 @@ const DirName = [
   'SW',
   'NW',
   'N',
-]
+];
 
 function colFrom( col, row, dir ) {
-  const oddOffset = Math.abs( row ) % 2;
-
   switch( dir ) {
-    case Direction.NW: case Direction.SW: return col + oddOffset - 1;
-    case Direction.NE: case Direction.SE: return col + oddOffset;
+    case Direction.NW: case Direction.SW: return col - 1;
+    case Direction.NE: case Direction.SE: return col + 1;
     default: return col;
   }
 }
 
-function rowFrom( row, dir ) {
+function rowFrom( col, row, dir ) {
+  const oddOffset = Math.abs( col ) % 2;
+
   switch( dir ) {
-    case Direction.N: return row - 2;
-    case Direction.NW: case Direction.NE: return row - 1;
-    case Direction.SW: case Direction.SE: return row + 1;
-    case Direction.S: return row + 2;
+    case Direction.N: return row - 1;
+    case Direction.NW: case Direction.NE: return row + oddOffset - 1;
+    case Direction.SW: case Direction.SE: return row + oddOffset;
+    case Direction.S: return row + 1;
   }
 }
 
 export function isValidMove( board, move ) {
-  console.log( `isValidMove( board, ${ JSON.stringify( move ) } )` );
+  // console.log( `isValidMove( board, ${ JSON.stringify( move ) } )` );
   return board.every( m => {
     if ( m.col == move.col && m.row == move.row ) {
       console.log( `Existing move at ${ m.col },${ m.row }!` );
       return false;
     }
 
+    // console.log( `Checking ${ JSON.stringify( m ) }...` );
+
     for ( let dir = 0; dir < 6; dir ++ ) {
-      // console.log( `testing ${ DirName[ dir ] } @ ${ colFrom( move.col, move.row, dir ) },${ rowFrom( move.row, dir ) }` );
-      if ( m.col == colFrom( move.col, move.row, dir ) && m.row == rowFrom( move.row, dir ) ) {
-        console.log( `Found ${ DirName[ dir ] }: ${ JSON.stringify( m ) }` );
+      // console.log( `Testing for ${ DirName[ dir ] } ( ${ colFrom( move.col, move.row, dir ) }, ${ rowFrom( move.col, move.row, dir ) } )` );
+
+      if ( m.col == colFrom( move.col, move.row, dir ) && m.row == rowFrom( move.col, move.row, dir ) ) {
         const us   = ColorSequences[ move.id ][ fixRot( dir - move.rot ) ];
         const them = ColorSequences[    m.id ][ fixRot( dir + 3 - m.rot ) ];
-        console.log( `Our ${ DirName[ dir ] } is ${ us }, their ${ DirName[ fixRot( dir + 3 ) ] } is ${ them }` );
+        // console.log( `Our ${ DirName[ dir ] } is ${ us }, their ${ DirName[ fixRot( dir + 3 ) ] } is ${ them }` );
         if ( us != them ) {
           return false;
         }

@@ -1,0 +1,63 @@
+<title>Drag tiles onto grid</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import * as Tantrix from './Tantrix.js';
+
+  const board = [
+    { id:  0, rot:  0, col:  0, row:  0 },
+    { id: 10, rot: -1, col:  1, row:  0 },
+    { id:  5, rot:  3, col:  2, row:  0 },
+    { id:  1, rot:  2, col: -1, row: -1 },
+    { id:  2, rot:  2, col: -2, row:  0 },
+    { id:  7, rot:  2, col:  3, row: -1 },
+    { id:  8, rot:  2, col:  3, row:  0 },
+    { id: 11, rot: -2, col:  4, row:  1 },
+    { id: 12, rot:  5, col:  4, row: -1 },
+    { id: 3, rot: -2, col:  5, row: -1 },
+  ];
+
+  const SIZE = 18;
+  let scrollX = 0.5, scrollY = 0.5;
+
+  const canvas = new Canvas();
+
+  let mouseX = 0, mouseY = 0;
+
+  canvas.draw = ( ctx ) => {
+    ctx.translate( scrollX, scrollY );
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 1 / SIZE;
+    
+    
+    const hexCoord = Tantrix.getHexCoord( mouseX, mouseY );
+    const x = Tantrix.gridX( hexCoord.col, hexCoord.row );
+    const y = Tantrix.gridY( hexCoord.col, hexCoord.row );
+
+    const testPiece = { id: 4, rot: 3, col: hexCoord.col, row: hexCoord.row };
+
+    Tantrix.drawGrid( ctx, -5, -4, 5, 4 );
+    board.forEach( piece => Tantrix.drawPiece( ctx, piece ) );
+    Tantrix.drawPiece( ctx, testPiece );
+    Tantrix.drawCoords( ctx, -5, -4, 5, 4 );
+
+    const valid = Tantrix.isValidMove( board, testPiece );
+
+    ctx.translate( x, y );
+    ctx.strokeStyle = valid ? 'green': 'red';
+    ctx.lineWidth = 1 / SIZE;
+    ctx.stroke( Tantrix.HexagonPath );
+
+    ctx.translate( -x, -y );
+  }
+
+  canvas.redraw();
+
+  document.addEventListener( 'pointermove', e => {
+    mouseX = SIZE * ( e.clientX / canvas.scale - scrollX )
+    mouseY = SIZE * ( e.clientY / canvas.scale - scrollY );
+    canvas.redraw();
+  } );
+
+</script>
