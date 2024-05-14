@@ -67,4 +67,9 @@
     canvas.redraw();
   } );
 
+  document.addEventListener( 'keydown', e => {
+    testPiece.id = e.keyCode % Tantrix.NumTiles;
+    canvas.redraw();
+  } );
+
 </script>
