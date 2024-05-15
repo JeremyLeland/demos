@@ -8,10 +8,10 @@ export class Canvas {
     
     if ( !this.canvas ) {
       this.canvas = document.createElement( 'canvas' );
-      this.canvas.style.width = '100%';
-      this.canvas.style.height = '100%';
       document.body.appendChild( this.canvas );
     }
+    this.canvas.style.width = '100%';
+    this.canvas.style.height = '100%';
     
     this.canvas.oncontextmenu = () => { return false };
     
