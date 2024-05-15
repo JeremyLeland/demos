@@ -291,7 +291,11 @@ export function isValidMove( board, move ) {
 }
 
 function fixRot( rot ) {
-  return rot % 6 + ( rot < 0 ? 6 : 0 );
+  return modulo( rot, 6 );
+}
+
+function modulo( n, m ) {
+  return ( ( n % m ) + m ) % m;
 }
 
 export let Debug = false;
