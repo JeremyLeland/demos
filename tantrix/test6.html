@@ -4,6 +4,7 @@
 <style>
   #wrapper {
     display: grid;
+    /* TODO: Should this resize if bigger/smaller screen? */
     grid-template-columns: auto 140px;
     max-width: 100vw;
     max-height: 100vh;
@@ -48,13 +49,15 @@
 
   canvas.redraw();
 
+  const UI_SIZE = 2;
+
   const uiCanvas = new Canvas( document.getElementById( 'uiCanvas' ) );
-  uiCanvas.canvas.style.height = Tantrix.NumTiles * 150;
+  uiCanvas.canvas.style.height = Tantrix.NumTiles * 140;
 
   uiCanvas.draw = ( ctx ) => {
     ctx.translate( 0.5, 0.5 );
-    ctx.scale( 1 / 2, 1 / 2 );
-    ctx.lineWidth = 1 / 2;
+    ctx.scale( 1 / UI_SIZE, 1 / UI_SIZE );
+    ctx.lineWidth = 1 / UI_SIZE;
     
     for ( let i = 0; i < Tantrix.NumTiles; i ++ ) {
       Tantrix.drawTile( ctx, i );
