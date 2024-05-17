@@ -1,7 +1,7 @@
 // Useful hexagon info: https://www.redblobgames.com/grids/hexagons/
 
 // http://www.tantrix.com/english/TantrixTiles.html
-const ColorSequences = [
+export const ColorSequences = [
   'YYBRBR',
   'YYBRRB',
   'RRBBYY',
@@ -62,7 +62,7 @@ const ColorSequences = [
 
 export const NumTiles = ColorSequences.length;
 
-const Colors = {
+export const Colors = {
   'Y': 'yellow',
   'G': 'green',
   'B': 'blue',

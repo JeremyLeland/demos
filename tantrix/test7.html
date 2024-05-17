@@ -17,6 +17,14 @@
     overflow: auto;
     max-height: 100vh;
   }
+  .line {
+    fill: none;
+    stroke-width: 0.1;
+  }
+  .red    { stroke: red;    }
+  .yellow { stroke: yellow; }
+  .green  { stroke: green;  }
+  .blue   { stroke: blue;   }
 </style>
 
 <body>
@@ -25,15 +33,7 @@
       <!-- preserveAspectRatio? xMidYMin? something else? -->
       <svg width="100%" height="100%" viewBox="-5 -5 10 10" preserveAspectRatio="xMidYMin">
         
-        <path d="M 1 0 L 0.5 0.866 L -0.5 0.866 L -1 0 L -0.5 -0.866 L 0.5 -0.866 Z" stroke="black" fill="#111" stroke-width="0.05"/>
-
-        <g filter="url(#shadow)">
-          <path d="M 0.7361215932167728 -0.42499999999999993
-          Q 0 0 0.7361215932167728 0.42499999999999993" fill="none" stroke="red" stroke-width="0.1"></path>
-          <path d="M 5.204748896376251e-17 0.85 
-          Q 0 0 -0.736121593216773 -0.42499999999999977" fill="none" stroke="green" stroke-width="0.1"></path>
-          <path d="M -0.7361215932167728 0.42499999999999993 
-          Q 0 0 -1.5614246689128752e-16 -0.85" fill="none" stroke="blue" stroke-width="0.1"></path>
+        <g id="testPiece">
         </g>
         
         <circle cx="2" cy="2" r="1" stroke="green" fill="orange" stroke-width="0.1"/>
@@ -50,5 +50,61 @@
 </body>
 
 <script type="module">
+  import * as Tantrix from './Tantrix.js';
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  const piece = document.getElementById( 'testPiece' );
   
+  const hexagon = document.createElementNS( SVG_NS, 'path' );
+  hexagon.setAttribute( 'd', getHexPath() );
+  piece.appendChild( hexagon );
+
+  const tileIndex = 0;
+  const colorSequence = Tantrix.ColorSequences[ tileIndex ];
+
+  let start = 0, end = 0;
+  for ( let i = 0; i < 3; i ++ ) {
+    for ( end = start + 1; end < 6; end ++ ) {
+      if ( colorSequence[ start ] == colorSequence[ end ] ) {
+        break;
+      }
+    }
+
+    const line = document.createElementNS( SVG_NS, 'path' );
+    line.setAttribute( 'd', getLinePath( start, end ) );
+    line.classList.add( 'line', Tantrix.Colors[ colorSequence[ start ] ] );
+    piece.appendChild( line );
+
+    start ++;
+    if ( start == end ) {
+      start ++;
+    }
+  }
+
+  function createPieceSVG() {
+
+  }
+
+  function getHexPath() {
+    const angles = Array.from( Array( 6 ), ( _, i ) => i * Math.PI * 2 / 6 );
+
+    return `M ${ 
+      angles.map( ang => `${ Math.cos( ang ) },${ Math.sin( ang ) }` ).join( ' L ' ) 
+    } Z`;
+  }
+
+  function getLinePath( start, end ) {
+    const DIST = 0.85;
+    const angle1 = ( start - 0.5 ) * Math.PI * 2 / 6;
+    const startX = Math.cos( angle1 ) * DIST;
+    const startY = Math.sin( angle1 ) * DIST;
+
+    const angle2 = ( end - 0.5 ) * Math.PI * 2 / 6;
+    const endX = Math.cos( angle2 ) * DIST;
+    const endY = Math.sin( angle2 ) * DIST;
+
+    return `M ${ startX },${ startY } Q 0,0 ${ endX },${ endY }`;
+  }
+
 </script>
