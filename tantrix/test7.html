@@ -1,0 +1,54 @@
+<title>Multiple SVGs for UI</title>
+<link rel="stylesheet" href="../grid.css">
+
+<style>
+  #wrapper {
+    display: grid;
+    /* TODO: Should this resize if bigger/smaller screen? */
+    grid-template-columns: auto 140px;
+    max-width: 100vw;
+    max-height: 100vh;
+  }
+  #board {
+    overflow: auto;
+    max-height: 100vh;
+  }
+  #ui {
+    overflow: auto;
+    max-height: 100vh;
+  }
+</style>
+
+<body>
+  <div id="wrapper">
+    <div id="board">
+      <!-- preserveAspectRatio? xMidYMin? something else? -->
+      <svg width="100%" height="100%" viewBox="-5 -5 10 10" preserveAspectRatio="xMidYMin">
+        
+        <path d="M 1 0 L 0.5 0.866 L -0.5 0.866 L -1 0 L -0.5 -0.866 L 0.5 -0.866 Z" stroke="black" fill="#111" stroke-width="0.05"/>
+
+        <g filter="url(#shadow)">
+          <path d="M 0.7361215932167728 -0.42499999999999993
+          Q 0 0 0.7361215932167728 0.42499999999999993" fill="none" stroke="red" stroke-width="0.1"></path>
+          <path d="M 5.204748896376251e-17 0.85 
+          Q 0 0 -0.736121593216773 -0.42499999999999977" fill="none" stroke="green" stroke-width="0.1"></path>
+          <path d="M -0.7361215932167728 0.42499999999999993 
+          Q 0 0 -1.5614246689128752e-16 -0.85" fill="none" stroke="blue" stroke-width="0.1"></path>
+        </g>
+        
+        <circle cx="2" cy="2" r="1" stroke="green" fill="orange" stroke-width="0.1"/>
+      </svg>
+    </div>
+    <div id="ui">
+      <svg width="100%" viewBox="-1 -1 2 112">
+        <circle cx="0" cy="0" r="1" stroke="green" fill="red" stroke-width="0.1"/>
+        <circle cx="0" cy="2" r="1" stroke="green" fill="yellow" stroke-width="0.1"/>
+        <circle cx="0" cy="110" r="1" stroke="green" fill="yellow" stroke-width="0.1"/>
+      </svg>
+    </div>
+  </div>
+</body>
+
+<script type="module">
+  
+</script>
