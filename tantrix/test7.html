@@ -9,11 +9,7 @@
     max-width: 100vw;
     max-height: 100vh;
   }
-  #board {
-    overflow: auto;
-    max-height: 100vh;
-  }
-  #ui {
+  .fulldiv {
     overflow: auto;
     max-height: 100vh;
   }
@@ -29,17 +25,13 @@
 
 <body>
   <div id="wrapper">
-    <div id="board">
+    <div class="fulldiv">
       <!-- preserveAspectRatio? xMidYMin? something else? -->
-      <svg width="100%" height="100%" viewBox="-5 -5 10 10" preserveAspectRatio="xMidYMin">
-        
-        <g id="testPiece">
-        </g>
-        
+      <svg id="board" width="100%" height="100%" viewBox="-5 -5 10 10" preserveAspectRatio="xMidYMin">
         <circle cx="2" cy="2" r="1" stroke="green" fill="orange" stroke-width="0.1"/>
       </svg>
     </div>
-    <div id="ui">
+    <div class="fulldiv">
       <svg width="100%" viewBox="-1 -1 2 112">
         <circle cx="0" cy="0" r="1" stroke="green" fill="red" stroke-width="0.1"/>
         <circle cx="0" cy="2" r="1" stroke="green" fill="yellow" stroke-width="0.1"/>
@@ -54,36 +46,46 @@
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
 
-  const piece = document.getElementById( 'testPiece' );
+  const boardSVG = document.getElementById( 'board' );
+
+  const pieces = [
+    createPieceSVG( 0 ),
+    createPieceSVG( 1 ),
+  ];
+
+  pieces[ 0 ].style.transform = 'translate( 2px,2px ) rotate( 10rad )';
+
+  pieces.forEach( piece => boardSVG.appendChild( piece ) );
+
+  function createPieceSVG( tileIndex ) {
+    const piece = document.createElementNS( SVG_NS, 'g' );
   
-  const hexagon = document.createElementNS( SVG_NS, 'path' );
-  hexagon.setAttribute( 'd', getHexPath() );
-  piece.appendChild( hexagon );
+    const hexagon = document.createElementNS( SVG_NS, 'path' );
+    hexagon.setAttribute( 'd', getHexPath() );
+    piece.appendChild( hexagon );
 
-  const tileIndex = 0;
-  const colorSequence = Tantrix.ColorSequences[ tileIndex ];
+    const colorSequence = Tantrix.ColorSequences[ tileIndex ];
 
-  let start = 0, end = 0;
-  for ( let i = 0; i < 3; i ++ ) {
-    for ( end = start + 1; end < 6; end ++ ) {
-      if ( colorSequence[ start ] == colorSequence[ end ] ) {
-        break;
+    let start = 0, end = 0;
+    for ( let i = 0; i < 3; i ++ ) {
+      for ( end = start + 1; end < 6; end ++ ) {
+        if ( colorSequence[ start ] == colorSequence[ end ] ) {
+          break;
+        }
+      }
+
+      const line = document.createElementNS( SVG_NS, 'path' );
+      line.setAttribute( 'd', getLinePath( start, end ) );
+      line.classList.add( 'line', Tantrix.Colors[ colorSequence[ start ] ] );
+      piece.appendChild( line );
+
+      start ++;
+      if ( start == end ) {
+        start ++;
       }
     }
 
-    const line = document.createElementNS( SVG_NS, 'path' );
-    line.setAttribute( 'd', getLinePath( start, end ) );
-    line.classList.add( 'line', Tantrix.Colors[ colorSequence[ start ] ] );
-    piece.appendChild( line );
-
-    start ++;
-    if ( start == end ) {
-      start ++;
-    }
-  }
-
-  function createPieceSVG() {
-
+    return piece;
   }
 
   function getHexPath() {
