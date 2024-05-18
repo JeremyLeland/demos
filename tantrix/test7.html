@@ -31,12 +31,7 @@
         <circle cx="2" cy="2" r="1" stroke="green" fill="orange" stroke-width="0.1"/>
       </svg>
     </div>
-    <div class="fulldiv">
-      <svg width="100%" viewBox="-1 -1 2 112">
-        <circle cx="0" cy="0" r="1" stroke="green" fill="red" stroke-width="0.1"/>
-        <circle cx="0" cy="2" r="1" stroke="green" fill="yellow" stroke-width="0.1"/>
-        <circle cx="0" cy="110" r="1" stroke="green" fill="yellow" stroke-width="0.1"/>
-      </svg>
+    <div id="hand" class="fulldiv">
     </div>
   </div>
 </body>
@@ -47,15 +42,24 @@
   const SVG_NS = 'http://www.w3.org/2000/svg';
 
   const boardSVG = document.getElementById( 'board' );
+  const handDiv  = document.getElementById( 'hand' );
 
-  const pieces = [
-    createPieceSVG( 0 ),
-    createPieceSVG( 1 ),
-  ];
+  // pieces[ 0 ].style.transform = 'translate( 0px,0px ) rotate( 0rad )';
+  // pieces[ 1 ].style.transform = 'translate( 0px,2px ) rotate( 0rad )';
 
-  pieces[ 0 ].style.transform = 'translate( 2px,2px ) rotate( 10rad )';
+  for ( let i = 0; i < Tantrix.NumTiles; i ++ ) {
+    const buttonSVG = document.createElementNS( SVG_NS, 'svg' );
+    buttonSVG.setAttribute( 'width', '100%' );
+    buttonSVG.setAttribute( 'viewBox', '-1 -1 2 2' );
+    buttonSVG.dataset.tileIndex = i;
+    buttonSVG.appendChild( createPieceSVG( i ) );
+    handDiv.appendChild( buttonSVG );
+  }
 
-  pieces.forEach( piece => boardSVG.appendChild( piece ) );
+  handDiv.addEventListener( 'click', e => {
+    console.log( e.target.dataset.tileIndex );
+  } );
+
 
   function createPieceSVG( tileIndex ) {
     const piece = document.createElementNS( SVG_NS, 'g' );
