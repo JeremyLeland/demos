@@ -1,0 +1,102 @@
+<title>Drag tiles onto grid</title>
+<link rel="stylesheet" href="../grid.css">
+
+<!-- Trying to drag pieces out of hand and onto board -->
+<!-- Potentially have a nice animation of pieces smoothly closing -->
+<!-- or opening gap as piece is dragged out of or back into hand -->
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import * as Tantrix from './Tantrix.js';
+
+  let board = [];
+  let hand = Array.from( Array( Tantrix.NumTiles ), ( _, i ) => i );
+
+  const SIZE = 18;
+  let scrollX = 0.5, scrollY = 0.5;
+  let handScroll = 0;
+
+  const canvas = new Canvas();
+  
+  let testPiece = { id: 4, rot: 3, col: 0, row: 0 };
+
+  let mouseHexCoord = { col: 0, row: 0 };
+
+  canvas.draw = ( ctx ) => {
+    ctx.translate( scrollX, scrollY );
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 1 / SIZE;
+    
+    Tantrix.drawGrid( ctx, -5, -4, 5, 4 );
+    board.forEach( piece => Tantrix.drawPiece( ctx, piece ) );
+    Tantrix.drawPiece( ctx, testPiece );
+    Tantrix.drawCoords( ctx, -5, -4, 5, 4 );
+
+    ctx.translate( 10, -8 + handScroll );
+    hand.forEach( tileIndex => {
+      Tantrix.drawTile( ctx, tileIndex );
+      ctx.translate( 0, 2 );
+    } );
+    ctx.translate( -10, 8 - handScroll - hand.length * 2 );
+
+    const valid = Tantrix.isValidMove( board, testPiece );
+    const x = Tantrix.gridX( mouseHexCoord.col, mouseHexCoord.row );
+    const y = Tantrix.gridY( mouseHexCoord.col, mouseHexCoord.row );
+
+    ctx.translate( x, y );
+    ctx.strokeStyle = valid ? 'green': 'red';
+    ctx.lineWidth = 1 / SIZE;
+    ctx.stroke( Tantrix.HexagonPath );
+
+    ctx.translate( -x, -y );
+  }
+
+  canvas.redraw();
+
+  function updateMousePos( e ) {
+    const mouseX = SIZE * ( e.clientX / canvas.scale - scrollX )
+    const mouseY = SIZE * ( e.clientY / canvas.scale - scrollY );
+
+    mouseHexCoord = Tantrix.getHexCoord( mouseX, mouseY );
+
+    testPiece.col = mouseHexCoord.col;
+    testPiece.row = mouseHexCoord.row;
+  }
+
+  document.addEventListener( 'pointermove', e => {
+    updateMousePos( e );
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'pointerdown', e => {
+    updateMousePos( e );
+
+    if ( e.button == 0 ) { 
+      if ( Tantrix.isValidMove( board, testPiece ) ) {
+        board.push( Object.assign( {}, testPiece ) );
+      }
+    }
+    else if ( e.button == 2 ) {
+      board = board.filter( m => m.col != mouseHexCoord.col || m.row != mouseHexCoord.row );
+    }
+
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'wheel', e => {
+    if ( mouseHexCoord.col > 6 ) {
+      handScroll = Math.min( 0, handScroll + Math.sign( e.wheelDelta ) );
+    }
+    else {
+      testPiece.rot = testPiece.rot - Math.sign( e.wheelDelta ) % 6;
+    }
+
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'keydown', e => {
+    testPiece.id = e.keyCode % Tantrix.NumTiles;
+    canvas.redraw();
+  } );
+
+</script>

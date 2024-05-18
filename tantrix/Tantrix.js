@@ -244,7 +244,7 @@ const DirName = [
   'N',
 ];
 
-function colFrom( col, row, dir ) {
+export function colFrom( col, row, dir ) {
   switch( dir ) {
     case Direction.NW: case Direction.SW: return col - 1;
     case Direction.NE: case Direction.SE: return col + 1;
@@ -252,7 +252,7 @@ function colFrom( col, row, dir ) {
   }
 }
 
-function rowFrom( col, row, dir ) {
+export function rowFrom( col, row, dir ) {
   const oddOffset = Math.abs( col ) % 2;
 
   switch( dir ) {
@@ -290,7 +290,7 @@ export function isValidMove( board, move ) {
   } );
 }
 
-function fixRot( rot ) {
+export function fixRot( rot ) {
   return modulo( rot, 6 );
 }
 
