@@ -93,41 +93,25 @@
 
   const lines = [];
 
-  const firstSegment = segments[ 3 ];
+  const unvisted = new Set( segments );
 
-  const line = [ firstSegment ];
+  while ( unvisted.size > 0 ) {
+    const [ firstSegment ] = unvisted;
 
-  // Check segments before
-  // Check segments after
-  let prevSegment = firstSegment;
-  let segment = firstSegment.startLink;
+    const line = [ firstSegment ];
+    unvisted.delete( firstSegment );
 
-  while ( segment && segment != firstSegment ) {
-    line.unshift( segment );
+    // Check segments before
+    let prevSegment = firstSegment;
+    let segment = firstSegment.startLink;
 
-    // Account for which direction we came from
-    if ( segment.startLink == prevSegment ) {
-      prevSegment = segment;
-      segment = segment.endLink;
-    }
-    else if ( segment.endLink == prevSegment ) {
-      prevSegment = segment;
-      segment = segment.startLink;
-    }
-    else {
-      prevSegment = segment;
-      segment = null;
-    }
-  }
-
-  if ( segment != firstSegment ) {
-    prevSegment = firstSegment;
-    segment = firstSegment.endLink;
-
-    while ( segment ) {
-      line.push( segment );
+    // TODO: Combine with below, check against unvisisted instead of firstSegment
+    while ( segment && segment != firstSegment ) {
+      line.unshift( segment );
+      unvisted.delete( segment );
 
       // Account for which direction we came from
+      // TODO: Can we use unvisisted for this too, or should we stick with prevSegment?
       if ( segment.startLink == prevSegment ) {
         prevSegment = segment;
         segment = segment.endLink;
@@ -141,9 +125,36 @@
         segment = null;
       }
     }
+
+    // If not a loop, check segments after
+    if ( segment != firstSegment ) {
+      prevSegment = firstSegment;
+      segment = firstSegment.endLink;
+
+      while ( segment ) {
+        line.push( segment );
+        unvisted.delete( segment );
+
+        // Account for which direction we came from
+        if ( segment.startLink == prevSegment ) {
+          prevSegment = segment;
+          segment = segment.endLink;
+        }
+        else if ( segment.endLink == prevSegment ) {
+          prevSegment = segment;
+          segment = segment.startLink;
+        }
+        else {
+          prevSegment = segment;
+          segment = null;
+        }
+      }
+    }
+
+    lines.push( line );
   }
 
-  console.log( line );
+  console.log( lines );
     
 
   const SIZE = 18;
