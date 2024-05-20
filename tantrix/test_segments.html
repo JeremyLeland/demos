@@ -93,63 +93,32 @@
 
   const lines = [];
 
-  const unvisted = new Set( segments );
-
-  while ( unvisted.size > 0 ) {
-    const [ firstSegment ] = unvisted;
+  const unvisited = new Set( segments );
+  while ( unvisited.size > 0 ) {
+    const [ firstSegment ] = unvisited;
 
     const line = [ firstSegment ];
-    unvisted.delete( firstSegment );
+    unvisited.delete( firstSegment );
 
-    // Check segments before
-    let prevSegment = firstSegment;
-    let segment = firstSegment.startLink;
-
-    // TODO: Combine with below, check against unvisisted instead of firstSegment
-    while ( segment && segment != firstSegment ) {
-      line.unshift( segment );
-      unvisted.delete( segment );
-
-      // Account for which direction we came from
-      // TODO: Can we use unvisisted for this too, or should we stick with prevSegment?
-      if ( segment.startLink == prevSegment ) {
-        prevSegment = segment;
-        segment = segment.endLink;
-      }
-      else if ( segment.endLink == prevSegment ) {
-        prevSegment = segment;
-        segment = segment.startLink;
-      }
-      else {
-        prevSegment = segment;
-        segment = null;
-      }
-    }
-
-    // If not a loop, check segments after
-    if ( segment != firstSegment ) {
-      prevSegment = firstSegment;
-      segment = firstSegment.endLink;
+    [ firstSegment.startLink, firstSegment.endLink ].forEach( startFrom => {
+      let segment = startFrom;
 
       while ( segment ) {
-        line.push( segment );
-        unvisted.delete( segment );
+        line.unshift( segment );
+        unvisited.delete( segment );
 
-        // Account for which direction we came from
-        if ( segment.startLink == prevSegment ) {
-          prevSegment = segment;
-          segment = segment.endLink;
-        }
-        else if ( segment.endLink == prevSegment ) {
-          prevSegment = segment;
+        // Start/end are based on edge index, not direction we came from
+        if ( unvisited.has( segment.startLink ) ) {
           segment = segment.startLink;
         }
+        else if ( unvisited.has( segment.endLink ) ) {
+          segment = segment.endLink;
+        }
         else {
-          prevSegment = segment;
           segment = null;
         }
       }
-    }
+    } );
 
     lines.push( line );
   }
