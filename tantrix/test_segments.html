@@ -91,6 +91,61 @@
 
   console.log( segments );
 
+  const lines = [];
+
+  const firstSegment = segments[ 3 ];
+
+  const line = [ firstSegment ];
+
+  // Check segments before
+  // Check segments after
+  let prevSegment = firstSegment;
+  let segment = firstSegment.startLink;
+
+  while ( segment && segment != firstSegment ) {
+    line.unshift( segment );
+
+    // Account for which direction we came from
+    if ( segment.startLink == prevSegment ) {
+      prevSegment = segment;
+      segment = segment.endLink;
+    }
+    else if ( segment.endLink == prevSegment ) {
+      prevSegment = segment;
+      segment = segment.startLink;
+    }
+    else {
+      prevSegment = segment;
+      segment = null;
+    }
+  }
+
+  if ( segment != firstSegment ) {
+    prevSegment = firstSegment;
+    segment = firstSegment.endLink;
+
+    while ( segment ) {
+      line.push( segment );
+
+      // Account for which direction we came from
+      if ( segment.startLink == prevSegment ) {
+        prevSegment = segment;
+        segment = segment.endLink;
+      }
+      else if ( segment.endLink == prevSegment ) {
+        prevSegment = segment;
+        segment = segment.startLink;
+      }
+      else {
+        prevSegment = segment;
+        segment = null;
+      }
+    }
+  }
+
+  console.log( line );
+    
+
   const SIZE = 18;
   let scrollX = 0.5, scrollY = 0.5;
 
