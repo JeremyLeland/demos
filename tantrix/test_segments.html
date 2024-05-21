@@ -98,6 +98,7 @@
     const [ firstSegment ] = unvisited;
 
     const line = [ firstSegment ];
+    firstSegment.line = line;
     unvisited.delete( firstSegment );
 
     [ firstSegment.startLink, firstSegment.endLink ].forEach( startFrom => {
@@ -105,6 +106,7 @@
 
       while ( segment ) {
         line.unshift( segment );
+        segment.line = line;
         unvisited.delete( segment );
 
         // Start/end are based on edge index, not direction we came from
@@ -132,6 +134,7 @@
   const canvas = new Canvas();
   
   let testPiece = { id: 4, rot: 3, col: 0, row: 0 };
+  let hoverLine;
 
   let mouseHexCoord = { col: 0, row: 0 };
 
@@ -142,19 +145,33 @@
     
     Tantrix.drawGrid( ctx, -5, -4, 5, 4 );
     board.forEach( piece => Tantrix.drawPiece( ctx, piece ) );
-    Tantrix.drawPiece( ctx, testPiece );
+    // Tantrix.drawPiece( ctx, testPiece );
     Tantrix.drawCoords( ctx, -5, -4, 5, 4 );
 
-    const valid = Tantrix.isValidMove( board, testPiece );
-    const x = Tantrix.gridX( mouseHexCoord.col, mouseHexCoord.row );
-    const y = Tantrix.gridY( mouseHexCoord.col, mouseHexCoord.row );
+    // const valid = Tantrix.isValidMove( board, testPiece );
+    // const x = Tantrix.gridX( mouseHexCoord.col, mouseHexCoord.row );
+    // const y = Tantrix.gridY( mouseHexCoord.col, mouseHexCoord.row );
 
-    ctx.translate( x, y );
-    ctx.strokeStyle = valid ? 'green': 'red';
-    ctx.lineWidth = 1 / SIZE;
-    ctx.stroke( Tantrix.HexagonPath );
+    // ctx.translate( x, y );
+    // ctx.strokeStyle = valid ? 'green': 'red';
+    // ctx.lineWidth = 1 / SIZE;
+    // ctx.stroke( Tantrix.HexagonPath );
+    // ctx.translate( -x, -y );
 
-    ctx.translate( -x, -y );
+    if ( hoverLine ) {
+      ctx.beginPath();
+      hoverLine.forEach( segment => {
+        const x = Tantrix.gridX( segment.col, segment.row );
+        const y = Tantrix.gridY( segment.col, segment.row );
+        ctx.translate( x, y );
+        Tantrix.drawSegment( ctx, segment.start, segment.end );
+        ctx.translate( -x, -y );
+      } );
+
+      ctx.strokeStyle = 'white';
+      ctx.stroke();
+    }
+
   }
 
   canvas.redraw();
@@ -164,6 +181,23 @@
     const mouseY = SIZE * ( e.clientY / canvas.scale - scrollY );
 
     mouseHexCoord = Tantrix.getHexCoord( mouseX, mouseY );
+
+    // TODO: Find sixth of hexagon that we are in (based on angle to x,y for hex coord)
+    const centerX = Tantrix.gridX( mouseHexCoord.col, mouseHexCoord.row );
+    const centerY = Tantrix.gridY( mouseHexCoord.col, mouseHexCoord.row );
+
+    const angle = Math.atan2( mouseY - centerY, mouseX - centerX );
+    const edgeIndex = Tantrix.fixRot( 1 + Math.floor( 6 * angle / ( Math.PI * 2 ) ) );
+
+    console.log( `${ mouseHexCoord.col },${ mouseHexCoord.row } edge ${ edgeIndex }` );
+
+    // TODO: Look for segment matching col, row, and start or end
+    const segment = segments.find( e => 
+      e.col == mouseHexCoord.col && e.row == mouseHexCoord.row && 
+      ( e.start == edgeIndex || e.end == edgeIndex ) 
+    );
+
+    hoverLine = segment?.line;
 
     testPiece.col = mouseHexCoord.col;
     testPiece.row = mouseHexCoord.row;

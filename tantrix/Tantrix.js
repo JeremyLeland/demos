@@ -204,12 +204,7 @@ export function drawTile( ctx, tileIndex ) {
 
     ctx.beginPath();
 
-    const DIST = 0.85;
-    const angle1 = ( start - 0.5 ) * Math.PI * 2 / 6;
-    ctx.moveTo( Math.cos( angle1 ) * DIST, Math.sin( angle1 ) * DIST );
-
-    const angle2 = ( end - 0.5 ) * Math.PI * 2 / 6;
-    ctx.quadraticCurveTo( 0, 0, Math.cos( angle2 ) * DIST, Math.sin( angle2 ) * DIST );
+    drawSegment( ctx, start, end );
 
     ctx.strokeStyle = 'black';
     ctx.lineWidth = 0.15;
@@ -225,6 +220,20 @@ export function drawTile( ctx, tileIndex ) {
     }
   }
 }
+
+export function drawSegment( ctx, start, end ) {
+  const DIST = 0.85;
+  const angle1 = ( start - 0.5 ) * Math.PI * 2 / 6;
+  ctx.moveTo( Math.cos( angle1 ) * DIST, Math.sin( angle1 ) * DIST );
+
+  // NOTE: If we want smooth lines, we need to use lineTo above 
+  //       We also need to somehow have a consistent clockwise/counterclockwise order (via parameter?)
+  //       Otherwise we get lines all over the place
+
+  const angle2 = ( end - 0.5 ) * Math.PI * 2 / 6;
+  ctx.quadraticCurveTo( 0, 0, Math.cos( angle2 ) * DIST, Math.sin( angle2 ) * DIST );
+}
+
 
 const Direction = {
   NE: 0,
