@@ -27,9 +27,7 @@
   <div id="wrapper">
     <div class="fulldiv">
       <!-- preserveAspectRatio? xMidYMin? something else? -->
-      <svg id="board" width="100%" height="100%" viewBox="-5 -5 10 10" preserveAspectRatio="xMidYMin">
-        <circle cx="2" cy="2" r="1" stroke="green" fill="orange" stroke-width="0.1"/>
-      </svg>
+      <svg id="board" width="100%" height="100%" viewBox="-6 -6 12 12" preserveAspectRatio="xMidYMin"></svg>
     </div>
     <div id="hand" class="fulldiv">
     </div>
@@ -39,13 +37,38 @@
 <script type="module">
   import * as Tantrix from './Tantrix.js';
 
+  let board = [
+    { id:  0, rot:  0, col:  0, row:  0 },
+    { id: 10, rot: -1, col:  1, row:  0 },
+    { id:  5, rot:  3, col:  2, row:  0 },
+    { id:  1, rot:  2, col: -1, row: -1 },
+    { id:  2, rot:  2, col: -2, row:  0 },
+    { id:  7, rot:  2, col:  3, row: -1 },
+    { id:  8, rot:  2, col:  3, row:  0 },
+    { id: 11, rot: -2, col:  4, row:  1 },
+    { id: 12, rot:  5, col:  4, row: -1 },
+    { id:  3, rot: -2, col:  5, row: -1 },
+    { id:  2, rot:  0, col: -1, row:  0 },
+  ];
+
+  let testPiece = { id: 4, rot: 3, col: 0, row: -3 };
+  let mouseHexCoord = { col: 0, row: -3 };
+
   const SVG_NS = 'http://www.w3.org/2000/svg';
 
   const boardSVG = document.getElementById( 'board' );
   const handDiv  = document.getElementById( 'hand' );
 
-  // pieces[ 0 ].style.transform = 'translate( 0px,0px ) rotate( 0rad )';
-  // pieces[ 1 ].style.transform = 'translate( 0px,2px ) rotate( 0rad )';
+
+
+  board.forEach( piece => {
+    const svg = createPieceSVG( piece.id );
+    positionPiece( svg, piece );
+    boardSVG.appendChild( svg );
+  } );
+
+  let testPieceSVG;
+  updateTestPiece();
 
   for ( let i = 0; i < Tantrix.NumTiles; i ++ ) {
     const buttonSVG = document.createElementNS( SVG_NS, 'svg' );
@@ -57,9 +80,19 @@
   }
 
   handDiv.addEventListener( 'click', e => {
-    console.log( e.target.dataset.tileIndex );
+    const svg = e.target.closest( 'svg' );
+
+    testPiece.id = svg.dataset.tileIndex;
+
+    boardSVG.removeChild( testPieceSVG );
+    updateTestPiece();
   } );
 
+  function updateTestPiece() {
+    testPieceSVG = createPieceSVG( testPiece.id );
+    positionPiece( testPieceSVG, testPiece );
+    boardSVG.appendChild( testPieceSVG );
+  }
 
   function createPieceSVG( tileIndex ) {
     const piece = document.createElementNS( SVG_NS, 'g' );
@@ -92,6 +125,14 @@
     return piece;
   }
 
+  function positionPiece( svg, piece ) {
+    const x = Tantrix.gridX( piece.col, piece.row );
+    const y = Tantrix.gridY( piece.col, piece.row );
+    const ang = piece.rot * Math.PI / 3;
+    
+    svg.style.transform = `translate( ${ x }px,${ y }px ) rotate( ${ ang }rad )`;
+  }
+
   function getHexPath() {
     const angles = Array.from( Array( 6 ), ( _, i ) => i * Math.PI * 2 / 6 );
 
@@ -112,5 +153,41 @@
 
     return `M ${ startX },${ startY } Q 0,0 ${ endX },${ endY }`;
   }
+
+  const svgPoint = boardSVG.createSVGPoint();
+  function updateMousePos( e ) {
+    svgPoint.x = e.clientX;
+    svgPoint.y = e.clientY;
+
+    const mousePos = svgPoint.matrixTransform( boardSVG.getScreenCTM().inverse() );
+
+    mouseHexCoord = Tantrix.getHexCoord( mousePos.x, mousePos.y );
+    testPiece.col = mouseHexCoord.col;
+    testPiece.row = mouseHexCoord.row;
+  }
+
+  document.addEventListener( 'pointermove', e => {
+    updateMousePos( e );
+    positionPiece( testPieceSVG, testPiece );
+  } );
+
+  document.addEventListener( 'pointerdown', e => {
+    updateMousePos( e );
+
+    if ( e.button == 0 ) { 
+      if ( Tantrix.isValidMove( board, testPiece ) ) {
+        board.push( Object.assign( {}, testPiece ) );
+        updateTestPiece();
+      }
+    }
+    else if ( e.button == 2 ) {
+      board = board.filter( m => m.col != mouseHexCoord.col || m.row != mouseHexCoord.row );
+    }
+  } );
+
+  document.addEventListener( 'wheel', e => {
+    testPiece.rot = testPiece.rot - Math.sign( e.wheelDelta ) % 6;
+    positionPiece( testPieceSVG, testPiece );
+  } );
 
 </script>
