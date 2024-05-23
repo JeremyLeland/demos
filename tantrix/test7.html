@@ -52,6 +52,7 @@
   ];
 
   let testPiece = { id: 4, rot: 3, col: 0, row: -3 };
+  let paletteSelection;
   let mouseHexCoord = { col: 0, row: -3 };
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -82,6 +83,7 @@
   handDiv.addEventListener( 'click', e => {
     const svg = e.target.closest( 'svg' );
 
+    paletteSelection = svg;
     testPiece.id = svg.dataset.tileIndex;
 
     boardSVG.removeChild( testPieceSVG );
@@ -166,18 +168,21 @@
     testPiece.row = mouseHexCoord.row;
   }
 
-  document.addEventListener( 'pointermove', e => {
+  boardSVG.addEventListener( 'pointermove', e => {
     updateMousePos( e );
     positionPiece( testPieceSVG, testPiece );
   } );
 
-  document.addEventListener( 'pointerdown', e => {
+  boardSVG.addEventListener( 'pointerdown', e => {
     updateMousePos( e );
 
     if ( e.button == 0 ) { 
       if ( Tantrix.isValidMove( board, testPiece ) ) {
         board.push( Object.assign( {}, testPiece ) );
         updateTestPiece();
+        
+        handDiv.removeChild( paletteSelection );
+        paletteSelection = null;
       }
     }
     else if ( e.button == 2 ) {
@@ -185,7 +190,7 @@
     }
   } );
 
-  document.addEventListener( 'wheel', e => {
+  boardSVG.addEventListener( 'wheel', e => {
     testPiece.rot = testPiece.rot - Math.sign( e.wheelDelta ) % 6;
     positionPiece( testPieceSVG, testPiece );
   } );
