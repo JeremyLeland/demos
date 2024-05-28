@@ -10,16 +10,20 @@
   import * as Tantrix from './Tantrix.js';
 
   let board = [];
-  let hand = Array.from( Array( Tantrix.NumTiles ), ( _, i ) => i );
+
+  const pieces = Array.from( Array( Tantrix.NumTiles ), 
+    ( _, i ) => ( { id: i, rot: 0, x: 8, y: 2 * i - 7 } )
+  );
+
+  let activePiece;
 
   const SIZE = 18;
   let scrollX = 0.5, scrollY = 0.5;
   let handScroll = 0;
 
   const canvas = new Canvas();
-  
-  let testPiece = { id: 4, rot: 3, col: 0, row: 0 };
 
+  let mouseX, mouseY;
   let mouseHexCoord = { col: 0, row: 0 };
 
   canvas.draw = ( ctx ) => {
@@ -27,75 +31,89 @@
     ctx.scale( 1 / SIZE, 1 / SIZE );
     ctx.lineWidth = 1 / SIZE;
     
-    Tantrix.drawGrid( ctx, -5, -4, 5, 4 );
-    board.forEach( piece => Tantrix.drawPiece( ctx, piece ) );
-    Tantrix.drawPiece( ctx, testPiece );
-    Tantrix.drawCoords( ctx, -5, -4, 5, 4 );
+    Tantrix.drawGrid( ctx, -4, -4, 4, 4 );
+    pieces.forEach( piece => Tantrix.drawPiece( ctx, piece ) );
+    Tantrix.drawCoords( ctx, -4, -4, 4, 4 );
 
-    ctx.translate( 10, -8 + handScroll );
-    hand.forEach( tileIndex => {
-      Tantrix.drawTile( ctx, tileIndex );
-      ctx.translate( 0, 2 );
-    } );
-    ctx.translate( -10, 8 - handScroll - hand.length * 2 );
+    // const valid = Tantrix.isValidMove( board, testPiece );
+    // const x = Tantrix.gridX( mouseHexCoord.col, mouseHexCoord.row );
+    // const y = Tantrix.gridY( mouseHexCoord.col, mouseHexCoord.row );
 
-    const valid = Tantrix.isValidMove( board, testPiece );
-    const x = Tantrix.gridX( mouseHexCoord.col, mouseHexCoord.row );
-    const y = Tantrix.gridY( mouseHexCoord.col, mouseHexCoord.row );
+    // ctx.translate( x, y );
+    // ctx.strokeStyle = valid ? 'green': 'red';
+    // ctx.lineWidth = 1 / SIZE;
+    // ctx.stroke( Tantrix.HexagonPath );
 
-    ctx.translate( x, y );
-    ctx.strokeStyle = valid ? 'green': 'red';
-    ctx.lineWidth = 1 / SIZE;
-    ctx.stroke( Tantrix.HexagonPath );
-
-    ctx.translate( -x, -y );
+    // ctx.translate( -x, -y );
   }
 
   canvas.redraw();
 
-  function updateMousePos( e ) {
-    const mouseX = SIZE * ( e.clientX / canvas.scale - scrollX )
-    const mouseY = SIZE * ( e.clientY / canvas.scale - scrollY );
+  function updateActivePiece() {
+    if ( activePiece ) {
+      activePiece.x = mouseX;
+      activePiece.y = mouseY;
+      activePiece.col = mouseHexCoord.col;
+      activePiece.row = mouseHexCoord.row;
 
-    mouseHexCoord = Tantrix.getHexCoord( mouseX, mouseY );
-
-    testPiece.col = mouseHexCoord.col;
-    testPiece.row = mouseHexCoord.row;
+      if ( Tantrix.isValidMove( board, activePiece ) ) {
+        activePiece.x = null;
+        activePiece.y = null;
+      }
+    }
   }
 
   document.addEventListener( 'pointermove', e => {
-    updateMousePos( e );
+    mouseX = SIZE * ( e.clientX / canvas.scale - scrollX )
+    mouseY = SIZE * ( e.clientY / canvas.scale - scrollY );
+    mouseHexCoord = Tantrix.getHexCoord( mouseX, mouseY );
+    
+    updateActivePiece();
+
     canvas.redraw();
   } );
 
   document.addEventListener( 'pointerdown', e => {
-    updateMousePos( e );
+    if ( activePiece ) {
+      if ( e.button == 0 ) { 
+        if ( Tantrix.isValidMove( board, activePiece ) ) {
+          board.push( {
+            id: activePiece.id,
+            rot: activePiece.rot,
+            col: activePiece.col,
+            row: activePiece.row,
+          } );
 
-    if ( e.button == 0 ) { 
-      if ( Tantrix.isValidMove( board, testPiece ) ) {
-        board.push( Object.assign( {}, testPiece ) );
+          console.log( JSON.stringify( board ) );
+
+          activePiece = null;
+        }
       }
     }
-    else if ( e.button == 2 ) {
-      board = board.filter( m => m.col != mouseHexCoord.col || m.row != mouseHexCoord.row );
-    }
+    else {
+      activePiece = pieces.find( piece => Math.hypot( piece.x - mouseX, piece.y - mouseY ) < 1 );
 
+      // console.log( 'Setting active piece: ' + JSON.stringify( activePiece ) );
+    }
+    
     canvas.redraw();
   } );
 
   document.addEventListener( 'wheel', e => {
-    if ( mouseHexCoord.col > 6 ) {
-      handScroll = Math.min( 0, handScroll + Math.sign( e.wheelDelta ) );
+    if ( activePiece ) {
+      activePiece.rot = activePiece.rot - Math.sign( e.wheelDelta ) % 6;
+      updateActivePiece();
     }
     else {
-      testPiece.rot = testPiece.rot - Math.sign( e.wheelDelta ) % 6;
+      const scrollAmount = 0.4 * Math.sign( e.wheelDelta );
+
+      pieces.forEach( piece => {
+        if ( !piece.col && !piece.row ) {
+          piece.y += scrollAmount;
+        }
+      } );
     }
 
-    canvas.redraw();
-  } );
-
-  document.addEventListener( 'keydown', e => {
-    testPiece.id = e.keyCode % Tantrix.NumTiles;
     canvas.redraw();
   } );
 

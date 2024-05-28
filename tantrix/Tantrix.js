@@ -175,8 +175,8 @@ export function drawCoords( ctx, startCol, startRow, endCol, endRow ) {
 }
 
 export function drawPiece( ctx, piece ) {
-  const x = gridX( piece.col, piece.row );
-  const y = gridY( piece.col, piece.row );
+  const x = piece.x ?? gridX( piece.col, piece.row );
+  const y = piece.y ?? gridY( piece.col, piece.row );
   const ang = piece.rot * Math.PI / 3;
 
   ctx.translate( x, y );
@@ -274,10 +274,18 @@ export function rowFrom( col, row, dir ) {
 
 export function isValidMove( board, move ) {
   debug( `isValidMove( board, ${ JSON.stringify( move ) } )` );
-  return board.every( m => {
+
+  if ( board.length == 0 ) {
+    debug( `Empty board, any move is valid` );
+    return true;
+  }
+
+  let hasNeighbors = false;
+
+  const hasConflict = board.some( m => {
     if ( m.col == move.col && m.row == move.row ) {
       debug( `Existing move at ${ m.col },${ m.row }!` );
-      return false;
+      return true;
     }
 
     debug( `Checking ${ JSON.stringify( m ) }...` );
@@ -286,17 +294,21 @@ export function isValidMove( board, move ) {
       debug( `Testing for ${ DirName[ dir ] } ( ${ colFrom( move.col, move.row, dir ) }, ${ rowFrom( move.col, move.row, dir ) } )` );
 
       if ( m.col == colFrom( move.col, move.row, dir ) && m.row == rowFrom( move.col, move.row, dir ) ) {
+        hasNeighbors = true;
+
         const us   = ColorSequences[ move.id ][ fixRot( dir - move.rot ) ];
         const them = ColorSequences[    m.id ][ fixRot( dir + 3 - m.rot ) ];
         debug( `Our ${ DirName[ dir ] } is ${ us }, their ${ DirName[ fixRot( dir + 3 ) ] } is ${ them }` );
         if ( us != them ) {
-          return false;
+          return true;
         }
       }
     }
 
-    return true;
+    return false;
   } );
+
+  return !hasConflict && hasNeighbors; 
 }
 
 export function fixRot( rot ) {
