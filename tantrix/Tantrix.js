@@ -275,6 +275,11 @@ export function rowFrom( col, row, dir ) {
 export function isValidMove( board, move ) {
   debug( `isValidMove( board, ${ JSON.stringify( move ) } )` );
 
+  if ( move.col == null || move.row == null ) {
+    debug( `Invalid move` );
+    return false;
+  }
+
   if ( board.length == 0 ) {
     debug( `Empty board, any move is valid` );
     return true;

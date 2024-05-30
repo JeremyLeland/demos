@@ -15,7 +15,7 @@
     ( _, i ) => ( { id: i, rot: 0, x: 8, y: 2 * i - 7 } )
   );
 
-  let activePiece;
+  let activePiece, pieceStartX, pieceStartY;
 
   const SIZE = 18;
   let scrollX = 0.5, scrollY = 0.5;
@@ -74,28 +74,41 @@
   } );
 
   document.addEventListener( 'pointerdown', e => {
+    activePiece = pieces.find( piece => Math.hypot( piece.x - mouseX, piece.y - mouseY ) < 1 );
+
     if ( activePiece ) {
-      if ( e.button == 0 ) { 
-        if ( Tantrix.isValidMove( board, activePiece ) ) {
-          board.push( {
-            id: activePiece.id,
-            rot: activePiece.rot,
-            col: activePiece.col,
-            row: activePiece.row,
-          } );
-
-          console.log( JSON.stringify( board ) );
-
-          activePiece = null;
-        }
-      }
-    }
-    else {
-      activePiece = pieces.find( piece => Math.hypot( piece.x - mouseX, piece.y - mouseY ) < 1 );
+      pieceStartX = activePiece.x;
+      pieceStartY = activePiece.y;
 
       // console.log( 'Setting active piece: ' + JSON.stringify( activePiece ) );
     }
     
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'pointerup', e => {
+    if ( activePiece ) {
+      if ( Tantrix.isValidMove( board, activePiece ) ) {
+        board.push( {
+          id: activePiece.id,
+          rot: activePiece.rot,
+          col: activePiece.col,
+          row: activePiece.row,
+        } );
+
+        console.log( JSON.stringify( board ) );
+      }
+      else {
+        activePiece.x = pieceStartX;
+        activePiece.y = pieceStartY;
+        activePiece.col = null;
+        activePiece.row = null;
+        activePiece.rot = 0;
+      }
+
+      activePiece = null;
+    }
+
     canvas.redraw();
   } );
 
@@ -108,7 +121,7 @@
       const scrollAmount = 0.4 * Math.sign( e.wheelDelta );
 
       pieces.forEach( piece => {
-        if ( !piece.col && !piece.row ) {
+        if ( piece.col == null || piece.row == null ) {
           piece.y += scrollAmount;
         }
       } );
