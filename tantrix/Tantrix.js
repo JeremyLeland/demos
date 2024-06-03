@@ -63,10 +63,17 @@ export const ColorSequences = [
 export const NumTiles = ColorSequences.length;
 
 export const Colors = {
-  'Y': 'yellow',
-  'G': 'green',
-  'B': 'blue',
   'R': 'red',
+  'Y': 'yellow',
+  'B': 'blue',
+  'G': 'green',
+};
+
+export const Teams = {
+  'R': 'Red',
+  'Y': 'Yellow',
+  'B': 'Blue',
+  'G': 'Green',
 };
 
 export const HexagonPath = new Path2D();
@@ -315,6 +322,124 @@ export function isValidMove( board, move ) {
 
   return !hasConflict && hasNeighbors; 
 }
+
+export function getSegments( board ) {
+  const segments = [];
+  // TODO: Pre-sort by color?
+
+  board.forEach( piece => {
+    const colorSequence = ColorSequences[ piece.id ];
+
+    let start = 0, end = 0;
+    for ( let i = 0; i < 3; i ++ ) {
+      for ( end = start + 1; end < 6; end ++ ) {
+        if ( colorSequence[ start ] == colorSequence[ end ] ) {
+          break;
+        }
+      }
+
+      segments.push( {
+        col: piece.col,
+        row: piece.row,
+        start: fixRot( start + piece.rot ),
+        end: fixRot( end + piece.rot ),
+        color: colorSequence[ start ],
+      } );
+
+      start ++;
+      if ( start == end ) {
+        start ++;
+      }
+    }
+  } );
+
+  for ( let i = 0; i < segments.length; i ++ ) {
+    const segment = segments[ i ];
+
+    const startLinkCol = colFrom( segment.col, segment.row, segment.start );
+    const startLinkRow = rowFrom( segment.col, segment.row, segment.start );
+    const startLinkDir = ( segment.start + 3 ) % 6;
+
+    const endLinkCol = colFrom( segment.col, segment.row, segment.end );
+    const endLinkRow = rowFrom( segment.col, segment.row, segment.end );
+    const endLinkDir = ( segment.end + 3 ) % 6;
+    
+    for ( let j = 0; j < i; j ++ ) {
+      const other = segments[ j ];
+
+      if ( other.color == segment.color ) {
+        if ( other.col == startLinkCol &&
+             other.row == startLinkRow ) {
+          if ( other.start == startLinkDir ) {
+            segment.startLink = other;
+            other.startLink = segment;
+          }
+          else if ( other.end == startLinkDir ) {
+            segment.startLink = other;
+            other.endLink = segment;
+          }
+        }
+       
+        if ( other.col == endLinkCol &&
+             other.row == endLinkRow ) {
+          if ( other.start == endLinkDir ) {
+            segment.endLink = other;
+            other.startLink = segment;
+          }
+          else if ( other.end == endLinkDir ) {
+            segment.endLink = other;
+            other.endLink = segment;
+          }
+        }
+      }
+    }
+  }
+
+  return segments;
+}
+
+export function getLines( segments ) {
+  const lines = [];
+  // TODO: Pre-sort by color?
+
+  const unvisited = new Set( segments );
+  while ( unvisited.size > 0 ) {
+    const [ firstSegment ] = unvisited;
+
+    const line = [ firstSegment ];
+    firstSegment.line = line;
+    unvisited.delete( firstSegment );
+
+    [ firstSegment.startLink, firstSegment.endLink ].forEach( startFrom => {
+      let segment = startFrom;
+
+      while ( segment ) {
+        line.unshift( segment );
+        segment.line = line;
+        unvisited.delete( segment );
+
+        // Start/end are based on edge index, not direction we came from
+        if ( unvisited.has( segment.startLink ) ) {
+          segment = segment.startLink;
+        }
+        else if ( unvisited.has( segment.endLink ) ) {
+          segment = segment.endLink;
+        }
+        else {
+          segment = null;
+        }
+      }
+    } );
+
+    lines.push( line );
+  }
+
+  return lines;
+}
+
+//
+// Helpers
+//
 
 export function fixRot( rot ) {
   return modulo( rot, 6 );

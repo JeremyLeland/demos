@@ -25,6 +25,7 @@
 
   let mouseX, mouseY;
   let mouseHexCoord = { col: 0, row: 0 };
+  const score = { 'R': 0, 'Y': 0, 'B': 0, 'G': 0 };
 
   canvas.draw = ( ctx ) => {
     ctx.translate( scrollX, scrollY );
@@ -35,16 +36,19 @@
     pieces.forEach( piece => Tantrix.drawPiece( ctx, piece ) );
     Tantrix.drawCoords( ctx, -4, -4, 4, 4 );
 
-    // const valid = Tantrix.isValidMove( board, testPiece );
-    // const x = Tantrix.gridX( mouseHexCoord.col, mouseHexCoord.row );
-    // const y = Tantrix.gridY( mouseHexCoord.col, mouseHexCoord.row );
+    ctx.translate( -3, 9.3 );
 
-    // ctx.translate( x, y );
-    // ctx.strokeStyle = valid ? 'green': 'red';
-    // ctx.lineWidth = 1 / SIZE;
-    // ctx.stroke( Tantrix.HexagonPath );
+    ctx.font = '0.4px Arial';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'black';
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
 
-    // ctx.translate( -x, -y );
+    for ( const team in Tantrix.Teams ) {
+      ctx.fillStyle = Tantrix.Colors[ team ];
+      ctx.fillText( `${ Tantrix.Teams[ team ] }: ${ score[ team ] }`, 0, 0 );
+      ctx.translate( 2, 0 );
+    }
   }
 
   canvas.redraw();
@@ -97,6 +101,29 @@
         } );
 
         console.log( JSON.stringify( board ) );
+
+        const segments = Tantrix.getSegments( board );
+        // console.log( segments );
+
+        const lines = Tantrix.getLines( segments );
+        // console.log( lines );
+
+        const longest = {};
+
+        lines.forEach( line => {
+          const color = line[ 0 ].color;
+
+          if ( longest[ color ] == null || longest[ color ].length < line.length ) {
+            longest[ color ] = line;
+          }
+        } );
+
+        // console.log( longest );
+        for ( const color in longest ) {
+          score[ color ] = longest[ color ].length;
+        }
+
+        console.log( score );
       }
       else {
         activePiece.x = pieceStartX;
