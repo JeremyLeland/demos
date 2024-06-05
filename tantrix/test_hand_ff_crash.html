@@ -1,0 +1,188 @@
+<title>Hand of 6, drawn from pile</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import * as Tantrix from './Tantrix.js';
+
+  const SIZE = 18;
+  let scrollX = 0.5, scrollY = 0.5;
+
+  const HAND_OFFSET = 8, HAND_START = -5;
+  const HAND_SIZE = 6;
+
+  const canvas = new Canvas();
+
+  let board = [];
+
+  // TODO: list of up to 4 hands
+  const hands = [
+    [ 0, 21, 12, 33, 44, 55 ],
+    [ 6, 17, 28, 39, 40, 51 ],
+  ];
+
+  // TODO: Remove this, just draw the hand and active piece based on id
+  const pieces = Array.from( Array( Tantrix.NumTiles ), 
+    ( _, i ) => ( { id: i, rot: 0, x: 8, y: 2 * i - 7 } )
+  );
+
+  
+  let activePiece, pieceStartX, pieceStartY;
+
+  
+  let mouseX, mouseY;
+  let mouseHexCoord = { col: 0, row: 0 };
+  const score = { 'R': 0, 'Y': 0, 'B': 0, 'G': 0 };
+
+  canvas.draw = ( ctx ) => {
+    ctx.translate( scrollX, scrollY );
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 1 / SIZE;
+    
+    Tantrix.drawGrid( ctx, -4, -4, 4, 4 );
+    board.forEach( piece => Tantrix.drawPiece( ctx, piece ) );
+    Tantrix.drawCoords( ctx, -4, -4, 4, 4 );
+
+    // Hands (TODO: player 3 and 4 above/below?)
+    [ -1, 1 ].forEach( ( offset, index ) => {
+      ctx.translate( offset * HAND_OFFSET, HAND_START );
+      hands[ index ].forEach( pieceId => {
+        if ( pieceId != activePiece?.id ) {
+          Tantrix.drawTile( ctx, pieceId );
+        }
+        ctx.translate( 0, 2 );
+      } );
+      ctx.translate( -offset * HAND_OFFSET, HAND_START - 2 );
+    } );
+
+    if ( activePiece ) {
+      Tantrix.drawPiece( activePiece );
+    }
+    
+    // Score below
+    ctx.translate( -3, 9.3 );
+
+    ctx.font = '0.4px Arial';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'black';
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+
+    for ( const team in Tantrix.Teams ) {
+      ctx.fillStyle = Tantrix.Colors[ team ];
+      ctx.fillText( `${ Tantrix.Teams[ team ] }: ${ score[ team ] }`, 0, 0 );
+      ctx.translate( 2, 0 );
+    }
+  }
+
+  canvas.redraw();
+
+  function updateActivePiece() {
+    if ( activePiece ) {
+      activePiece.x = mouseX;
+      activePiece.y = mouseY;
+      activePiece.col = mouseHexCoord.col;
+      activePiece.row = mouseHexCoord.row;
+
+      if ( Tantrix.isValidMove( board, activePiece ) ) {
+        activePiece.x = null;
+        activePiece.y = null;
+      }
+    }
+  }
+
+  document.addEventListener( 'pointermove', e => {
+    mouseX = SIZE * ( e.clientX / canvas.scale - scrollX )
+    mouseY = SIZE * ( e.clientY / canvas.scale - scrollY );
+    mouseHexCoord = Tantrix.getHexCoord( mouseX, mouseY );
+    
+    updateActivePiece();
+
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'pointerdown', e => {
+
+    if ( mouseX < -HAND_OFFSET + 1 ) {
+      const index = Math.floor( ( mouseY + HAND_SIZE ) / 2 );
+      console.log( 'left index: ' + index );
+
+      if ( 0 <= index < 6 ) {
+        // TODO: Figure out actual original spot, don't just use mouse coords
+        activePiece = { id: hands[ 0 ][ index ], rot: 0, x: mouseX, y: mouseY };
+        pieceStartX = mouseX;
+        pieceStartY = mouseY;
+      }
+    }
+
+    // activePiece = pieces.find( piece => Math.hypot( piece.x - mouseX, piece.y - mouseY ) < 1 );
+
+    // if ( activePiece ) {
+    //   pieceStartX = activePiece.x;
+    //   pieceStartY = activePiece.y;
+
+    //   // console.log( 'Setting active piece: ' + JSON.stringify( activePiece ) );
+    // }
+    
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'pointerup', e => {
+    if ( activePiece ) {
+      if ( Tantrix.isValidMove( board, activePiece ) ) {
+        board.push( {
+          id: activePiece.id,
+          rot: activePiece.rot,
+          col: activePiece.col,
+          row: activePiece.row,
+        } );
+
+        console.log( JSON.stringify( board ) );
+
+        const segments = Tantrix.getSegments( board );
+        // console.log( segments );
+
+        const lines = Tantrix.getLines( segments );
+        // console.log( lines );
+
+        const longest = {};
+
+        lines.forEach( line => {
+          const color = line[ 0 ].color;
+
+          if ( longest[ color ] == null || longest[ color ].length < line.length ) {
+            longest[ color ] = line;
+          }
+        } );
+
+        // console.log( longest );
+        for ( const color in longest ) {
+          score[ color ] = longest[ color ].length;
+        }
+
+        console.log( score );
+      }
+      else {
+        activePiece.x = pieceStartX;
+        activePiece.y = pieceStartY;
+        activePiece.col = null;
+        activePiece.row = null;
+        activePiece.rot = 0;
+      }
+
+      activePiece = null;
+    }
+
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'wheel', e => {
+    if ( activePiece ) {
+      activePiece.rot = activePiece.rot - Math.sign( e.wheelDelta ) % 6;
+      updateActivePiece();
+
+      canvas.redraw();
+    }
+  } );
+
+</script>
