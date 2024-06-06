@@ -13,21 +13,27 @@
 
   const canvas = new Canvas();
 
-  let board = [];
+  const gameState = {
+    board: [],
+    hands: [ [], [], ],
+    deck: Array.from( Array( Tantrix.NumTiles ), ( _, i ) => i ),
+    turn: 0,
+  }
 
-  // TODO: list of up to 4 hands
-  const hands = [
-    [ 0, 21, 12, 33, 44, 55 ],
-    [ 6, 17, 28, 39, 40, 51 ],
-  ];
+  function pullFromDeck() {
+    return gameState.deck.splice( Math.floor( Math.random() * gameState.deck.length ), 1 )[ 0 ];
+  }
 
-  // TODO: Remove this, just draw the hand and active piece based on id
-  const pieces = Array.from( Array( Tantrix.NumTiles ), 
-    ( _, i ) => ( { id: i, rot: 0, x: 8, y: 2 * i - 7 } )
-  );
+  // TODO: Remove pieces from deck to put in hands
+  for ( let i = 0; i < HAND_SIZE; i ++ ) {
+    for ( let h = 0; h < 2; h ++ ) {
+      gameState.hands[ h ].push( pullFromDeck() );
+    }
+  }
 
+  console.log( JSON.stringify( gameState ) );
   
-  let activePiece, pieceStartX, pieceStartY;
+  let activePiece, pieceStartX, pieceStartY, activeIndex;
 
   
   let mouseX, mouseY;
@@ -40,14 +46,14 @@
     ctx.lineWidth = 1 / SIZE;
     
     Tantrix.drawGrid( ctx, -4, -4, 4, 4 );
-    board.forEach( piece => Tantrix.drawPiece( ctx, piece ) );
     Tantrix.drawCoords( ctx, -4, -4, 4, 4 );
+    gameState.board.forEach( piece => Tantrix.drawPiece( ctx, piece ) );
 
     // Hands (TODO: player 3 and 4 above/below?)
     [ -1, 1 ].forEach( ( offset, index ) => {
       ctx.translate( offset * HAND_OFFSET, HAND_START );
-      hands[ index ].forEach( pieceId => {
-        if ( pieceId != activePiece?.id ) {
+      gameState.hands[ index ].forEach( pieceId => {
+        if ( pieceId != null && pieceId != activePiece?.id ) {
           Tantrix.drawTile( ctx, pieceId );
         }
         ctx.translate( 0, 2 );
@@ -84,7 +90,7 @@
       activePiece.col = mouseHexCoord.col;
       activePiece.row = mouseHexCoord.row;
 
-      if ( Tantrix.isValidMove( board, activePiece ) ) {
+      if ( Tantrix.isValidMove( gameState.board, activePiece ) ) {
         activePiece.x = null;
         activePiece.y = null;
       }
@@ -103,43 +109,51 @@
 
   document.addEventListener( 'pointerdown', e => {
 
-    if ( mouseX < -HAND_OFFSET + 1 ) {
+    if ( gameState.turn == 0 && mouseX < -HAND_OFFSET + 1 ) {
       const index = Math.floor( ( mouseY + HAND_SIZE ) / 2 );
       console.log( 'left index: ' + index );
 
       if ( 0 <= index < 6 ) {
         // TODO: Figure out actual original spot, don't just use mouse coords
-        activePiece = { id: hands[ 0 ][ index ], rot: 0, x: mouseX, y: mouseY };
+        activePiece = { id: gameState.hands[ 0 ][ index ], rot: 0, x: mouseX, y: mouseY };
+        activeIndex = index;
         pieceStartX = mouseX;
         pieceStartY = mouseY;
       }
     }
 
-    // activePiece = pieces.find( piece => Math.hypot( piece.x - mouseX, piece.y - mouseY ) < 1 );
+    else if ( gameState.turn == 1 && mouseX > HAND_OFFSET - 1 ) {
+      const index = Math.floor( ( mouseY + HAND_SIZE ) / 2 );
+      console.log( 'right index: ' + index );
 
-    // if ( activePiece ) {
-    //   pieceStartX = activePiece.x;
-    //   pieceStartY = activePiece.y;
-
-    //   // console.log( 'Setting active piece: ' + JSON.stringify( activePiece ) );
-    // }
+      if ( 0 <= index < 6 ) {
+        // TODO: Figure out actual original spot, don't just use mouse coords
+        activePiece = { id: gameState.hands[ 1 ][ index ], rot: 0, x: mouseX, y: mouseY };
+        activeIndex = index;
+        pieceStartX = mouseX;
+        pieceStartY = mouseY;
+      }
+    }
     
     canvas.redraw();
   } );
 
   document.addEventListener( 'pointerup', e => {
     if ( activePiece ) {
-      if ( Tantrix.isValidMove( board, activePiece ) ) {
-        board.push( {
+      if ( Tantrix.isValidMove( gameState.board, activePiece ) ) {
+        gameState.board.push( {
           id: activePiece.id,
           rot: activePiece.rot,
           col: activePiece.col,
           row: activePiece.row,
         } );
 
-        console.log( JSON.stringify( board ) );
+        gameState.hands[ gameState.turn ][ activeIndex ] = pullFromDeck();
+        gameState.turn = ( gameState.turn + 1 ) % gameState.hands.length;
 
-        const segments = Tantrix.getSegments( board );
+        console.log( JSON.stringify( gameState ) );
+
+        const segments = Tantrix.getSegments( gameState.board );
         // console.log( segments );
 
         const lines = Tantrix.getLines( segments );
