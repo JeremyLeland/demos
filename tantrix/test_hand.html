@@ -9,27 +9,32 @@
   let scrollX = 0.5, scrollY = 0.5;
 
   const HAND_OFFSET = 8, HAND_START = -5;
-  const HAND_SIZE = 6;
 
   const canvas = new Canvas();
 
-  const gameState = {
-    board: [],
-    hands: [ [], [], ],
-    deck: Array.from( Array( Tantrix.NumTiles ), ( _, i ) => i ),
-    turn: 0,
-  }
+  const gameState = JSON.parse( localStorage.getItem( Tantrix.GameStateKey ) ) ?? newGameState();
 
-  function pullFromDeck() {
-    return gameState.deck.splice( Math.floor( Math.random() * gameState.deck.length ), 1 )[ 0 ];
-  }
+  function newGameState() {
+    const gameState = {
+      board: [],
+      hands: [ [], [], ],
+      deck: Array.from( Array( Tantrix.NumTiles ), ( _, i ) => i ),
+      turn: 0,
+    };
 
-  // TODO: Remove pieces from deck to put in hands
-  for ( let i = 0; i < HAND_SIZE; i ++ ) {
-    for ( let h = 0; h < 2; h ++ ) {
-      gameState.hands[ h ].push( pullFromDeck() );
+    for ( let i = 0; i < Tantrix.HandSize; i ++ ) {
+      for ( let h = 0; h < 2; h ++ ) {
+        gameState.hands[ h ].push( pullFromDeck( gameState.deck ) );
+      }
     }
+
+    return gameState;
   }
+
+  function pullFromDeck( deck ) {
+    return deck.splice( Math.floor( Math.random() * deck.length ), 1 )[ 0 ];
+  }
+
 
   console.log( JSON.stringify( gameState ) );
   
@@ -110,7 +115,7 @@
   document.addEventListener( 'pointerdown', e => {
 
     if ( gameState.turn == 0 && mouseX < -HAND_OFFSET + 1 ) {
-      const index = Math.floor( ( mouseY + HAND_SIZE ) / 2 );
+      const index = Math.floor( ( mouseY + Tantrix.HandSize ) / 2 );
       console.log( 'left index: ' + index );
 
       if ( 0 <= index < 6 ) {
@@ -123,7 +128,7 @@
     }
 
     else if ( gameState.turn == 1 && mouseX > HAND_OFFSET - 1 ) {
-      const index = Math.floor( ( mouseY + HAND_SIZE ) / 2 );
+      const index = Math.floor( ( mouseY + Tantrix.HandSize ) / 2 );
       console.log( 'right index: ' + index );
 
       if ( 0 <= index < 6 ) {
@@ -148,9 +153,10 @@
           row: activePiece.row,
         } );
 
-        gameState.hands[ gameState.turn ][ activeIndex ] = pullFromDeck();
+        gameState.hands[ gameState.turn ][ activeIndex ] = pullFromDeck( gameState.deck );
         gameState.turn = ( gameState.turn + 1 ) % gameState.hands.length;
 
+        localStorage.setItem( Tantrix.GameStateKey, JSON.stringify( gameState ) );
         console.log( JSON.stringify( gameState ) );
 
         const segments = Tantrix.getSegments( gameState.board );

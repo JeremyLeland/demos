@@ -1,5 +1,7 @@
 // Useful hexagon info: https://www.redblobgames.com/grids/hexagons/
 
+const GameStateKey = 'tantrixGameState';
+
 // http://www.tantrix.com/english/TantrixTiles.html
 export const ColorSequences = [
   'YYBRBR',
@@ -75,6 +77,8 @@ export const Teams = {
   'B': 'Blue',
   'G': 'Green',
 };
+
+export const HandSize = 6;
 
 export const HexagonPath = new Path2D();
 for ( let i = 0; i < 6; i ++ ) {
