@@ -57,6 +57,13 @@
     // Hands (TODO: player 3 and 4 above/below?)
     [ -1, 1 ].forEach( ( offset, index ) => {
       ctx.translate( offset * HAND_OFFSET, HAND_START );
+
+      if ( gameState.turn == index ) {
+        ctx.lineWidth = 0.05;
+        ctx.strokeStyle = 'white';
+        ctx.strokeRect( -1, -1, 2, Tantrix.HandSize * 2 );
+      }
+
       gameState.hands[ index ].forEach( pieceId => {
         if ( pieceId != null && pieceId != activePiece?.id ) {
           Tantrix.drawTile( ctx, pieceId );
