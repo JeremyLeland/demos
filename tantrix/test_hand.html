@@ -42,7 +42,6 @@
 
   
   let mouseX, mouseY;
-  let mouseHexCoord = { col: 0, row: 0 };
   const score = { 'R': 0, 'Y': 0, 'B': 0, 'G': 0 };
 
   canvas.draw = ( ctx ) => {
@@ -122,6 +121,7 @@
     if ( activePiece ) {
       activePiece.x = mouseX;
       activePiece.y = mouseY;
+      const mouseHexCoord = Tantrix.getHexCoord( mouseX, mouseY );
       activePiece.col = mouseHexCoord.col;
       activePiece.row = mouseHexCoord.row;
 
@@ -135,7 +135,6 @@
   document.addEventListener( 'pointermove', e => {
     mouseX = SIZE * ( e.clientX / canvas.scale - scrollX )
     mouseY = SIZE * ( e.clientY / canvas.scale - scrollY );
-    mouseHexCoord = Tantrix.getHexCoord( mouseX, mouseY );
     
     updateActivePiece();
 
@@ -143,6 +142,10 @@
   } );
 
   document.addEventListener( 'pointerdown', e => {
+    // TODO: Don't duplicate, put this logic in one place
+    mouseX = SIZE * ( e.clientX / canvas.scale - scrollX )
+    mouseY = SIZE * ( e.clientY / canvas.scale - scrollY );
+
 
     if ( gameState.turn == 0 && mouseX < -HAND_OFFSET + 1 ) {
       const index = Math.floor( ( mouseY + Tantrix.HandSize ) / 2 );
