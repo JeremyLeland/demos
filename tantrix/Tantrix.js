@@ -327,6 +327,10 @@ export function isValidMove( board, move ) {
   return !hasConflict && hasNeighbors; 
 }
 
+// TODO: What if we have a Map<string> of e.g. "-1,1"?
+//       Would it be easier to look things up based on this string rather than
+//       searching through everything for matches all the time?
+
 export function getValidMoves( board, hand ) {
   const adjacent = [];
 
@@ -342,14 +346,14 @@ export function getValidMoves( board, hand ) {
     }
   } );
 
-  console.log( adjacent );
+  // console.log( adjacent );
 
   const moves = [];
 
   adjacent.forEach( adj => {
-    hand.forEach( tile => {
+    hand.forEach( ( tile, index ) => {
       for ( let dir = 0; dir < 6; dir ++ ) {
-        const move = { id: tile, rot: dir, col: adj.col, row: adj.row };
+        const move = { handIndex: index, id: tile, rot: dir, col: adj.col, row: adj.row };
 
         if ( isValidMove( board, move ) ) {
           moves.push( move );

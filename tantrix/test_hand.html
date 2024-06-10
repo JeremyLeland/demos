@@ -75,6 +75,14 @@
 
     if ( activePiece ) {
       Tantrix.drawPiece( ctx, activePiece );
+
+      const possibleMoves = Tantrix.getValidMoves( gameState.board, [ activePiece.id ] );
+
+      ctx.globalAlpha = 0.25;
+      possibleMoves.forEach( move => {
+        Tantrix.drawPiece( ctx, move );
+      } );
+      ctx.globalAlpha = 1;
     }
     
     // Score below
