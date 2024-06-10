@@ -54,6 +54,21 @@
     Tantrix.drawCoords( ctx, -4, -4, 4, 4 );
     gameState.board.forEach( piece => Tantrix.drawPiece( ctx, piece ) );
 
+    const possibleMoves = Tantrix.getValidMoves( gameState.board, gameState.hands[ gameState.turn ] );
+    possibleMoves.forEach( move => {
+      if ( move.forced ) {
+        ctx.globalAlpha = 0.5;
+        Tantrix.drawPiece( ctx, move );
+        ctx.globalAlpha = 1;
+      }
+      else if ( activePiece && move.id == activePiece.id ) {
+        ctx.globalAlpha = 0.25;
+        Tantrix.drawPiece( ctx, move );
+        ctx.globalAlpha = 1;
+      }
+    } );
+    
+
     // Hands (TODO: player 3 and 4 above/below?)
     [ -1, 1 ].forEach( ( offset, index ) => {
       ctx.translate( offset * HAND_OFFSET, HAND_START );

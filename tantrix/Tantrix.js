@@ -195,6 +195,11 @@ export function drawPiece( ctx, piece ) {
 
   drawTile( ctx, piece.id );
 
+  if ( piece.forced ) {
+    ctx.strokeStyle = 'white';
+    ctx.stroke( HexagonPath );
+  }
+
   ctx.rotate( -ang );
   ctx.translate( -x, -y );
 }
@@ -332,17 +337,24 @@ export function isValidMove( board, move ) {
 //       searching through everything for matches all the time?
 
 export function getValidMoves( board, hand ) {
-  const adjacent = [];
+  const adjacent = new Map();
 
   board.forEach( piece => {
-    for ( let dir = 0; dir < 6; dir ++ ) {
-      const col = colFrom( piece.col, piece.row, dir );
-      const row = rowFrom( piece.col, piece.row, dir );
+    const key = `${ piece.col },${ piece.row }`;
+    if ( adjacent.has( key ) ) {
+      adjacent.get( key ).occupied = true;    // flag for skipping later
+    }
 
-      if ( board.every( p => p.col != col || p.row != row ) && 
-           adjacent.every( a => a.col != col || a.row != row ) ) {
-        adjacent.push( { col: col, row: row } );
+    for ( let dir = 0; dir < 6; dir ++ ) {
+      const adjCol = colFrom( piece.col, piece.row, dir );
+      const adjRow = rowFrom( piece.col, piece.row, dir );
+
+      const adjKey = `${ adjCol },${ adjRow }`;
+      if ( !adjacent.has( adjKey ) ) {
+        adjacent.set( adjKey, { col: adjCol, row: adjRow, neighbors: 0 } );
       }
+
+      adjacent.get( adjKey ).neighbors ++;
     }
   } );
 
@@ -351,15 +363,21 @@ export function getValidMoves( board, hand ) {
   const moves = [];
 
   adjacent.forEach( adj => {
-    hand.forEach( ( tile, index ) => {
-      for ( let dir = 0; dir < 6; dir ++ ) {
-        const move = { handIndex: index, id: tile, rot: dir, col: adj.col, row: adj.row };
+    if ( !adj.occupied ) { 
+      hand.forEach( tile => {
+        for ( let dir = 0; dir < 6; dir ++ ) {
+          const move = { id: tile, rot: dir, col: adj.col, row: adj.row };
 
-        if ( isValidMove( board, move ) ) {
-          moves.push( move );
+          if ( adj.neighbors > 2 ) {
+            move.forced = true;
+          }
+        
+          if ( isValidMove( board, move ) ) {
+            moves.push( move );
+          }
         }
-      }
-    } );
+      } );
+    }
   } );
 
   return moves;
