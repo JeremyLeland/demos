@@ -327,6 +327,40 @@ export function isValidMove( board, move ) {
   return !hasConflict && hasNeighbors; 
 }
 
+export function getValidMoves( board, hand ) {
+  const adjacent = [];
+
+  board.forEach( piece => {
+    for ( let dir = 0; dir < 6; dir ++ ) {
+      const col = colFrom( piece.col, piece.row, dir );
+      const row = rowFrom( piece.col, piece.row, dir );
+
+      if ( board.every( p => p.col != col || p.row != row ) && 
+           adjacent.every( a => a.col != col || a.row != row ) ) {
+        adjacent.push( { col: col, row: row } );
+      }
+    }
+  } );
+
+  console.log( adjacent );
+
+  const moves = [];
+
+  adjacent.forEach( adj => {
+    hand.forEach( tile => {
+      for ( let dir = 0; dir < 6; dir ++ ) {
+        const move = { id: tile, rot: dir, col: adj.col, row: adj.row };
+
+        if ( isValidMove( board, move ) ) {
+          moves.push( move );
+        }
+      }
+    } );
+  } );
+
+  return moves;
+}
+
 export function getSegments( board ) {
   const segments = [];
   // TODO: Pre-sort by color?

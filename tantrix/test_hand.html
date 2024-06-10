@@ -188,6 +188,8 @@
         }
 
         console.log( score );
+
+        console.log( Tantrix.getValidMoves( gameState.board, gameState.hands[ gameState.turn ] ) );
       }
       else {
         activePiece.x = pieceStartX;
