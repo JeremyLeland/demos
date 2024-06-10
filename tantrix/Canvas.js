@@ -19,9 +19,14 @@ export class Canvas {
 
     const resizeObserver = new ResizeObserver( entries => {
       entries.forEach( entry => {
-        this.canvas.width = entry.devicePixelContentBoxSize[ 0 ].inlineSize;
-        this.canvas.height = entry.devicePixelContentBoxSize[ 0 ].blockSize;
-        this.scale = Math.min( entry.contentBoxSize[ 0 ].inlineSize, entry.contentBoxSize[ 0 ].blockSize );   // TODO: blockSize sometimes?
+        // safari does not support devicePixelContentBoxSize, attempting to work around
+        const width = entry.devicePixelContentBoxSize?.[ 0 ].inlineSize ?? ( entry.contentBoxSize[ 0 ].inlineSize * devicePixelRatio );
+        const height = entry.devicePixelContentBoxSize?.[ 0 ].blockSize ?? ( entry.contentBoxSize[ 0 ].blockSize * devicePixelRatio );
+        this.canvas.width = width;
+        this.canvas.height = height;
+
+        // this still needs to be based on content box
+        this.scale = Math.min( entry.contentBoxSize[ 0 ].inlineSize, entry.contentBoxSize[ 0 ].blockSize );
       } );
 
       this.ctx.scale( devicePixelRatio, devicePixelRatio );
