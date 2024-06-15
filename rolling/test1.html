@@ -21,23 +21,27 @@
     ctx.lineWidth = 1 / SIZE;
 
     ctx.beginPath();
-    ctx.arc( player.x, player.y, 0.5, 0, Math.PI * 2 );
-    ctx.fillStyle = 'white';
-    ctx.fill();
-
-    ctx.beginPath();
     points.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
     ctx.strokeStyle = 'green';
     ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc( player.x, player.y, 0.1, 0, Math.PI * 2 );
+    ctx.fillStyle = 'white';
+    ctx.fill();
   }
 
   canvas.redraw();
 
   document.addEventListener( 'wheel', e => {
 
-    const SPEED = 0.1;
+    const SPEED = 0.5;
+    let moveDist = SPEED * -Math.sign( e.wheelDelta );
 
-    let closestIndex, closestDist = Infinity;
+    // TODO: loop through next lines until we have gone the distance
+
+
+    let closestIndex, closestHit, closestDist = Infinity;
     for ( let i = 0; i < points.length - 1; i ++ ) {
       const start = points[ i ];
       const end = points[ i + 1 ];
@@ -45,6 +49,7 @@
       const info = getClosestPoint( player.x, player.y, 0, start[ 0 ], start[ 1 ], end[ 0 ], end[ 1 ] );
       if ( info.distance < closestDist ) {
         closestIndex = i;
+        closestHit = info;
         closestDist = info.distance;
       }
     }
@@ -55,11 +60,14 @@
     const cx = end[ 0 ] - start[ 0 ];
     const cy = end[ 1 ] - start[ 1 ];
     const angle = Math.atan2( cy, cx );
+    const dist = Math.hypot( cx, cy );
 
-    const dist = SPEED * Math.sign( e.wheelDelta );
+    const subDist = Math.sign( moveDist ) < 0 ? 
+      Math.max( moveDist, -closestHit.u * dist ) : 
+      Math.min( moveDist, ( 1 - closestHit.u ) * dist );
 
-    player.dx = Math.cos( angle ) * dist;
-    player.dy = Math.sin( angle ) * dist;
+    player.dx = Math.cos( angle ) * subDist;
+    player.dy = Math.sin( angle ) * subDist;
 
     player.x += player.dx;
     player.y += player.dy;
@@ -83,6 +91,7 @@
     return {
       x: Ax, 
       y: Ay,
+      u: u,
       angle:    Math.atan2( y - Ay, x - Ax ),
       distance: Math.hypot( x - Ax, y - Ay ),
     };
