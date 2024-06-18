@@ -38,39 +38,50 @@
     const SPEED = 0.5;
     let moveDist = SPEED * -Math.sign( e.wheelDelta );
 
-    // TODO: loop through next lines until we have gone the distance
-
-
-    let closestIndex, closestHit, closestDist = Infinity;
+    let closestIndex, closestU, closestDist = Infinity;
     for ( let i = 0; i < points.length - 1; i ++ ) {
       const start = points[ i ];
       const end = points[ i + 1 ];
-
+      
       const info = getClosestPoint( player.x, player.y, 0, start[ 0 ], start[ 1 ], end[ 0 ], end[ 1 ] );
       if ( info.distance < closestDist ) {
         closestIndex = i;
-        closestHit = info;
+        closestU = info.u;
         closestDist = info.distance;
       }
     }
+    
+    for ( let tries = 0; tries < 5; tries ++ ) {
+      const start = points[ closestIndex ];
+      const end   = points[ closestIndex + 1 ];
 
-    const start = points[ closestIndex ];
-    const end   = points[ closestIndex + 1 ];
+      const cx = end[ 0 ] - start[ 0 ];
+      const cy = end[ 1 ] - start[ 1 ];
+      const angle = Math.atan2( cy, cx );
+      const dist = Math.hypot( cx, cy );
 
-    const cx = end[ 0 ] - start[ 0 ];
-    const cy = end[ 1 ] - start[ 1 ];
-    const angle = Math.atan2( cy, cx );
-    const dist = Math.hypot( cx, cy );
+      const subDist = Math.sign( moveDist ) < 0 ? 
+        Math.max( moveDist, -closestU * dist ) : 
+        Math.min( moveDist, ( 1 - closestU ) * dist );
 
-    const subDist = Math.sign( moveDist ) < 0 ? 
-      Math.max( moveDist, -closestHit.u * dist ) : 
-      Math.min( moveDist, ( 1 - closestHit.u ) * dist );
+      player.dx = Math.cos( angle ) * subDist;
+      player.dy = Math.sin( angle ) * subDist;
 
-    player.dx = Math.cos( angle ) * subDist;
-    player.dy = Math.sin( angle ) * subDist;
+      player.x += player.dx;
+      player.y += player.dy;
 
-    player.x += player.dx;
-    player.y += player.dy;
+      if ( subDist == moveDist ) {
+        console.log( 'Full distance moved, break loop' );
+        break;
+      }
+      else {
+        console.log( `subDist = ${ subDist }, moveDist = ${ moveDist }` );
+        moveDist -= subDist;
+        closestIndex += Math.sign( moveDist );
+        closestU = moveDist > 0 ? 0 : 1;
+        console.log( `new moveDist is ${ moveDist }, closestIndex = ${ closestIndex }` );
+      }
+    }
 
     canvas.redraw();
   } );
