@@ -1,0 +1,157 @@
+<title>Find lines by time to hit</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+
+  const player = { x: 0, y: -2, dx: 0, dy: 0.5 };
+
+  const points = [
+    [ -1, -1 ], [ 1, 1 ], [ 2.5, 1.5 ], [ 5, 1.6 ], [ 7, 1.1 ],
+  ];
+
+  const lines = [];
+  for ( let i = 0; i < points.length - 1; i ++ ) {
+    lines.push( [ ...points[ i ], ...points[ i + 1 ] ] );
+  }
+
+  const SIZE = 10;
+  let scrollX = 0.5, scrollY = 0.5;
+
+  const canvas = new Canvas();
+
+  canvas.draw = ( ctx ) => {
+    ctx.translate( scrollX, scrollY );
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 1 / SIZE;
+
+    ctx.beginPath();
+    points.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
+    ctx.strokeStyle = 'green';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc( player.x, player.y, 0.5, 0, Math.PI * 2 );
+    ctx.fillStyle = 'white';
+    ctx.fill();
+  }
+
+  canvas.redraw();
+
+  document.addEventListener( 'wheel', e => {
+
+    console.log( "Scroll!" );
+
+    player.dy += 0.01;
+
+    // TODO: Dt?
+    let dt = 1;
+
+    const SPEED = 0.5;
+    let moveSpeed = SPEED * -Math.sign( e.wheelDelta );
+
+    const previous = new Set();
+    // let previous = null;
+
+    for ( let tries = 0; tries < 5; tries ++ ) {
+      let closestLine = null, closestTime = Infinity;
+      lines.forEach( line => {
+        if ( !previous.has( line ) ) {
+        // if ( line != previous ) {
+          const time = timeToHit( player, line );
+          if ( time < closestTime ) {
+            closestLine = line;
+            closestTime = time;
+          }
+        }
+      } );
+
+      console.log( closestLine );
+      console.log( closestTime );
+
+      if ( closestTime < dt ) {
+        player.x += player.dx * closestTime;
+        player.y += player.dy * closestTime;
+
+        previous.add( closestLine );
+        // previous = closestLine;
+        dt -= closestTime;
+
+        const cx = closestLine[ 2 ] - closestLine[ 0 ];
+        const cy = closestLine[ 3 ] - closestLine[ 1 ];
+        const angle = Math.atan2( cy, cx );
+        const dist = Math.hypot( cx, cy );
+
+        // TODO: Roll or bounce based on angle difference
+
+        // If rolling, don't use for collision again
+        // If bouncing, may get used for collision later
+        //    - if bouncing, clear the previous set and just add last?
+
+
+        player.dx = Math.cos( angle ) * moveSpeed;
+        player.dy = Math.sin( angle ) * moveSpeed;
+      }
+      else {
+        player.x += player.dx * dt;
+        player.y += player.dy * dt;
+
+        console.log( 'Full time moved (no lines left), breaking loop' );
+        break;
+      }
+    }
+
+    //   if ( subDist == moveDist ) {
+    //     console.log( 'Full distance moved, break loop' );
+    //     break;
+    //   }
+    //   else {
+
+    //     // TODO: Instead of assuming next/prev index, what if we just save the lastHit
+    //     //       and do another search for closest line (avoiding lastHit)
+    //     //       Might be cases where lines get skipped because they are small (once we use player radius)
+
+    //     console.log( `subDist = ${ subDist }, moveDist = ${ moveDist }` );
+    //     moveDist -= subDist;
+    //     closestIndex += Math.sign( moveDist );
+    //     closestU = moveDist > 0 ? 0 : 1;
+    //     console.log( `new moveDist is ${ moveDist }, closestIndex = ${ closestIndex }` );
+    //   }
+    // }
+
+    canvas.redraw();
+  } );
+
+
+  // See: https://ericleong.me/research/circle-line/
+
+
+  // TODO: Include acceleration, base on equations of motion?
+  // TODO: Radius?
+  function timeToHit( entity, line ) {
+    const x1 = entity.x;
+    const y1 = entity.y;
+    const x2 = entity.x + entity.dx;
+    const y2 = entity.y + entity.dy;
+    const x3 = line[ 0 ];
+    const y3 = line[ 1 ];
+    const x4 = line[ 2 ];
+    const y4 = line[ 3 ];
+
+    // Line vs Line: http://paulbourke.net/geometry/pointlineplane/
+    const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
+
+    if ( D != 0 ) {
+      const uA = ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D;
+      const uB = ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D;
+
+      if ( 0 <= uA && uA <= 1 && 0 <= uB && uB <= 1 ) {
+        return uA;
+      }
+    }
+
+    return Infinity;
+  }
+
+  
+</script>

@@ -75,6 +75,11 @@
         break;
       }
       else {
+
+        // TODO: Instead of assuming next/prev index, what if we just save the lastHit
+        //       and do another search for closest line (avoiding lastHit)
+        //       Might be cases where lines get skipped because they are small (once we use player radius)
+
         console.log( `subDist = ${ subDist }, moveDist = ${ moveDist }` );
         moveDist -= subDist;
         closestIndex += Math.sign( moveDist );

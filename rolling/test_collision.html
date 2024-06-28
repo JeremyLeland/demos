@@ -1,0 +1,232 @@
+<title>Find lines by time to hit</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+
+  const player = { x: 0, y: -2, dx: 0, dy: 4, radius: 0.5 };
+
+  const points = [
+    [ -1, -1 ], [ 1, 1 ], [ 2.5, 1.5 ], [ 5, 1.6 ], [ 7, 1.1 ],
+  ];
+
+  const lines = [];
+  for ( let i = 0; i < points.length - 1; i ++ ) {
+    lines.push( { 
+      x1: points[ i ][ 0 ], 
+      y1: points[ i ][ 1 ], 
+      x2: points[ i + 1 ][ 0 ], 
+      y2: points[ i + 1 ][ 1 ],
+    } );
+  }
+
+  const SIZE = 10;
+  let scrollX = 0.5, scrollY = 0.5;
+
+  const canvas = new Canvas();
+
+  canvas.draw = ( ctx ) => {
+    ctx.translate( scrollX, scrollY );
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 1 / SIZE;
+
+    ctx.beginPath();
+    points.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
+    ctx.strokeStyle = 'green';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc( player.x, player.y, player.radius, 0, Math.PI * 2 );
+    ctx.fillStyle = 'white';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo( player.x, player.y );
+    ctx.lineTo( player.x + player.dx, player.y + player.dy );
+    ctx.strokeStyle = 'red';
+    ctx.setLineDash( [ 0.1, 0.1 ] );
+    ctx.stroke();
+    ctx.setLineDash( [ ] );
+
+
+    let dt = 1;
+
+    // const previous = new Set();
+    let previous = null;
+
+    // for ( let tries = 0; tries < 5; tries ++ ) {
+      let closestLine = null, closestTime = Infinity;
+      lines.forEach( line => {
+        // if ( !previous.has( line ) ) {
+        if ( line != previous ) {
+          const time = timeToHit( player, line );
+          if ( 0 < time && time < closestTime ) {
+            closestLine = line;
+            closestTime = time;
+          }
+        }
+      } );
+
+      if ( closestTime < dt ) {
+        ctx.beginPath();
+        ctx.arc( player.x + player.dx * closestTime, player.y + player.dy * closestTime, player.radius, 0, Math.PI * 2 );
+        ctx.fillStyle = 'red';
+        ctx.fill();
+      }
+    // }
+  }
+
+  canvas.redraw();
+
+  function timeToHit( entity, line ) {
+    const px = line.x2 - line.x1;
+    const py = line.y2 - line.y1;
+    const D = ( px * px ) + ( py * py );
+
+    const len = Math.sqrt( D );
+    const normX = py / len;
+    const normY = -px / len;
+    
+    const distFromLine = ( line.x1 - entity.x ) * normX + ( line.y1 - entity.y ) * normY;
+    const vDotN = entity.dx * normX + entity.dy * normY;
+
+    const hitTime = ( distFromLine + entity.radius ) / vDotN;
+
+    const hitX = entity.x + entity.dx * hitTime;
+    const hitY = entity.y + entity.dy * hitTime;
+
+    const closestOnLine = ( ( hitX - line.x1 ) * px + ( hitY - line.y1 ) * py ) / D;
+
+    if ( closestOnLine <= 0 ) {
+      return timeToHitPoint( entity, line.x1, line.y1 );
+    }
+    else if ( 1 <= closestOnLine ) {
+      return timeToHitPoint( entity, line.x2, line.y2 );
+    }
+    else {
+      return hitTime;
+    }
+  }
+
+  function timeToHitPoint( entity, cx, cy ) {
+    const dX = entity.dx;
+    const dY = entity.dy;
+    const fX = entity.x - cx;
+    const fY = entity.y - cy;
+
+    const a = dX * dX + dY * dY;
+    const b = 2 * ( fX * dX + fY * dY ); 
+    const c = ( fX * fX + fY * fY ) - Math.pow( entity.radius, 2 );
+
+    let disc = b * b - 4 * a * c;
+
+    if ( disc > 0 ) {
+      return ( -b - Math.sqrt( disc ) ) / ( 2 * a );
+    }
+    else {
+      return Infinity;
+    }
+  }
+
+  // function getCollision( entity, line ) {
+  //   const distFromLine = ( this.x1 - entity.x ) * this.normal.x + ( this.y1 - entity.y ) * this.normal.y;
+
+  //   const vDotN = entity.dx * this.normal.x + entity.dy * this.normal.y;
+  //   const hitTime = ( distFromLine + entity.size ) / vDotN;
+
+  //   const hitX = entity.x + entity.dx * hitTime;
+  //   const hitY = entity.y + entity.dy * hitTime;
+
+  //   const vx = this.x2 - this.x1;
+  //   const vy = this.y2 - this.y1;
+  //   const wx = hitX - this.x1;
+  //   const wy = hitY - this.y1;
+
+  //   const c1 = wx * vx + wy * vy;
+  //   if ( c1 <= 0 ) {
+  //     return getPointHit( entity, this.x1, this.y1 );
+  //   }
+
+  //   const c2 = vx * vx + vy * vy;
+  //   if ( c2 <= c1 ) {
+  //     return getPointHit( entity, this.x2, this.y2 );
+  //   }
+
+  //   return {
+  //     time: hitTime,
+  //     normal: this.normal,
+  //     x: hitX,
+  //     y: hitY,
+  //   };
+  // }
+
+  // function getPointHit( entity, cx, cy ) {
+  //   // See: https://stackoverflow.com/questions/1073336/circle-line-segment-collision-detection-algorithm
+  //   const dX = entity.dx;
+  //   const dY = entity.dy;
+  //   const fX = entity.x - cx;
+  //   const fY = entity.y - cy;
+
+  //   const a = dX * dX + dY * dY;
+  //   const b = 2 * ( fX * dX + fY * dY ); 
+  //   const c = ( fX * fX + fY * fY ) - Math.pow( entity.size, 2 );
+
+  //   let disc = b * b - 4 * a * c;
+
+  //   if ( disc > 0 ) {
+  //     const hitTime = ( -b - Math.sqrt( disc ) ) / ( 2 * a );
+
+  //     const hitX = entity.x + entity.dx * hitTime;
+  //     const hitY = entity.y + entity.dy * hitTime;
+
+  //     let nx = cx - hitX;
+  //     let ny = cy - hitY;
+  //     const len = Math.hypot( nx, ny );
+  //     nx /= len;
+  //     ny /= len;
+
+  //     return {
+  //       time: hitTime,
+  //       normal: { x: nx, y: ny },
+  //       x: hitX,
+  //       y: hitY,
+  //     }
+  //   }
+  //   else {
+  //     return {
+  //       time: Infinity
+  //     }
+  //   }
+  // }
+
+  const mouse = { x: 0, y: 0, down: false };
+  function updateMousePos( e ) {
+    mouse.x = SIZE * ( e.clientX / canvas.scale - scrollX );
+    mouse.y = SIZE * ( e.clientY / canvas.scale - scrollY );
+  }
+
+  function changeVelocity( e ) {
+    updateMousePos( e );
+
+    player.dx = mouse.x - player.x;
+    player.dy = mouse.y - player.y;
+
+    canvas.redraw();
+  }
+
+  document.addEventListener( 'pointerdown', e => {
+    mouse.down = true;
+    
+    changeVelocity( e );
+  } );
+  document.addEventListener( 'pointerup', e => {
+    mouse.down = false;
+  } );
+
+  document.addEventListener( 'pointermove', e => {
+    if ( mouse.down ) {
+      changeVelocity( e );
+    }
+  } );
+
+</script>
