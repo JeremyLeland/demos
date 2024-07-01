@@ -4,7 +4,7 @@
 <script type="module">
   import { Canvas } from './Canvas.js';
 
-  const player = { x: 0, y: -2, dx: 0, dy: 4, radius: 0.5 };
+  const playerStart = { x: 0, y: -2, dx: 0, dy: 4, radius: 0.5 };
 
   const points = [
     [ -1, -1 ], [ 1, 1 ], [ 2.5, 1.5 ], [ 5, 1.6 ], [ 7, 1.1 ],
@@ -35,10 +35,9 @@
     ctx.strokeStyle = 'green';
     ctx.stroke();
 
-    ctx.beginPath();
-    ctx.arc( player.x, player.y, player.radius, 0, Math.PI * 2 );
-    ctx.fillStyle = 'white';
-    ctx.fill();
+    const player = Object.assign( {}, playerStart );
+
+    drawPlayer( ctx, player, 'white' );
 
     ctx.beginPath();
     ctx.moveTo( player.x, player.y );
@@ -51,14 +50,16 @@
 
     let dt = 1;
 
-    // const previous = new Set();
-    let previous = null;
+    const previous = new Set();
+    // let previous = null;
 
-    // for ( let tries = 0; tries < 5; tries ++ ) {
+    const colors = [ 'red', 'orange', 'yellow', 'green', 'blue' ];
+
+    for ( let step = 0; step < 5; step ++ ) {
       let closestLine = null, closestTime = Infinity;
       lines.forEach( line => {
-        // if ( !previous.has( line ) ) {
-        if ( line != previous ) {
+        if ( !previous.has( line ) ) {
+        // if ( line != previous ) {
           const time = timeToHit( player, line );
           if ( 0 < time && time < closestTime ) {
             closestLine = line;
@@ -67,16 +68,47 @@
         }
       } );
 
+      // TODO: Change dx/dy to match line, find next collision
+
       if ( closestTime < dt ) {
-        ctx.beginPath();
-        ctx.arc( player.x + player.dx * closestTime, player.y + player.dy * closestTime, player.radius, 0, Math.PI * 2 );
-        ctx.fillStyle = 'red';
-        ctx.fill();
+        dt -= closestTime;
+        // previous = closestLine;
+        previous.add( closestLine );
+
+        player.x += player.dx * closestTime;
+        player.y += player.dy * closestTime;
+
+        drawPlayer( ctx, player, colors[ step ] );
+        
+        const speed = Math.hypot( player.dx, player.dy );        
+        const slope = getSlope( closestLine );
+
+        player.dx = Math.cos( slope ) * speed;
+        player.dy = Math.sin( slope ) * speed;
       }
-    // }
+      else {
+        player.x += player.dx * dt;
+        player.y += player.dy * dt;
+
+        drawPlayer( ctx, player, colors[ step ] );
+
+        break;
+      }
+    }
+  }
+
+  function drawPlayer( ctx, player, color ) {
+    ctx.beginPath();
+    ctx.arc( player.x, player.y, player.radius, 0, Math.PI * 2 );
+    ctx.fillStyle = color;
+    ctx.fill();
   }
 
   canvas.redraw();
+
+  function getSlope( line ) {
+    return Math.atan2( line.y2 - line.y1, line.x2 - line.x1 );
+  }
 
   function timeToHit( entity, line ) {
     const px = line.x2 - line.x1;
@@ -208,8 +240,8 @@
   function changeVelocity( e ) {
     updateMousePos( e );
 
-    player.dx = mouse.x - player.x;
-    player.dy = mouse.y - player.y;
+    playerStart.dx = mouse.x - playerStart.x;
+    playerStart.dy = mouse.y - playerStart.y;
 
     canvas.redraw();
   }
