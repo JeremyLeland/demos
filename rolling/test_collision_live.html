@@ -1,0 +1,143 @@
+<title>Simple real-time roll</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+
+  const player = { x: 0, y: -2, dx: 0, dy: 0.001, radius: 0.5 };
+
+  const points = [
+    [ -2, -1 ], [ 0, 1 ], [ 2.5, 1.5 ], [ 5, 1.6 ], [ 7, 1.1 ], [ 9, -1 ], [ 9, -2 ]
+  ];
+
+  const lines = [];
+  for ( let i = 0; i < points.length - 1; i ++ ) {
+    lines.push( { 
+      x1: points[ i ][ 0 ], 
+      y1: points[ i ][ 1 ], 
+      x2: points[ i + 1 ][ 0 ], 
+      y2: points[ i + 1 ][ 1 ],
+    } );
+  }
+
+  const SIZE = 16;
+  let scrollX = 0.5, scrollY = 0.5;
+
+  const EPSILON = 1e-6;
+
+  const canvas = new Canvas();
+
+  canvas.update = ( dt ) => {
+
+    player.dy += 0.0001;
+
+    const previous = new Set();
+
+    for ( let step = 0; step < 5; step ++ ) {
+      let closestLine = null, closestTime = Infinity;
+      lines.forEach( line => {
+        if ( !previous.has( line ) ) {
+          const time = timeToHit( player, line );
+          if ( -EPSILON < time && time < closestTime ) {
+            closestLine = line;
+            closestTime = time;
+          }
+        }
+      } );
+
+      if ( closestTime < dt ) {
+        dt -= closestTime;
+        previous.add( closestLine );
+
+        player.x += player.dx * closestTime;
+        player.y += player.dy * closestTime;
+        
+        const speed = Math.hypot( player.dx, player.dy );
+        const slope = getSlope( closestLine );
+
+        player.dx = Math.cos( slope ) * speed;
+        player.dy = Math.sin( slope ) * speed;
+      }
+      else {
+        player.x += player.dx * dt;
+        player.y += player.dy * dt;
+
+        break;
+      }
+    }
+  }
+
+  canvas.draw = ( ctx ) => {
+    ctx.translate( scrollX, scrollY );
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 1 / SIZE;
+
+    ctx.beginPath();
+    points.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
+    ctx.strokeStyle = 'green';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc( player.x, player.y, player.radius, 0, Math.PI * 2 );
+    ctx.fillStyle = 'white';
+    ctx.fill();
+  }
+
+  canvas.start();
+
+  function getSlope( line ) {
+    return Math.atan2( line.y2 - line.y1, line.x2 - line.x1 );
+  }
+
+  function timeToHit( entity, line ) {
+    const px = line.x2 - line.x1;
+    const py = line.y2 - line.y1;
+    const D = ( px * px ) + ( py * py );
+
+    const len = Math.sqrt( D );
+    const normX = py / len;
+    const normY = -px / len;
+    
+    const distFromLine = ( line.x1 - entity.x ) * normX + ( line.y1 - entity.y ) * normY;
+    const vDotN = entity.dx * normX + entity.dy * normY;
+
+    const hitTime = ( distFromLine + entity.radius ) / vDotN;
+
+    const hitX = entity.x + entity.dx * hitTime;
+    const hitY = entity.y + entity.dy * hitTime;
+
+    const closestOnLine = ( ( hitX - line.x1 ) * px + ( hitY - line.y1 ) * py ) / D;
+
+    if ( closestOnLine <= 0 ) {
+      return timeToHitPoint( entity, line.x1, line.y1 );
+    }
+    else if ( 1 <= closestOnLine ) {
+      return timeToHitPoint( entity, line.x2, line.y2 );
+    }
+    else {
+      return hitTime;
+    }
+  }
+
+  function timeToHitPoint( entity, cx, cy ) {
+    const dX = entity.dx;
+    const dY = entity.dy;
+    const fX = entity.x - cx;
+    const fY = entity.y - cy;
+
+    const a = dX * dX + dY * dY;
+    const b = 2 * ( fX * dX + fY * dY ); 
+    const c = ( fX * fX + fY * fY ) - Math.pow( entity.radius, 2 );
+
+    let disc = b * b - 4 * a * c;
+
+    if ( disc > 0 ) {
+      return ( -b - Math.sqrt( disc ) ) / ( 2 * a );
+    }
+    else {
+      return Infinity;
+    }
+  }
+
+
+</script>

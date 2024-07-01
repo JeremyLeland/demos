@@ -23,6 +23,8 @@
   const SIZE = 10;
   let scrollX = 0.5, scrollY = 0.5;
 
+  const EPSILON = 1e-6;
+
   const canvas = new Canvas();
 
   canvas.draw = ( ctx ) => {
@@ -61,7 +63,7 @@
         if ( !previous.has( line ) ) {
         // if ( line != previous ) {
           const time = timeToHit( player, line );
-          if ( 0 < time && time < closestTime ) {
+          if ( -EPSILON < time && time < closestTime ) {
             closestLine = line;
             closestTime = time;
           }
@@ -237,27 +239,35 @@
     mouse.y = SIZE * ( e.clientY / canvas.scale - scrollY );
   }
 
-  function changeVelocity( e ) {
+  function doMouse( e ) {
     updateMousePos( e );
 
-    playerStart.dx = mouse.x - playerStart.x;
-    playerStart.dy = mouse.y - playerStart.y;
+    if ( mouse.button == 0 ) {
+      playerStart.dx = mouse.x - playerStart.x;
+      playerStart.dy = mouse.y - playerStart.y;
+    }
+    else {
+      playerStart.x = mouse.x;
+      playerStart.y = mouse.y;
+    }
 
     canvas.redraw();
   }
 
   document.addEventListener( 'pointerdown', e => {
     mouse.down = true;
+    mouse.button = e.button;
     
-    changeVelocity( e );
+    doMouse( e );
   } );
   document.addEventListener( 'pointerup', e => {
     mouse.down = false;
+    mouse.button = null;
   } );
 
   document.addEventListener( 'pointermove', e => {
     if ( mouse.down ) {
-      changeVelocity( e );
+      doMouse( e );
     }
   } );
 
