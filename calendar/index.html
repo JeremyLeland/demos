@@ -1,0 +1,84 @@
+<style>
+  table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+  }
+  td {
+    width: 100px;
+    height: 100px;
+  }
+</style>
+
+<body>
+  <h1 id="month"></h1>
+  <h2 id="year"></h2>
+  <table id="grid">
+  </table>
+</body>
+
+<script>
+
+  const urlParams = new URLSearchParams( window.location.search );
+  const locale = window.navigator.language;
+
+  console.log( urlParams );
+
+  const year = urlParams.get( 'year' ) ?? new Date().getFullYear();
+  const month = urlParams.get( 'month' ) - 1 ?? new Date().getMonth(); // NOTE: month is 0-indexed for Date()
+
+  const date = new Date( year, month );
+  document.getElementById( 'month' ).innerText = date.toLocaleString( locale, { month: 'long' } );
+  document.getElementById( 'year' ).innerText = date.toLocaleString( locale, { year: 'numeric' } );
+
+  const grid = document.getElementById( 'grid' );
+
+  // Days of week
+  const dayNamesRow = document.createElement( 'tr' );
+
+  for ( let i = 1; i <= 7; i ++ ) {
+    // October 2023 happened to start on a Sunday
+    const nameStr = new Date( 2023, 9, i ).toLocaleString( locale, { weekday: 'long' } );
+
+    const dayName = document.createElement( 'th' );
+    dayName.appendChild( document.createTextNode( nameStr ) );
+    dayNamesRow.appendChild( dayName );
+  }
+  grid.appendChild( dayNamesRow );
+
+  // Month is 0-indexed and day is 1-indexed
+  // so day 0 actually gives us last day of previous month
+  const numDays = new Date( year, month + 1, 0 ).getDate();
+
+  const startDayOfWeek = new Date( year, month, 1 ).getDay();
+
+  let weekRow = document.createElement( 'tr' );
+
+  for ( let day = 0; day < startDayOfWeek; day ++ ) {
+    const emptyDay = document.createElement( 'td' );
+    weekRow.appendChild( emptyDay );
+  }
+
+  let dayOfWeek = startDayOfWeek;
+
+  for ( let day = 1; day <= numDays; day ++ ) {
+    if ( dayOfWeek == 7 ) {
+      dayOfWeek = 0;
+
+      grid.appendChild( weekRow );
+      weekRow = document.createElement( 'tr' );
+    }
+
+    const numberedDay = document.createElement( 'td' );
+    numberedDay.appendChild( document.createTextNode( day ) );
+    weekRow.appendChild( numberedDay );
+
+    dayOfWeek ++;
+  }
+
+  for ( ; dayOfWeek < 7; dayOfWeek ++ ) {
+    const emptyDay = document.createElement( 'td' );
+    weekRow.appendChild( emptyDay );
+  }
+  grid.appendChild( weekRow );
+
+</script>
