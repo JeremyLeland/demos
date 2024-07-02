@@ -49,7 +49,6 @@
 
       if ( closestTime < dt ) {
         dt -= closestTime;
-        previous.add( closestLine );
 
         player.x += player.dx * closestTime;
         player.y += player.dy * closestTime;
@@ -60,20 +59,23 @@
         const slope = getSlope( closestLine );
         const backSlope = slope + Math.PI;
 
+        let newAngle;
+
         if ( Math.abs( deltaAngle( slope, playerAngle ) ) < 1 ) {
-          player.dx = Math.cos( slope ) * playerSpeed;
-          player.dy = Math.sin( slope ) * playerSpeed;
+          newAngle = slope;
         }
         else if ( Math.abs( deltaAngle( backSlope, playerAngle ) ) < 1 ) {
-          player.dx = Math.cos( backSlope ) * playerSpeed;
-          player.dy = Math.sin( backSlope ) * playerSpeed;
+          newAngle = backSlope;
         }
         else {
-          const bounceAngle = slope - deltaAngle( slope, playerAngle );
-
-          player.dx = Math.cos( bounceAngle ) * playerSpeed;
-          player.dy = Math.sin( bounceAngle ) * playerSpeed;
+          previous.clear();
+          newAngle = slope - deltaAngle( slope, playerAngle );
         }
+
+        player.dx = Math.cos( newAngle ) * playerSpeed;
+        player.dy = Math.sin( newAngle ) * playerSpeed;
+
+        previous.add( closestLine );
       }
       else {
         player.x += player.dx * dt;
