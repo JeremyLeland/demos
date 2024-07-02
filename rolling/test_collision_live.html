@@ -4,11 +4,12 @@
 <script type="module">
   import { Canvas } from './Canvas.js';
 
-  const player = { x: 0, y: -2, dx: 0, dy: 0.001, radius: 0.5 };
+  const player = { x: -5, y: -2, dx: 0, dy: 0.001, radius: 0.5 };
 
-  const points = [
-    [ -2, -2 ], [ -2, -1 ], [ 0, 1 ], [ 2.5, 1.5 ], [ 5, 1.6 ], [ 7, 1.1 ], [ 9, -1 ], [ 9, -2 ]
-  ];
+  const points = [];
+  for ( let x = -7; x <= 7; x += 0.5 ) {
+    points.push( [ x, -0.01 * x*x*x*x + 0.2*x*x + 5 ] );
+  }
 
   const lines = [];
   for ( let i = 0; i < points.length - 1; i ++ ) {
@@ -68,7 +69,10 @@
           player.dy = Math.sin( backSlope ) * playerSpeed;
         }
         else {
-          // TODO: Bounce
+          const bounceAngle = slope - deltaAngle( slope, playerAngle );
+
+          player.dx = Math.cos( bounceAngle ) * playerSpeed;
+          player.dy = Math.sin( bounceAngle ) * playerSpeed;
         }
       }
       else {
