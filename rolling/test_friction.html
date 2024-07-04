@@ -7,7 +7,7 @@
 
   const player = { x: -5, y: -0.5, dx: 0.001, dy: 0, radius: 0.5 };
 
-  const points = [ [ -5, 0 ], [ 5, 5 ], [ 10, 4 ], [ 11, 3 ] ];
+  const points = [ [ -5, 0 ], [ 0, 5 ], [ 5, 5 ], [ 10, 0 ] ];
   // for ( let x = -7; x <= 7; x += 0.5 ) {
   //   points.push( [ x, -0.01 * x*x*x*x + 0.2*x*x + 5 ] );
   // }
@@ -72,7 +72,7 @@
         }
       }
 
-      {
+      for ( let step = 0; step < 5; step ++ ) {
         let closestLine = null, closestTime = Infinity;
         lines.forEach( line => {
           if ( !previous.has( line ) ) {
@@ -91,9 +91,9 @@
           player.x += player.dx * closestTime;
           player.y += player.dy * closestTime;
           
-          const f = 1 /*0.8*/, r = 1 /*0.5*/;
+          const f = 0.95, r = 0.5;
 
-          previous.clear();
+          // previous.clear();
           previous.add( closestLine );
 
           const normalAngle = closestLine.normalAngle;
@@ -112,7 +112,7 @@
           player.x += player.dx * dt;
           player.y += player.dy * dt;
 
-          // break;
+          break;
         }
       }
     // }
