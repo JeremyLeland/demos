@@ -1,0 +1,208 @@
+<title>Find lines by time to hit</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import { Line } from './Line.js';
+
+  const playerStart = { x: 0, y: 0, dx: 0, dy: 4, radius: 0.5 };
+
+  const points = [
+    [ -1, -1 ], [ 1, 1 ], [ 2.5, 1.5 ], [ 5, 1.5 ], [ 7, 1.1 ],
+  ];
+
+  const lines = [];
+  for ( let i = 0; i < points.length - 1; i ++ ) {
+    lines.push( new Line( ...points[ i ], ...points[ i + 1 ] ) );
+  }
+
+  const SIZE = 10;
+  let scrollX = 0.5, scrollY = 0.5;
+
+  const EPSILON = 1e-6;
+
+  const canvas = new Canvas();
+
+  canvas.draw = ( ctx ) => {
+    ctx.translate( scrollX, scrollY );
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 1 / SIZE;
+
+    ctx.strokeStyle = 'green';
+    lines.forEach( line => line.draw( ctx ) );
+
+    const player = Object.assign( {}, playerStart );
+
+    drawPlayer( ctx, player, '#fff8' );
+
+    let closestLine = null, closestDist = -Infinity;
+    lines.forEach( line => {
+      // if ( !previous.has( line ) ) {
+        const dist = line.distanceFrom( player );
+        if ( dist <= 0 && closestDist < dist ) {
+          closestLine = line;
+          closestDist = dist;
+        }
+      // }
+    } );
+
+    if ( closestLine ) {
+      console.log( closestDist );
+
+      const normalAngle = closestLine.normalAngle;
+      player.x -= Math.cos( normalAngle ) * closestDist;
+      player.y -= Math.sin( normalAngle ) * closestDist;
+    }
+
+    drawPlayer( ctx, player, '#ffff' );
+
+    // ctx.beginPath();
+    // ctx.moveTo( player.x, player.y );
+    // ctx.lineTo( player.x + player.dx, player.y + player.dy );
+    // ctx.strokeStyle = 'red';
+    // ctx.setLineDash( [ 0.1, 0.1 ] );
+    // ctx.stroke();
+    // ctx.setLineDash( [ ] );
+
+
+    // let dt = 1;
+
+    // const previous = new Set();
+    // let previous = null;
+
+    // const colors = [ 'red', 'orange', 'yellow', 'green', 'blue' ];
+
+    // for ( let step = 0; step < 5; step ++ ) {
+    //   let closestLine = null, closestTime = Infinity;
+    //   lines.forEach( line => {
+    //     if ( !previous.has( line ) ) {
+    //     // if ( line != previous ) {
+    //       const time = Line.timeToHit( player, line );
+    //       if ( 0 <= time && time < closestTime ) {
+    //         closestLine = line;
+    //         closestTime = time;
+    //       }
+    //     }
+    //   } );
+
+      // Handle overlap by nudging us out of collision
+      // TODO: How to apply gravity, change dx/dy?
+      //       Keep applying gravity downward, then keep deflecting it out?
+
+      // if ( closestTime < dt ) {
+      //   dt -= closestTime;
+
+      //   player.x += player.dx * closestTime;
+      //   player.y += player.dy * closestTime;
+
+
+      //   drawPlayer( ctx, player, colors[ step ] );
+        
+        // const playerAngle = Math.atan2( player.dy, player.dx );
+        // let playerSpeed = Math.hypot( player.dx, player.dy );
+
+        // const slope = getSlope( closestLine );
+        // const backSlope = slope + Math.PI;
+
+        // const f = 1 /*0.8*/, r = 1 /*0.5*/;
+
+        // if ( Math.abs( deltaAngle( slope, playerAngle ) ) < ROLL_ANGLE ) {
+        //   playerSpeed += Math.sin( slope ) * GRAVITY * closestTime;
+        //   playerSpeed *= f;
+
+        //   player.dx = Math.cos( slope ) * playerSpeed;
+        //   player.dy = Math.sin( slope ) * playerSpeed;
+        // }
+        // else if ( Math.abs( deltaAngle( backSlope, playerAngle ) ) < ROLL_ANGLE ) {
+        //   playerSpeed += Math.sin( backSlope ) * GRAVITY * closestTime;
+        //   playerSpeed *= f;
+
+        //   player.dx = Math.cos( backSlope ) * playerSpeed;
+        //   player.dy = Math.sin( backSlope ) * playerSpeed;
+        // }
+        // else {
+          // previous.clear();
+
+          // //newAngle = slope - deltaAngle( slope, playerAngle );
+
+          // const normalAngle = Math.atan2( closestLine.x2 - closestLine.x1, closestLine.y1 - closestLine.y2 );
+          // const normalX = Math.cos( normalAngle );
+          // const normalY = Math.sin( normalAngle );
+          
+          // const vDotN = player.dx * normalX + player.dy * normalY;
+          // const uX = vDotN * normalX;
+          // const uY = vDotN * normalY;
+
+          // player.dx = f * ( player.dx - uX ) - r * uX;
+          // player.dy = f * ( player.dy - uY ) - r * uY;
+
+          // // player.dy += GRAVITY * closestTime;
+        // } 
+
+      //   previous.add( closestLine );
+      // }
+      // else {
+
+      //   player.x += player.dx * dt;
+      //   player.y += player.dy * dt;
+
+      //   // TODO: Shouldn't add this if we are on a line. Should this be handled above?
+      //   // player.dy += GRAVITY * dt;
+
+
+      //   drawPlayer( ctx, player, colors[ step ] );
+
+      //   break;
+      // }
+    // }
+  }
+
+  function drawPlayer( ctx, player, color ) {
+    ctx.beginPath();
+    ctx.arc( player.x, player.y, player.radius, 0, Math.PI * 2 );
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  canvas.redraw();
+
+
+  const mouse = { x: 0, y: 0, down: false };
+  function updateMousePos( e ) {
+    mouse.x = SIZE * ( e.clientX / canvas.scale - scrollX );
+    mouse.y = SIZE * ( e.clientY / canvas.scale - scrollY );
+  }
+
+  function doMouse( e ) {
+    updateMousePos( e );
+
+    if ( mouse.button == 0 ) {
+      playerStart.dx = mouse.x - playerStart.x;
+      playerStart.dy = mouse.y - playerStart.y;
+    }
+    else {
+      playerStart.x = mouse.x;
+      playerStart.y = mouse.y;
+    }
+
+    canvas.redraw();
+  }
+
+  document.addEventListener( 'pointerdown', e => {
+    mouse.down = true;
+    mouse.button = e.button;
+    
+    doMouse( e );
+  } );
+  document.addEventListener( 'pointerup', e => {
+    mouse.down = false;
+    mouse.button = null;
+  } );
+
+  document.addEventListener( 'pointermove', e => {
+    if ( mouse.down ) {
+      doMouse( e );
+    }
+  } );
+
+</script>
