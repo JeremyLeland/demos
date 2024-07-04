@@ -5,12 +5,12 @@
   import { Canvas } from './Canvas.js';
   import { Line } from './Line.js';
 
-  const player = { x: -5, y: -0.5, dx: 0.001, dy: 0, radius: 0.5 };
+  const player = { x: -6, y: -5, dx: 0, dy: 0, radius: 0.5 };
 
-  const points = [ [ -5, 0 ], [ 0, 5 ], [ 5, 5 ], [ 10, 0 ] ];
-  // for ( let x = -7; x <= 7; x += 0.5 ) {
-  //   points.push( [ x, -0.01 * x*x*x*x + 0.2*x*x + 5 ] );
-  // }
+  const points = [];//[ [ -5, 0 ], [ 0, 5 ], [ 5, 5 ], [ 10, 0 ] ];
+  for ( let x = -7; x <= 7; x += 0.5 ) {
+    points.push( [ x, -0.01 * x*x*x*x + 0.25*x*x + 5 ] );
+  }
 
   const lines = [];
   for ( let i = 0; i < points.length - 1; i ++ ) {
