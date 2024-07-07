@@ -10,6 +10,10 @@ export class Line {
     return Math.hypot( this.x2 - this.x1, this.y2 - this.y1 );
   }
 
+  get slopeAngle() {
+    return Math.atan2( this.y2 - this.y1, this.x2 - this.x1 );
+  }
+
   get normalAngle() {
     return Math.atan2( this.x1 - this.x2, this.y2 - this.y1 );
   }
