@@ -24,7 +24,7 @@
   let scrollX = 0.5, scrollY = 0.5;
 
   const EPSILON = 1e-6;
-  const GRAVITY = 0.000001;
+  const GRAVITY = 0.00001;
 
   const ROLL_ANGLE = 0.5;
   const ROLL_FRICTION = 0.95;
@@ -80,28 +80,21 @@
         previousLines.add( closestLine );
       }
         
-      // const slopeAngle = closestLine.slopeAngle;
+      const slopeAngle = closestLine.slopeAngle;
       const normalAngle = closestLine?.normalAngle ?? 0;
+      const backSlopeAngle = slopeAngle + Math.PI;
       
-      // const playerAngle = Math.atan2( player.dy, player.dx );
-      // const playerSpeed = Math.hypot( player.dx, player.dy );
-      
-      // console.log( playerSpeed );
+      const playerAngle = Math.atan2( player.dy, player.dx );
+      const playerSpeed = Math.hypot( player.dx, player.dy );
 
-      // const backSlopeAngle = slopeAngle + Math.PI;
-
-      // if ( 0 < deltaAngle( normalAngle, playerAngle ) ) {
-      //   // const newSpeed = ROLL_FRICTION * ( playerSpeed + Math.sin( slopeAngle ) * GRAVITY * nextTime );
-
-      //   player.dx = Math.cos( slopeAngle ) * playerSpeed;
-      //   player.dy = Math.sin( slopeAngle ) * playerSpeed;
-      // }
-      // else if ( Math.abs( deltaAngle( backSlopeAngle, playerAngle ) ) < ROLL_ANGLE ) {
-      //   // const newSpeed = ROLL_FRICTION * ( playerSpeed + Math.sin( backSlopeAngle ) * GRAVITY * nextTime );
-
-      //   player.dx = Math.cos( backSlopeAngle ) * playerSpeed;
-      //   player.dy = Math.sin( backSlopeAngle ) * playerSpeed;
-      // }
+      if ( 0 < deltaAngle( normalAngle, playerAngle ) ) {
+        player.dx = Math.cos( slopeAngle ) * playerSpeed;
+        player.dy = Math.sin( slopeAngle ) * playerSpeed;
+      }
+      else {
+        player.dx = Math.cos( backSlopeAngle ) * playerSpeed;
+        player.dy = Math.sin( backSlopeAngle ) * playerSpeed;
+      }
 
       let nextLine = null, nextTime = Infinity;
       lines.forEach( line => {
@@ -124,10 +117,20 @@
       // }
       dt -= nextTime;
 
+
+      // const newSpeed = ROLL_FRICTION * ( playerSpeed + Math.sin( slopeAngle ) * GRAVITY * nextTime );
+
+
+      // https://stickmanphysics.com/stickman-physics-home/forces/incline-planes/
+      const a = GRAVITY * ( Math.sin( slopeAngle ) - ROLL_FRICTION * Math.cos( slopeAngle ) ); 
+
+      player.dx += Math.cos( slopeAngle ) * a * nextTime;
+      player.dy += Math.sin( slopeAngle ) * a * nextTime;
+
       // Project velocity onto slope, then normalize?
 
       // Increase speed by this instead of just dy?
-      player.dy += Math.cos( normalAngle ) * GRAVITY * nextTime;
+      // player.dy += Math.cos( normalAngle ) * GRAVITY * nextTime;
 
         // TODO: Apply friction and gravity, once we know how far we are rolling?
 
