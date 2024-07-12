@@ -70,6 +70,10 @@
     // Basically, nudge us out of a collision, then see how far until the next collision, and update until then
     // TODO: Where does collision response/roll adjustment go?
 
+    // TODO2: Use playerAngle to figure out which slopes to ignore? If we're touching two slopes, and our angle
+    // matches one of them (within a small range), then treat that one as the "current" line? (This uses dx/dy
+    // to persist current line, since we can't save it otherwise)
+
     for ( let step = 0; step < 5; step ++ ) {
 
       if ( dt <= 0 ) {
