@@ -1,0 +1,62 @@
+<title>Draw board and pieces</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import { Connect4 } from './Connect4.js';
+
+  const SIZE = 7;
+  let scrollX = 0.5, scrollY = 1.5;
+
+  const canvas = new Canvas();
+
+  let mouseX, mouseY;
+
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.translate( scrollX, scrollY );
+    ctx.lineWidth = 1 / SIZE;
+
+    
+    ctx.beginPath();
+    ctx.arc( Math.round( mouseX ), -1, 0.5, 0, Math.PI * 2 );
+    ctx.fillStyle = 'red';
+    ctx.fill();
+
+    const boardPath = new Path2D();
+    boardPath.rect( -0.5, -0.5, Connect4.Cols, Connect4.Rows );
+    for ( let row = 0; row < Connect4.Rows; row ++ ) {
+      for ( let col = 0; col < Connect4.Cols; col ++ ) {
+        boardPath.moveTo( col, row );
+        boardPath.arc( col, row, 0.4, 0, Math.PI * 2 );
+      }
+    }
+    ctx.fillStyle = 'yellow';
+    ctx.fill( boardPath, 'evenodd' );
+  }
+
+  canvas.redraw();
+
+  function updateActivePiece() {
+    
+  }
+
+  document.addEventListener( 'pointermove', e => {
+    mouseX = SIZE * ( e.clientX / canvas.scale ) - scrollX;
+    mouseY = SIZE * ( e.clientY / canvas.scale ) - scrollY;
+    
+    updateActivePiece();
+
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'pointerdown', e => {
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'pointerup', e => {
+
+    canvas.redraw();
+  } );
+
+</script>
