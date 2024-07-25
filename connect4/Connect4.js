@@ -1,9 +1,9 @@
-const Cols = 7, Rows = 6;
+const Cols = 7, Rows = 6, Players = 2;
 
 const piecePath = new Path2D();
 piecePath.arc( 0, 0, 0.5, 0, Math.PI * 2 );
 
-const PieceColors = [ 'red', 'yellow' ];
+const PieceColors = [ '', 'red', 'yellow' ];
 
 const BoardPath = new Path2D();
 BoardPath.rect( -0.5, -0.5, Cols, Rows );
@@ -16,11 +16,14 @@ for ( let row = 0; row < Rows; row++ ) {
 
 const BoardColor = 'tan';
 
+// NOTE: Turn is 1-indexed so the turn/team match the values in board (0 means no piece)
+
 export class Connect4 {
   static newGame() {
     return new Connect4( {
       board: Array( Cols * Rows ).fill( 0 ),
       history: [],
+      turn: 1,
     } );
   }
 
@@ -35,7 +38,7 @@ export class Connect4 {
         if ( team > 0 ) {
           ctx.save(); {
             ctx.translate( col, row );
-            ctx.fillStyle = PieceColors[ team - 1 ];
+            ctx.fillStyle = PieceColors[ team ];
             ctx.fill( piecePath );
           }
           ctx.restore();
@@ -45,5 +48,20 @@ export class Connect4 {
 
     ctx.fillStyle = BoardColor;
     ctx.fill( BoardPath, 'evenodd' );
+  }
+
+  applyMove( move ) {
+    this.board[ move[ 0 ] + move[ 1 ] * Cols ] = this.turn;
+    this.turn = this.turn == Players ? 1 : this.turn + 1;
+    this.history.push( move );
+  }
+
+  undo() {
+    const toRemove = this.history.pop();
+
+    if ( toRemove ) {
+      this.turn = this.turn == 1 ? Players : this.turn - 1;
+      this.board[ toRemove[ 0 ] + toRemove[ 1 ] * Cols ] = 0;
+    }
   }
 }

@@ -12,10 +12,15 @@
 
   const game = Connect4.newGame();
 
-  game.board[ 3 + 2 * 7 ] = 1;
-  game.board[ 3 + 3 * 7 ] = 2;
-  game.board[ 3 + 4 * 7 ] = 1;
-  game.board[ 3 + 5 * 7 ] = 2;
+  game.applyMove( [ 3, 5 ] );
+  game.applyMove( [ 3, 4 ] );
+  game.applyMove( [ 3, 3 ] );
+  game.applyMove( [ 3, 2 ] );
+  game.applyMove( [ 3, 1 ] );
+
+  game.undo();
+
+  console.log( JSON.stringify( game ) );
   
   canvas.draw = ( ctx ) => {
     ctx.scale( 1 / SIZE, 1 / SIZE );
