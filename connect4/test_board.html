@@ -12,15 +12,27 @@
 
   const game = Connect4.newGame();
 
+  game.applyMove( [ -1, 5 ] );
+  game.applyMove( [ 7, 5 ] );
+
+  game.applyMove( [ 0, -1 ] );
+  game.applyMove( [ 0, 6 ] );
+
   game.applyMove( [ 3, 5 ] );
   game.applyMove( [ 3, 4 ] );
   game.applyMove( [ 3, 3 ] );
   game.applyMove( [ 3, 2 ] );
   game.applyMove( [ 3, 1 ] );
+  game.applyMove( [ 3, 0 ] );
+  game.applyMove( [ 3, 0 ] );
+
+  console.log( JSON.stringify( game ) );
+  console.log( game.getPossibleMoves() );
 
   game.undo();
 
   console.log( JSON.stringify( game ) );
+  console.log( game.getPossibleMoves() );
   
   canvas.draw = ( ctx ) => {
     ctx.scale( 1 / SIZE, 1 / SIZE );

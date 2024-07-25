@@ -51,6 +51,25 @@ export class Connect4 {
   }
 
   applyMove( move ) {
+    console.log( `Applying move for Player ${ this.turn }: ${ move }` );
+
+    if ( move[ 0 ] < 0 || move[ 0 ] >= Cols ) {
+      console.warn( `Invalid column: ${ move[ 0 ] }` );
+      return;
+    }
+
+    if ( move[ 1 ] < 0 || move[ 1 ] >= Rows ) {
+      console.warn( `Invalid row: ${ move[ 1 ] }` );
+      return;
+    }
+
+    const index = move[ 0 ] + move[ 1 ] * Cols; 
+
+    if ( this.board[ index ] != 0 ) {
+      console.warn( `Board already has Player ${ this.board[ index ] } at ${ move }` );
+      return;
+    }
+
     this.board[ move[ 0 ] + move[ 1 ] * Cols ] = this.turn;
     this.turn = this.turn == Players ? 1 : this.turn + 1;
     this.history.push( move );
@@ -63,5 +82,20 @@ export class Connect4 {
       this.turn = this.turn == 1 ? Players : this.turn - 1;
       this.board[ toRemove[ 0 ] + toRemove[ 1 ] * Cols ] = 0;
     }
+  }
+
+  getPossibleMoves() {
+    const moves = [];
+
+    for ( let col = 0; col < Cols; col ++ ) {
+      for ( let row = Rows - 1; row >= 0; row -- ) {
+        if ( this.board[ col + row * Cols ] == 0 ) {
+          moves.push( [ col, row ] );
+          break;
+        }
+      }
+    }
+
+    return moves;
   }
 }
