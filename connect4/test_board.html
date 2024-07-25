@@ -1,0 +1,30 @@
+<title>Draw board and pieces</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import { Connect4 } from './Connect4.js';
+
+  const SIZE = 7;
+  let scrollX = 0.5, scrollY = 1.5;
+
+  const canvas = new Canvas();
+
+  const game = Connect4.newGame();
+
+  game.board[ 3 + 2 * 7 ] = 1;
+  game.board[ 3 + 3 * 7 ] = 2;
+  game.board[ 3 + 4 * 7 ] = 1;
+  game.board[ 3 + 5 * 7 ] = 2;
+  
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.translate( scrollX, scrollY );
+    ctx.lineWidth = 1 / SIZE;
+
+    game.draw( ctx );
+  }
+
+  canvas.redraw();
+
+</script>
