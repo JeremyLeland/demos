@@ -33,6 +33,19 @@
 
   console.log( JSON.stringify( game ) );
   console.log( game.getPossibleMoves() );
+
+  game.applyMove( [ 4, 5 ] );
+  game.applyMove( [ 4, 4 ] );
+
+  console.log( game.getLongestAt( 3, 5, 1 ) );
+
+  game.applyMove( [ 2, 5 ] );
+  game.applyMove( [ 2, 4 ] );
+  game.applyMove( [ 2, 3 ] );
+
+  console.log( game.getLongestAt( 4, 5, 1 ) );
+  console.log( game.getLongestAt( 4, 5, 2 ) );
+
   
   canvas.draw = ( ctx ) => {
     ctx.scale( 1 / SIZE, 1 / SIZE );

@@ -50,6 +50,14 @@ export class Connect4 {
     ctx.fill( BoardPath, 'evenodd' );
   }
 
+  getAt( col, row ) {
+    return this.board[ col + row * Cols ];
+  }
+
+  setAt( col, row, team ) {
+    this.board[ col + row * Cols ] = team;
+  }
+
   applyMove( move ) {
     console.log( `Applying move for Player ${ this.turn }: ${ move }` );
 
@@ -63,14 +71,14 @@ export class Connect4 {
       return;
     }
 
-    const index = move[ 0 ] + move[ 1 ] * Cols; 
-
-    if ( this.board[ index ] != 0 ) {
-      console.warn( `Board already has Player ${ this.board[ index ] } at ${ move }` );
+    const current = this.getAt( move[ 0 ], move[ 1 ] );
+    
+    if ( current != 0 ) {
+      console.warn( `Board already has Player ${ current } at ${ move }` );
       return;
     }
 
-    this.board[ move[ 0 ] + move[ 1 ] * Cols ] = this.turn;
+    this.setAt( move[ 0 ], move[ 1 ], this.turn );
     this.turn = this.turn == Players ? 1 : this.turn + 1;
     this.history.push( move );
   }
@@ -80,7 +88,10 @@ export class Connect4 {
 
     if ( toRemove ) {
       this.turn = this.turn == 1 ? Players : this.turn - 1;
-      this.board[ toRemove[ 0 ] + toRemove[ 1 ] * Cols ] = 0;
+      this.setAt( toRemove[ 0 ], toRemove[ 1 ], 0 );
+    }
+    else {
+      console.warn( 'No moves to undo' );
     }
   }
 
@@ -89,7 +100,7 @@ export class Connect4 {
 
     for ( let col = 0; col < Cols; col ++ ) {
       for ( let row = Rows - 1; row >= 0; row -- ) {
-        if ( this.board[ col + row * Cols ] == 0 ) {
+        if ( this.getAt( col, row ) == 0 ) {
           moves.push( [ col, row ] );
           break;
         }
@@ -97,5 +108,46 @@ export class Connect4 {
     }
 
     return moves;
+  }
+
+  getLongestAt( col, row, team ) {
+    console.log( `Finding longest line for Player ${ team } at ${ col },${ row }` );
+    let longest = 0;
+
+    if ( this.getAt( col, row ) == team ) {
+      [
+        [ 1, 0 ],   // vertical
+        [ 0, 1 ],   // horizontal
+        [ 1, 1 ],   // diagonal 1
+        [ 1, -1 ],  // diagonal 2
+      ].forEach( orientation => {
+        let length = 1;
+
+        [ -1, 1 ].forEach( dir => {
+          let c = col, r = row;
+
+          while ( true ) {
+            c += dir * orientation[ 0 ];
+            r += dir * orientation[ 1 ];
+
+            if ( 0 <= c && c < Cols && 0 <= r && r < Rows && this.getAt( c, r ) == team ) {
+              length ++;
+            }
+            else {
+              break;
+            }
+          }
+        } );
+
+        console.log( `  Length for orientation ${ orientation } is ${ length }`)
+
+        longest = Math.max( longest, length );
+      } );
+    }
+    else {
+      console.warn( `Player at ${ col },${ row } is actually ${ this.getAt( col, row ) }, expecting ${ team }` );
+    }
+
+    return longest;
   }
 }
