@@ -1,0 +1,63 @@
+<title>Draw board and pieces</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import { Connect4 } from './Connect4.js';
+
+  const SIZE = 7;
+  let scrollX = 0.5, scrollY = 1.5;
+
+  const canvas = new Canvas();
+
+  const game = Connect4.newGame();
+
+  game.getPossibleMoves();
+
+  game.getLongestAt( 4, 5, 1 );
+ 
+  canvas.draw = ( ctx ) => {
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.translate( scrollX, scrollY );
+    ctx.lineWidth = 1 / SIZE;
+
+    game.draw( ctx );
+  }
+
+  canvas.redraw();
+
+  document.addEventListener( 'pointermove', e => {
+    const mouseX = SIZE * ( e.clientX / canvas.scale ) - scrollX;
+    const mouseY = SIZE * ( e.clientY / canvas.scale ) - scrollY;
+    
+    game.active.x = Math.round( mouseX );
+    game.active.y = -1;
+
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'pointerdown', e => {
+    const col = game.active.x;
+    const row = game.getNextRowAt( col );
+    if ( row > -1 ) {
+      const team = game.turn;
+      game.applyMove( [ col, row ] );
+
+      const longest = game.getLongestAt( col, row, team );
+      if ( longest >= 4 ) {
+        console.log( `Team ${ team } wins with ${ longest } in a row!` );
+      }
+    }
+
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'keydown', e => {
+    if ( e.key == 'u' ) {
+      game.undo();
+    }
+
+    canvas.redraw();
+  } );
+
+</script>

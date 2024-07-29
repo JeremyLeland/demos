@@ -24,6 +24,7 @@ export class Connect4 {
       board: Array( Cols * Rows ).fill( 0 ),
       history: [],
       turn: 1,
+      active: { x: 0, y: -1 },
     } );
   }
 
@@ -32,6 +33,13 @@ export class Connect4 {
   }
 
   draw( ctx ) {
+    ctx.save(); {
+      ctx.translate( this.active.x, this.active.y );
+      ctx.fillStyle = PieceColors[ this.turn ];
+      ctx.fill( piecePath );
+    }
+    ctx.restore();
+
     for ( let row = 0; row < Rows; row++ ) {
       for ( let col = 0; col < Cols; col++ ) {
         const team = this.board[ col + row * Cols ];
@@ -71,14 +79,14 @@ export class Connect4 {
       return;
     }
 
-    const current = this.getAt( move[ 0 ], move[ 1 ] );
+    const current = this.getAt( ...move );
     
     if ( current != 0 ) {
       console.warn( `Board already has Player ${ current } at ${ move }` );
       return;
     }
 
-    this.setAt( move[ 0 ], move[ 1 ], this.turn );
+    this.setAt( ...move, this.turn );
     this.turn = this.turn == Players ? 1 : this.turn + 1;
     this.history.push( move );
   }
@@ -88,22 +96,30 @@ export class Connect4 {
 
     if ( toRemove ) {
       this.turn = this.turn == 1 ? Players : this.turn - 1;
-      this.setAt( toRemove[ 0 ], toRemove[ 1 ], 0 );
+      this.setAt( ...toRemove, 0 );
     }
     else {
       console.warn( 'No moves to undo' );
     }
   }
 
+  getNextRowAt( col ) {
+    for ( let row = Rows - 1; row >= 0; row-- ) {
+      if ( this.getAt( col, row ) == 0 ) {
+        return row;
+      }
+    }
+
+    return -1;
+  }
+
   getPossibleMoves() {
     const moves = [];
 
     for ( let col = 0; col < Cols; col ++ ) {
-      for ( let row = Rows - 1; row >= 0; row -- ) {
-        if ( this.getAt( col, row ) == 0 ) {
-          moves.push( [ col, row ] );
-          break;
-        }
+      const nextRow = this.getNextRowAt( col );
+      if ( nextRow > -1 ) {
+        moves.push( [ col, nextRow ] );
       }
     }
 
@@ -111,7 +127,7 @@ export class Connect4 {
   }
 
   getLongestAt( col, row, team ) {
-    console.log( `Finding longest line for Player ${ team } at ${ col },${ row }` );
+    // console.log( `Finding longest line for Player ${ team } at ${ col },${ row }` );
     let longest = 0;
 
     if ( this.getAt( col, row ) == team ) {
@@ -139,7 +155,7 @@ export class Connect4 {
           }
         } );
 
-        console.log( `  Length for orientation ${ orientation } is ${ length }`)
+        // console.log( `  Length for orientation ${ orientation } is ${ length }`);
 
         longest = Math.max( longest, length );
       } );
