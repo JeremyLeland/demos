@@ -24,12 +24,34 @@ export class Connect4 {
       board: Array( Cols * Rows ).fill( 0 ),
       history: [],
       turn: 1,
-      active: { x: 0, y: -1 },
+      active: { x: 0, y: -1, vy: 0, ay: 0 },
     } );
   }
 
   constructor( json ) {
     Object.assign( this, json );
+  }
+
+  update( dt ) {
+    this.active.y += this.active.vy * dt + 0.5 * this.active.ay * dt * dt;
+    this.active.vy += this.active.ay * dt;
+    
+    const col = this.active.x;
+    const row = Math.round( this.active.y );
+    const nextRow = Math.round( this.active.y + 0.5 );
+
+    if ( nextRow < Rows && this.getAt( this.active.x, nextRow ) == 0 ) {
+      return true;    // keep going
+    }
+    else {
+      this.applyMove( [ col, row ] );
+
+      this.active.y = -1;
+      this.active.vy = 0;
+      this.active.ay = 0;
+
+      return false;
+    }
   }
 
   draw( ctx ) {
@@ -87,6 +109,13 @@ export class Connect4 {
     }
 
     this.setAt( ...move, this.turn );
+
+    // TODO: Check for victory
+      // const longest = game.getLongestAt( col, row, team );
+      // if ( longest >= 4 ) {
+      //   console.log( `Team ${ team } wins with ${ longest } in a row!` );
+      // }
+
     this.turn = this.turn == Players ? 1 : this.turn + 1;
     this.history.push( move );
   }
@@ -96,6 +125,9 @@ export class Connect4 {
 
     if ( toRemove ) {
       this.turn = this.turn == 1 ? Players : this.turn - 1;
+      
+      // TODO: Unset victory
+
       this.setAt( ...toRemove, 0 );
     }
     else {

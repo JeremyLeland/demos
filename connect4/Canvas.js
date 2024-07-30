@@ -47,20 +47,22 @@ export class Canvas {
   }
 
   start() {
-    let lastTime;
-    const animate = ( now ) => {
-      lastTime ??= now;  // for first call only
-      this.update( now - lastTime );
-      lastTime = now;
-  
-      this.redraw();
-  
-      if ( this.#reqId ) {    // make sure we didn't stop it
-        this.#reqId = requestAnimationFrame( animate );
-      }
-    };
+    if ( !this.#reqId ) {     // don't try to start again if already started
+      let lastTime;
+      const animate = ( now ) => {
+        lastTime ??= now;  // for first call only
+        this.update( now - lastTime );
+        lastTime = now;
 
-    this.#reqId = requestAnimationFrame( animate );
+        this.redraw();
+
+        if ( this.#reqId ) {    // make sure we didn't stop it
+          this.#reqId = requestAnimationFrame( animate );
+        }
+      };
+
+      this.#reqId = requestAnimationFrame( animate );
+    }
   }
 
   stop() {
