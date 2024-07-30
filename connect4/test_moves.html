@@ -10,7 +10,7 @@
 
   const canvas = new Canvas();
 
-  const game = Connect4.fromLocalStore() ?? Connect4.newGame();
+  let game = Connect4.fromLocalStore() ?? Connect4.newGame();
 
   game.getPossibleMoves();
 
@@ -61,7 +61,10 @@
   } );
 
   document.addEventListener( 'keydown', e => {
-    if ( e.key == 'u' ) {
+    if ( e.key == 'n' ) {
+      game = Connect4.newGame();
+    }
+    else if ( e.key == 'u' ) {
       game.undo();
     }
 
