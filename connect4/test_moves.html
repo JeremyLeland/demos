@@ -42,6 +42,10 @@
     game.active.y = -1;
   }
 
+  // TODO: Move this to Connect4, just tell it when we move and click?
+  //       Maybe Connect4 can keep track of where next active piece 
+  //       should go (if we move mouse during drop)
+
   document.addEventListener( 'pointermove', e => {
     if ( game.victory == 0 && game.active.ay == 0 ) {
       updateActivePosition( e );
@@ -54,7 +58,7 @@
     if ( game.victory == 0 ) {
       updateActivePosition( e );
 
-      game.active.ay = 0.00001;
+      game.active.ay = 0.00002;
       
       canvas.start();
     }

@@ -95,6 +95,17 @@ export class Connect4 {
 
     ctx.fillStyle = BoardColor;
     ctx.fill( BoardPath, 'evenodd' );
+
+    if ( this.victory > 0 ) {
+      ctx.font = '1px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'white';
+      ctx.shadowColor = 'black';
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+
+      ctx.fillText( `Player ${ this.victory } Wins!`, 3, 3 );
+    }
   }
 
   getAt( col, row ) {
