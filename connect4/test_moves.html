@@ -10,7 +10,7 @@
 
   const canvas = new Canvas();
 
-  const game = Connect4.newGame();
+  const game = Connect4.fromLocalStore() ?? Connect4.newGame();
 
   game.getPossibleMoves();
 
@@ -19,6 +19,8 @@
   canvas.update = ( dt ) => {
     if ( !game.update( dt ) ) {
       canvas.stop();
+
+      game.toLocalStore();
     }
   }
  
@@ -32,13 +34,17 @@
 
   canvas.redraw();
 
+  function updateActivePosition( e ) {
+    const mouseX = SIZE * ( e.clientX / canvas.scale ) - scrollX;
+    const mouseY = SIZE * ( e.clientY / canvas.scale ) - scrollY;
+
+    game.active.x = Math.max( 0, Math.min( 6, Math.round( mouseX ) ) );
+    game.active.y = -1;
+  }
+
   document.addEventListener( 'pointermove', e => {
     if ( game.victory == 0 && game.active.ay == 0 ) {
-      const mouseX = SIZE * ( e.clientX / canvas.scale ) - scrollX;
-      const mouseY = SIZE * ( e.clientY / canvas.scale ) - scrollY;
-      
-      game.active.x = Math.max( 0, Math.min( 6, Math.round( mouseX ) ) );
-      game.active.y = -1;
+      updateActivePosition( e );
       
       canvas.redraw();
     }
@@ -46,6 +52,8 @@
 
   document.addEventListener( 'pointerdown', e => {
     if ( game.victory == 0 ) {
+      updateActivePosition( e );
+
       game.active.ay = 0.00001;
       
       canvas.start();

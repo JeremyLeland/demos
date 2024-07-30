@@ -1,9 +1,12 @@
 const Cols = 7, Rows = 6, Players = 2;
 
+const PieceColors = [ '', 'red', 'yellow' ];
+const BoardColor = 'tan';
+
+const GameStateKey = 'connect4GameState';
+
 const piecePath = new Path2D();
 piecePath.arc( 0, 0, 0.5, 0, Math.PI * 2 );
-
-const PieceColors = [ '', 'red', 'yellow' ];
 
 const BoardPath = new Path2D();
 BoardPath.rect( -0.5, -0.5, Cols, Rows );
@@ -14,11 +17,22 @@ for ( let row = 0; row < Rows; row++ ) {
   }
 }
 
-const BoardColor = 'tan';
 
 // NOTE: Turn is 1-indexed so the turn/team match the values in board (0 means no piece)
 
 export class Connect4 {
+  static fromLocalStore() {
+    const gameState = JSON.parse( localStorage.getItem( GameStateKey ) );
+
+    if ( gameState ) {
+      return new Connect4( gameState );
+    }
+  }
+
+  toLocalStore() {
+    localStorage.setItem( GameStateKey, JSON.stringify( this ) );
+  }
+
   static newGame() {
     return new Connect4( {
       board: Array( Cols * Rows ).fill( 0 ),
