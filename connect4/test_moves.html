@@ -33,7 +33,7 @@
   canvas.redraw();
 
   document.addEventListener( 'pointermove', e => {
-    if ( game.active.ay == 0 ) {
+    if ( game.victory == 0 && game.active.ay == 0 ) {
       const mouseX = SIZE * ( e.clientX / canvas.scale ) - scrollX;
       const mouseY = SIZE * ( e.clientY / canvas.scale ) - scrollY;
       
@@ -45,23 +45,11 @@
   } );
 
   document.addEventListener( 'pointerdown', e => {
-    // const col = game.active.x;
-    // const row = game.getNextRowAt( col );
-    // if ( row > -1 ) {
-    //   const team = game.turn;
-      // game.applyMove( [ col, row ] );
-
-      // const longest = game.getLongestAt( col, row, team );
-      // if ( longest >= 4 ) {
-      //   console.log( `Team ${ team } wins with ${ longest } in a row!` );
-      // }
-    // }
-
-    // canvas.redraw();
-
-    game.active.ay = 0.00001;
-
-    canvas.start();
+    if ( game.victory == 0 ) {
+      game.active.ay = 0.00001;
+      
+      canvas.start();
+    }
   } );
 
   document.addEventListener( 'keydown', e => {

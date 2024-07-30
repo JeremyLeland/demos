@@ -24,6 +24,7 @@ export class Connect4 {
       board: Array( Cols * Rows ).fill( 0 ),
       history: [],
       turn: 1,
+      victory: 0,
       active: { x: 0, y: -1, vy: 0, ay: 0 },
     } );
   }
@@ -55,12 +56,14 @@ export class Connect4 {
   }
 
   draw( ctx ) {
-    ctx.save(); {
-      ctx.translate( this.active.x, this.active.y );
-      ctx.fillStyle = PieceColors[ this.turn ];
-      ctx.fill( piecePath );
+    if ( this.victory == 0 ) {
+      ctx.save(); {
+        ctx.translate( this.active.x, this.active.y );
+        ctx.fillStyle = PieceColors[ this.turn ];
+        ctx.fill( piecePath );
+      }
+      ctx.restore();
     }
-    ctx.restore();
 
     for ( let row = 0; row < Rows; row++ ) {
       for ( let col = 0; col < Cols; col++ ) {
@@ -91,6 +94,11 @@ export class Connect4 {
   applyMove( move ) {
     console.log( `Applying move for Player ${ this.turn }: ${ move }` );
 
+    if ( this.victory > 0 ) {
+      console.warn( `Player ${ this.victory } already won game` );
+      return;
+    }
+
     if ( move[ 0 ] < 0 || move[ 0 ] >= Cols ) {
       console.warn( `Invalid column: ${ move[ 0 ] }` );
       return;
@@ -101,20 +109,20 @@ export class Connect4 {
       return;
     }
 
-    const current = this.getAt( ...move );
+    const current = this.getAt( move[ 0 ], move[ 1 ] );
     
     if ( current != 0 ) {
       console.warn( `Board already has Player ${ current } at ${ move }` );
       return;
     }
 
-    this.setAt( ...move, this.turn );
+    this.setAt( move[ 0 ], move[ 1 ], this.turn );
 
-    // TODO: Check for victory
-      // const longest = game.getLongestAt( col, row, team );
-      // if ( longest >= 4 ) {
-      //   console.log( `Team ${ team } wins with ${ longest } in a row!` );
-      // }
+    const longest = this.getLongestAt( move[ 0 ], move[ 1 ], this.turn );
+    if ( longest >= 4 ) {
+      this.victory = this.turn;
+      console.log( `Player ${ this.turn } wins with ${ longest } in a row!` );
+    }
 
     this.turn = this.turn == Players ? 1 : this.turn + 1;
     this.history.push( move );
@@ -125,10 +133,8 @@ export class Connect4 {
 
     if ( toRemove ) {
       this.turn = this.turn == 1 ? Players : this.turn - 1;
-      
-      // TODO: Unset victory
-
-      this.setAt( ...toRemove, 0 );
+      this.victory = 0;
+      this.setAt( toRemove[ 0 ], toRemove[ 1 ], 0 );
     }
     else {
       console.warn( 'No moves to undo' );
