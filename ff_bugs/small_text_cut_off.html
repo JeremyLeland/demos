@@ -1,0 +1,27 @@
+<title>Small text cut off</title>
+<body>
+  <canvas width="800" height="600" id="canvas"></canvas>
+</body>
+
+<script>
+  const canvas = document.getElementById( 'canvas' );
+  const ctx = canvas.getContext( '2d' );
+  
+  ctx.scale( 50, 50 );
+
+  ctx.font = '1px Arial';
+  ctx.fillText( 'abc xyz 1', 0, 1 );
+
+  ctx.font = '1.5px Arial';
+  ctx.fillText( 'abc xyz 1.5', 0, 2.5 );
+
+  ctx.font = '2px Arial';
+  ctx.fillText( 'abc xyz 2', 0, 4.5 );
+
+  ctx.font = '2.5px Arial';
+  ctx.fillText( 'abc xyz 2.5', 0, 6.5 );
+
+  ctx.font = '3px Arial';
+  ctx.fillText( 'abc xyz 3', 0, 9 );
+
+</script>
