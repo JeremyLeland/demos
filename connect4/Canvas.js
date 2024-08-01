@@ -1,6 +1,9 @@
 export class Canvas {
-  scale = 1;
+  zoom = 1;
+  scrollX = 0;
+  scrollY = 0;
 
+  #scale = 1;
   #reqId;
 
   constructor( canvas ) {
@@ -26,11 +29,11 @@ export class Canvas {
         this.canvas.height = height;
 
         // this still needs to be based on content box
-        this.scale = Math.min( entry.contentBoxSize[ 0 ].inlineSize, entry.contentBoxSize[ 0 ].blockSize );
+        this.#scale = Math.min( entry.contentBoxSize[ 0 ].inlineSize, entry.contentBoxSize[ 0 ].blockSize );
       } );
 
       this.ctx.scale( devicePixelRatio, devicePixelRatio );
-      this.ctx.scale( this.scale, this.scale );
+      this.ctx.scale( this.#scale, this.#scale );
 
       this.redraw();
     } );
@@ -41,8 +44,13 @@ export class Canvas {
   redraw() {
     this.ctx.clearRect( 0, 0, this.ctx.canvas.width, this.ctx.canvas.height );
 
-    this.ctx.save();
-    this.draw( this.ctx );
+    this.ctx.save(); {
+      this.ctx.scale( this.zoom, this.zoom );
+      this.ctx.translate( this.scrollX, this.scrollY );
+      this.ctx.lineWidth = this.zoom;
+
+      this.draw( this.ctx );
+    }
     this.ctx.restore();
   }
 
@@ -72,4 +80,14 @@ export class Canvas {
 
   update( dt ) {}
   draw( ctx ) {}
+
+  // TODO: Account for offset when centered canvas
+
+  getPointerX( e ) {
+    return ( e.clientX / this.#scale ) / this.zoom - this.scrollX;
+  }
+
+  getPointerY( e ) {
+    return ( e.clientY / this.#scale ) / this.zoom - this.scrollY;
+  }
 }

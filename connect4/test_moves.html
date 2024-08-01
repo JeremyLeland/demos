@@ -5,16 +5,12 @@
   import { Canvas } from './Canvas.js';
   import { Connect4 } from './Connect4.js';
 
-  const SIZE = 7;
-  let scrollX = 0.5, scrollY = 1.5;
-
   const canvas = new Canvas();
+  canvas.zoom = 1 / 7;
+  canvas.scrollX = 0.5;
+  canvas.scrollY = 1.5;
 
   let game = Connect4.fromLocalStore() ?? Connect4.newGame();
-
-  game.getPossibleMoves();
-
-  game.getLongestAt( 4, 5, 1 );
 
   canvas.update = ( dt ) => {
     if ( !game.update( dt ) ) {
@@ -25,18 +21,14 @@
   }
  
   canvas.draw = ( ctx ) => {
-    ctx.scale( 1 / SIZE, 1 / SIZE );
-    ctx.translate( scrollX, scrollY );
-    ctx.lineWidth = 1 / SIZE;
-
     game.draw( ctx );
   }
 
   canvas.redraw();
 
   function updateActivePosition( e ) {
-    const mouseX = SIZE * ( e.clientX / canvas.scale ) - scrollX;
-    const mouseY = SIZE * ( e.clientY / canvas.scale ) - scrollY;
+    const mouseX = canvas.getPointerX( e );
+    const mouseY = canvas.getPointerY( e );
 
     game.active.x = Math.max( 0, Math.min( 6, Math.round( mouseX ) ) );
     game.active.y = -1;
@@ -55,7 +47,7 @@
   } );
 
   document.addEventListener( 'pointerdown', e => {
-    if ( game.victory == 0 ) {
+    if ( game.victory == 0 && game.active.ay == 0 ) {
       updateActivePosition( e );
 
       game.active.ay = 0.00002;
@@ -67,9 +59,11 @@
   document.addEventListener( 'keydown', e => {
     if ( e.key == 'n' ) {
       game = Connect4.newGame();
+      game.toLocalStore();
     }
     else if ( e.key == 'u' ) {
       game.undo();
+      game.toLocalStore();
     }
 
     canvas.redraw();
