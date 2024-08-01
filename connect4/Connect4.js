@@ -33,12 +33,13 @@ export class Connect4 {
     localStorage.setItem( GameStateKey, JSON.stringify( this ) );
   }
 
-  static newGame() {
+  static newGame( numHumanPlayers ) {
     return new Connect4( {
       board: Array( Cols * Rows ).fill( 0 ),
       history: [],
       turn: 1,
       victory: 0,
+      aiPlayers: numHumanPlayers == 2 ? [] : [ 2 ],
       active: { x: 0, y: -1, vy: 0, ay: 0 },
     } );
   }
@@ -116,6 +117,10 @@ export class Connect4 {
     this.board[ col + row * Cols ] = team;
   }
 
+  dropActive() {
+    this.active.ay = 0.00002;
+  }
+
   applyMove( move ) {
     console.log( `Applying move for Player ${ this.turn }: ${ move }` );
 
@@ -151,6 +156,8 @@ export class Connect4 {
 
     this.turn = this.turn == Players ? 1 : this.turn + 1;
     this.history.push( move );
+
+    return longest;
   }
 
   undo() {

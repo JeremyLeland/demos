@@ -17,7 +17,7 @@
 
 <select id="new">
   <option selected disabled hidden>New Game</option>
-  <option value="1" disabled>1 Player</option>
+  <option value="1">1 Player</option>
   <option value="2">2 Players</option>
 </select>
 <button id="undo">Undo</button>
@@ -31,13 +31,32 @@
   canvas.scrollX = 0.5;
   canvas.scrollY = 1.5;
 
-  let game = Connect4.fromLocalStore() ?? Connect4.newGame();
+  let game = Connect4.fromLocalStore() ?? Connect4.newGame( 1 );
 
   canvas.update = ( dt ) => {
     if ( !game.update( dt ) ) {
-      canvas.stop();
-
       game.toLocalStore();
+
+      if ( game.victory == 0 && game.aiPlayers.includes( game.turn ) ) {
+
+        let bestMove, bestScore = 0;
+        game.getPossibleMoves().forEach( move => {
+          const score = game.applyMove( move );
+          game.undo();
+
+          if ( score > bestScore || ( score == bestScore && Math.random() < 0.5 ) ) {
+            bestMove = move;
+            bestScore = score;
+          }
+        } );
+
+        game.active.x = bestMove[ 0 ];
+        game.active.y = -1;
+        game.dropActive();
+      }
+      else {
+        canvas.stop();
+      }
     }
   }
  
@@ -55,15 +74,18 @@
     game.active.y = -1;
   }
 
-  function newGame() {
+  function newGame( numHumanPlayers ) {
     console.log( 'Starting new game');
-    game = Connect4.newGame();
+    game = Connect4.newGame( numHumanPlayers );
     game.toLocalStore();
     canvas.redraw();
   }
 
   function undo() {
     game.undo();
+    if ( game.aiPlayers.includes( game.turn ) ) {
+      game.undo();
+    }
     game.toLocalStore();
     canvas.redraw();
   }
@@ -84,7 +106,7 @@
     if ( game.victory == 0 && game.active.ay == 0 ) {
       updateActivePosition( e );
 
-      game.active.ay = 0.00002;
+      game.dropActive();
       
       canvas.start();
     }
@@ -102,8 +124,7 @@
   } );
 
   document.getElementById( 'new' ).addEventListener( 'change', e => {
-    newGame();
-    //gameState = GameState.newGame( parseInt( e.target.value ) );
+    newGame( parseInt( e.target.value ) );
     e.target.selectedIndex = 0;
   } );
 
