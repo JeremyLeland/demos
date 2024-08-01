@@ -1,0 +1,113 @@
+<title>Connect 4</title>
+<link rel="stylesheet" href="./style.css">
+
+<style>
+  #new {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+  }
+  #undo {
+    position: absolute;
+    right: 0px;
+    top: 0px;
+  }
+</style>
+
+<select id="new">
+  <option selected disabled hidden>New Game</option>
+  <option value="1">1 Player</option>
+  <option value="2">2 Players</option>
+</select>
+<button id="undo">Undo</button>
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import { Connect4 } from './Connect4.js';
+
+  const canvas = new Canvas();
+  canvas.zoom = 1 / 7;
+  canvas.scrollX = 0.5;
+  canvas.scrollY = 1.5;
+
+  let game = Connect4.fromLocalStore() ?? Connect4.newGame();
+
+  canvas.update = ( dt ) => {
+    if ( !game.update( dt ) ) {
+      canvas.stop();
+
+      game.toLocalStore();
+    }
+  }
+ 
+  canvas.draw = ( ctx ) => {
+    game.draw( ctx );
+  }
+
+  canvas.redraw();
+
+  function updateActivePosition( e ) {
+    const mouseX = canvas.getPointerX( e );
+    const mouseY = canvas.getPointerY( e );
+
+    game.active.x = Math.max( 0, Math.min( 6, Math.round( mouseX ) ) );
+    game.active.y = -1;
+  }
+
+  function newGame() {
+    console.log( 'Starting new game');
+    game = Connect4.newGame();
+    game.toLocalStore();
+    canvas.redraw();
+  }
+
+  function undo() {
+    game.undo();
+    game.toLocalStore();
+    canvas.redraw();
+  }
+
+  // TODO: Move this to Connect4, just tell it when we move and click?
+  //       Maybe Connect4 can keep track of where next active piece 
+  //       should go (if we move mouse during drop)
+
+  canvas.canvas.addEventListener( 'pointermove', e => {
+    if ( game.victory == 0 && game.active.ay == 0 ) {
+      updateActivePosition( e );
+      
+      canvas.redraw();
+    }
+  } );
+
+  canvas.canvas.addEventListener( 'pointerdown', e => {
+    if ( game.victory == 0 && game.active.ay == 0 ) {
+      updateActivePosition( e );
+
+      game.active.ay = 0.00002;
+      
+      canvas.start();
+    }
+  } );
+
+  document.addEventListener( 'keydown', e => {
+    if ( e.key == 'n' ) {
+      newGame();
+    }
+    else if ( e.key == 'u' ) {
+      undo();
+    }
+
+    canvas.redraw();
+  } );
+
+  document.getElementById( 'new' ).addEventListener( 'change', e => {
+    newGame();
+    //gameState = GameState.newGame( parseInt( e.target.value ) );
+    e.target.selectedIndex = 0;
+  } );
+
+  document.getElementById( 'undo' ).addEventListener( 'click', e => {
+    undo();
+  } );
+
+</script>
