@@ -4,6 +4,9 @@ export class Canvas {
   scrollY = 0;
 
   #scale = 1;
+  #offsetX = 0;
+  #offsetY = 0;
+
   #reqId;
 
   constructor( canvas ) {
@@ -29,8 +32,17 @@ export class Canvas {
         this.canvas.height = height;
 
         // this still needs to be based on content box
-        this.#scale = Math.min( entry.contentBoxSize[ 0 ].inlineSize, entry.contentBoxSize[ 0 ].blockSize );
+        const inlineSize = entry.contentBoxSize[ 0 ].inlineSize;
+        const blockSize = entry.contentBoxSize[ 0 ].blockSize;
+
+        this.#scale = Math.min( inlineSize, blockSize );
+
+        // this might get messed up if writing mode is vertical
+        this.#offsetX = inlineSize - this.#scale;
+        this.#offsetY = blockSize - this.#scale;
       } );
+      
+      this.ctx.translate( this.#offsetX, this.#offsetY );
 
       this.ctx.scale( devicePixelRatio, devicePixelRatio );
       this.ctx.scale( this.#scale, this.#scale );
@@ -84,10 +96,10 @@ export class Canvas {
   // TODO: Account for offset when centered canvas
 
   getPointerX( e ) {
-    return ( e.clientX / this.#scale ) / this.zoom - this.scrollX;
+    return ( ( e.clientX - this.#offsetX / devicePixelRatio ) / this.#scale ) / this.zoom - this.scrollX;
   }
 
   getPointerY( e ) {
-    return ( e.clientY / this.#scale ) / this.zoom - this.scrollY;
+    return ( ( e.clientY - this.#offsetY / devicePixelRatio ) / this.#scale ) / this.zoom - this.scrollY;
   }
 }
