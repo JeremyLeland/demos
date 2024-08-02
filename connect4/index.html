@@ -39,14 +39,38 @@
 
       if ( game.victory == 0 && game.aiPlayers.includes( game.turn ) ) {
 
-        let bestMove, bestScore = 0;
+        let bestMove, bestScore = -Infinity;
         game.getPossibleMoves().forEach( move => {
-          const score = game.applyMove( move );
+          const score = Math.pow( game.applyMove( move ), 2 );
+
+          console.log( `Move ${ move } has initial score of ${ score }` );
+
+          let worstMove, worstScore = 0;
+
+          game.getPossibleMoves().forEach( move2 => {
+            const score2 = Math.pow( game.applyMove( move2 ), 3 );
+
+            if ( score2 > 0 ) {
+              game.undo();
+            }
+
+            console.log( `  Next move ${ move2 } has score of ${ score2 }` );
+
+            if ( score2 > worstScore ) {
+              worstMove = move2;
+              worstScore = score2;
+            }
+          } );
+
           game.undo();
 
-          if ( score > bestScore || ( score == bestScore && Math.random() < 0.5 ) ) {
+          const adjustedScore = score - worstScore;
+
+          console.log( `Move ${ move } has adjusted score of ${ adjustedScore }` );
+
+          if ( adjustedScore > bestScore || ( adjustedScore == bestScore && Math.random() < 0.5 ) ) {
             bestMove = move;
-            bestScore = score;
+            bestScore = adjustedScore;
           }
         } );
 

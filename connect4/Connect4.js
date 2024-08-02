@@ -122,28 +122,28 @@ export class Connect4 {
   }
 
   applyMove( move ) {
-    console.log( `Applying move for Player ${ this.turn }: ${ move }` );
+    // console.log( `Applying move for Player ${ this.turn }: ${ move }` );
 
     if ( this.victory > 0 ) {
       console.warn( `Player ${ this.victory } already won game` );
-      return;
+      return 0;
     }
 
     if ( move[ 0 ] < 0 || move[ 0 ] >= Cols ) {
       console.warn( `Invalid column: ${ move[ 0 ] }` );
-      return;
+      return 0;
     }
 
     if ( move[ 1 ] < 0 || move[ 1 ] >= Rows ) {
       console.warn( `Invalid row: ${ move[ 1 ] }` );
-      return;
+      return 0;
     }
 
     const current = this.getAt( move[ 0 ], move[ 1 ] );
     
     if ( current != 0 ) {
       console.warn( `Board already has Player ${ current } at ${ move }` );
-      return;
+      return 0;
     }
 
     this.setAt( move[ 0 ], move[ 1 ], this.turn );
