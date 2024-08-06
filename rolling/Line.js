@@ -94,6 +94,42 @@ export class Line {
       return hitTime;
     }
   }
+  
+  getTestHit( entity, slopeX, slopeY ) {
+    const normalAngle = this.normalAngle;
+    const normX = Math.cos( normalAngle ) * entity.radius;
+    const normY = Math.sin( normalAngle ) * entity.radius;
+
+    const x1 = this.x1 + normX, y1 = this.y1 + normY;
+    const x2 = this.x2 + normX, y2 = this.y2 + normY;
+    const x3 = entity.x, y3 = entity.y;
+    const x4 = x3 + slopeX, y4 = y3 + slopeY;
+
+    const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
+
+    if ( D == 0 ) {
+      return Infinity;
+    }
+    else {
+      const uA = ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D;
+      const uB = ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D;
+
+      console.log( 'uA: ' + uA );
+      console.log( 'uB: ' + uB );
+
+      if ( uA <= 0 ) {
+        console.warn( 'left' );
+        return getTestHitPoint( entity, slopeX, slopeY, this.x1, this.y1 );
+      }
+      else if ( 1 <= uA ) {
+        console.warn( 'right' );
+        return getTestHitPoint( entity, slopeX, slopeY, this.x2, this.y2 );
+      }
+      else {
+        return uB;
+      }
+    }
+  }
 }
 
 function timeToHitPoint( entity, cx, cy ) {
@@ -109,6 +145,26 @@ function timeToHitPoint( entity, cx, cy ) {
   let disc = b * b - 4 * a * c;
 
   if ( disc > 0 ) {
+    return ( -b - Math.sqrt( disc ) ) / ( 2 * a );
+  }
+  else {
+    return Infinity;
+  }
+}
+
+function getTestHitPoint( entity, slopeX, slopeY, cx, cy ) {
+  const dX = slopeX;
+  const dY = slopeY;
+  const fX = entity.x - cx;
+  const fY = entity.y - cy;
+
+  const a = dX * dX + dY * dY;
+  const b = 2 * ( fX * dX + fY * dY ); 
+  const c = ( fX * fX + fY * fY ) - Math.pow( entity.radius, 2 );
+
+  let disc = b * b - 4 * a * c;
+
+  if ( disc >= 0 ) {
     return ( -b - Math.sqrt( disc ) ) / ( 2 * a );
   }
   else {

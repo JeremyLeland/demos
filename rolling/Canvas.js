@@ -1,5 +1,11 @@
 export class Canvas {
-  scale = 1;
+  zoom = 1;
+  scrollX = 0;
+  scrollY = 0;
+
+  #scale = 1;
+  #offsetX = 0;
+  #offsetY = 0;
 
   #reqId;
 
@@ -26,11 +32,20 @@ export class Canvas {
         this.canvas.height = height;
 
         // this still needs to be based on content box
-        this.scale = Math.min( entry.contentBoxSize[ 0 ].inlineSize, entry.contentBoxSize[ 0 ].blockSize );
+        const inlineSize = entry.contentBoxSize[ 0 ].inlineSize;
+        const blockSize = entry.contentBoxSize[ 0 ].blockSize;
+
+        this.#scale = Math.min( inlineSize, blockSize );
+
+        // this might get messed up if writing mode is vertical
+        this.#offsetX = inlineSize - this.#scale;
+        this.#offsetY = blockSize - this.#scale;
       } );
+      
+      this.ctx.translate( this.#offsetX, this.#offsetY );
 
       this.ctx.scale( devicePixelRatio, devicePixelRatio );
-      this.ctx.scale( this.scale, this.scale );
+      this.ctx.scale( this.#scale, this.#scale );
 
       this.redraw();
     } );
@@ -41,26 +56,38 @@ export class Canvas {
   redraw() {
     this.ctx.clearRect( 0, 0, this.ctx.canvas.width, this.ctx.canvas.height );
 
-    this.ctx.save();
-    this.draw( this.ctx );
+    this.ctx.save(); {
+      this.ctx.scale( this.zoom, this.zoom );
+      this.ctx.translate( this.scrollX, this.scrollY );
+      this.ctx.lineWidth = this.zoom;
+
+      try {
+        this.draw( this.ctx );
+      }
+      catch ( e ) {
+        console.error( e );
+      }
+    }
     this.ctx.restore();
   }
 
   start() {
-    let lastTime;
-    const animate = ( now ) => {
-      lastTime ??= now;  // for first call only
-      this.update( now - lastTime );
-      lastTime = now;
-  
-      this.redraw();
-  
-      if ( this.#reqId ) {    // make sure we didn't stop it
-        this.#reqId = requestAnimationFrame( animate );
-      }
-    };
+    if ( !this.#reqId ) {     // don't try to start again if already started
+      let lastTime;
+      const animate = ( now ) => {
+        lastTime ??= now;  // for first call only
+        this.update( now - lastTime );
+        lastTime = now;
 
-    this.#reqId = requestAnimationFrame( animate );
+        this.redraw();
+
+        if ( this.#reqId ) {    // make sure we didn't stop it
+          this.#reqId = requestAnimationFrame( animate );
+        }
+      };
+
+      this.#reqId = requestAnimationFrame( animate );
+    }
   }
 
   stop() {
@@ -70,4 +97,14 @@ export class Canvas {
 
   update( dt ) {}
   draw( ctx ) {}
+
+  // TODO: Account for offset when centered canvas
+
+  getPointerX( e ) {
+    return ( ( e.clientX - this.#offsetX / devicePixelRatio ) / this.#scale ) / this.zoom - this.scrollX;
+  }
+
+  getPointerY( e ) {
+    return ( ( e.clientY - this.#offsetY / devicePixelRatio ) / this.#scale ) / this.zoom - this.scrollY;
+  }
 }

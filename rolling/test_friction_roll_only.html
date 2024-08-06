@@ -5,7 +5,7 @@
   import { Canvas } from './Canvas.js';
   import { Line } from './Line.js';
 
-  const player = { x: -6, y: 0, dx: 0, dy: 0, radius: 0.5 };
+  const player = { x: -7, y: 4, dx: 0, dy: 0, radius: 0.5 };
 
   const points = [ 
     [ -7, 0 ], [ -3, 5 ], [ 5, 5 ], [ 10, 0 ] 
@@ -39,7 +39,33 @@
   //       Get this working properly before we worry about bouncing
 
 
-  canvas.update = ( dt ) => {
+  // canvas.update = ( dt ) => {
+
+  let dt = 15;
+
+  canvas.draw = ( ctx ) => {
+    ctx.translate( scrollX, scrollY );
+    ctx.scale( 1 / SIZE, 1 / SIZE );
+    ctx.lineWidth = 1 / SIZE;
+
+    ctx.beginPath();
+    points.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
+    ctx.strokeStyle = '#0f02';
+    ctx.stroke();
+
+    console.log( JSON.stringify( player ) );
+
+    ctx.beginPath();
+    ctx.arc( player.x, player.y, player.radius, 0, Math.PI * 2 );
+    ctx.closePath();
+    ctx.fillStyle = 'white';
+    ctx.fill();
+
+    ctx.font = '0.4px Arial';
+    // ctx.fillText( `x = ${ player.x }`, player.x + 1, player.y - 1 );
+    // ctx.fillText( `y = ${ player.y }`, player.x + 1, player.y - 0.5 );
+    // ctx.fillText( `dx = ${ player.dx }`, player.x + 1, player.y + 0 );
+    // ctx.fillText( `dy = ${ player.dy }`, player.x + 1, player.y + 0.5 );
 
     const previousLines = new Set();
 
@@ -61,9 +87,25 @@
     } );
 
     if ( closestLine ) {
+      ctx.strokeStyle = 'green';
+      // closestLine.draw( ctx );
+
       const normalAngle = closestLine.normalAngle;
       player.x -= Math.cos( normalAngle ) * closestDist;
       player.y -= Math.sin( normalAngle ) * closestDist;
+
+      console.log( JSON.stringify( player ) );
+
+      // ctx.beginPath();
+      // ctx.arc( player.x, player.y, player.radius, 0, Math.PI * 2 );
+      // ctx.fillStyle = 'yellow';
+      // ctx.fill();
+
+      ctx.font = '0.4px Arial';
+      // ctx.fillText( `x = ${player.x}`, player.x + 1, player.y - 1 );
+      // ctx.fillText( `y = ${player.y}`, player.x + 1, player.y - 0.5 );
+      // ctx.fillText( `dx = ${player.dx}`, player.x + 1, player.y + 0 );
+      // ctx.fillText( `dy = ${player.dy}`, player.x + 1, player.y + 0.5 );
     }
 
     // TODO: Unfuck this mess
@@ -128,6 +170,10 @@
       // https://stickmanphysics.com/stickman-physics-home/forces/incline-planes/
       const a = GRAVITY * ( Math.sin( slopeAngle ) - ROLL_FRICTION * Math.cos( slopeAngle ) ); 
 
+      if ( a < 0 ) {
+        debugger;
+      }
+
       player.dx += Math.cos( slopeAngle ) * a * nextTime;
       player.dy += Math.sin( slopeAngle ) * a * nextTime;
 
@@ -168,29 +214,26 @@
 
       player.x += player.dx * nextTime;
       player.y += player.dy * nextTime;
+
+      ctx.beginPath();
+      ctx.arc( player.x, player.y, player.radius, 0, Math.PI * 2 );
+      ctx.fillStyle = 'red';
+      ctx.fill();
+
+      ctx.font = '0.4px Arial';
+      // ctx.fillText( `x = ${ player.x }`, player.x + 1, player.y - 1 );
+      // ctx.fillText( `y = ${ player.y }`, player.x + 1, player.y - 0.5 );
+      // ctx.fillText( `dx = ${ player.dx }`, player.x + 1, player.y + 0 );
+      // ctx.fillText( `dy = ${ player.dy }`, player.x + 1, player.y + 0.5 );
       
       closestLine = nextLine;
       nextLine = null;
     }
+
   }
 
-  canvas.draw = ( ctx ) => {
-    ctx.translate( scrollX, scrollY );
-    ctx.scale( 1 / SIZE, 1 / SIZE );
-    ctx.lineWidth = 1 / SIZE;
-
-    ctx.beginPath();
-    points.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
-    ctx.strokeStyle = 'green';
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc( player.x, player.y, player.radius, 0, Math.PI * 2 );
-    ctx.fillStyle = 'white';
-    ctx.fill();
-  }
-
-  canvas.start();
+  // canvas.start();
+  canvas.redraw();
 
   function getSlope( line ) {
     return Math.atan2( line.y2 - line.y1, line.x2 - line.x1 );
