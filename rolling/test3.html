@@ -128,17 +128,15 @@
       ctx.strokeStyle = colors[ 0 ];
       nextLine.draw( ctx );
 
-      // TODO: Is ax/ay breakdown correct? Seems like its going too far...do I need to normalize something?
-
       console.log( 't for x:' );
-      console.log( -player.dx + Math.sqrt( Math.pow( player.dx, 2 ) + 2 * ax * nextDist ) / ax );
-      console.log( -player.dx - Math.sqrt( Math.pow( player.dx, 2 ) + 2 * ax * nextDist ) / ax );
+      console.log( -player.dx + Math.sqrt( Math.pow( player.dx, 2 ) + 2 * ax * slopeX * nextDist ) / ax );
+      console.log( -player.dx - Math.sqrt( Math.pow( player.dx, 2 ) + 2 * ax * slopeX * nextDist ) / ax );
 
       console.log( 't for y:' );
-      console.log( -player.dy + Math.sqrt( Math.pow( player.dy, 2 ) + 2 * ay * nextDist ) / ay );
-      console.log( -player.dy - Math.sqrt( Math.pow( player.dy, 2 ) + 2 * ay * nextDist ) / ay );
+      console.log( -player.dy + Math.sqrt( Math.pow( player.dy, 2 ) + 2 * ay * slopeY * nextDist ) / ay );
+      console.log( -player.dy - Math.sqrt( Math.pow( player.dy, 2 ) + 2 * ay * slopeY * nextDist ) / ay );
 
-      const dt = -player.dx + Math.sqrt( Math.pow( player.dx, 2 ) + 2 * ax * nextDist ) / ax;
+      const dt = -player.dx + Math.sqrt( Math.pow( player.dx, 2 ) + 2 * ax * slopeX * nextDist ) / ax;
 
       player.x += player.dx * dt + 0.5 * a * Math.cos( slopeAngle ) * dt * dt;
       player.y += player.dy * dt + 0.5 * a * Math.sin( slopeAngle ) * dt * dt;
