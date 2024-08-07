@@ -95,7 +95,7 @@ export class Line {
     }
   }
   
-  getTestHit( entity, slopeX, slopeY ) {
+  getSlopeDist( entity, slopeX, slopeY ) {
     const normalAngle = this.normalAngle;
     const normX = Math.cos( normalAngle ) * entity.radius;
     const normY = Math.sin( normalAngle ) * entity.radius;
@@ -114,16 +114,17 @@ export class Line {
       const uA = ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D;
       const uB = ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D;
 
-      console.log( 'uA: ' + uA );
-      console.log( 'uB: ' + uB );
+      // console.log( 'uA: ' + uA );
+      // console.log( 'uB: ' + uB );
 
+      // TODO: Haven't really tested these cases, not sure how often they come up when following slope
       if ( uA <= 0 ) {
         console.warn( 'left' );
-        return getTestHitPoint( entity, slopeX, slopeY, this.x1, this.y1 );
+        return getSlopeDistPoint( entity, slopeX, slopeY, this.x1, this.y1 );
       }
       else if ( 1 <= uA ) {
         console.warn( 'right' );
-        return getTestHitPoint( entity, slopeX, slopeY, this.x2, this.y2 );
+        return getSlopeDistPoint( entity, slopeX, slopeY, this.x2, this.y2 );
       }
       else {
         return uB;
@@ -152,7 +153,7 @@ function timeToHitPoint( entity, cx, cy ) {
   }
 }
 
-function getTestHitPoint( entity, slopeX, slopeY, cx, cy ) {
+function getSlopeDistPoint( entity, slopeX, slopeY, cx, cy ) {
   const dX = slopeX;
   const dY = slopeY;
   const fX = entity.x - cx;
