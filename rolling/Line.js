@@ -119,11 +119,11 @@ export class Line {
 
       // TODO: Haven't really tested these cases, not sure how often they come up when following slope
       if ( uA <= 0 ) {
-        console.warn( 'left' );
+        // console.warn( 'left' );
         return getSlopeDistPoint( entity, slopeX, slopeY, this.x1, this.y1 );
       }
       else if ( 1 <= uA ) {
-        console.warn( 'right' );
+        // console.warn( 'right' );
         return getSlopeDistPoint( entity, slopeX, slopeY, this.x2, this.y2 );
       }
       else {
