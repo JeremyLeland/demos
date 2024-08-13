@@ -55,7 +55,8 @@
 
     const colors = [ 'red', 'orange', 'yellow', 'tan', 'purple' ];
 
-    const previousLines = new Set();
+    // const previousLines = new Set();
+    let previousLine;
 
     let currentLine = null, currentDist = Infinity;
     lines.forEach( line => {
@@ -67,7 +68,7 @@
     } );
 
     if ( currentLine ) {
-      previousLines.add( currentLine );
+      // previousLines.add( currentLine );
 
       ctx.strokeStyle = 'green';
       currentLine.draw( ctx );
@@ -94,75 +95,109 @@
       player.dx = slopeX * speed;
       player.dy = slopeY * speed;
 
-      let nextLine = null, nextDist = Infinity;
+      const a = GRAVITY * Math.cos( normalAngle );
+      const ax = a * slopeX;
+      const ay = a * slopeY;
+
+      let nextLine = null, /*nextDist = Infinity,*/ nextTime = dt;
       lines.forEach( line => {
-        if ( !previousLines.has( line ) ) {
+        // if ( !previousLines.has( line ) ) {
+        if ( /*previousLine != line &&*/ currentLine != line ) {
+          console.log( 'Checking line: ' + JSON.stringify( line ) );
+
           const dist = line.getSlopeDist( player, slopeX, slopeY );
 
-          if ( dist < nextDist ) {
-            nextLine = line;
-            nextDist = dist;
+          // https://physics.info/motion-equations/
+          // t = ( -v0 +- Math.sqrt( v0*v0 + 2 * a * dist ) ) / a
+          const discX = Math.pow( player.dx, 2 ) + 2 * ax * slopeX * dist;
+          const discY = Math.pow( player.dy, 2 ) + 2 * ay * slopeY * dist;
+
+          console.log( 'discX:' + discX );
+          console.log( 'discY:' + discY );
+
+          if ( discX >= 0 && discY >= 0 ) {
+            const dtX1 = ( -player.dx - Math.sqrt( discX ) ) / ax;
+            const dtX2 = ( -player.dx + Math.sqrt( discX ) ) / ax;
+            const dtY1 = ( -player.dy - Math.sqrt( discY ) ) / ay;
+            const dtY2 = ( -player.dy + Math.sqrt( discY ) ) / ay;
+
+            console.log( 'dtX1: ' + dtX1 );
+            console.log( 'dtX2: ' + dtX2 );
+            console.log( 'dtY1: ' + dtY1 );
+            console.log( 'dtY2: ' + dtY2 );
+
+            let time = nextTime;
+            if ( EPSILON <= dtX1 && dtX1 < time )   time = dtX1;
+            if ( EPSILON <= dtX2 && dtX2 < time )   time = dtX2;
+            if ( EPSILON <= dtY1 && dtY1 < time )   time = dtY1;
+            if ( EPSILON <= dtY2 && dtY2 < time )   time = dtY2;
+
+            console.log( 'time = ' + time + ", nextTime = " + nextTime );
+ 
+            if ( EPSILON < time && time < nextTime ) {
+              nextLine = line;
+              // nextDist = dist;
+              nextTime = time;
+            }
           }
         }
       } );
 
       if ( nextLine ) {
-        previousLines.add( nextLine );
+        // previousLines.add( nextLine );
 
-        const a = GRAVITY * Math.cos( normalAngle );
-        const ax = a * Math.cos( slopeAngle );
-        const ay = a * Math.sin( slopeAngle );
+        
 
-        console.log( 'nextDist = ' + nextDist );
+        // console.log( 'nextDist = ' + nextDist );
 
-        const nextX = player.x + slopeX * nextDist;
-        const nextY = player.y + slopeY * nextDist;
+        // const nextX = player.x + slopeX * nextDist;
+        // const nextY = player.y + slopeY * nextDist;
 
-        ctx.beginPath();
-        ctx.moveTo( player.x, player.y );
-        ctx.lineTo( nextX, nextY );
-        ctx.arc( nextX, nextY, player.radius, 0, Math.PI * 2 );
-        ctx.strokeStyle = 'gray';
-        ctx.stroke();
+        // ctx.beginPath();
+        // ctx.moveTo( player.x, player.y );
+        // ctx.lineTo( nextX, nextY );
+        // ctx.arc( nextX, nextY, player.radius, 0, Math.PI * 2 );
+        // ctx.strokeStyle = 'gray';
+        // ctx.stroke();
 
         ctx.strokeStyle = colors[ step ];
         nextLine.draw( ctx );
 
-        // https://physics.info/motion-equations/
-        // t = ( -v0 +- Math.sqrt( v0*v0 + 2 * a * dist ) ) / a
-        const discX = Math.max( 0, Math.pow( player.dx, 2 ) + 2 * ax * slopeX * nextDist );
-        const dtX = ( -player.dx + Math.sqrt( discX ) ) / ax;
-        console.log( 'dtX: ' + dtX );
-
-        const discY = Math.max( 0, Math.pow( player.dy, 2 ) + 2 * ay * slopeY * nextDist );
-        const dtY = ( -player.dy + Math.sqrt( discY ) ) / ay;
-        console.log( 'dtY: ' + dtY );
-
         console.log( 'dt remaining: ' + dt );
 
-        const updateTime = Math.min( dtX, dtY, dt );
+        //const nextTime = Math.min( dtX, dtY, dt );
 
-        console.log( 'updateTime: ' + updateTime );
+        console.log( 'nextTime: ' + nextTime );
         
-        player.x += player.dx * updateTime + 0.5 * ax * updateTime * updateTime;
-        player.y += player.dy * updateTime + 0.5 * ay * updateTime * updateTime;
+        player.x += player.dx * nextTime + 0.5 * ax * nextTime * nextTime;
+        player.y += player.dy * nextTime + 0.5 * ay * nextTime * nextTime;
         
-        player.dx += ax * updateTime;
-        player.dy += ay * updateTime;
+        player.dx += ax * nextTime;
+        player.dy += ay * nextTime;
         
         drawPlayer( ctx, colors[ step ] );
         
-        dt -= updateTime;
+        dt -= nextTime;
 
         if ( dt <= 0 ) {
           console.log( 'No dt remaining' );
           break;
         }
 
+        previousLine = currentLine;
         currentLine = nextLine;
       }
       else {
         console.log( 'no next line found! (should go balistic eventually)' );
+
+        player.x += player.dx * nextTime + 0.5 * ax * nextTime * nextTime;
+        player.y += player.dy * nextTime + 0.5 * ay * nextTime * nextTime;
+        
+        player.dx += ax * nextTime;
+        player.dy += ay * nextTime;
+        
+        drawPlayer( ctx, colors[ step ] );
+
         break;
       }
     }
