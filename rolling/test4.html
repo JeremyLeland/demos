@@ -5,7 +5,7 @@
   import { Canvas } from './Canvas.js';
   import { Line } from './Line.js';
 
-  const player = { x: -6, y: 1, dx: 0, dy: 0, radius: 0.5 };
+  const player = { x: -6, y: 2, dx: 0, dy: 0, radius: 0.5 };
 
   const points = [ 
     [ -7, -1 ], [ -3, 4 ], [ 5, 5 ], [ 7, 4 ], [ 10, 2 ], [ 11, -4 ], [ 11, -5 ]
@@ -33,23 +33,20 @@
   canvas.scrollY = 8;
 
   canvas.update = ( dt ) => {
-    //
-    // Get us out of any existing collisions first
-    //
-
-    const previousLines = new Set();
+    // const previousLines = new Set();
+    let previousLine;
 
     let currentLine = null, currentDist = Infinity;
     lines.forEach( line => {
       const dist = line.distanceFrom( player );
-      if ( /*dist <= 0 &&*/ Math.abs( dist ) < Math.abs( currentDist ) ) {
+      if ( /*dist <= 0 && */ Math.abs( dist ) < Math.abs( currentDist ) ) {
         currentLine = line;
         currentDist = dist;
       }
     } );
 
     if ( currentLine ) {
-      previousLines.add( currentLine );
+      // previousLines.add( currentLine );
 
       const normalAngle = currentLine.normalAngle;
       const slopeAngle = currentLine.slopeAngle;
@@ -57,68 +54,87 @@
       player.x -= Math.cos( normalAngle ) * currentDist;
       player.y -= Math.sin( normalAngle ) * currentDist;
     }
-    else {
-      debugger;
-    }
 
     for ( let step = 0; step < 5; step ++ ) {
       const normalAngle = currentLine.normalAngle;
       const slopeAngle = currentLine.slopeAngle;
 
-      const slopeX = Math.cos( slopeAngle );
-      const slopeY = Math.sin( slopeAngle );
+      let slopeX = Math.cos( slopeAngle );
+      let slopeY = Math.sin( slopeAngle );
+
+      // Figure out gravity vector before we alter slope for direction of travel
+      const a = GRAVITY * Math.cos( normalAngle );
+      const ax = a * slopeX;
+      const ay = a * slopeY;
+
+      const proj = player.dx * slopeX + player.dy * slopeY;
+
+      if ( proj < 0 ) {
+        slopeX = -slopeX;
+        slopeY = -slopeY;
+      }
 
       const speed = Math.hypot( player.dx, player.dy );
       player.dx = slopeX * speed;
       player.dy = slopeY * speed;
 
-      let nextLine = null, nextDist = Infinity;
+      let nextLine = null, /*nextDist = Infinity,*/ nextTime = dt;
       lines.forEach( line => {
-        if ( !previousLines.has( line ) ) {
+        // if ( !previousLines.has( line ) ) {
+        if ( /*previousLine != line &&*/ currentLine != line ) {
           const dist = line.getSlopeDist( player, slopeX, slopeY );
 
-          if ( 0 < dist && dist < nextDist ) {
-            nextLine = line;
-            nextDist = dist;
+          // https://physics.info/motion-equations/
+          // t = ( -v0 +- Math.sqrt( v0*v0 + 2 * a * dist ) ) / a
+          const discX = Math.pow( player.dx, 2 ) + 2 * ax * slopeX * dist;
+          const discY = Math.pow( player.dy, 2 ) + 2 * ay * slopeY * dist;
+
+          if ( discX >= 0 && discY >= 0 ) {
+            const dtX1 = ( -player.dx - Math.sqrt( discX ) ) / ax;
+            const dtX2 = ( -player.dx + Math.sqrt( discX ) ) / ax;
+            const dtY1 = ( -player.dy - Math.sqrt( discY ) ) / ay;
+            const dtY2 = ( -player.dy + Math.sqrt( discY ) ) / ay;
+
+            let time = nextTime;
+            if ( EPSILON <= dtX1 && dtX1 < time )   time = dtX1;
+            if ( EPSILON <= dtX2 && dtX2 < time )   time = dtX2;
+            if ( EPSILON <= dtY1 && dtY1 < time )   time = dtY1;
+            if ( EPSILON <= dtY2 && dtY2 < time )   time = dtY2;
+
+            if ( EPSILON < time && time < nextTime ) {
+              nextLine = line;
+              // nextDist = dist;
+              nextTime = time;
+            }
           }
         }
       } );
 
       if ( nextLine ) {
-        previousLines.add( nextLine );
-
-        const a = GRAVITY * Math.cos( normalAngle );
-        const ax = a * Math.cos( slopeAngle );
-        const ay = a * Math.sin( slopeAngle );
-
-        const nextX = player.x + slopeX * nextDist;
-        const nextY = player.y + slopeY * nextDist;
-
-        // https://physics.info/motion-equations/
-        // t = ( -v0 +- Math.sqrt( v0*v0 + 2 * a * dist ) ) / a
-        const discX = Math.max( 0, Math.pow( player.dx, 2 ) + 2 * ax * slopeX * nextDist );
-        const dtX = ( -player.dx + Math.sqrt( discX ) ) / ax;
-
-        const discY = Math.max( 0, Math.pow( player.dy, 2 ) + 2 * ay * slopeY * nextDist );
-        const dtY = ( -player.dy + Math.sqrt( discY ) ) / ay;
-
-        const updateTime = Math.min( dtX, dtY, dt );
+        // previousLines.add( nextLine );
         
-        player.x += player.dx * updateTime + 0.5 * ax * updateTime * updateTime;
-        player.y += player.dy * updateTime + 0.5 * ay * updateTime * updateTime;
+        player.x += player.dx * nextTime + 0.5 * ax * nextTime * nextTime;
+        player.y += player.dy * nextTime + 0.5 * ay * nextTime * nextTime;
         
-        player.dx += ax * updateTime;
-        player.dy += ay * updateTime;
+        player.dx += ax * nextTime;
+        player.dy += ay * nextTime;
         
-        dt -= updateTime;
+        dt -= nextTime;
 
         if ( dt <= 0 ) {
           break;
         }
 
+        previousLine = currentLine;
         currentLine = nextLine;
       }
       else {
+        player.x += player.dx * nextTime + 0.5 * ax * nextTime * nextTime;
+        player.y += player.dy * nextTime + 0.5 * ay * nextTime * nextTime;
+        
+        player.dx += ax * nextTime;
+        player.dy += ay * nextTime;
+        
         break;
       }
     }
@@ -142,11 +158,11 @@
     ctx.fillStyle = color;
     ctx.fill();
 
-    ctx.font = '0.4px Arial';
-    ctx.fillText( `x = ${ player.x }`, player.x + 1, player.y - 1 );
-    ctx.fillText( `y = ${ player.y }`, player.x + 1, player.y - 0.5 );
-    ctx.fillText( `dx = ${ player.dx }`, player.x + 1, player.y + 0 );
-    ctx.fillText( `dy = ${ player.dy }`, player.x + 1, player.y + 0.5 );
+    // ctx.font = '0.4px Arial';
+    // ctx.fillText( `x = ${ player.x }`, player.x + 1, player.y - 1 );
+    // ctx.fillText( `y = ${ player.y }`, player.x + 1, player.y - 0.5 );
+    // ctx.fillText( `dx = ${ player.dx }`, player.x + 1, player.y + 0 );
+    // ctx.fillText( `dy = ${ player.dy }`, player.x + 1, player.y + 0.5 );
   }
 
   function getSlope( line ) {
