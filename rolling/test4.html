@@ -23,7 +23,7 @@
   const GRAVITY = 0.00001;
 
   const ROLL_ANGLE = 0.5;
-  const ROLL_FRICTION = 0;
+  const ROLL_FRICTION = 0.5;
   const BOUNCE_FRICTION = 0.95;
   const BOUNCINESS = 0.5;
 
@@ -91,7 +91,11 @@
       // Find stop time, see if that is before next line
       // Do we need to account for difference between static friction and kinetic friction?
       // Difference between slowing to a stop on a downhill and slowing to change direction on uphill
-      // const brakeDistance = 
+      const brakeDistance = Math.pow( speed, 2 ) / ( 2 * ROLL_FRICTION * GRAVITY );
+
+      const brakeTime = ( 2 * brakeDistance ) / ( 0 + speed );
+
+      console.log( `brakeDist = ${ brakeDistance }, brakeTime = ${ brakeTime }` );
 
       let nextLine = null, /*nextDist = Infinity,*/ nextTime = dt;
       lines.forEach( line => {
@@ -108,6 +112,8 @@
             const dt2 = ( -speed + Math.sqrt( disc ) ) / a;
 
             const time = dt1 < dt2 && EPSILON <= dt1 ? dt1 : dt2;
+
+            // console.log( `lineDist = ${ dist }, lineTime = ${ time }` );
 
             if ( EPSILON < time && time < nextTime ) {
               nextLine = line;
