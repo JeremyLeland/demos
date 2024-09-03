@@ -23,7 +23,7 @@
   const GRAVITY = 0.00001;
 
   const ROLL_ANGLE = 0.5;
-  const ROLL_FRICTION = 0.5;
+  const ROLL_FRICTION = 0.2; //0.5;
   const BOUNCE_FRICTION = 0.95;
   const BOUNCINESS = 0.5;
 
@@ -59,33 +59,25 @@
       const normalAngle = currentLine.normalAngle;
       const slopeAngle = currentLine.slopeAngle;
 
-      let slopeX = Math.cos( slopeAngle );
-      let slopeY = Math.sin( slopeAngle );
+      const lineSlopeX = Math.cos( slopeAngle );
+      const lineSlopeY = Math.sin( slopeAngle );
 
-      // Figure out gravity vector before we alter slope for direction of travel
+      const proj = player.dx * lineSlopeX + player.dy * lineSlopeY;
 
-      const proj = player.dx * slopeX + player.dy * slopeY;
-
-      if ( proj < 0 ) {
-        slopeX = -slopeX;
-        slopeY = -slopeY;
-      }
+      const playerSlopeX = proj < 0 ? -lineSlopeX : lineSlopeX;
+      const playerSlopeY = proj < 0 ? -lineSlopeY : lineSlopeY;
 
       const speed = Math.hypot( player.dx, player.dy );
-      player.dx = slopeX * speed;
-      player.dy = slopeY * speed;
+      player.dx = playerSlopeX * speed;
+      player.dy = playerSlopeY * speed;
 
+      // https://stickmanphysics.com/stickman-physics-home/forces/incline-planes/
+      const a = GRAVITY * ( lineSlopeY - ROLL_FRICTION * playerSlopeX );    // TODO: base friction on line slope or player slope?
 
-// https://stickmanphysics.com/stickman-physics-home/forces/incline-planes/
-// const a = GRAVITY * ( Math.sin( slopeAngle ) - ROLL_FRICTION * Math.cos( slopeAngle ) ); 
+      // console.log( `a = ${ a }` );
 
-      // TODO: How does friction fit in here?
-
-      // const a = GRAVITY * Math.cos( normalAngle );
-      const a = GRAVITY * ( slopeY - ROLL_FRICTION * slopeX ); 
-
-      const ax = a * slopeX;
-      const ay = a * slopeY;
+      const ax = a * lineSlopeX;
+      const ay = a * lineSlopeY;
       
 
       // Find stop time, see if that is before next line
@@ -93,15 +85,15 @@
       // Difference between slowing to a stop on a downhill and slowing to change direction on uphill
       const brakeDistance = Math.pow( speed, 2 ) / ( 2 * ROLL_FRICTION * GRAVITY );
 
-      const brakeTime = ( 2 * brakeDistance ) / ( 0 + speed );
+      const brakeTime = speed == 0 ? Infinity : ( 2 * brakeDistance ) / ( 0 + speed );
 
-      console.log( `brakeDist = ${ brakeDistance }, brakeTime = ${ brakeTime }` );
+      // console.log( `brakeDist = ${ brakeDistance }, brakeTime = ${ brakeTime }` );
 
-      let nextLine = null, /*nextDist = Infinity,*/ nextTime = dt;
+      let nextLine = null, /*nextDist = Infinity,*/ nextTime = Math.min( dt, brakeTime );
       lines.forEach( line => {
         // if ( !previousLines.has( line ) ) {
         if ( /*previousLine != line &&*/ currentLine != line ) {
-          const dist = line.getSlopeDist( player, slopeX, slopeY );
+          const dist = line.getSlopeDist( player, playerSlopeX, playerSlopeY );
 
           // https://physics.info/motion-equations/
           // t = ( -v0 +- Math.sqrt( v0*v0 + 2 * a * dist ) ) / a
