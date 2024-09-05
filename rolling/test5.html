@@ -28,8 +28,8 @@
 
   const ROLL_ANGLE = 0.5;
   const ROLL_FRICTION = 0.2; //0.5;
-  const BOUNCE_FRICTION = 0.95;
-  const BOUNCINESS = 0.5;
+  const BOUNCE_DAMPING = 0.7;
+  const BOUNCE_FRICTION = 0.05;
 
   const canvas = new Canvas();
   canvas.zoom = 1 / 16;
@@ -60,7 +60,26 @@
       player.x -= Math.cos( normalAngle ) * currentDist;
       player.y -= Math.sin( normalAngle ) * currentDist;
 
-      // TODO: Bounce or snap
+      const playerAngle = Math.atan2( player.dy, player.dx );
+
+      if ( Math.abs( deltaAngle( slopeAngle, playerAngle ) ) < ROLL_ANGLE ||
+           Math.abs( deltaAngle( playerAngle, slopeAngle + Math.PI ) ) < ROLL_ANGLE ) {
+        // roll
+      }
+      else {
+        const normX = Math.cos( normalAngle );
+        const normY = Math.sin( normalAngle );
+        const vDotN = player.dx * normX + player.dy * normY;
+
+        const lineSlopeX = Math.cos( slopeAngle );
+        const lineSlopeY = Math.sin( slopeAngle );
+        const vDotF = player.dx * lineSlopeX + player.dy * lineSlopeY;
+
+        player.dx -= 2 * vDotN * normX * BOUNCE_DAMPING + vDotF * lineSlopeX * BOUNCE_FRICTION;
+        player.dy -= 2 * vDotN * normY * BOUNCE_DAMPING + vDotF * lineSlopeY * BOUNCE_FRICTION;
+
+        currentLine = null;
+      }
     }
 
     let nextTime = dt;
