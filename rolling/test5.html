@@ -38,24 +38,13 @@
 
   let running = true;
 
-  let debugTouchingLines, debugCurrentLine;
+  let debugCurrentLine;
 
   canvas.update = ( dt ) => {
-    // const previousLines = new Set();
-    let previousLine;
-
-    // TODO: Detect overlapping multiple lines, back us out of all of them?
-    debugTouchingLines = [];
-
     let currentLine = null, currentDist = 1;  // currentDist start value is "snap" distance
     lines.forEach( line => {
       const dist = line.distanceFrom( player );
       
-      if ( dist < 0.1 ) {
-        debugTouchingLines.push( line );
-      }
-
-      // if ( /*dist <= 0 && */ Math.abs( dist ) < Math.abs( currentDist ) ) {
       if ( dist < currentDist ) {
         currentLine = line;
         currentDist = dist;
@@ -65,8 +54,6 @@
     debugCurrentLine = currentLine;
 
     if ( currentLine ) {
-      // previousLines.add( currentLine );
-
       const normalAngle = currentLine.normalAngle;
       const slopeAngle = currentLine.slopeAngle;
 
@@ -92,26 +79,18 @@
 
       // https://stickmanphysics.com/stickman-physics-home/forces/incline-planes/
       const a = GRAVITY * ( lineSlopeY - ROLL_FRICTION * playerSlopeX );    // TODO: base friction on line slope or player slope?
-
-      // console.log( `a = ${ a }` );
-
       const ax = a * lineSlopeX;
       const ay = a * lineSlopeY;
-      
 
       // Find stop time, see if that is before next line
       // Do we need to account for difference between static friction and kinetic friction?
       // Difference between slowing to a stop on a downhill and slowing to change direction on uphill
       const brakeDistance = Math.pow( speed, 2 ) / ( 2 * ROLL_FRICTION * GRAVITY );
-
       const brakeTime = speed == 0 ? Infinity : ( 2 * brakeDistance ) / ( 0 + speed );
-
-      // console.log( `brakeDist = ${ brakeDistance }, brakeTime = ${ brakeTime }` );
 
       let nextLine = null, /*nextDist = Infinity,*/ nextTime = Math.min( dt, brakeTime );
       lines.forEach( line => {
-        // if ( !previousLines.has( line ) ) {
-        if ( /*previousLine != line &&*/ currentLine != line ) {
+        if ( currentLine != line ) {
           const dist = line.getSlopeDist( player, playerSlopeX, playerSlopeY );
 
           // https://physics.info/motion-equations/
@@ -124,8 +103,6 @@
 
             const time = dt1 < dt2 && EPSILON <= dt1 ? dt1 : dt2;
 
-            // console.log( `lineDist = ${ dist }, lineTime = ${ time }` );
-
             if ( EPSILON < time && time < nextTime ) {
               nextLine = line;
               nextTime = time;
@@ -134,9 +111,7 @@
         }
       } );
 
-      if ( nextLine ) {
-        // previousLines.add( nextLine );
-        
+      if ( nextLine ) {        
         player.x += player.dx * nextTime + 0.5 * ax * nextTime * nextTime;
         player.y += player.dy * nextTime + 0.5 * ay * nextTime * nextTime;
         
@@ -149,7 +124,6 @@
           break;
         }
 
-        previousLine = currentLine;
         currentLine = nextLine;
       }
       else {
@@ -172,9 +146,6 @@
 
     drawPlayer( ctx, 'white' );
 
-    ctx.strokeStyle = 'red';
-    debugTouchingLines.forEach( line => line.draw( ctx ) );
-
     ctx.strokeStyle = 'yellow';
     debugCurrentLine.draw( ctx );
   }
@@ -187,12 +158,6 @@
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
-
-    // ctx.font = '0.4px Arial';
-    // ctx.fillText( `x = ${ player.x }`, player.x + 1, player.y - 1 );
-    // ctx.fillText( `y = ${ player.y }`, player.x + 1, player.y - 0.5 );
-    // ctx.fillText( `dx = ${ player.dx }`, player.x + 1, player.y + 0 );
-    // ctx.fillText( `dy = ${ player.dy }`, player.x + 1, player.y + 0.5 );
   }
 
   function getSlope( line ) {
