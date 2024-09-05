@@ -1,0 +1,114 @@
+<title>Test Line.distanceFrom()</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import { Line } from './Line.js';
+
+  const entity = { x: 0, y: 1, dx: 0, dy: 0, radius: 0.5 };
+
+  const line = new Line( 0, 0, 1, 0.5 );
+ 
+  const SIZE = 8;
+
+  const canvas = new Canvas();
+  canvas.zoom = 1 / SIZE;
+  canvas.scrollX = SIZE / 2;
+  canvas.scrollY = SIZE / 2;
+
+  canvas.draw = ( ctx ) => {
+
+    ctx.strokeStyle = 'green';
+    line.draw( ctx );
+
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc( entity.x, entity.y, entity.radius, 0, Math.PI * 2 );
+    ctx.closePath();
+    ctx.fill();
+
+    // Line.distanceFrom
+    const px = line.x2 - line.x1;
+    const py = line.y2 - line.y1;
+    const D = ( px * px ) + ( py * py );
+
+    const len = Math.sqrt( D );
+    const normalAngle = line.normalAngle;
+    const normX = Math.cos( normalAngle );
+    const normY = Math.sin( normalAngle );
+    
+    const u = ( ( entity.x - line.x1 ) * px + ( entity.y - line.y1 ) * py ) / D;
+    const offset = 0; //entity.radius / len;
+
+    ctx.beginPath();
+    ctx.moveTo( entity.x, entity.y );
+    ctx.lineTo( line.x1 + u * px, line.y1 + u * py );
+    ctx.strokeStyle = 'red';
+    ctx.stroke();
+
+    ctx.font = `${ canvas.zoom }px Arial`;
+    ctx.fillText( 'u = ' + u, entity.x + entity.radius, entity.y - canvas.zoom );
+    ctx.fillText( 'offset = ' + offset, entity.x + entity.radius, entity.y );
+
+    if ( u + offset <= 0 ) {
+      const dist = Math.hypot( entity.x - line.x1, entity.y - line.y1 ) - entity.radius;
+
+      ctx.fillStyle = ctx.strokeStyle = 'orange';
+      ctx.fillText( 'dist = ' + dist, entity.x + entity.radius, entity.y + canvas.zoom );
+
+      ctx.beginPath();
+      ctx.moveTo( entity.x, entity.y );
+      ctx.lineTo( line.x1, line.y1 );
+      ctx.stroke();
+    }
+    else if ( 1 <= u - offset ) {
+      const dist = Math.hypot( entity.x - line.x2, entity.y - line.y2 ) - entity.radius;
+
+      ctx.fillStyle = ctx.strokeStyle = 'yellow';
+      ctx.fillText( 'dist = ' + dist, entity.x + entity.radius, entity.y + canvas.zoom );
+
+      ctx.beginPath();
+      ctx.moveTo( entity.x, entity.y );
+      ctx.lineTo( line.x2, line.y2 );
+      ctx.stroke();
+    }
+    else {
+      const dist = ( entity.x - line.x1 ) * normX + ( entity.y - line.y1 ) * normY - entity.radius;
+
+      ctx.fillStyle = ctx.strokeStyle = 'lime';
+      ctx.fillText( 'dist = ' + dist, entity.x + entity.radius, entity.y + canvas.zoom );
+
+      ctx.beginPath();
+      ctx.moveTo( entity.x, entity.y );
+      ctx.lineTo( line.x1 + u * px, line.y1 + u * py );
+      ctx.stroke();
+    }
+
+  }
+
+  function doMouse( e ) {
+    const mouseX = canvas.getPointerX( e );
+    const mouseY = canvas.getPointerY( e );
+
+    entity.x = mouseX;
+    entity.y = mouseY;
+
+    canvas.redraw();
+  }
+
+  let mouseDown = false;
+
+  document.addEventListener( 'pointerdown', e => {
+    mouseDown = true;
+    doMouse( e )
+  } );
+  document.addEventListener( 'pointermove', e => {
+    if ( mouseDown ) {
+      doMouse( e );
+    }
+  } );
+  document.addEventListener( 'pointerup', e => {
+    mouseDown = false;
+  } );
+  
+</script>

@@ -52,7 +52,7 @@ export class Line {
     const normY = Math.sin( normalAngle );
     
     const u = ( ( entity.x - this.x1 ) * px + ( entity.y - this.y1 ) * py ) / D;
-    const offset = entity.radius / len;
+    const offset = 0; //entity.radius / len;
 
     if ( u + offset <= 0 ) {
       return Math.hypot( entity.x - this.x1, entity.y - this.y1 ) - entity.radius;
