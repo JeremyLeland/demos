@@ -6,7 +6,7 @@
   import { Line } from './Line.js';
 
   // const player = { x: -6, y: 2, dx: 0, dy: 0, radius: 0.5 };
-  const player = { x: -5.5, y: 2, dx: 0, dy: 0, radius: 0.5 };
+  const player = { x: -5, y: 2, dx: 0, dy: 0, radius: 0.5 };
 
   const points = [ 
     // [ -7, -1 ], [ -3, 4 ], [ 5, 5 ], [ 7, 4 ], [ 10, 2 ], [ 11, -4 ], [ 11, -5 ]
@@ -41,7 +41,7 @@
   let debugCurrentLine;
 
   canvas.update = ( dt ) => {
-    let currentLine = null, currentDist = 1;  // currentDist start value is "snap" distance
+    let currentLine = null, currentDist = EPSILON;  // currentDist start value is "snap" distance
     lines.forEach( line => {
       const dist = line.distanceFrom( player );
       
@@ -59,80 +59,77 @@
 
       player.x -= Math.cos( normalAngle ) * currentDist;
       player.y -= Math.sin( normalAngle ) * currentDist;
+
+      // TODO: Bounce or snap
     }
 
+    let nextTime = dt;
+
     for ( let step = 0; step < 5; step ++ ) {
-      const normalAngle = currentLine.normalAngle;
-      const slopeAngle = currentLine.slopeAngle;
 
-      const lineSlopeX = Math.cos( slopeAngle );
-      const lineSlopeY = Math.sin( slopeAngle );
+      let ax, ay;
 
-      const proj = player.dx * lineSlopeX + player.dy * lineSlopeY;
+      if ( currentLine ) {
+        const normalAngle = currentLine.normalAngle;
+        const slopeAngle = currentLine.slopeAngle;
 
-      const playerSlopeX = proj < 0 ? -lineSlopeX : lineSlopeX;
-      const playerSlopeY = proj < 0 ? -lineSlopeY : lineSlopeY;
+        const lineSlopeX = Math.cos( slopeAngle );
+        const lineSlopeY = Math.sin( slopeAngle );
 
-      const speed = Math.hypot( player.dx, player.dy );
-      player.dx = playerSlopeX * speed;
-      player.dy = playerSlopeY * speed;
+        const proj = player.dx * lineSlopeX + player.dy * lineSlopeY;
 
-      // https://stickmanphysics.com/stickman-physics-home/forces/incline-planes/
-      const a = GRAVITY * ( lineSlopeY - ROLL_FRICTION * playerSlopeX );    // TODO: base friction on line slope or player slope?
-      const ax = a * lineSlopeX;
-      const ay = a * lineSlopeY;
+        const playerSlopeX = proj < 0 ? -lineSlopeX : lineSlopeX;
+        const playerSlopeY = proj < 0 ? -lineSlopeY : lineSlopeY;
 
-      // Find stop time, see if that is before next line
-      // Do we need to account for difference between static friction and kinetic friction?
-      // Difference between slowing to a stop on a downhill and slowing to change direction on uphill
-      const brakeDistance = Math.pow( speed, 2 ) / ( 2 * ROLL_FRICTION * GRAVITY );
-      const brakeTime = speed == 0 ? Infinity : ( 2 * brakeDistance ) / ( 0 + speed );
+        const speed = Math.hypot( player.dx, player.dy );
+        player.dx = playerSlopeX * speed;
+        player.dy = playerSlopeY * speed;
 
-      let nextLine = null, /*nextDist = Infinity,*/ nextTime = Math.min( dt, brakeTime );
-      lines.forEach( line => {
-        if ( currentLine != line ) {
-          const dist = line.getSlopeDist( player, playerSlopeX, playerSlopeY );
+        // https://stickmanphysics.com/stickman-physics-home/forces/incline-planes/
+        const a = GRAVITY * ( lineSlopeY - ROLL_FRICTION * playerSlopeX );    // TODO: base friction on line slope or player slope?
+        ax = a * lineSlopeX;
+        ay = a * lineSlopeY;
 
-          // https://physics.info/motion-equations/
-          // t = ( -v0 +- Math.sqrt( v0*v0 + 2 * a * dist ) ) / a
-          const disc = Math.pow( speed, 2 ) + 2 * a * dist;
+        // Find stop time, see if that is before next line
+        // Do we need to account for difference between static friction and kinetic friction?
+        // Difference between slowing to a stop on a downhill and slowing to change direction on uphill
+        const brakeDistance = Math.pow( speed, 2 ) / ( 2 * ROLL_FRICTION * GRAVITY );
+        const brakeTime = speed == 0 ? Infinity : ( 2 * brakeDistance ) / ( 0 + speed );
 
-          if ( disc >= 0 ) {
-            const dt1 = ( -speed - Math.sqrt( disc ) ) / a;
-            const dt2 = ( -speed + Math.sqrt( disc ) ) / a;
+        nextTime = Math.min( dt, brakeTime );
 
-            const time = dt1 < dt2 && EPSILON <= dt1 ? dt1 : dt2;
+        let nextLine = null;
+        lines.forEach( line => {
+          if ( currentLine != line ) {
+            const dist = line.getSlopeDist( player, playerSlopeX, playerSlopeY );
+
+            const time = getTime( speed, a, dist );
 
             if ( EPSILON < time && time < nextTime ) {
               nextLine = line;
               nextTime = time;
             }
           }
-        }
-      } );
+        } );
 
-      if ( nextLine ) {        
-        player.x += player.dx * nextTime + 0.5 * ax * nextTime * nextTime;
-        player.y += player.dy * nextTime + 0.5 * ay * nextTime * nextTime;
-        
-        player.dx += ax * nextTime;
-        player.dy += ay * nextTime;
-        
-        dt -= nextTime;
-
-        if ( dt <= 0 ) {
-          break;
-        }
-
-        currentLine = nextLine;
+        if ( nextLine ) {
+          currentLine = nextLine;
+        } 
       }
       else {
-        player.x += player.dx * nextTime + 0.5 * ax * nextTime * nextTime;
-        player.y += player.dy * nextTime + 0.5 * ay * nextTime * nextTime;
-        
-        player.dx += ax * nextTime;
-        player.dy += ay * nextTime;
-        
+        ax = 0;
+        ay = GRAVITY;
+      }
+
+      player.x += player.dx * nextTime + 0.5 * ax * nextTime * nextTime;
+      player.y += player.dy * nextTime + 0.5 * ay * nextTime * nextTime;
+      
+      player.dx += ax * nextTime;
+      player.dy += ay * nextTime;
+      
+      dt -= nextTime;
+
+      if ( dt <= 0 ) {
         break;
       }
     }
@@ -146,8 +143,10 @@
 
     drawPlayer( ctx, 'white' );
 
-    ctx.strokeStyle = 'yellow';
-    debugCurrentLine.draw( ctx );
+    if ( debugCurrentLine ) {
+      ctx.strokeStyle = 'yellow';
+      debugCurrentLine.draw( ctx );
+    }
   }
 
   canvas.start();
@@ -164,7 +163,21 @@
     return Math.atan2( line.y2 - line.y1, line.x2 - line.x1 );
   }
 
+  function getTime( speed, accel, dist ) {
+    // https://physics.info/motion-equations/
+    // t = ( -v0 +- Math.sqrt( v0*v0 + 2 * a * dist ) ) / a
+    const disc = Math.pow( speed, 2 ) + 2 * accel * dist;
 
+    if ( disc < 0 ) {
+      return Infinity;
+    }
+    else {
+      const dt1 = ( -speed - Math.sqrt( disc ) ) / accel;
+      const dt2 = ( -speed + Math.sqrt( disc ) ) / accel;
+
+      return dt1 < dt2 && EPSILON <= dt1 ? dt1 : dt2;
+    }
+  }
 
   function fixAngle( a ) {
     return a > Math.PI ? a - Math.PI * 2 : a < -Math.PI ? a + Math.PI * 2 : a;
