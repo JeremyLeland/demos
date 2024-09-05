@@ -1,0 +1,238 @@
+<title>Fly as well as roll</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import { Line } from './Line.js';
+
+  // const player = { x: -6, y: 2, dx: 0, dy: 0, radius: 0.5 };
+  const player = { x: -5.5, y: 2, dx: 0, dy: 0, radius: 0.5 };
+
+  const points = [ 
+    // [ -7, -1 ], [ -3, 4 ], [ 5, 5 ], [ 7, 4 ], [ 10, 2 ], [ 11, -4 ], [ 11, -5 ]
+  ];
+  for ( let x = -7; x <= 7; x += 0.5 ) {
+    points.push( [ x, -0.01 * x*x*x*x + 0.25*x*x + 5 ] );
+  }
+
+  const lines = [];
+  for ( let i = 0; i < points.length - 1; i ++ ) {
+    lines.push( new Line( ...points[ i ], ...points[ i + 1 ] ) );
+  }
+
+  const SIZE = 16;
+  let scrollX = 0.5, scrollY = 0.5;
+
+  const EPSILON = 1e-6;
+  const GRAVITY = 0.00001;
+
+  const ROLL_ANGLE = 0.5;
+  const ROLL_FRICTION = 0.2; //0.5;
+  const BOUNCE_FRICTION = 0.95;
+  const BOUNCINESS = 0.5;
+
+  const canvas = new Canvas();
+  canvas.zoom = 1 / 16;
+  canvas.scrollX = 8;
+  canvas.scrollY = 8;
+
+  let running = true;
+
+  let debugTouchingLines, debugCurrentLine;
+
+  canvas.update = ( dt ) => {
+    // const previousLines = new Set();
+    let previousLine;
+
+    // TODO: Detect overlapping multiple lines, back us out of all of them?
+    debugTouchingLines = [];
+
+    let currentLine = null, currentDist = 1;  // currentDist start value is "snap" distance
+    lines.forEach( line => {
+      const dist = line.distanceFrom( player );
+      
+      if ( dist < 0.1 ) {
+        debugTouchingLines.push( line );
+      }
+
+      // if ( /*dist <= 0 && */ Math.abs( dist ) < Math.abs( currentDist ) ) {
+      if ( dist < currentDist ) {
+        currentLine = line;
+        currentDist = dist;
+      }
+    } );
+
+    debugCurrentLine = currentLine;
+
+    if ( currentLine ) {
+      // previousLines.add( currentLine );
+
+      const normalAngle = currentLine.normalAngle;
+      const slopeAngle = currentLine.slopeAngle;
+
+      player.x -= Math.cos( normalAngle ) * currentDist;
+      player.y -= Math.sin( normalAngle ) * currentDist;
+    }
+
+    for ( let step = 0; step < 5; step ++ ) {
+      const normalAngle = currentLine.normalAngle;
+      const slopeAngle = currentLine.slopeAngle;
+
+      const lineSlopeX = Math.cos( slopeAngle );
+      const lineSlopeY = Math.sin( slopeAngle );
+
+      const proj = player.dx * lineSlopeX + player.dy * lineSlopeY;
+
+      const playerSlopeX = proj < 0 ? -lineSlopeX : lineSlopeX;
+      const playerSlopeY = proj < 0 ? -lineSlopeY : lineSlopeY;
+
+      const speed = Math.hypot( player.dx, player.dy );
+      player.dx = playerSlopeX * speed;
+      player.dy = playerSlopeY * speed;
+
+      // https://stickmanphysics.com/stickman-physics-home/forces/incline-planes/
+      const a = GRAVITY * ( lineSlopeY - ROLL_FRICTION * playerSlopeX );    // TODO: base friction on line slope or player slope?
+
+      // console.log( `a = ${ a }` );
+
+      const ax = a * lineSlopeX;
+      const ay = a * lineSlopeY;
+      
+
+      // Find stop time, see if that is before next line
+      // Do we need to account for difference between static friction and kinetic friction?
+      // Difference between slowing to a stop on a downhill and slowing to change direction on uphill
+      const brakeDistance = Math.pow( speed, 2 ) / ( 2 * ROLL_FRICTION * GRAVITY );
+
+      const brakeTime = speed == 0 ? Infinity : ( 2 * brakeDistance ) / ( 0 + speed );
+
+      // console.log( `brakeDist = ${ brakeDistance }, brakeTime = ${ brakeTime }` );
+
+      let nextLine = null, /*nextDist = Infinity,*/ nextTime = Math.min( dt, brakeTime );
+      lines.forEach( line => {
+        // if ( !previousLines.has( line ) ) {
+        if ( /*previousLine != line &&*/ currentLine != line ) {
+          const dist = line.getSlopeDist( player, playerSlopeX, playerSlopeY );
+
+          // https://physics.info/motion-equations/
+          // t = ( -v0 +- Math.sqrt( v0*v0 + 2 * a * dist ) ) / a
+          const disc = Math.pow( speed, 2 ) + 2 * a * dist;
+
+          if ( disc >= 0 ) {
+            const dt1 = ( -speed - Math.sqrt( disc ) ) / a;
+            const dt2 = ( -speed + Math.sqrt( disc ) ) / a;
+
+            const time = dt1 < dt2 && EPSILON <= dt1 ? dt1 : dt2;
+
+            // console.log( `lineDist = ${ dist }, lineTime = ${ time }` );
+
+            if ( EPSILON < time && time < nextTime ) {
+              nextLine = line;
+              nextTime = time;
+            }
+          }
+        }
+      } );
+
+      if ( nextLine ) {
+        // previousLines.add( nextLine );
+        
+        player.x += player.dx * nextTime + 0.5 * ax * nextTime * nextTime;
+        player.y += player.dy * nextTime + 0.5 * ay * nextTime * nextTime;
+        
+        player.dx += ax * nextTime;
+        player.dy += ay * nextTime;
+        
+        dt -= nextTime;
+
+        if ( dt <= 0 ) {
+          break;
+        }
+
+        previousLine = currentLine;
+        currentLine = nextLine;
+      }
+      else {
+        player.x += player.dx * nextTime + 0.5 * ax * nextTime * nextTime;
+        player.y += player.dy * nextTime + 0.5 * ay * nextTime * nextTime;
+        
+        player.dx += ax * nextTime;
+        player.dy += ay * nextTime;
+        
+        break;
+      }
+    }
+  }
+
+  canvas.draw = ( ctx ) => {
+    ctx.beginPath();
+    points.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
+    ctx.strokeStyle = '#0f02';
+    ctx.stroke();
+
+    drawPlayer( ctx, 'white' );
+
+    ctx.strokeStyle = 'red';
+    debugTouchingLines.forEach( line => line.draw( ctx ) );
+
+    ctx.strokeStyle = 'yellow';
+    debugCurrentLine.draw( ctx );
+  }
+
+  canvas.start();
+
+  function drawPlayer( ctx, color ) {
+    ctx.beginPath();
+    ctx.arc( player.x, player.y, player.radius, 0, Math.PI * 2 );
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    // ctx.font = '0.4px Arial';
+    // ctx.fillText( `x = ${ player.x }`, player.x + 1, player.y - 1 );
+    // ctx.fillText( `y = ${ player.y }`, player.x + 1, player.y - 0.5 );
+    // ctx.fillText( `dx = ${ player.dx }`, player.x + 1, player.y + 0 );
+    // ctx.fillText( `dy = ${ player.dy }`, player.x + 1, player.y + 0.5 );
+  }
+
+  function getSlope( line ) {
+    return Math.atan2( line.y2 - line.y1, line.x2 - line.x1 );
+  }
+
+
+
+  function fixAngle( a ) {
+    return a > Math.PI ? a - Math.PI * 2 : a < -Math.PI ? a + Math.PI * 2 : a;
+  }
+
+  function deltaAngle( a, b ) {
+    return fixAngle( b - a );
+  }
+
+
+  document.addEventListener( 'pointerdown', e => {
+    const mouseX = canvas.getPointerX( e );
+    const mouseY = canvas.getPointerY( e );
+
+    player.x = mouseX;
+    player.y = mouseY;
+    player.dx = 0;
+    player.dy = 0;
+
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'keydown', e => {
+    if ( e.key == ' ' ) {
+      running = !running;
+
+      if ( running ) {
+        canvas.start();
+      }
+      else {
+        canvas.stop();
+      }
+    }
+  })
+
+</script>
