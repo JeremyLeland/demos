@@ -1,0 +1,70 @@
+<title>Drag control points to make levels</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import { Line } from './Line.js';
+
+  const loops = [
+    getLoop( 5, -5, 2, 1 ),
+    getLoop( -7, -2, 3, 2 ),
+    getLoop( 5, 1, 4, 1 ),
+    getLoop( -1, 5, 7, 2 ),
+  ];
+
+  console.log( JSON.stringify( loops ) );
+  
+  function getLoop( x, y, width, height ) {
+    const loop = [];
+
+    const numPoints = 20;
+    for ( let i = 0; i < numPoints; i ++ ) {
+      const angle = Math.PI * 2 * ( i + 0.5 * Math.random() ) / numPoints;
+      const dist = 0.8 + 0.2 * Math.random();
+      loop.push( [ 
+        x + width  * dist * Math.cos( angle ), 
+        y + height * dist * Math.sin( angle ),
+      ] );
+    }
+
+    return loop;
+  }
+
+  const lines = [];
+  loops.forEach( loop => {
+    for ( let i = 0; i < loop.length; i ++ ) {
+      lines.push( new Line( ...loop[ i ], ...loop[ ( i + 1 ) % loop.length ] ) );
+    }
+  } );
+
+  const SIZE = 16;
+
+  const canvas = new Canvas();
+  canvas.zoom = 1 / SIZE;
+  canvas.scrollX = SIZE / 2;
+  canvas.scrollY = SIZE / 2;
+
+  canvas.draw = ( ctx ) => {
+    ctx.fillStyle = 'green';
+    loops.forEach( loop => {
+      ctx.beginPath();
+      loop.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
+      ctx.fill();
+    } );
+
+    ctx.strokeStyle = 'white';
+    lines.forEach( line => line.draw( ctx ) );
+  }
+
+  canvas.redraw();
+
+
+  document.addEventListener( 'pointerdown', e => {
+    const mouseX = canvas.getPointerX( e );
+    const mouseY = canvas.getPointerY( e );
+    
+    canvas.redraw();
+  } );
+
+
+</script>
