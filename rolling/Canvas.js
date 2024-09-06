@@ -38,15 +38,10 @@ export class Canvas {
         this.#scale = Math.min( inlineSize, blockSize );
 
         // this might get messed up if writing mode is vertical
-        this.#offsetX = inlineSize - this.#scale;
-        this.#offsetY = blockSize - this.#scale;
+        this.#offsetX = ( inlineSize - this.#scale ) / devicePixelRatio;
+        this.#offsetY = ( blockSize - this.#scale ) / devicePixelRatio;
       } );
       
-      this.ctx.translate( this.#offsetX, this.#offsetY );
-
-      this.ctx.scale( devicePixelRatio, devicePixelRatio );
-      this.ctx.scale( this.#scale, this.#scale );
-
       this.redraw();
     } );
 
@@ -57,6 +52,11 @@ export class Canvas {
     this.ctx.clearRect( 0, 0, this.ctx.canvas.width, this.ctx.canvas.height );
 
     this.ctx.save(); {
+      this.ctx.translate( this.#offsetX, this.#offsetY );
+
+      this.ctx.scale( devicePixelRatio, devicePixelRatio );
+      this.ctx.scale( this.#scale, this.#scale );
+
       this.ctx.scale( this.zoom, this.zoom );
       this.ctx.translate( this.scrollX, this.scrollY );
       this.ctx.lineWidth = this.zoom;
