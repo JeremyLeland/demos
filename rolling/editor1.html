@@ -43,12 +43,14 @@
   canvas.zoom = 1 / SIZE;
   canvas.scrollX = SIZE / 2;
   canvas.scrollY = SIZE / 2;
+  canvas.redraw();
 
   const POINT_RADIUS = 0.06;
 
   let hoverPoint;
 
   canvas.draw = ( ctx ) => {
+    // Loops
     ctx.fillStyle = 'green';
     loops.forEach( loop => {
       ctx.beginPath();
@@ -56,12 +58,36 @@
       ctx.fill();
     } );
 
+    // Bounds
+    ctx.fillStyle = ctx.strokeStyle = '#fffa';
+    if ( activeBounds ) {
+      const points = [
+        [ activeBounds.left,  activeBounds.top    ],
+        [ activeBounds.right, activeBounds.top    ],
+        [ activeBounds.right, activeBounds.bottom ],
+        [ activeBounds.left,  activeBounds.bottom ],
+      ];
+
+      ctx.beginPath();
+      points.forEach( p => {
+        ctx.lineTo( p[ 0 ], p[ 1 ] );
+      } );
+      ctx.closePath();
+      ctx.stroke();
+
+      ctx.beginPath();
+      points.forEach( p => {
+        drawPoint( ctx, p, POINT_RADIUS );
+      } );
+      ctx.stroke();
+    }
+
+    // Points
     ctx.fillStyle = '#fffa';
     ctx.beginPath();
     loops.forEach( loop => {
       loop.forEach( p => {
-        ctx.moveTo( p[ 0 ], p[ 1 ] );
-        ctx.arc( p[ 0 ], p[ 1 ], POINT_RADIUS, 0, Math.PI * 2 );
+        drawPoint( ctx, p, POINT_RADIUS );
       } );
     } );
     ctx.fill();
@@ -69,22 +95,26 @@
     if ( hoverPoint ) {
       ctx.fillStyle = 'yellow';
       ctx.beginPath();
-      ctx.moveTo( hoverPoint[ 0 ], hoverPoint[ 1 ] );
-      ctx.arc( hoverPoint[ 0 ], hoverPoint[ 1 ], POINT_RADIUS * 2, 0, Math.PI * 2 );
+      drawPoint( ctx, hoverPoint, POINT_RADIUS * 2 );
       ctx.fill();
     }
 
     // ctx.strokeStyle = 'white';
     // lines.forEach( line => line.draw( ctx ) );
   }
+  
+  function drawPoint( ctx, p, radius ) {
+    ctx.moveTo( p[ 0 ], p[ 1 ] );
+    ctx.arc( p[ 0 ], p[ 1 ], radius, 0, Math.PI * 2 );
+  }
 
-  canvas.redraw();
 
   // TODO: Click and drag a rectangle to make a new loop (when not in rectangle)
   // TODO: Move and resize existing loops
   //         - Hovering over loop shows move box and resize corners? (probably more intuitive)
   //         - Or just right-click drag inside loop to resize it?
-  // TODO: Drag individual points (when close to point)
+  // TODO: Remove point
+  // TODO: Add point (show new point when hover close to line, create when click) 
 
   let mouse = {
     x: 0,
@@ -92,6 +122,7 @@
   }
 
   let activeLoop, activePoint;
+  let activeBounds;
 
   document.addEventListener( 'pointerdown', e => {
     mouse.x = canvas.getPointerX( e );
@@ -101,18 +132,26 @@
       activePoint = hoverPoint;
     }
     else {
-      activeLoop = loops.find( loop => {
-        let left = false, top = false, right = false, bottom = false;
+      activeLoop = null;
+      activeBounds = null;
+
+      for ( const loop of loops ) {
+        const bounds = {};
 
         loop.forEach( p => {
-          if ( p[ 0 ] < mouse.x )   left = true;
-          if ( p[ 0 ] > mouse.x )   right = true;
-          if ( p[ 1 ] < mouse.y )   top = true;
-          if ( p[ 1 ] > mouse.y )   bottom = true;
+          bounds.left   = Math.min( p[ 0 ], bounds.left   ?? p[ 0 ] );
+          bounds.right  = Math.max( p[ 0 ], bounds.right  ?? p[ 0 ] );
+          bounds.top    = Math.min( p[ 1 ], bounds.top    ?? p[ 1 ] );
+          bounds.bottom = Math.max( p[ 1 ], bounds.bottom ?? p[ 1 ] );
         } );
 
-        return left && top && right && bottom;
-      } );
+        if ( bounds.left <= mouse.x && mouse.x <= bounds.right && 
+             bounds.top  <= mouse.y && mouse.y <= bounds.bottom ) {
+          activeLoop = loop;
+          activeBounds = bounds;
+          break;
+        }
+      }
     }
 
     canvas.redraw();
@@ -135,6 +174,10 @@
         p[ 0 ] += moveX;
         p[ 1 ] += moveY;
       } );
+      activeBounds.left   += moveX;
+      activeBounds.right  += moveX;
+      activeBounds.top    += moveY;
+      activeBounds.bottom += moveY;
     }
     else {
       let closestPoint, closestDist = Infinity;
@@ -163,6 +206,8 @@
   document.addEventListener( 'pointerup', e => {
     activeLoop = null;
     activePoint = null;
+
+    canvas.redraw();
   } );
 
 
