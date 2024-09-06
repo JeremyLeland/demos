@@ -17,7 +17,7 @@
   function getLoop( x, y, width, height ) {
     const loop = [];
 
-    const numPoints = 20;
+    const numPoints = 10 + width * height;
     for ( let i = 0; i < numPoints; i ++ ) {
       const angle = Math.PI * 2 * ( i + 0.5 * Math.random() ) / numPoints;
       const dist = 0.8 + 0.2 * Math.random();
@@ -30,12 +30,12 @@
     return loop;
   }
 
-  const lines = [];
-  loops.forEach( loop => {
-    for ( let i = 0; i < loop.length; i ++ ) {
-      lines.push( new Line( ...loop[ i ], ...loop[ ( i + 1 ) % loop.length ] ) );
-    }
-  } );
+  // const lines = [];
+  // loops.forEach( loop => {
+  //   for ( let i = 0; i < loop.length; i ++ ) {
+  //     lines.push( new Line( ...loop[ i ], ...loop[ ( i + 1 ) % loop.length ] ) );
+  //   }
+  // } );
 
   const SIZE = 16;
 
@@ -43,6 +43,10 @@
   canvas.zoom = 1 / SIZE;
   canvas.scrollX = SIZE / 2;
   canvas.scrollY = SIZE / 2;
+
+  const POINT_RADIUS = 0.06;
+
+  let hoverPoint;
 
   canvas.draw = ( ctx ) => {
     ctx.fillStyle = 'green';
@@ -52,18 +56,113 @@
       ctx.fill();
     } );
 
-    ctx.strokeStyle = 'white';
-    lines.forEach( line => line.draw( ctx ) );
+    ctx.fillStyle = '#fffa';
+    ctx.beginPath();
+    loops.forEach( loop => {
+      loop.forEach( p => {
+        ctx.moveTo( p[ 0 ], p[ 1 ] );
+        ctx.arc( p[ 0 ], p[ 1 ], POINT_RADIUS, 0, Math.PI * 2 );
+      } );
+    } );
+    ctx.fill();
+
+    if ( hoverPoint ) {
+      ctx.fillStyle = 'yellow';
+      ctx.beginPath();
+      ctx.moveTo( hoverPoint[ 0 ], hoverPoint[ 1 ] );
+      ctx.arc( hoverPoint[ 0 ], hoverPoint[ 1 ], POINT_RADIUS * 2, 0, Math.PI * 2 );
+      ctx.fill();
+    }
+
+    // ctx.strokeStyle = 'white';
+    // lines.forEach( line => line.draw( ctx ) );
   }
 
   canvas.redraw();
 
+  // TODO: Click and drag a rectangle to make a new loop (when not in rectangle)
+  // TODO: Move and resize existing loops
+  //         - Hovering over loop shows move box and resize corners? (probably more intuitive)
+  //         - Or just right-click drag inside loop to resize it?
+  // TODO: Drag individual points (when close to point)
+
+  let mouse = {
+    x: 0,
+    y: 0,
+  }
+
+  let activeLoop, activePoint;
 
   document.addEventListener( 'pointerdown', e => {
-    const mouseX = canvas.getPointerX( e );
-    const mouseY = canvas.getPointerY( e );
-    
+    mouse.x = canvas.getPointerX( e );
+    mouse.y = canvas.getPointerY( e );
+
+    if ( hoverPoint ) {
+      activePoint = hoverPoint;
+    }
+    else {
+      activeLoop = loops.find( loop => {
+        let left = false, top = false, right = false, bottom = false;
+
+        loop.forEach( p => {
+          if ( p[ 0 ] < mouse.x )   left = true;
+          if ( p[ 0 ] > mouse.x )   right = true;
+          if ( p[ 1 ] < mouse.y )   top = true;
+          if ( p[ 1 ] > mouse.y )   bottom = true;
+        } );
+
+        return left && top && right && bottom;
+      } );
+    }
+
     canvas.redraw();
+  } );
+
+  document.addEventListener( 'pointermove', e => {
+    const lastX = mouse.x;
+    const lastY = mouse.y;
+    mouse.x = canvas.getPointerX( e );
+    mouse.y = canvas.getPointerY( e );
+    const moveX = mouse.x - lastX;
+    const moveY = mouse.y - lastY;
+
+    if ( activePoint ) {
+      activePoint[ 0 ] += moveX;
+      activePoint[ 1 ] += moveY;
+    }
+    else if ( activeLoop ) {
+      activeLoop.forEach( p => {
+        p[ 0 ] += moveX;
+        p[ 1 ] += moveY;
+      } );
+    }
+    else {
+      let closestPoint, closestDist = Infinity;
+      loops.forEach( loop => {
+        loop.forEach( p => {
+          const dist = Math.hypot( p[ 0 ] - mouse.x, p[ 1 ] - mouse.y );
+
+          if ( dist < closestDist ) {
+            closestPoint = p;
+            closestDist = dist;
+          }
+        } );
+      } );
+
+      if ( closestDist < POINT_RADIUS * 4 ) {
+        hoverPoint = closestPoint;
+      }
+      else {
+        hoverPoint = null;
+      }
+    }
+
+    canvas.redraw();
+  } );
+
+  document.addEventListener( 'pointerup', e => {
+    activeLoop = null;
+    activePoint = null;
   } );
 
 
