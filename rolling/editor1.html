@@ -9,7 +9,13 @@
     MoveLoop: 'MoveLoop',
     MovePoint: 'MovePoint',
     ResizeLoop: 'ResizeLoop',
-  }
+  };
+
+  const ResizeType = {
+    NW: 0, N: 1, NE: 2,
+     W: 7,       E:  3,
+    SW: 6, S: 5, SE: 4,
+  };
 
   const loops = [
     getLoop( 5, -5, 2, 1 ),
@@ -213,7 +219,32 @@
         selected.bounds.bottom += moveY;
       }
       else if ( active.type == EditType.ResizeLoop ) {
-        console.log( `resizing ${ moveX },${ moveY }` );
+        const oldBounds = Object.assign( {}, selected.bounds );
+
+        if ( active.resizeType == ResizeType.NW ) {
+          selected.bounds.left += moveX;
+          selected.bounds.top  += moveY;
+        }
+        else if ( active.resizeType == ResizeType.NE ) {
+          selected.bounds.right += moveX;
+          selected.bounds.top   += moveY;
+        }
+        else if ( active.resizeType == ResizeType.SE ) {
+          selected.bounds.right  += moveX;
+          selected.bounds.bottom += moveY;
+        }
+        else if ( active.resizeType == ResizeType.SW ) {
+          selected.bounds.left   += moveX;
+          selected.bounds.bottom += moveY;
+        }
+
+        active.loop.forEach( p => {
+          const u = ( p[ 0 ] - oldBounds.left ) / ( oldBounds.right - oldBounds.left );
+          const v = ( p[ 1 ] - oldBounds.top ) / ( oldBounds.bottom - oldBounds.top );
+          
+          p[ 0 ] = selected.bounds.left + u * ( selected.bounds.right - selected.bounds.left );
+          p[ 1 ] = selected.bounds.top  + v * ( selected.bounds.bottom - selected.bounds.top );
+        } );
       }
     }
 
@@ -252,8 +283,9 @@
       if ( closestDist < POINT_RADIUS * 4 ) {
         return  {
           type: EditType.ResizeLoop,
-          // TODO: Resize type based on index
+          resizeType: closestIndex * 2,  // resizeTypes alternate between point and edge
           point: closestPoint,
+          loop: selected.loop,
         };
       }
     }
