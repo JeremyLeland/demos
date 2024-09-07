@@ -6,6 +6,7 @@
   import { Line } from './Line.js';
 
   const EditType = {
+    AddPoint: 'AddPoint',
     MoveLoop: 'MoveLoop',
     MovePoint: 'MovePoint',
     ResizeLoop: 'ResizeLoop',
@@ -77,18 +78,20 @@
       
       ctx.fillStyle = ctx.strokeStyle = '#fffa';
 
+      ctx.setLineDash( [ 0.1, 0.1 ] );
       ctx.beginPath();
       boundsInfo.edges.forEach( e => {
         ctx.moveTo( e[ 0 ], e[ 1 ] );
         ctx.lineTo( e[ 2 ], e[ 3 ] );
       } );
       ctx.stroke();
+      ctx.setLineDash( [] );
 
       ctx.beginPath();
       boundsInfo.points.forEach( p => {
         drawPoint( ctx, p, POINT_RADIUS );
       } );
-      ctx.stroke();
+      ctx.fill();
     }
 
     // Points
@@ -102,7 +105,7 @@
     ctx.fill();
 
     if ( hover?.point ) {
-      ctx.fillStyle = 'yellow';
+      ctx.fillStyle = hover.type == EditType.MovePoint ? 'yellow' : 'lime';
       ctx.beginPath();
       drawPoint( ctx, hover.point, POINT_RADIUS * 2 );
       ctx.fill();
@@ -183,10 +186,24 @@
           active = {
             type: EditType.MoveLoop,
             loop: loop,
+            dx: 0,
+            dy: 0,
           };
 
           break;
         }
+      }
+    }
+    else if ( active.type == EditType.AddPoint ) {
+      console.log( active );
+
+      active.loop.splice( active.index + 1, 0, active.point );
+
+      active = {
+        type: EditType.MovePoint,
+        point: active.point,
+        dx: 0,
+        dy: 0,
       }
     }
 
@@ -206,12 +223,18 @@
       if ( active.type == EditType.MovePoint ) {
         active.point[ 0 ] += moveX;
         active.point[ 1 ] += moveY;
+
+        active.dx += moveX;
+        active.dy += moveY;
       }
       else if ( active.type == EditType.MoveLoop ) {
         active.loop.forEach( p => {
           p[ 0 ] += moveX;
           p[ 1 ] += moveY;
         } );
+
+        active.dx += moveX;
+        active.dy += moveY;
 
         selected.bounds.left   += moveX;
         selected.bounds.right  += moveX;
@@ -245,6 +268,9 @@
           p[ 0 ] = selected.bounds.left + u * ( selected.bounds.right - selected.bounds.left );
           p[ 1 ] = selected.bounds.top  + v * ( selected.bounds.bottom - selected.bounds.top );
         } );
+
+        active.dx += moveX;
+        active.dy += moveY;
       }
     }
 
@@ -266,6 +292,7 @@
   } );
 
   function getEditUnder( targetX, targetY ) {
+    // Resize selected
     if ( selected ) {
       const boundsInfo = getBoundsInfo( selected.bounds );
 
@@ -286,26 +313,82 @@
           resizeType: closestIndex * 2,  // resizeTypes alternate between point and edge
           point: closestPoint,
           loop: selected.loop,
+          dx: 0,
+          dy: 0,
         };
       }
     }
 
-    let closestPoint, closestDist = Infinity;
-    loops.forEach( loop => {
-      loop.forEach( p => {
-        const dist = Math.hypot( p[ 0 ] - targetX, p[ 1 ] - targetY );
+    // Move point
+    {
+      let closestPoint, closestDist = Infinity;
+      loops.forEach( loop => {
+        loop.forEach( p => {
+          const dist = Math.hypot( p[ 0 ] - targetX, p[ 1 ] - targetY );
 
-        if ( dist < closestDist ) {
-          closestPoint = p;
-          closestDist = dist;
+          if ( dist < closestDist ) {
+            closestPoint = p;
+            closestDist = dist;
+          }
+        } );
+      } );
+
+      if ( closestDist < POINT_RADIUS * 4 ) {
+        return {
+          type: EditType.MovePoint,
+          point: closestPoint,
+          dx: 0,
+          dy: 0,
+        };
+      }
+    }
+
+    // Add point
+    {
+      let closestPoint, closestLoop, closestIndex, closestDist = Infinity;
+      loops.forEach( loop => {
+        for ( let i = 0; i < loop.length; i ++ ) {
+          const current = loop[ i ];
+          const next = loop[ ( i + 1 ) % loop.length ];
+
+          const x1 = current[ 0 ];
+          const y1 = current[ 1 ];
+          const x2 = next[ 0 ];
+          const y2 = next[ 1 ];
+
+          const px = x2 - x1;
+          const py = y2 - y1;
+          const D = ( px * px ) + ( py * py );
+
+          const len = Math.sqrt( D );
+          const normX = py / len;
+          const normY = -px / len;
+          
+          const u = ( ( targetX - x1 ) * px + ( targetY - y1 ) * py ) / D;
+
+          if ( 0 <= u && u <= 1 ) {
+            const x = x1 + u * px;
+            const y = y1 + u * py;
+
+            const dist = ( targetX - x1 ) * normX + ( targetY - y1 ) * normY;
+
+            if ( Math.abs( dist ) < Math.abs( closestDist ) ) {
+              closestPoint = [ x, y ];
+              closestLoop = loop;
+              closestIndex = i;
+              closestDist = dist;
+            }
+          }
         }
       } );
-    } );
 
-    if ( closestDist < POINT_RADIUS * 4 ) {
-      return {
-        type: EditType.MovePoint,
-        point: closestPoint,
+      if ( Math.abs( closestDist ) < POINT_RADIUS * 4 ) {
+        return {
+          type: EditType.AddPoint,
+          point: closestPoint,
+          loop: closestLoop,
+          index: closestIndex,
+        };
       }
     }
   }
