@@ -7,6 +7,7 @@
 
   const EditType = {
     AddPoint: 'AddPoint',
+    DeletePoint: 'DeletePoint',
     MoveLoop: 'MoveLoop',
     MovePoint: 'MovePoint',
     ResizeLoop: 'ResizeLoop',
@@ -104,11 +105,19 @@
     } );
     ctx.fill();
 
-    if ( hover?.point ) {
+    if ( hover ) {
       ctx.fillStyle = hover.type == EditType.MovePoint ? 'yellow' : 'lime';
+
       ctx.beginPath();
-      drawPoint( ctx, hover.point, POINT_RADIUS * 2 );
-      ctx.fill();
+
+      if ( hover.point ) {
+        drawPoint( ctx, hover.point, POINT_RADIUS * 2 );
+      }
+      else if ( hover.pointIndex != null ) {
+        drawPoint( ctx, loops[ hover.loopIndex ][ hover.pointIndex ], POINT_RADIUS * 2 );
+      }
+      
+      ctx.fill();  
     }
 
     // ctx.strokeStyle = 'white';
@@ -166,10 +175,10 @@
     if ( !active ) {
       selected = null;
 
-      for ( const loop of loops ) {
+      for ( let i = 0; i < loops.length; i ++ ) {
         const bounds = {};
 
-        loop.forEach( p => {
+        loops[ i ].forEach( p => {
           bounds.left   = Math.min( p[ 0 ], bounds.left   ?? p[ 0 ] );
           bounds.right  = Math.max( p[ 0 ], bounds.right  ?? p[ 0 ] );
           bounds.top    = Math.min( p[ 1 ], bounds.top    ?? p[ 1 ] );
@@ -179,13 +188,13 @@
         if ( bounds.left <= mouse.x && mouse.x <= bounds.right && 
              bounds.top  <= mouse.y && mouse.y <= bounds.bottom ) {
           selected = {
-            loop: loop,
+            loopIndex: i,
             bounds: bounds,
           };
 
           active = {
             type: EditType.MoveLoop,
-            loop: loop,
+            loopIndex: i,
             dx: 0,
             dy: 0,
           };
@@ -195,15 +204,36 @@
       }
     }
     else if ( active.type == EditType.AddPoint ) {
-      console.log( active );
+      if ( e.buttons & 1 ) {
+        console.log( active );
+        
+        loops[ active.loopIndex ].splice( active.pointIndex, 0, active.point );
+        
+        active = {
+          type: EditType.MovePoint,
+          loopIndex: active.loopIndex,
+          pointIndex: active.pointIndex,
+          dx: 0,
+          dy: 0,
+        }
+      }
+      else {
+        active = null;
+      }
+    }
+    else if ( active.type == EditType.MovePoint ) {
+      if ( e.buttons & 2 ) {
+        active = {
+          type: EditType.DeletePoint,
+          loopIndex: active.loopIndex,
+          pointIndex: active.pointIndex,
+        }
 
-      active.loop.splice( active.index + 1, 0, active.point );
+        console.log( active );
 
-      active = {
-        type: EditType.MovePoint,
-        point: active.point,
-        dx: 0,
-        dy: 0,
+        loops[ active.loopIndex ].splice( active.pointIndex, 1 );
+
+        active = null;
       }
     }
 
@@ -221,14 +251,15 @@
     // Move active points (or resize)
     if ( active ) {
       if ( active.type == EditType.MovePoint ) {
-        active.point[ 0 ] += moveX;
-        active.point[ 1 ] += moveY;
+        const p = loops[ active.loopIndex ][ active.pointIndex ];
+        p[ 0 ] += moveX;
+        p[ 1 ] += moveY;
 
         active.dx += moveX;
         active.dy += moveY;
       }
       else if ( active.type == EditType.MoveLoop ) {
-        active.loop.forEach( p => {
+        loops[ active.loopIndex ].forEach( p => {
           p[ 0 ] += moveX;
           p[ 1 ] += moveY;
         } );
@@ -261,7 +292,7 @@
           selected.bounds.bottom += moveY;
         }
 
-        active.loop.forEach( p => {
+        loops[ active.loopIndex ].forEach( p => {
           const u = ( p[ 0 ] - oldBounds.left ) / ( oldBounds.right - oldBounds.left );
           const v = ( p[ 1 ] - oldBounds.top ) / ( oldBounds.bottom - oldBounds.top );
           
@@ -311,8 +342,7 @@
         return  {
           type: EditType.ResizeLoop,
           resizeType: closestIndex * 2,  // resizeTypes alternate between point and edge
-          point: closestPoint,
-          loop: selected.loop,
+          loopIndex: selected.loopIndex,
           dx: 0,
           dy: 0,
         };
@@ -321,13 +351,14 @@
 
     // Move point
     {
-      let closestPoint, closestDist = Infinity;
-      loops.forEach( loop => {
-        loop.forEach( p => {
+      let closestLoopIndex, closestPointIndex, closestDist = Infinity;
+      loops.forEach( ( loop, loopIndex ) => {
+        loop.forEach( ( p, pointIndex ) => {
           const dist = Math.hypot( p[ 0 ] - targetX, p[ 1 ] - targetY );
 
           if ( dist < closestDist ) {
-            closestPoint = p;
+            closestLoopIndex = loopIndex;
+            closestPointIndex = pointIndex;
             closestDist = dist;
           }
         } );
@@ -336,7 +367,8 @@
       if ( closestDist < POINT_RADIUS * 4 ) {
         return {
           type: EditType.MovePoint,
-          point: closestPoint,
+          loopIndex: closestLoopIndex,
+          pointIndex: closestPointIndex,
           dx: 0,
           dy: 0,
         };
@@ -345,8 +377,8 @@
 
     // Add point
     {
-      let closestPoint, closestLoop, closestIndex, closestDist = Infinity;
-      loops.forEach( loop => {
+      let closestPoint, closestLoopIndex, closestPointIndex, closestDist = Infinity;
+      loops.forEach( ( loop, loopIndex ) => {
         for ( let i = 0; i < loop.length; i ++ ) {
           const current = loop[ i ];
           const next = loop[ ( i + 1 ) % loop.length ];
@@ -373,9 +405,9 @@
             const dist = Math.abs( ( targetX - x1 ) * normX + ( targetY - y1 ) * normY );
 
             if ( dist < closestDist ) {
+              closestLoopIndex = loopIndex;
+              closestPointIndex = i + 1;    // will add after current point
               closestPoint = [ x, y ];
-              closestLoop = loop;
-              closestIndex = i;
               closestDist = dist;
             }
           }
@@ -385,9 +417,9 @@
       if ( closestDist < POINT_RADIUS * 4 ) {
         return {
           type: EditType.AddPoint,
+          loopIndex: closestLoopIndex,
+          pointIndex: closestPointIndex,
           point: closestPoint,
-          loop: closestLoop,
-          index: closestIndex,
         };
       }
     }
