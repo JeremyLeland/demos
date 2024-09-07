@@ -370,9 +370,9 @@
             const x = x1 + u * px;
             const y = y1 + u * py;
 
-            const dist = ( targetX - x1 ) * normX + ( targetY - y1 ) * normY;
+            const dist = Math.abs( ( targetX - x1 ) * normX + ( targetY - y1 ) * normY );
 
-            if ( Math.abs( dist ) < Math.abs( closestDist ) ) {
+            if ( dist < closestDist ) {
               closestPoint = [ x, y ];
               closestLoop = loop;
               closestIndex = i;
@@ -382,7 +382,7 @@
         }
       } );
 
-      if ( Math.abs( closestDist ) < POINT_RADIUS * 4 ) {
+      if ( closestDist < POINT_RADIUS * 4 ) {
         return {
           type: EditType.AddPoint,
           point: closestPoint,
