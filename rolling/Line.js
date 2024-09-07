@@ -47,9 +47,8 @@ export class Line {
     const D = ( px * px ) + ( py * py );
 
     const len = Math.sqrt( D );
-    const normalAngle = this.normalAngle;
-    const normX = Math.cos( normalAngle );
-    const normY = Math.sin( normalAngle );
+    const normX = py / len;
+    const normY = -px / len;
     
     const u = ( ( entity.x - this.x1 ) * px + ( entity.y - this.y1 ) * py ) / D;
     const offset = 0; //entity.radius / len;
