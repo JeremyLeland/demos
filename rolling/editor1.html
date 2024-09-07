@@ -8,6 +8,7 @@
   const EditType = {
     AddPoint: 'AddPoint',
     DeletePoint: 'DeletePoint',
+    DeleteLoop: 'DeleteLoop',
     MoveLoop: 'MoveLoop',
     MovePoint: 'MovePoint',
     ResizeLoop: 'ResizeLoop',
@@ -187,18 +188,32 @@
 
         if ( bounds.left <= mouse.x && mouse.x <= bounds.right && 
              bounds.top  <= mouse.y && mouse.y <= bounds.bottom ) {
-          selected = {
-            loopIndex: i,
-            bounds: bounds,
-          };
+          if ( e.buttons & 1 ) {
+            selected = {
+              loopIndex: i,
+              bounds: bounds,
+            };
+            
+            active = {
+              type: EditType.MoveLoop,
+              loopIndex: i,
+              dx: 0,
+              dy: 0,
+            };
+          }
+          else if ( e.buttons & 2 ) {
+            active = {
+              type: EditType.DeleteLoop,
+              loopIndex: i,
+            };
 
-          active = {
-            type: EditType.MoveLoop,
-            loopIndex: i,
-            dx: 0,
-            dy: 0,
-          };
+            console.log( active );
 
+            loops.splice( active.loopIndex, 1 );
+
+            active = null;
+          }
+            
           break;
         }
       }
