@@ -12,7 +12,15 @@
     AddLoop: 'AddLoop',
     MoveLoop: 'MoveLoop',
     ResizeLoop: 'ResizeLoop',
+    RotateLoop: 'RotateLoop',
     DeleteLoop: 'DeleteLoop',
+  };
+
+  const HoverType = {
+    Loop: 'Loop',
+    Point: 'Point',
+    Edge: 'Edge',
+    Resize: 'Resize',
   };
 
   const ResizeType = {
@@ -22,10 +30,10 @@
   };
 
   const loops = [
-    getLoop( 3, -5, 10, -3 ),
-    getLoop( -7, -2, -1, 2 ),
-    getLoop( 2, 1, 11, 3 ),
-    getLoop( -1, 5, 8, 9 ),
+    makeLoop( 3, -5, 10, -3 ),
+    makeLoop( -7, -2, -1, 2 ),
+    makeLoop( 2, 1, 11, 3 ),
+    makeLoop( -1, 5, 8, 9 ),
   ];
 
   // console.log( JSON.stringify( loops ) );
@@ -49,7 +57,7 @@
 
   const POINT_RADIUS = 0.06;
 
-  let selected, hover;
+  let selectedIndex, hover;
   let active;
 
   canvas.draw = ( ctx ) => {
@@ -62,8 +70,8 @@
     } );
 
     // Bounds
-    if ( selected ) {
-      const boundsInfo = getBoundsInfo( selected.bounds );
+    if ( selectedIndex ) {
+      const boundsInfo = getBoundsInfo( getBounds( loops[ selectedIndex ] ) );
       
       ctx.fillStyle = ctx.strokeStyle = '#fffa';
 
@@ -108,7 +116,7 @@
     ctx.fill();
 
     if ( hover ) {
-      ctx.fillStyle = hover.type == EditType.MovePoint ? 'yellow' : 'lime';
+      ctx.fillStyle = hover.type == HoverType.Point ? 'yellow' : 'lime';
 
       ctx.beginPath();
 
@@ -124,6 +132,19 @@
 
     // ctx.strokeStyle = 'white';
     // lines.forEach( line => line.draw( ctx ) );
+  }
+
+  function getBounds( loop ) {
+    const bounds = {};
+
+    loop.forEach( p => {
+      bounds.left   = Math.min( p[ 0 ], bounds.left   ?? p[ 0 ] );
+      bounds.right  = Math.max( p[ 0 ], bounds.right  ?? p[ 0 ] );
+      bounds.top    = Math.min( p[ 1 ], bounds.top    ?? p[ 1 ] );
+      bounds.bottom = Math.max( p[ 1 ], bounds.bottom ?? p[ 1 ] );
+    } );
+
+    return bounds;
   }
 
   function getBoundsInfo( bounds ) {
@@ -164,58 +185,13 @@
   document.addEventListener( 'pointerdown', e => {
     mouse.x = canvas.getPointerX( e );
     mouse.y = canvas.getPointerY( e );
-
-    active = getEditUnder( mouse.x, mouse.y );
+    
     hover = null;
 
-    // TODO: Move to getEditUnder?
-    if ( !active ) {
-      selected = null;
+    const under = getHoverUnder( mouse.x, mouse.y );
 
-      for ( let i = 0; i < loops.length; i ++ ) {
-        const bounds = {};
-
-        // TODO: Bounds calc in the getBoundsInfo, don't try to cache it?
-        loops[ i ].forEach( p => {
-          bounds.left   = Math.min( p[ 0 ], bounds.left   ?? p[ 0 ] );
-          bounds.right  = Math.max( p[ 0 ], bounds.right  ?? p[ 0 ] );
-          bounds.top    = Math.min( p[ 1 ], bounds.top    ?? p[ 1 ] );
-          bounds.bottom = Math.max( p[ 1 ], bounds.bottom ?? p[ 1 ] );
-        } );
-
-        if ( bounds.left <= mouse.x && mouse.x <= bounds.right && 
-             bounds.top  <= mouse.y && mouse.y <= bounds.bottom ) {
-          if ( e.buttons & 1 ) {
-            selected = {
-              loopIndex: i,
-              bounds: bounds,
-            };
-            
-            active = {
-              type: EditType.MoveLoop,
-              loopIndex: i,
-              dx: 0,
-              dy: 0,
-            };
-          }
-          else if ( e.buttons & 2 ) {
-            active = {
-              type: EditType.DeleteLoop,
-              loopIndex: i,
-            };
-
-            console.log( active );
-
-            loops.splice( active.loopIndex, 1 );
-
-            active = null;
-          }
-            
-          break;
-        }
-      }
-
-      if ( !active && e.buttons & 1 ) {
+    if ( !under ) {
+      if ( e.buttons & 1 ) {
         active = {
           type: EditType.AddLoop,
           loopIndex: loops.length,
@@ -223,16 +199,49 @@
         }
       }
     }
-    else if ( active.type == EditType.AddPoint ) {
+    else if ( under.type == HoverType.Loop ) {
+      selectedIndex = null;
+
       if ( e.buttons & 1 ) {
+        selectedIndex = under.loopIndex;
+        
+        active = {
+          type: EditType.MoveLoop,
+          loopIndex: under.loopIndex,
+          dx: 0,
+          dy: 0,
+        };
+      }
+      else if ( e.buttons & 2 ) {
+        active = {
+          type: EditType.DeleteLoop,
+          loopIndex: under.loopIndex,
+        };
+
+        console.log( active );
+
+        loops.splice( active.loopIndex, 1 );
+
+        active = null;
+      }
+    }
+    else if ( under.type == HoverType.Edge ) {
+      if ( e.buttons & 1 ) {
+        active = {
+          type: EditType.AddPoint,
+          loopIndex: under.loopIndex,
+          pointIndex: under.pointIndex,
+          point: under.point,
+        }
+
         console.log( active );
         
         loops[ active.loopIndex ].splice( active.pointIndex, 0, active.point );
         
         active = {
           type: EditType.MovePoint,
-          loopIndex: active.loopIndex,
-          pointIndex: active.pointIndex,
+          loopIndex: under.loopIndex,
+          pointIndex: under.pointIndex,
           dx: 0,
           dy: 0,
         }
@@ -241,12 +250,21 @@
         active = null;
       }
     }
-    else if ( active.type == EditType.MovePoint ) {
-      if ( e.buttons & 2 ) {
+    else if ( under.type == HoverType.Point ) {
+      if ( e.buttons & 1 ) {
+        active = {
+          type: EditType.MovePoint,
+          loopIndex: under.loopIndex,
+          pointIndex: under.pointIndex,
+          dx: 0,
+          dy: 0,
+        }
+      }
+      else if ( e.buttons & 2 ) {
         active = {
           type: EditType.DeletePoint,
-          loopIndex: active.loopIndex,
-          pointIndex: active.pointIndex,
+          loopIndex: under.loopIndex,
+          pointIndex: under.pointIndex,
         }
 
         console.log( active );
@@ -254,6 +272,16 @@
         loops[ active.loopIndex ].splice( active.pointIndex, 1 );
 
         active = null;
+      }
+    }
+    else if ( under.type == HoverType.Resize ) {
+      active = {
+        type: EditType.ResizeLoop,
+        loopIndex: under.loopIndex,
+        pointIndex: under.pointIndex,
+        resizeType: under.resizeType,
+        dx: 0,
+        dy: 0,
       }
     }
 
@@ -286,38 +314,34 @@
 
         active.dx += moveX;
         active.dy += moveY;
-
-        selected.bounds.left   += moveX;
-        selected.bounds.right  += moveX;
-        selected.bounds.top    += moveY;
-        selected.bounds.bottom += moveY;
       }
       else if ( active.type == EditType.ResizeLoop ) {
-        const oldBounds = Object.assign( {}, selected.bounds );
+        const oldBounds = getBounds( loops[ active.loopIndex ] );
+        const newBounds = Object.assign( {}, oldBounds );
 
         if ( active.resizeType == ResizeType.NW ) {
-          selected.bounds.left += moveX;
-          selected.bounds.top  += moveY;
+          newBounds.left += moveX;
+          newBounds.top  += moveY;
         }
         else if ( active.resizeType == ResizeType.NE ) {
-          selected.bounds.right += moveX;
-          selected.bounds.top   += moveY;
+          newBounds.right += moveX;
+          newBounds.top   += moveY;
         }
         else if ( active.resizeType == ResizeType.SE ) {
-          selected.bounds.right  += moveX;
-          selected.bounds.bottom += moveY;
+          newBounds.right  += moveX;
+          newBounds.bottom += moveY;
         }
         else if ( active.resizeType == ResizeType.SW ) {
-          selected.bounds.left   += moveX;
-          selected.bounds.bottom += moveY;
+          newBounds.left   += moveX;
+          newBounds.bottom += moveY;
         }
 
         loops[ active.loopIndex ].forEach( p => {
           const u = ( p[ 0 ] - oldBounds.left ) / ( oldBounds.right - oldBounds.left );
-          const v = ( p[ 1 ] - oldBounds.top ) / ( oldBounds.bottom - oldBounds.top );
+          const v = ( p[ 1 ] - oldBounds.top )  / ( oldBounds.bottom - oldBounds.top );
           
-          p[ 0 ] = selected.bounds.left + u * ( selected.bounds.right - selected.bounds.left );
-          p[ 1 ] = selected.bounds.top  + v * ( selected.bounds.bottom - selected.bounds.top );
+          p[ 0 ] = newBounds.left + u * ( newBounds.right - newBounds.left );
+          p[ 1 ] = newBounds.top  + v * ( newBounds.bottom - newBounds.top );
         } );
 
         active.dx += moveX;
@@ -327,7 +351,7 @@
 
     // Hover
     else {
-      hover = getEditUnder( mouse.x, mouse.y );
+      hover = getHoverUnder( mouse.x, mouse.y );
     }
 
     canvas.redraw();
@@ -343,7 +367,7 @@
         const bottom = Math.max( active.dragStart[ 1 ], mouse.y );
 
         if ( left != right && top != bottom ) { 
-          active.points = getLoop( left, top, right, bottom );
+          active.points = makeLoop( left, top, right, bottom );
           loops.splice( active.loopIndex, 0, active.points );
         }
         else {
@@ -360,7 +384,42 @@
     canvas.redraw();
   } );
 
-  function getLoop( left, top, right, bottom ) {
+  document.addEventListener( 'wheel', e => {
+    // TODO: Add to existing rotate command, stop other commands?
+    const under = getHoverUnder( mouse.x, mouse.y );
+
+    if ( under?.type == HoverType.Loop ) {
+      active = {
+        type: EditType.RotateLoop,
+        loopIndex: under.loopIndex,
+        x: mouse.x,
+        y: mouse.y,
+        angle: -0.1 * Math.sign( e.wheelDelta ),
+      }
+
+      console.log( active );
+
+      rotateLoop( loops[ active.loopIndex ], active.x, active.y, active.angle );
+    }
+
+    canvas.redraw();
+  } );
+
+  function rotateLoop( loop, x, y, angle ) {
+    loop.forEach( p => {
+      const cx = p[ 0 ] - x;
+      const cy = p[ 1 ] - y;
+      const oldAng = Math.atan2( cy, cx );
+      const dist = Math.hypot( cx, cy );
+
+      const newAng = oldAng + angle;
+
+      p[ 0 ] = x + dist * Math.cos( newAng );
+      p[ 1 ] = y + dist * Math.sin( newAng );
+    } );
+  }
+
+  function makeLoop( left, top, right, bottom ) {
     const loop = [];
 
     const width = ( right - left ) / 2;
@@ -381,10 +440,10 @@
     return loop;
   }
 
-  function getEditUnder( targetX, targetY ) {
+  function getHoverUnder( targetX, targetY ) {
     // Resize selected
-    if ( selected ) {
-      const boundsInfo = getBoundsInfo( selected.bounds );
+    if ( selectedIndex != null ) {
+      const boundsInfo = getBoundsInfo( getBounds( loops[ selectedIndex ] ) );
 
       let closestPoint, closestIndex, closestDist = Infinity;
       boundsInfo.points.forEach( ( p, index ) => {
@@ -399,16 +458,14 @@
 
       if ( closestDist < POINT_RADIUS * 4 ) {
         return  {
-          type: EditType.ResizeLoop,
+          type: HoverType.Resize,
           resizeType: closestIndex * 2,  // resizeTypes alternate between point and edge
-          loopIndex: selected.loopIndex,
-          dx: 0,
-          dy: 0,
+          loopIndex: selectedIndex,
         };
       }
     }
 
-    // Move point
+    // Existing point
     {
       let closestLoopIndex, closestPointIndex, closestDist = Infinity;
       loops.forEach( ( loop, loopIndex ) => {
@@ -425,16 +482,14 @@
 
       if ( closestDist < POINT_RADIUS * 4 ) {
         return {
-          type: EditType.MovePoint,
+          type: HoverType.Point,
           loopIndex: closestLoopIndex,
           pointIndex: closestPointIndex,
-          dx: 0,
-          dy: 0,
         };
       }
     }
 
-    // Add point
+    // Edge (to add point)
     {
       let closestPoint, closestLoopIndex, closestPointIndex, closestDist = Infinity;
       loops.forEach( ( loop, loopIndex ) => {
@@ -475,10 +530,23 @@
 
       if ( closestDist < POINT_RADIUS * 4 ) {
         return {
-          type: EditType.AddPoint,
+          type: HoverType.Edge,
           loopIndex: closestLoopIndex,
           pointIndex: closestPointIndex,
           point: closestPoint,
+        };
+      }
+    }
+
+    // Loop (do last, so we don't prevent points or edges from being detected)
+    for ( let i = 0; i < loops.length; i ++ ) {
+      const bounds = getBounds( loops[ i ] );
+
+      if ( bounds.left <= mouse.x && mouse.x <= bounds.right && 
+           bounds.top  <= mouse.y && mouse.y <= bounds.bottom ) {
+        return {
+          type: HoverType.Loop,
+          loopIndex: i,
         };
       }
     }
