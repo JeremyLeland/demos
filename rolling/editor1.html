@@ -1,6 +1,19 @@
 <title>Drag control points to make levels</title>
 <link rel="stylesheet" href="../grid.css">
 
+<style>
+  #canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: -1;
+  }
+</style>
+
+<canvas id="canvas"></canvas>
+<button id="save">Save</button>
+<button id="load">Load</button>
+
 <script type="module">
   import { Canvas } from './Canvas.js';
   import { Line } from './Line.js';
@@ -29,27 +42,17 @@
     SW: 6, S: 5, SE: 4,
   };
 
-  const loops = [
+  let loops = [
     makeLoop( 3, -5, 10, -3 ),
     makeLoop( -7, -2, -1, 2 ),
     makeLoop( 2, 1, 11, 3 ),
     makeLoop( -1, 5, 8, 9 ),
   ];
-
-  // console.log( JSON.stringify( loops ) );
   
-  
-
-  // const lines = [];
-  // loops.forEach( loop => {
-  //   for ( let i = 0; i < loop.length; i ++ ) {
-  //     lines.push( new Line( ...loop[ i ], ...loop[ ( i + 1 ) % loop.length ] ) );
-  //   }
-  // } );
 
   const SIZE = 16;
 
-  const canvas = new Canvas();
+  const canvas = new Canvas( document.getElementById( 'canvas' ) );
   canvas.zoom = 1 / SIZE;
   canvas.scrollX = SIZE / 2;
   canvas.scrollY = SIZE / 2;
@@ -552,5 +555,14 @@
       }
     }
   }
+
+  document.getElementById( 'save' ).addEventListener( 'click', e => {
+    alert( JSON.stringify( loops ) );
+  } );
+
+  document.getElementById( 'load' ).addEventListener( 'click', e => {
+    loops = JSON.parse( prompt() );
+    canvas.redraw();
+  } );
 
 </script>
