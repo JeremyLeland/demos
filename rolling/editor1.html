@@ -369,6 +369,7 @@
         if ( left != right && top != bottom ) { 
           active.points = makeLoop( left, top, right, bottom );
           loops.splice( active.loopIndex, 0, active.points );
+          selectedIndex = active.loopIndex;
         }
         else {
           active = null;
