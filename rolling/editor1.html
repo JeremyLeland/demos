@@ -83,6 +83,20 @@
       ctx.fill();
     }
 
+    if ( active?.dragStart ) {
+      ctx.setLineDash( [ 0.1, 0.1 ] );
+
+      ctx.strokeStyle = 'lime';
+      ctx.strokeRect(
+        active.dragStart[ 0 ], 
+        active.dragStart[ 1 ], 
+        mouse.x - active.dragStart[ 0 ], 
+        mouse.y - active.dragStart[ 1 ], 
+      );
+
+      ctx.setLineDash( [] );
+    }
+
     // Points
     ctx.fillStyle = '#fffa';
     ctx.beginPath();
@@ -139,12 +153,6 @@
   }
 
 
-  // TODO: Click and drag a rectangle to make a new loop (when not in rectangle)
-  // TODO: Move and resize existing loops
-  //         - Hovering over loop shows move box and resize corners? (probably more intuitive)
-  //         - Or just right-click drag inside loop to resize it?
-  // TODO: Remove point
-  // TODO: Add point (show new point when hover close to line, create when click)
   // TODO: Undo/Redo (requires serializing operations: move, resize, delete, etc)
   //         - Or just save the whole level state...might be easier than trying to add back points
 
