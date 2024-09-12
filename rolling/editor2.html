@@ -11,6 +11,7 @@
 </style>
 
 <canvas id="canvas"></canvas>
+<button id="play">Play</button>
 <button id="save">Save</button>
 <button id="load">Load</button>
 
@@ -43,6 +44,13 @@
     SW: 6, S: 5, SE: 4,
   };
 
+  const Mode = {
+    Edit: 'Edit',
+    Play: 'Play',
+  };
+
+  let mode = Mode.Edit;
+
   let loops = [
     makeLoop( 3, -5, 10, -3 ),
     makeLoop( -7, -2, -1, 2 ),
@@ -50,7 +58,7 @@
     makeLoop( -1, 5, 8, 9 ),
   ];
 
-  const world = new World( loops );
+  let world;
   
   const POINT_RADIUS = 0.06;
 
@@ -68,71 +76,83 @@
   }
 
   canvas.draw = ( ctx ) => {
-    world.draw( ctx );
-
-    // Bounds
-    if ( selectedIndex ) {
-      const boundsInfo = getBoundsInfo( getBounds( loops[ selectedIndex ] ) );
-      
-      ctx.fillStyle = ctx.strokeStyle = '#fffa';
-
-      ctx.setLineDash( [ 0.1, 0.1 ] );
-      ctx.beginPath();
-      boundsInfo.edges.forEach( e => {
-        ctx.moveTo( e[ 0 ], e[ 1 ] );
-        ctx.lineTo( e[ 2 ], e[ 3 ] );
+    if ( mode == Mode.Edit ) {
+      // Loops
+      ctx.fillStyle = 'green';
+      loops.forEach( loop => {
+        ctx.beginPath();
+        loop.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
+        ctx.fill();
       } );
-      ctx.stroke();
-      ctx.setLineDash( [] );
+      
+      // Bounds
+      if ( selectedIndex ) {
+        const boundsInfo = getBoundsInfo( getBounds( loops[ selectedIndex ] ) );
+        
+        ctx.fillStyle = ctx.strokeStyle = '#fffa';
 
+        ctx.setLineDash( [ 0.1, 0.1 ] );
+        ctx.beginPath();
+        boundsInfo.edges.forEach( e => {
+          ctx.moveTo( e[ 0 ], e[ 1 ] );
+          ctx.lineTo( e[ 2 ], e[ 3 ] );
+        } );
+        ctx.stroke();
+        ctx.setLineDash( [] );
+
+        ctx.beginPath();
+        boundsInfo.points.forEach( p => {
+          drawPoint( ctx, p, POINT_RADIUS );
+        } );
+        ctx.fill();
+      }
+
+      if ( active?.dragStart ) {
+        ctx.setLineDash( [ 0.1, 0.1 ] );
+
+        ctx.strokeStyle = 'lime';
+        ctx.strokeRect(
+          active.dragStart[ 0 ], 
+          active.dragStart[ 1 ], 
+          mouse.x - active.dragStart[ 0 ], 
+          mouse.y - active.dragStart[ 1 ], 
+        );
+
+        ctx.setLineDash( [] );
+      }
+
+      // Points
+      ctx.fillStyle = '#fffa';
       ctx.beginPath();
-      boundsInfo.points.forEach( p => {
-        drawPoint( ctx, p, POINT_RADIUS );
+      loops.forEach( loop => {
+        loop.forEach( p => {
+          drawPoint( ctx, p, POINT_RADIUS );
+        } );
       } );
       ctx.fill();
-    }
 
-    if ( active?.dragStart ) {
-      ctx.setLineDash( [ 0.1, 0.1 ] );
+      if ( hover ) {
+        ctx.fillStyle = hover.type == HoverType.Point ? 'yellow' : 'lime';
 
-      ctx.strokeStyle = 'lime';
-      ctx.strokeRect(
-        active.dragStart[ 0 ], 
-        active.dragStart[ 1 ], 
-        mouse.x - active.dragStart[ 0 ], 
-        mouse.y - active.dragStart[ 1 ], 
-      );
+        ctx.beginPath();
 
-      ctx.setLineDash( [] );
-    }
-
-    // Points
-    ctx.fillStyle = '#fffa';
-    ctx.beginPath();
-    loops.forEach( loop => {
-      loop.forEach( p => {
-        drawPoint( ctx, p, POINT_RADIUS );
-      } );
-    } );
-    ctx.fill();
-
-    if ( hover ) {
-      ctx.fillStyle = hover.type == HoverType.Point ? 'yellow' : 'lime';
-
-      ctx.beginPath();
-
-      if ( hover.point ) {
-        drawPoint( ctx, hover.point, POINT_RADIUS * 2 );
+        if ( hover.point ) {
+          drawPoint( ctx, hover.point, POINT_RADIUS * 2 );
+        }
+        else if ( hover.pointIndex != null ) {
+          drawPoint( ctx, loops[ hover.loopIndex ][ hover.pointIndex ], POINT_RADIUS * 2 );
+        }
+        
+        ctx.fill();  
       }
-      else if ( hover.pointIndex != null ) {
-        drawPoint( ctx, loops[ hover.loopIndex ][ hover.pointIndex ], POINT_RADIUS * 2 );
-      }
-      
-      ctx.fill();  
     }
+    else if ( mode == Mode.Play ) {
+      world.draw( ctx );
+    }    
   }
+
+  canvas.redraw();
   
-  canvas.start();
 
   function getBounds( loop ) {
     const bounds = {};
@@ -182,113 +202,123 @@
     y: 0,
   }
 
-  document.addEventListener( 'pointerdown', e => {
+  canvas.canvas.addEventListener( 'pointerdown', e => {
     mouse.x = canvas.getPointerX( e );
     mouse.y = canvas.getPointerY( e );
-    
-    hover = null;
 
-    const under = getHoverUnder( mouse.x, mouse.y );
+    if ( mode == Mode.Edit ) {
+      hover = null;
 
-    if ( !under ) {
-      if ( e.buttons & 1 ) {
-        active = {
-          type: EditType.AddLoop,
-          loopIndex: loops.length,
-          dragStart: [ mouse.x, mouse.y ],
+      const under = getHoverUnder( mouse.x, mouse.y );
+
+      if ( !under ) {
+        if ( e.buttons & 1 ) {
+          active = {
+            type: EditType.AddLoop,
+            loopIndex: loops.length,
+            dragStart: [ mouse.x, mouse.y ],
+          }
         }
       }
-    }
-    else if ( under.type == HoverType.Loop ) {
-      selectedIndex = null;
+      else if ( under.type == HoverType.Loop ) {
+        selectedIndex = null;
 
-      if ( e.buttons & 1 ) {
-        selectedIndex = under.loopIndex;
-        
+        if ( e.buttons & 1 ) {
+          selectedIndex = under.loopIndex;
+          
+          active = {
+            type: EditType.MoveLoop,
+            loopIndex: under.loopIndex,
+            dx: 0,
+            dy: 0,
+          };
+        }
+        else if ( e.buttons & 2 ) {
+          active = {
+            type: EditType.DeleteLoop,
+            loopIndex: under.loopIndex,
+          };
+
+          console.log( active );
+
+          loops.splice( active.loopIndex, 1 );
+
+          active = null;
+        }
+      }
+      else if ( under.type == HoverType.Edge ) {
+        if ( e.buttons & 1 ) {
+          active = {
+            type: EditType.AddPoint,
+            loopIndex: under.loopIndex,
+            pointIndex: under.pointIndex,
+            point: under.point,
+          }
+
+          console.log( active );
+          
+          loops[ active.loopIndex ].splice( active.pointIndex, 0, active.point );
+          
+          active = {
+            type: EditType.MovePoint,
+            loopIndex: under.loopIndex,
+            pointIndex: under.pointIndex,
+            dx: 0,
+            dy: 0,
+          }
+        }
+        else {
+          active = null;
+        }
+      }
+      else if ( under.type == HoverType.Point ) {
+        if ( e.buttons & 1 ) {
+          active = {
+            type: EditType.MovePoint,
+            loopIndex: under.loopIndex,
+            pointIndex: under.pointIndex,
+            dx: 0,
+            dy: 0,
+          }
+        }
+        else if ( e.buttons & 2 ) {
+          active = {
+            type: EditType.DeletePoint,
+            loopIndex: under.loopIndex,
+            pointIndex: under.pointIndex,
+          }
+
+          console.log( active );
+
+          loops[ active.loopIndex ].splice( active.pointIndex, 1 );
+
+          active = null;
+        }
+      }
+      else if ( under.type == HoverType.Resize ) {
         active = {
-          type: EditType.MoveLoop,
+          type: EditType.ResizeLoop,
           loopIndex: under.loopIndex,
+          pointIndex: under.pointIndex,
+          resizeType: under.resizeType,
           dx: 0,
           dy: 0,
-        };
+        }
       }
-      else if ( e.buttons & 2 ) {
-        active = {
-          type: EditType.DeleteLoop,
-          loopIndex: under.loopIndex,
-        };
 
-        console.log( active );
-
-        loops.splice( active.loopIndex, 1 );
-
-        active = null;
-      }
+      canvas.redraw();
     }
-    else if ( under.type == HoverType.Edge ) {
-      if ( e.buttons & 1 ) {
-        active = {
-          type: EditType.AddPoint,
-          loopIndex: under.loopIndex,
-          pointIndex: under.pointIndex,
-          point: under.point,
-        }
-
-        console.log( active );
-        
-        loops[ active.loopIndex ].splice( active.pointIndex, 0, active.point );
-        
-        active = {
-          type: EditType.MovePoint,
-          loopIndex: under.loopIndex,
-          pointIndex: under.pointIndex,
-          dx: 0,
-          dy: 0,
-        }
-      }
-      else {
-        active = null;
-      }
-    }
-    else if ( under.type == HoverType.Point ) {
-      if ( e.buttons & 1 ) {
-        active = {
-          type: EditType.MovePoint,
-          loopIndex: under.loopIndex,
-          pointIndex: under.pointIndex,
-          dx: 0,
-          dy: 0,
-        }
-      }
-      else if ( e.buttons & 2 ) {
-        active = {
-          type: EditType.DeletePoint,
-          loopIndex: under.loopIndex,
-          pointIndex: under.pointIndex,
-        }
-
-        console.log( active );
-
-        loops[ active.loopIndex ].splice( active.pointIndex, 1 );
-
-        active = null;
-      }
-    }
-    else if ( under.type == HoverType.Resize ) {
-      active = {
-        type: EditType.ResizeLoop,
-        loopIndex: under.loopIndex,
-        pointIndex: under.pointIndex,
-        resizeType: under.resizeType,
+    else if ( mode == Mode.Play ) {
+      Object.assign( world.player, {
+        x: mouse.x,
+        y: mouse.y,
         dx: 0,
         dy: 0,
-      }
+      } );
     }
-
-    canvas.redraw();
   } );
 
-  document.addEventListener( 'pointermove', e => {
+  canvas.canvas.addEventListener( 'pointermove', e => {
     const lastX = mouse.x;
     const lastY = mouse.y;
     mouse.x = canvas.getPointerX( e );
@@ -357,7 +387,7 @@
     canvas.redraw();
   } );
 
-  document.addEventListener( 'pointerup', e => {
+  canvas.canvas.addEventListener( 'pointerup', e => {
     if ( active ) {
 
       if ( active.type == EditType.AddLoop ) {
@@ -552,6 +582,23 @@
       }
     }
   }
+
+  document.getElementById( 'play' ).addEventListener( 'click', e => {
+    if ( mode == Mode.Edit ) {
+      mode = Mode.Play;
+      document.getElementById( 'play' ).innerText = 'Edit';
+      world = new World( loops );
+      canvas.start();
+    }
+    else if ( mode == Mode.Play ) {
+      canvas.stop();
+
+      mode = Mode.Edit;
+      document.getElementById( 'play' ).innerText = 'Play';
+      world = null;
+      canvas.redraw();
+    }
+  } );
 
   document.getElementById( 'save' ).addEventListener( 'click', e => {
     alert( JSON.stringify( loops ) );

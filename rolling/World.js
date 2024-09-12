@@ -39,7 +39,7 @@ export class World {
     this.#lines.forEach( line => {
       const dist = line.distanceFrom( this.player );
       
-      if ( -1 < dist && dist < currentDist ) {
+      if ( -this.player.radius < dist && dist < currentDist ) {
         currentLine = line;
         currentDist = dist;
       }
@@ -111,6 +111,7 @@ export class World {
 
         nextTime = Math.min( dt, brakeTime );
 
+        // NOTE: This is only valid when moving on a linear slope. Need to do something different below
         let nextLine = null;
         this.#lines.forEach( line => {
           if ( currentLine != line ) {
@@ -132,6 +133,9 @@ export class World {
       else {
         ax = 0;
         ay = GRAVITY;
+
+        // TODO: Check for next line, adjust nextTime appropriately
+        //       Can't use the linear distance above, since we'll be doing parabolic motion
       }
 
       this.player.x += this.player.dx * nextTime + 0.5 * ax * nextTime * nextTime;
