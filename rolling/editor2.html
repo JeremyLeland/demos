@@ -200,7 +200,9 @@
   let mouse = {
     x: 0,
     y: 0,
-  }
+  };
+
+  let spawnStart;
 
   canvas.canvas.addEventListener( 'pointerdown', e => {
     mouse.x = canvas.getPointerX( e );
@@ -309,12 +311,10 @@
       canvas.redraw();
     }
     else if ( mode == Mode.Play ) {
-      Object.assign( world.player, {
+      spawnStart = {
         x: mouse.x,
-        y: mouse.y,
-        dx: 0,
-        dy: 0,
-      } );
+        y: mouse.y
+      };
     }
   } );
 
@@ -326,93 +326,108 @@
     const moveX = mouse.x - lastX;
     const moveY = mouse.y - lastY;
 
-    // Move active points (or resize)
-    if ( active ) {
-      if ( active.type == EditType.MovePoint ) {
-        const p = loops[ active.loopIndex ][ active.pointIndex ];
-        p[ 0 ] += moveX;
-        p[ 1 ] += moveY;
-
-        active.dx += moveX;
-        active.dy += moveY;
-      }
-      else if ( active.type == EditType.MoveLoop ) {
-        loops[ active.loopIndex ].forEach( p => {
+    if ( mode == Mode.Edit ) {
+      // Move active points (or resize)
+      if ( active ) {
+        if ( active.type == EditType.MovePoint ) {
+          const p = loops[ active.loopIndex ][ active.pointIndex ];
           p[ 0 ] += moveX;
           p[ 1 ] += moveY;
-        } );
 
-        active.dx += moveX;
-        active.dy += moveY;
+          active.dx += moveX;
+          active.dy += moveY;
+        }
+        else if ( active.type == EditType.MoveLoop ) {
+          loops[ active.loopIndex ].forEach( p => {
+            p[ 0 ] += moveX;
+            p[ 1 ] += moveY;
+          } );
+
+          active.dx += moveX;
+          active.dy += moveY;
+        }
+        else if ( active.type == EditType.ResizeLoop ) {
+          const oldBounds = getBounds( loops[ active.loopIndex ] );
+          const newBounds = Object.assign( {}, oldBounds );
+
+          if ( active.resizeType == ResizeType.NW ) {
+            newBounds.left += moveX;
+            newBounds.top  += moveY;
+          }
+          else if ( active.resizeType == ResizeType.NE ) {
+            newBounds.right += moveX;
+            newBounds.top   += moveY;
+          }
+          else if ( active.resizeType == ResizeType.SE ) {
+            newBounds.right  += moveX;
+            newBounds.bottom += moveY;
+          }
+          else if ( active.resizeType == ResizeType.SW ) {
+            newBounds.left   += moveX;
+            newBounds.bottom += moveY;
+          }
+
+          loops[ active.loopIndex ].forEach( p => {
+            const u = ( p[ 0 ] - oldBounds.left ) / ( oldBounds.right - oldBounds.left );
+            const v = ( p[ 1 ] - oldBounds.top )  / ( oldBounds.bottom - oldBounds.top );
+            
+            p[ 0 ] = newBounds.left + u * ( newBounds.right - newBounds.left );
+            p[ 1 ] = newBounds.top  + v * ( newBounds.bottom - newBounds.top );
+          } );
+
+          active.dx += moveX;
+          active.dy += moveY;
+        }
       }
-      else if ( active.type == EditType.ResizeLoop ) {
-        const oldBounds = getBounds( loops[ active.loopIndex ] );
-        const newBounds = Object.assign( {}, oldBounds );
 
-        if ( active.resizeType == ResizeType.NW ) {
-          newBounds.left += moveX;
-          newBounds.top  += moveY;
-        }
-        else if ( active.resizeType == ResizeType.NE ) {
-          newBounds.right += moveX;
-          newBounds.top   += moveY;
-        }
-        else if ( active.resizeType == ResizeType.SE ) {
-          newBounds.right  += moveX;
-          newBounds.bottom += moveY;
-        }
-        else if ( active.resizeType == ResizeType.SW ) {
-          newBounds.left   += moveX;
-          newBounds.bottom += moveY;
-        }
-
-        loops[ active.loopIndex ].forEach( p => {
-          const u = ( p[ 0 ] - oldBounds.left ) / ( oldBounds.right - oldBounds.left );
-          const v = ( p[ 1 ] - oldBounds.top )  / ( oldBounds.bottom - oldBounds.top );
-          
-          p[ 0 ] = newBounds.left + u * ( newBounds.right - newBounds.left );
-          p[ 1 ] = newBounds.top  + v * ( newBounds.bottom - newBounds.top );
-        } );
-
-        active.dx += moveX;
-        active.dy += moveY;
+      // Hover
+      else {
+        hover = getHoverUnder( mouse.x, mouse.y );
       }
-    }
 
-    // Hover
-    else {
-      hover = getHoverUnder( mouse.x, mouse.y );
+      canvas.redraw();
     }
-
-    canvas.redraw();
+    else if ( mode == Mode.Play ) {
+    }
   } );
 
   canvas.canvas.addEventListener( 'pointerup', e => {
-    if ( active ) {
+    if ( mode == Mode.Edit ) {
+      if ( active ) {
+        if ( active.type == EditType.AddLoop ) {
+          const left   = Math.min( active.dragStart[ 0 ], mouse.x );
+          const right  = Math.max( active.dragStart[ 0 ], mouse.x );
+          const top    = Math.min( active.dragStart[ 1 ], mouse.y );
+          const bottom = Math.max( active.dragStart[ 1 ], mouse.y );
 
-      if ( active.type == EditType.AddLoop ) {
-        const left   = Math.min( active.dragStart[ 0 ], mouse.x );
-        const right  = Math.max( active.dragStart[ 0 ], mouse.x );
-        const top    = Math.min( active.dragStart[ 1 ], mouse.y );
-        const bottom = Math.max( active.dragStart[ 1 ], mouse.y );
-
-        if ( left != right && top != bottom ) { 
-          active.points = makeLoop( left, top, right, bottom );
-          loops.splice( active.loopIndex, 0, active.points );
-          selectedIndex = active.loopIndex;
+          if ( left != right && top != bottom ) { 
+            active.points = makeLoop( left, top, right, bottom );
+            loops.splice( active.loopIndex, 0, active.points );
+            selectedIndex = active.loopIndex;
+          }
+          else {
+            active = null;
+          }
         }
-        else {
+
+        if ( active ) {
+          console.log( active ); 
           active = null;
         }
       }
 
-      if ( active ) {
-        console.log( active ); 
-        active = null;
-      }
+      canvas.redraw();
     }
+    else if ( mode == Mode.Play ) {
+      const VEL = 0.01;
 
-    canvas.redraw();
+      Object.assign( world.player, {
+        x: mouse.x,
+        y: mouse.y,
+        dx: VEL * ( mouse.x - spawnStart.x ),
+        dy: VEL * ( mouse.y - spawnStart.y ),
+      } );
+    }
   } );
 
   document.addEventListener( 'wheel', e => {
