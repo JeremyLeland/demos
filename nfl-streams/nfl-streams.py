@@ -22,16 +22,15 @@ for link in list_soup.find_all( 'a', 'btn' ):
 
   idgstream = quote( re.search( 'var vidgstream = "(.+?)";', page_html ).group( 1 ) )
 
-  match = re.search( 'gethlsUrl\((.+?),(.+?),(.+?)\);', page_html )
-  # idgstream = match.group( 1 )
-  serverid = match.group( 2 ).strip()
-  cid = match.group( 3 ).strip()
+  match = re.search( r'gethlsUrl\(vidgstream,(.+?),(.+?)\);', page_html )
+  serverid = match.group( 1 ).strip()
+  cid = match.group( 2 ).strip()
 
   gethls_url = f'https://weakspell.to/gethls?idgstream={ idgstream }&serverid={ serverid }&cid={ cid }'
   gethls_json = requests.get( gethls_url ).json()
 
   playlist = gethls_json[ 'rawUrl' ]
 
-  print( f'#EXTINF:-1 tvg-logo={ img } , { title }' )
+  print( f'#EXTINF:-1 tvg-logo="{ img }" , { title }' )
   print( playlist )
   
