@@ -1,0 +1,140 @@
+<title>Test parabola collision</title>
+<link rel="stylesheet" href="../grid.css">
+
+<script type="module">
+  import { Canvas } from './Canvas.js';
+  import { Line } from './Line.js';
+  
+  const entity = { x: 0, y: 0, dx: 1, dy: 0, radius: 0.2 };
+
+  const line = new Line( 2, 2, 3, 1 );
+  
+  const SIZE = 8;
+  const canvas = new Canvas();
+  canvas.zoom = 1 / SIZE;
+  canvas.scrollX = SIZE / 2;
+  canvas.scrollY = SIZE / 2;
+
+  canvas.draw = ( ctx ) => {
+
+    ctx.strokeStyle = 'green';
+    line.draw( ctx );
+
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc( entity.x, entity.y, entity.radius, 0, Math.PI * 2 );
+    ctx.closePath();
+    ctx.fill();
+    
+    ctx.beginPath();
+    let x = entity.x;
+    let y = entity.y;
+    let dx = entity.dx;
+    let dy = entity.dy;
+    
+    const dt = 0.1;
+    const ax = 0;
+    const ay = 0.5;
+    for ( let t = 0; t < 3; t += dt ) {
+      ctx.lineTo( x, y );
+
+      x += dx * dt + 0.5 * ax * dt * dt;
+      y += dy * dt + 0.5 * ay * dt * dt;
+
+      dx += ax * dt;
+      dy += ay * dt;
+
+      // this.player.x += this.player.dx * nextTime + 0.5 * ax * nextTime * nextTime;
+      // this.player.y += this.player.dy * nextTime + 0.5 * ay * nextTime * nextTime;
+      
+      // this.player.dx += ax * nextTime;
+      // this.player.dy += ay * nextTime;
+    }
+
+    ctx.strokeStyle = 'yellow';
+    ctx.lineWidth = 0.05;
+    // ctx.setLineDash( [ 0.1, 0.1 ] );
+    ctx.stroke();
+
+    ctx.beginPath();
+    for ( let t = 0; t < 3; t += dt ) {
+      ctx.lineTo(
+        entity.x + entity.dx * t + 0.5 * ax * t * t,
+        entity.y + entity.dy * t + 0.5 * ay * t * t,
+      );
+    }
+
+    ctx.strokeStyle = 'orange';
+    ctx.lineWidth = 0.05;
+    ctx.setLineDash( [ 0.1, 0.1 ] );
+    ctx.stroke();
+
+    // https://math.stackexchange.com/questions/106705/find-intersections-between-parametrized-parabola-and-a-line
+
+    // If P = ( px, py ) and Q = ( qx, qy ), line PQ has equation ( x - px ) / ( qx - px ) = ( y - py ) / ( qy - py )
+
+    // 0.5 * ( ( a x q ) - ( a x p ) ) * t * t + ( ( v x q ) - ( v x p ) ) * t + ( ( r x q ) - ( r x p ) - ( p x q ) ) = 0
+    // axby - aybx = a x b
+    // 0.5 * ( ( ax*qy - ay*qx ) - ( ax*py - ay*px ) ) * t * t + ( ( vx*qy - vy*qx ) - ( vx*py - vy*px ) ) * t + ( ( rx*qy - ry*qx ) - ( rx*py - ry*px ) - ( pxqy - pyqx ) ) = 0
+
+    // A = 0.5 * ( ( ax*qy - ay*qx ) - ( ax*py - ay*px ) )
+    // B = ( ( vx*qy - vy*qx ) - ( vx*py - vy*px ) )
+    // C = ( ( rx*qy - ry*qx ) - ( rx*py - ry*px ) - ( px*qy - py*qx ) )
+
+    const px = line.x1;
+    const py = line.y1;
+    const qx = line.x2;
+    const qy = line.y2;
+
+    // const ax (above)
+    // const ay (above)
+    const vx = entity.dx;
+    const vy = entity.dy;
+    const rx = entity.x;    // is this what they mean?
+    const ry = entity.y;    // not sure what else it would be
+
+    const A = 0.5 * ( ( ax*qy - ay*qx ) - ( ax*py - ay*px ) );
+    const B = ( ( vx*qy - vy*qx ) - ( vx*py - vy*px ) );
+    const C = ( ( rx*qy - ry*qx ) - ( rx*py - ry*px ) - ( px*qy - py*qx ) );
+
+
+    const t0 = ( -B - Math.sqrt( B * B - 4 * A * C ) ) / ( 2 * A );
+    const t1 = ( -B + Math.sqrt( B * B - 4 * A * C ) ) / ( 2 * A );
+
+    console.log( 't0 = ' + t0 + ', t1 = ' + t1 );
+
+    const t0x = entity.x + entity.dx * t0 + 0.5 * ax * t0 * t0;
+    const t0y = entity.y + entity.dy * t0 + 0.5 * ay * t0 * t0;
+
+    ctx.beginPath();
+    ctx.arc( t0x, t0y, 0.1, 0, Math.PI * 2 );
+    ctx.fillStyle = 'red';
+    ctx.fill();
+  }
+
+  function doMouse( e ) {
+    const mouseX = canvas.getPointerX( e );
+    const mouseY = canvas.getPointerY( e );
+
+    entity.x = mouseX;
+    entity.y = mouseY;
+
+    canvas.redraw();
+  }
+
+  let mouseDown = false;
+
+  document.addEventListener( 'pointerdown', e => {
+    mouseDown = true;
+    doMouse( e )
+  } );
+  document.addEventListener( 'pointermove', e => {
+    if ( mouseDown ) {
+      doMouse( e );
+    }
+  } );
+  document.addEventListener( 'pointerup', e => {
+    mouseDown = false;
+  } );
+  
+</script>
