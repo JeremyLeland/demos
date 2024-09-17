@@ -1,0 +1,6 @@
+[Unit]
+Description=Update NFL Streams m3u file
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python /home/iggames/Downloads/nfl-streams.py > /mnt/external/Streams/nfl-streams.m3u8
