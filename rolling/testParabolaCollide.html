@@ -17,6 +17,7 @@
 
   canvas.draw = ( ctx ) => {
 
+    ctx.lineWidth = 0.05;
     ctx.strokeStyle = 'green';
     line.draw( ctx );
 
@@ -81,10 +82,14 @@
     // B = ( ( vx*qy - vy*qx ) - ( vx*py - vy*px ) )
     // C = ( ( rx*qy - ry*qx ) - ( rx*py - ry*px ) - ( px*qy - py*qx ) )
 
-    const px = line.x1;
-    const py = line.y1;
-    const qx = line.x2;
-    const qy = line.y2;
+    const normalAngle = line.normalAngle;
+    const normX = Math.cos( normalAngle );
+    const normY = Math.sin( normalAngle );
+
+    const px = line.x1 + normX * entity.radius;
+    const py = line.y1 + normY * entity.radius;
+    const qx = line.x2 + normX * entity.radius;
+    const qy = line.y2 + normY * entity.radius;
 
     // const ax (above)
     // const ay (above)
@@ -92,6 +97,13 @@
     const vy = entity.dy;
     const rx = entity.x;    // is this what they mean?
     const ry = entity.y;    // not sure what else it would be
+
+    // TODO: The cross-product bit doesn't work for vertical lines...how to handle?
+    // Maybe see https://www.nagwa.com/en/explainers/516147029054/
+    // "Suppose that we are given parametric equations 𝑥=𝑓(𝑡), 𝑦=𝑔(𝑡) of a curve and the equation of a 
+    // horizontal line 𝑦=𝑎 (𝑎 is a constant) or a vertical line 𝑥=𝑏 (𝑏 is a constant). In this case, 
+    // we can directly set the relevant parametric coordinate equation equal to the constant: 
+    // either 𝑓(𝑡)=𝑏 or 𝑔(𝑡)=𝑎. In both cases, we have a single equation that we can solve for 𝑡 as before."
 
     const A = 0.5 * ( ( ax*qy - ay*qx ) - ( ax*py - ay*px ) );
     const B = ( ( vx*qy - vy*qx ) - ( vx*py - vy*px ) );
@@ -106,10 +118,13 @@
     const t0x = entity.x + entity.dx * t0 + 0.5 * ax * t0 * t0;
     const t0y = entity.y + entity.dy * t0 + 0.5 * ay * t0 * t0;
 
-    ctx.beginPath();
-    ctx.arc( t0x, t0y, 0.1, 0, Math.PI * 2 );
-    ctx.fillStyle = 'red';
-    ctx.fill();
+    if ( ( ( px <= t0x && t0x <= qx ) || ( qx <= t0x && t0x < px ) ) &&
+         ( ( py <= t0y && t0y <= qy ) || ( qy <= t0y && t0y < py ) ) ) {
+      ctx.beginPath();
+      ctx.arc( t0x, t0y, entity.radius, 0, Math.PI * 2 );
+      ctx.fillStyle = 'red';
+      ctx.fill();
+    }
   }
 
   function doMouse( e ) {
