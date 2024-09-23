@@ -2,9 +2,9 @@
 
 const eps=1e-12;
 
-console.log( solve_quartic( -2, -3, 4, 4 ) );
-console.log( solve_quartic( 4, 3, -4, -4 ) );
-console.log( solve_quartic( 2, -7, -8, 12 ) );
+console.log( solve_quartic( -2, -3, 4, 4 ) );  // -1, -1, 2, 2
+console.log( solve_quartic( 4, 3, -4, -4 ) );  // -2, -2, -1, 1
+console.log( solve_quartic( 2, -7, -8, 12 ) ); // 1, -1, 2, -3
 
 
 //---------------------------------------------------------------------------
