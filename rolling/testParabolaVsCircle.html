@@ -65,25 +65,19 @@
     const D = vx*(sx-2*cx) + vx*sx + vy*(sy - 2*cy) + vy*sy;
     const E = sx*(sx - 2*cx) + sy*(sy - 2*cy) + cx*cx + cy*cy - r*r;
 
-    // solveQuartic3( 1, -2, -3, 4, 4 );
-    // solveQuartic3( 1, 4, 3, -4, -4 );
-    // solveQuartic3( 1, 2, -7, -8, 12 );
+    const t = solveQuartic3( A, B, C, D, E );
 
-    const result = solveQuartic3( A, B, C, D, E );
-
-    result.forEach( t => {
-      ctx.fillStyle = 'red';
-      ctx.beginPath();
-      ctx.arc( 
-        sx + vx * t + 0.5 * ax * t * t,
-        sy + vy * t + 0.5 * ay * t * t,
-        entity.radius / 2, 
-        0, 
-        Math.PI * 2 
-      );
-      ctx.closePath();
-      ctx.fill();
-    } );
+    ctx.fillStyle = 'red';
+    ctx.beginPath();
+    ctx.arc( 
+      sx + vx * t + 0.5 * ax * t * t,
+      sy + vy * t + 0.5 * ay * t * t,
+      entity.radius / 2, 
+      0, 
+      Math.PI * 2 
+    );
+    ctx.closePath();
+    ctx.fill();
   }
 
   function solveQuartic1( A, B, C, D, E ) {
@@ -141,17 +135,7 @@
     const q = ( b*b*b - 4*b*c + 8*d ) / 8;
     const r = ( -3*b*b*b*b + 256*e - 64*b*d + 16*b*b*c ) / 256;
 
-    const result = solve_quartic( 0, p, q, r );
-
-    console.log( result );
-
-    console.log( 'Method 3:' );
-    console.log( result[ 0 ].real - a3/(4*a4) );
-    console.log( result[ 1 ].real - a3/(4*a4) );
-    console.log( result[ 2 ].real - a3/(4*a4) );
-    console.log( result[ 3 ].real - a3/(4*a4) );
-
-    return result.map( e => e.imag ? NaN : e.real - a3/(4*a4));
+    return solve_quartic( 0, p, q, r ) - a3/(4*a4);
   }
 
   // Based on https://github.com/sasamil/Quartic/blob/master/quartic.cpp
@@ -233,9 +217,9 @@
       q1 = q2 = y * 0.5;
       // g1+g2 = a && g1+g2 = b-y   <=>   g^2 - a*g + b-y = 0    (p === g)
       D = a*a - 4*(b-y);
-      if(Math.abs(D) < eps) //in other words - D==0
+      if(Math.abs(D) < eps) { //in other words - D==0
         p1 = p2 = a * 0.5;
-
+      }
       else
       {
         sqD = Math.sqrt(D);
@@ -253,41 +237,42 @@
       p2 = (c-a*q2)/(q1-q2);
     }
 
-    let retval = Array.from( Array( 4 ), _ => ( {} ) );
+    let closest = Infinity;
 
     // solving quadratic eq. - x^2 + p1*x + q1 = 0
     D = p1*p1 - 4*q1;
     if(D < 0.0)
     {
-      retval[0].real = -p1 * 0.5;
-      retval[0].imag = Math.sqrt(-D) * 0.5;
-      retval[1].real = -p1 * 0.5;
-      retval[1].imag = Math.sqrt(-D) * -0.5;
+      // ignore imaginary values
     }
     else
     {
       sqD = Math.sqrt(D);
-      retval[0].real = (-p1 + sqD) * 0.5;
-      retval[1].real = (-p1 - sqD) * 0.5;
+
+      const t0 = (-p1 + sqD) * 0.5;
+      const t1 = (-p1 - sqD) * 0.5;
+
+      if ( 0 <= t0 && t0 <= closest ) closest = t0;
+      if ( 0 <= t1 && t1 <= closest ) closest = t1;
     }
 
     // solving quadratic eq. - x^2 + p2*x + q2 = 0
     D = p2*p2 - 4*q2;
     if(D < 0.0)
     {
-      retval[2].real = -p2 * 0.5;
-      retval[2].imag = Math.sqrt(-D) * 0.5;
-      retval[2].real = -p2 * 0.5;
-      retval[2].imag = Math.sqrt(-D) * -0.5;
+      // ignore imaginary values
     }
     else
     {
       sqD = Math.sqrt(D);
-      retval[2].real = (-p2 + sqD) * 0.5;
-      retval[3].real = (-p2 - sqD) * 0.5;
+      const t2 = (-p2 + sqD) * 0.5;
+      const t3 = (-p2 - sqD) * 0.5;
+
+      if ( 0 <= t2 && t2 <= closest ) closest = t2;
+      if ( 0 <= t3 && t3 <= closest ) closest = t3;
     }
 
-    return retval;
+    return closest;
   }
 
 
