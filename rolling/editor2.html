@@ -294,7 +294,6 @@
         active = {
           type: EditType.ResizeLoop,
           loopIndex: under.loopIndex,
-          pointIndex: under.pointIndex,
           resizeType: under.resizeType,
           dx: 0,
           dy: 0,
@@ -322,24 +321,18 @@
     if ( mode == Mode.Edit ) {
       // Move active points (or resize)
       if ( active ) {
-        if ( active.type == EditType.MovePoint ) {  
-          active.dx = moveX;
-          active.dy = moveY;
+        active.dx = moveX;
+        active.dy = moveY;
 
+        if ( active.type == EditType.MovePoint ) {  
           console.log( active );
           Level.movePoint( editorState.level, active );
         }
         else if ( active.type == EditType.MoveLoop ) {
-          active.dx = moveX;
-          active.dy = moveY;
-
           console.log( active );
           Level.moveLoop( editorState.level, active );
         }
         else if ( active.type == EditType.ResizeLoop ) {
-          active.dx = moveX;
-          active.dy = moveY;
-
           console.log( active );
           Level.resizeLoop( editorState.level, active );
         }
