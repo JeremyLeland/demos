@@ -18,7 +18,7 @@
 <script type="module">
   import { Canvas } from './Canvas.js';
   import { World } from './World.js';
-  import { Level } from './Level.js';
+  import * as Level from './Level.js';
   import { Line } from './Line.js';
 
   const EditorStateKey = 'golfEditorState';
@@ -48,7 +48,9 @@
 
   let mode = Mode.Edit;
 
-  const level = new Level();
+  const editorState = JSON.parse( localStorage.getItem( EditorStateKey ) ) ?? {
+    level: Level.newLevel(),
+  }
 
   let world;
   
@@ -71,7 +73,7 @@
     if ( mode == Mode.Edit ) {
       // Loops
       ctx.fillStyle = 'green';
-      level.loops.forEach( loop => {
+      editorState.level.loops.forEach( loop => {
         ctx.beginPath();
         loop.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
         ctx.fill();
@@ -79,7 +81,7 @@
       
       // Bounds
       if ( selectedIndex != null ) {
-        const boundsInfo = getBoundsInfo( getBounds( level.loops[ selectedIndex ] ) );
+        const boundsInfo = getBoundsInfo( getBounds( editorState.level.loops[ selectedIndex ] ) );
         
         ctx.fillStyle = ctx.strokeStyle = '#fffa';
 
@@ -116,7 +118,7 @@
       // Points
       ctx.fillStyle = '#fffa';
       ctx.beginPath();
-      level.loops.forEach( loop => {
+      editorState.level.loops.forEach( loop => {
         loop.forEach( p => {
           drawPoint( ctx, p, POINT_RADIUS );
         } );
@@ -132,11 +134,13 @@
           drawPoint( ctx, hover.point, POINT_RADIUS * 2 );
         }
         else if ( hover.pointIndex != null ) {
-          drawPoint( ctx, level.loops[ hover.loopIndex ][ hover.pointIndex ], POINT_RADIUS * 2 );
+          drawPoint( ctx, editorState.level.loops[ hover.loopIndex ][ hover.pointIndex ], POINT_RADIUS * 2 );
         }
         
         ctx.fill();  
       }
+
+      localStorage.setItem( EditorStateKey, JSON.stringify( editorState ) );
     }
     else if ( mode == Mode.Play ) {
       world.draw( ctx );
@@ -188,7 +192,6 @@
 
 
   // TODO: Undo/Redo (requires serializing operations: move, resize, delete, etc)
-  //         - Or just save the whole level state...might be easier than trying to add back points
 
   let mouse = {
     x: 0,
@@ -210,7 +213,7 @@
         if ( e.buttons & 1 ) {
           active = {
             type: EditType.AddLoop,
-            loopIndex: level.loops.length,
+            loopIndex: editorState.level.loops.length,
             dragStart: [ mouse.x, mouse.y ],
           }
         }
@@ -235,7 +238,7 @@
           };
 
           console.log( active );
-          level.deleteLoop( active );
+          Level.deleteLoop( editorState.level, active );
 
           active = null;
         }
@@ -250,7 +253,7 @@
           }
 
           console.log( active );
-          level.addPoint( active );
+          Level.addPoint( editorState.level, active );
           
           active = {
             type: EditType.MovePoint,
@@ -282,7 +285,7 @@
           }
 
           console.log( active );
-          level.deletePoint( active );
+          Level.deletePoint( editorState.level, active );
 
           active = null;
         }
@@ -324,21 +327,21 @@
           active.dy = moveY;
 
           console.log( active );
-          level.movePoint( active );
+          Level.movePoint( editorState.level, active );
         }
         else if ( active.type == EditType.MoveLoop ) {
           active.dx = moveX;
           active.dy = moveY;
 
           console.log( active );
-          level.moveLoop( active );
+          Level.moveLoop( editorState.level, active );
         }
         else if ( active.type == EditType.ResizeLoop ) {
           active.dx = moveX;
           active.dy = moveY;
 
           console.log( active );
-          level.resizeLoop( active );
+          Level.resizeLoop( editorState.level, active );
         }
       }
 
@@ -366,7 +369,7 @@
             active.points = makeLoop( left, top, right, bottom );
 
             console.log( active );
-            level.addLoop( active );
+            Level.addLoop( editorState.level, active );
 
             selectedIndex = active.loopIndex;
           }
@@ -403,7 +406,7 @@
       }
 
       console.log( active );
-      level.rotateLoop( active );
+      Level.rotateLoop( editorState.level, active );
     }
 
     canvas.redraw();
@@ -433,7 +436,7 @@
   function getHoverUnder( targetX, targetY ) {
     // Resize selected
     if ( selectedIndex != null ) {
-      const boundsInfo = getBoundsInfo( getBounds( level.loops[ selectedIndex ] ) );
+      const boundsInfo = getBoundsInfo( getBounds( editorState.level.loops[ selectedIndex ] ) );
 
       let closestPoint, closestIndex, closestDist = Infinity;
       boundsInfo.points.forEach( ( p, index ) => {
@@ -458,7 +461,7 @@
     // Existing point
     {
       let closestLoopIndex, closestPointIndex, closestDist = Infinity;
-      level.loops.forEach( ( loop, loopIndex ) => {
+      editorState.level.loops.forEach( ( loop, loopIndex ) => {
         loop.forEach( ( p, pointIndex ) => {
           const dist = Math.hypot( p[ 0 ] - targetX, p[ 1 ] - targetY );
 
@@ -482,7 +485,7 @@
     // Edge (to add point)
     {
       let closestPoint, closestLoopIndex, closestPointIndex, closestDist = Infinity;
-      level.loops.forEach( ( loop, loopIndex ) => {
+      editorState.level.loops.forEach( ( loop, loopIndex ) => {
         for ( let i = 0; i < loop.length; i ++ ) {
           const current = loop[ i ];
           const next = loop[ ( i + 1 ) % loop.length ];
@@ -529,8 +532,8 @@
     }
 
     // Loop (do last, so we don't prevent points or edges from being detected)
-    for ( let i = 0; i < level.loops.length; i ++ ) {
-      const bounds = getBounds( level.loops[ i ] );
+    for ( let i = 0; i < editorState.level.loops.length; i ++ ) {
+      const bounds = getBounds( editorState.level.loops[ i ] );
 
       if ( bounds.left <= mouse.x && mouse.x <= bounds.right && 
            bounds.top  <= mouse.y && mouse.y <= bounds.bottom ) {
@@ -546,7 +549,7 @@
     if ( mode == Mode.Edit ) {
       mode = Mode.Play;
       document.getElementById( 'play' ).innerText = 'Edit';
-      world = new World( level.loops );
+      world = new World( editorState.level.loops );
       canvas.start();
     }
     else if ( mode == Mode.Play ) {
@@ -560,11 +563,11 @@
   } );
 
   document.getElementById( 'save' ).addEventListener( 'click', e => {
-    alert( JSON.stringify( level ) );
+    alert( JSON.stringify( editorState.level ) );
   } );
 
   document.getElementById( 'load' ).addEventListener( 'click', e => {
-    level = JSON.parse( prompt() );
+    editorState.level = JSON.parse( prompt() );
     canvas.redraw();
   } );
 
