@@ -18,7 +18,10 @@
 <script type="module">
   import { Canvas } from './Canvas.js';
   import { World } from './World.js';
+  import { Level } from './Level.js';
   import { Line } from './Line.js';
+
+  const EditorStateKey = 'golfEditorState';
 
   const EditType = {
     AddPoint: 'AddPoint',
@@ -38,12 +41,6 @@
     Resize: 'Resize',
   };
 
-  const ResizeType = {
-    NW: 0, N: 1, NE: 2,
-     W: 7,       E:  3,
-    SW: 6, S: 5, SE: 4,
-  };
-
   const Mode = {
     Edit: 'Edit',
     Play: 'Play',
@@ -51,12 +48,7 @@
 
   let mode = Mode.Edit;
 
-  let loops = [
-    makeLoop( 3, -5, 10, -3 ),
-    makeLoop( -7, -2, -1, 2 ),
-    makeLoop( 2, 1, 11, 3 ),
-    makeLoop( -1, 5, 8, 9 ),
-  ];
+  const level = new Level();
 
   let world;
   
@@ -79,15 +71,15 @@
     if ( mode == Mode.Edit ) {
       // Loops
       ctx.fillStyle = 'green';
-      loops.forEach( loop => {
+      level.loops.forEach( loop => {
         ctx.beginPath();
         loop.forEach( p => ctx.lineTo( p[ 0 ], p[ 1 ] ) );
         ctx.fill();
       } );
       
       // Bounds
-      if ( selectedIndex ) {
-        const boundsInfo = getBoundsInfo( getBounds( loops[ selectedIndex ] ) );
+      if ( selectedIndex != null ) {
+        const boundsInfo = getBoundsInfo( getBounds( level.loops[ selectedIndex ] ) );
         
         ctx.fillStyle = ctx.strokeStyle = '#fffa';
 
@@ -124,7 +116,7 @@
       // Points
       ctx.fillStyle = '#fffa';
       ctx.beginPath();
-      loops.forEach( loop => {
+      level.loops.forEach( loop => {
         loop.forEach( p => {
           drawPoint( ctx, p, POINT_RADIUS );
         } );
@@ -140,7 +132,7 @@
           drawPoint( ctx, hover.point, POINT_RADIUS * 2 );
         }
         else if ( hover.pointIndex != null ) {
-          drawPoint( ctx, loops[ hover.loopIndex ][ hover.pointIndex ], POINT_RADIUS * 2 );
+          drawPoint( ctx, level.loops[ hover.loopIndex ][ hover.pointIndex ], POINT_RADIUS * 2 );
         }
         
         ctx.fill();  
@@ -153,7 +145,8 @@
 
   canvas.redraw();
   
-
+  // TODO: Shouldn't need this in two places
+  //       Can I move all the code that uses this to Level?
   function getBounds( loop ) {
     const bounds = {};
 
@@ -217,7 +210,7 @@
         if ( e.buttons & 1 ) {
           active = {
             type: EditType.AddLoop,
-            loopIndex: loops.length,
+            loopIndex: level.loops.length,
             dragStart: [ mouse.x, mouse.y ],
           }
         }
@@ -242,8 +235,7 @@
           };
 
           console.log( active );
-
-          loops.splice( active.loopIndex, 1 );
+          level.deleteLoop( active );
 
           active = null;
         }
@@ -258,8 +250,7 @@
           }
 
           console.log( active );
-          
-          loops[ active.loopIndex ].splice( active.pointIndex, 0, active.point );
+          level.addPoint( active );
           
           active = {
             type: EditType.MovePoint,
@@ -291,8 +282,7 @@
           }
 
           console.log( active );
-
-          loops[ active.loopIndex ].splice( active.pointIndex, 1 );
+          level.deletePoint( active );
 
           active = null;
         }
@@ -329,54 +319,26 @@
     if ( mode == Mode.Edit ) {
       // Move active points (or resize)
       if ( active ) {
-        if ( active.type == EditType.MovePoint ) {
-          const p = loops[ active.loopIndex ][ active.pointIndex ];
-          p[ 0 ] += moveX;
-          p[ 1 ] += moveY;
+        if ( active.type == EditType.MovePoint ) {  
+          active.dx = moveX;
+          active.dy = moveY;
 
-          active.dx += moveX;
-          active.dy += moveY;
+          console.log( active );
+          level.movePoint( active );
         }
         else if ( active.type == EditType.MoveLoop ) {
-          loops[ active.loopIndex ].forEach( p => {
-            p[ 0 ] += moveX;
-            p[ 1 ] += moveY;
-          } );
+          active.dx = moveX;
+          active.dy = moveY;
 
-          active.dx += moveX;
-          active.dy += moveY;
+          console.log( active );
+          level.moveLoop( active );
         }
         else if ( active.type == EditType.ResizeLoop ) {
-          const oldBounds = getBounds( loops[ active.loopIndex ] );
-          const newBounds = Object.assign( {}, oldBounds );
+          active.dx = moveX;
+          active.dy = moveY;
 
-          if ( active.resizeType == ResizeType.NW ) {
-            newBounds.left += moveX;
-            newBounds.top  += moveY;
-          }
-          else if ( active.resizeType == ResizeType.NE ) {
-            newBounds.right += moveX;
-            newBounds.top   += moveY;
-          }
-          else if ( active.resizeType == ResizeType.SE ) {
-            newBounds.right  += moveX;
-            newBounds.bottom += moveY;
-          }
-          else if ( active.resizeType == ResizeType.SW ) {
-            newBounds.left   += moveX;
-            newBounds.bottom += moveY;
-          }
-
-          loops[ active.loopIndex ].forEach( p => {
-            const u = ( p[ 0 ] - oldBounds.left ) / ( oldBounds.right - oldBounds.left );
-            const v = ( p[ 1 ] - oldBounds.top )  / ( oldBounds.bottom - oldBounds.top );
-            
-            p[ 0 ] = newBounds.left + u * ( newBounds.right - newBounds.left );
-            p[ 1 ] = newBounds.top  + v * ( newBounds.bottom - newBounds.top );
-          } );
-
-          active.dx += moveX;
-          active.dy += moveY;
+          console.log( active );
+          level.resizeLoop( active );
         }
       }
 
@@ -402,18 +364,15 @@
 
           if ( left != right && top != bottom ) { 
             active.points = makeLoop( left, top, right, bottom );
-            loops.splice( active.loopIndex, 0, active.points );
+
+            console.log( active );
+            level.addLoop( active );
+
             selectedIndex = active.loopIndex;
-          }
-          else {
-            active = null;
           }
         }
 
-        if ( active ) {
-          console.log( active ); 
-          active = null;
-        }
+        active = null;
       }
 
       canvas.redraw();
@@ -422,8 +381,8 @@
       const VEL = 0.01;
 
       Object.assign( world.player, {
-        x: mouse.x,
-        y: mouse.y,
+        x: spawnStart.x,
+        y: spawnStart.y,
         dx: VEL * ( mouse.x - spawnStart.x ),
         dy: VEL * ( mouse.y - spawnStart.y ),
       } );
@@ -444,26 +403,11 @@
       }
 
       console.log( active );
-
-      rotateLoop( loops[ active.loopIndex ], active.x, active.y, active.angle );
+      level.rotateLoop( active );
     }
 
     canvas.redraw();
   } );
-
-  function rotateLoop( loop, x, y, angle ) {
-    loop.forEach( p => {
-      const cx = p[ 0 ] - x;
-      const cy = p[ 1 ] - y;
-      const oldAng = Math.atan2( cy, cx );
-      const dist = Math.hypot( cx, cy );
-
-      const newAng = oldAng + angle;
-
-      p[ 0 ] = x + dist * Math.cos( newAng );
-      p[ 1 ] = y + dist * Math.sin( newAng );
-    } );
-  }
 
   function makeLoop( left, top, right, bottom ) {
     const loop = [];
@@ -489,7 +433,7 @@
   function getHoverUnder( targetX, targetY ) {
     // Resize selected
     if ( selectedIndex != null ) {
-      const boundsInfo = getBoundsInfo( getBounds( loops[ selectedIndex ] ) );
+      const boundsInfo = getBoundsInfo( getBounds( level.loops[ selectedIndex ] ) );
 
       let closestPoint, closestIndex, closestDist = Infinity;
       boundsInfo.points.forEach( ( p, index ) => {
@@ -514,7 +458,7 @@
     // Existing point
     {
       let closestLoopIndex, closestPointIndex, closestDist = Infinity;
-      loops.forEach( ( loop, loopIndex ) => {
+      level.loops.forEach( ( loop, loopIndex ) => {
         loop.forEach( ( p, pointIndex ) => {
           const dist = Math.hypot( p[ 0 ] - targetX, p[ 1 ] - targetY );
 
@@ -538,7 +482,7 @@
     // Edge (to add point)
     {
       let closestPoint, closestLoopIndex, closestPointIndex, closestDist = Infinity;
-      loops.forEach( ( loop, loopIndex ) => {
+      level.loops.forEach( ( loop, loopIndex ) => {
         for ( let i = 0; i < loop.length; i ++ ) {
           const current = loop[ i ];
           const next = loop[ ( i + 1 ) % loop.length ];
@@ -585,8 +529,8 @@
     }
 
     // Loop (do last, so we don't prevent points or edges from being detected)
-    for ( let i = 0; i < loops.length; i ++ ) {
-      const bounds = getBounds( loops[ i ] );
+    for ( let i = 0; i < level.loops.length; i ++ ) {
+      const bounds = getBounds( level.loops[ i ] );
 
       if ( bounds.left <= mouse.x && mouse.x <= bounds.right && 
            bounds.top  <= mouse.y && mouse.y <= bounds.bottom ) {
@@ -602,7 +546,7 @@
     if ( mode == Mode.Edit ) {
       mode = Mode.Play;
       document.getElementById( 'play' ).innerText = 'Edit';
-      world = new World( loops );
+      world = new World( level.loops );
       canvas.start();
     }
     else if ( mode == Mode.Play ) {
@@ -616,11 +560,11 @@
   } );
 
   document.getElementById( 'save' ).addEventListener( 'click', e => {
-    alert( JSON.stringify( loops ) );
+    alert( JSON.stringify( level ) );
   } );
 
   document.getElementById( 'load' ).addEventListener( 'click', e => {
-    loops = JSON.parse( prompt() );
+    level = JSON.parse( prompt() );
     canvas.redraw();
   } );
 

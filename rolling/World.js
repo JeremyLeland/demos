@@ -31,7 +31,7 @@ export class World {
       }
     } );
 
-    this.player = { x: -2, y: -6, dx: 0, dy: 0, radius: 0.5 };
+    this.player = { x: -2, y: -6, dx: 0, dy: 0, radius: 0.2 };
   }
 
   update( dt ) {
