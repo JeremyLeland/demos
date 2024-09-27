@@ -66,14 +66,10 @@ export function newLevel() {
 
 
 export function applyCommand( level, cmd ) {
-  console.log( 'Applying: ' + JSON.stringify( cmd ) );
-
   Edit[ cmd.type ].apply( level, cmd );
 }
 
 export function undoCommand( level, cmd ) {
-  console.log( 'Undoing: ' + JSON.stringify( cmd ) );
-
   Edit[ cmd.type ].undo( level, cmd );
 }
 

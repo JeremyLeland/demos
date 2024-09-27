@@ -14,6 +14,7 @@
 <button id="play">Play</button>
 <button id="save">Save</button>
 <button id="load">Load</button>
+<button id="undo">Undo</button>
 
 <script type="module">
   import { Canvas } from './Canvas.js';
@@ -50,6 +51,7 @@
 
   const editorState = JSON.parse( localStorage.getItem( EditorStateKey ) ) ?? {
     level: Level.newLevel(),
+    undoStack: [],
   }
 
   let world;
@@ -238,7 +240,7 @@
             points: editorState.level.loops[ under.loopIndex ],   // save for undo
           };
 
-          Level.applyCommand( editorState.level, active );
+          applyCommand( active );
 
           active = null;
         }
@@ -252,7 +254,7 @@
             point: under.point,
           }
 
-          Level.applyCommand( editorState.level, active );
+          applyCommand( active );
           
           active = {
             type: 'MovePoint',
@@ -284,7 +286,7 @@
             point: editorState.level.loops[ under.loopIndex ][ under.pointIndex ],  // save for undo
           }
 
-          Level.applyCommand( editorState.level, active );
+          applyCommand( active );
 
           active = null;
         }
@@ -327,7 +329,7 @@
           active.dx = moveX;
           active.dy = moveY;
           
-          Level.applyCommand( editorState.level, active );
+          applyCommand( active );
         }
       }
 
@@ -354,7 +356,7 @@
           if ( left != right && top != bottom ) { 
             active.points = makeLoop( left, top, right, bottom );
 
-            Level.applyCommand( editorState.level, active );
+            applyCommand( active );
 
             selectedIndex = active.loopIndex;
           }
@@ -390,13 +392,54 @@
         angle: -0.1 * Math.sign( e.wheelDelta ),
       }
 
-      Level.applyCommand( editorState.level, active );
+      applyCommand( active );
 
       active = null;
     }
 
     canvas.redraw();
   } );
+
+  function applyCommand( cmd ) {
+    console.log( 'Applying: ' + JSON.stringify( cmd ) );
+    Level.applyCommand( editorState.level, cmd );
+
+    const lastCmd = editorState.undoStack[ editorState.undoStack.length - 1 ];
+
+    if ( lastCmd == null ||
+         cmd.type != lastCmd.type || 
+         cmd.loopIndex != lastCmd.loopIndex || 
+         cmd.pointIndex != lastCmd.pointIndex ||
+         cmd.resizeType != lastCmd.resizeType ||
+         cmd.x != lastCmd.x ||
+         cmd.y != lastCmd.y ) {
+      editorState.undoStack.push( cmd );
+      console.log( 'Pushing to stack: ' + JSON.stringify( cmd ) );
+    }
+    else if ( cmd.type == 'MovePoint' || cmd.type == 'MoveLoop' || cmd.type == 'ResizeLoop' ) {
+      lastCmd.dx += cmd.dx;
+      lastCmd.dy += cmd.dy;
+      console.log( 'Added to last stack item, now: ' + JSON.stringify( lastCmd ) );
+    }
+    else if ( cmd.type == 'RotateLoop') {
+      lastCmd.angle += cmd.angle;
+      console.log( 'Added to last stack item (rotate), now: ' + JSON.stringify( lastCmd ) );
+    }
+    else {
+      debugger;
+    }
+  }
+
+  function undo() {
+    const cmd = editorState.undoStack.pop();
+
+    if ( cmd ) {
+      console.log( 'Undoing: ' + JSON.stringify( cmd ) );
+      Level.undoCommand( editorState.level, cmd );
+
+      selectedIndex = null;   // causes problems if we delete selected loop
+    }
+  }
 
   function makeLoop( left, top, right, bottom ) {
     const loop = [];
@@ -554,6 +597,11 @@
 
   document.getElementById( 'load' ).addEventListener( 'click', e => {
     editorState.level = JSON.parse( prompt() );
+    canvas.redraw();
+  } );
+
+  document.getElementById( 'undo' ).addEventListener( 'click', e => {
+    undo();
     canvas.redraw();
   } );
 
