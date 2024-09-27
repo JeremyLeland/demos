@@ -212,7 +212,7 @@
       if ( !under ) {
         if ( e.buttons & 1 ) {
           active = {
-            type: EditType.AddLoop,
+            type: 'AddLoop',
             loopIndex: editorState.level.loops.length,
             dragStart: [ mouse.x, mouse.y ],
           }
@@ -225,7 +225,7 @@
           selectedIndex = under.loopIndex;
           
           active = {
-            type: EditType.MoveLoop,
+            type: 'MoveLoop',
             loopIndex: under.loopIndex,
             dx: 0,
             dy: 0,
@@ -233,12 +233,12 @@
         }
         else if ( e.buttons & 2 ) {
           active = {
-            type: EditType.DeleteLoop,
+            type: 'DeleteLoop',
             loopIndex: under.loopIndex,
+            points: editorState.level.loops[ under.loopIndex ],   // save for undo
           };
 
-          console.log( active );
-          Level.deleteLoop( editorState.level, active );
+          Level.applyCommand( editorState.level, active );
 
           active = null;
         }
@@ -246,17 +246,16 @@
       else if ( under.type == HoverType.Edge ) {
         if ( e.buttons & 1 ) {
           active = {
-            type: EditType.AddPoint,
+            type: 'AddPoint',
             loopIndex: under.loopIndex,
             pointIndex: under.pointIndex,
             point: under.point,
           }
 
-          console.log( active );
-          Level.addPoint( editorState.level, active );
+          Level.applyCommand( editorState.level, active );
           
           active = {
-            type: EditType.MovePoint,
+            type: 'MovePoint',
             loopIndex: under.loopIndex,
             pointIndex: under.pointIndex,
             dx: 0,
@@ -270,7 +269,7 @@
       else if ( under.type == HoverType.Point ) {
         if ( e.buttons & 1 ) {
           active = {
-            type: EditType.MovePoint,
+            type: 'MovePoint',
             loopIndex: under.loopIndex,
             pointIndex: under.pointIndex,
             dx: 0,
@@ -279,20 +278,20 @@
         }
         else if ( e.buttons & 2 ) {
           active = {
-            type: EditType.DeletePoint,
+            type: 'DeletePoint',
             loopIndex: under.loopIndex,
             pointIndex: under.pointIndex,
+            point: editorState.level.loops[ under.loopIndex ][ under.pointIndex ],  // save for undo
           }
 
-          console.log( active );
-          Level.deletePoint( editorState.level, active );
+          Level.applyCommand( editorState.level, active );
 
           active = null;
         }
       }
       else if ( under.type == HoverType.Resize ) {
         active = {
-          type: EditType.ResizeLoop,
+          type: 'ResizeLoop',
           loopIndex: under.loopIndex,
           resizeType: under.resizeType,
           dx: 0,
@@ -321,20 +320,14 @@
     if ( mode == Mode.Edit ) {
       // Move active points (or resize)
       if ( active ) {
-        active.dx = moveX;
-        active.dy = moveY;
-
-        if ( active.type == EditType.MovePoint ) {  
-          console.log( active );
-          Level.movePoint( editorState.level, active );
+        if ( active.type == 'AddLoop' ) {
+          // special case, don't do the dx/dy or apply
         }
-        else if ( active.type == EditType.MoveLoop ) {
-          console.log( active );
-          Level.moveLoop( editorState.level, active );
-        }
-        else if ( active.type == EditType.ResizeLoop ) {
-          console.log( active );
-          Level.resizeLoop( editorState.level, active );
+        else {
+          active.dx = moveX;
+          active.dy = moveY;
+          
+          Level.applyCommand( editorState.level, active );
         }
       }
 
@@ -361,8 +354,7 @@
           if ( left != right && top != bottom ) { 
             active.points = makeLoop( left, top, right, bottom );
 
-            console.log( active );
-            Level.addLoop( editorState.level, active );
+            Level.applyCommand( editorState.level, active );
 
             selectedIndex = active.loopIndex;
           }
@@ -391,15 +383,16 @@
 
     if ( under?.type == HoverType.Loop ) {
       active = {
-        type: EditType.RotateLoop,
+        type: 'RotateLoop',
         loopIndex: under.loopIndex,
         x: mouse.x,
         y: mouse.y,
         angle: -0.1 * Math.sign( e.wheelDelta ),
       }
 
-      console.log( active );
-      Level.rotateLoop( editorState.level, active );
+      Level.applyCommand( editorState.level, active );
+
+      active = null;
     }
 
     canvas.redraw();

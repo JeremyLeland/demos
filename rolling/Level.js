@@ -4,7 +4,7 @@ export const ResizeType = {
   SW: 6, S: 5, SE: 4,
 };
 
-// static EditType = {
+// export const EditType = {
 //   AddPoint: 'AddPoint',
 //   MovePoint: 'MovePoint',
 //   DeletePoint: 'DeletePoint',
@@ -15,16 +15,48 @@ export const ResizeType = {
 //   DeleteLoop: 'DeleteLoop',
 // };
 
-// static Commands = {
-//   'AddPoint': addPoint,
-//   'MovePoint': movePoint,
-//   'DeletePoint': deletePoint,
-//   'AddLoop': addLoop,
-//   'MoveLoop': moveLoop,
-//   'ResizeLoop': resizeLoop,
-//   'RotateLoop': rotateLoop,
-//   'DeleteLoop': deleteLoop,
-// };
+export const Edit = {
+  AddPoint: {
+    name: 'AddPoint',
+    apply: ( level, cmd ) => addPoint   ( level, cmd.loopIndex, cmd.pointIndex, cmd.point ),
+    undo:  ( level, cmd ) => deletePoint( level, cmd.loopIndex, cmd.pointIndex            ),
+  },
+  MovePoint: {
+    name: 'MovePoint',
+    apply: ( level, cmd ) => movePoint( level, cmd.loopIndex, cmd.pointIndex,  cmd.dx,  cmd.dy ),
+    undo:  ( level, cmd ) => movePoint( level, cmd.loopIndex, cmd.pointIndex, -cmd.dx, -cmd.dy ),
+  },
+  DeletePoint: {
+    name: 'DeletePoint',
+    apply: ( level, cmd ) => deletePoint( level, cmd.loopIndex, cmd.pointIndex            ),
+    undo:  ( level, cmd ) => addPoint   ( level, cmd.loopIndex, cmd.pointIndex, cmd.point ),
+  },
+  AddLoop: {
+    name: 'AddLoop',
+    apply: ( level, cmd ) => addLoop   ( level, cmd.loopIndex, cmd.points ),
+    undo:  ( level, cmd ) => deleteLoop( level, cmd.loopIndex             ),
+  },
+  MoveLoop: {
+    name: 'MoveLoop',
+    apply: ( level, cmd ) => moveLoop( level, cmd.loopIndex,  cmd.dx,  cmd.dy ),
+    undo:  ( level, cmd ) => moveLoop( level, cmd.loopIndex, -cmd.dx, -cmd.dy ),
+  },
+  ResizeLoop: {
+    name: 'ResizeLoop',
+    apply: ( level, cmd ) => resizeLoop( level, cmd.loopIndex, cmd.resizeType,  cmd.dx,  cmd.dy ),
+    undo:  ( level, cmd ) => resizeLoop( level, cmd.loopIndex, cmd.resizeType, -cmd.dx, -cmd.dy ),
+  },
+  RotateLoop: {
+    name: 'RotateLoop',
+    apply: ( level, cmd ) => rotateLoop( level, cmd.loopIndex, cmd.x, cmd.y,  cmd.angle ),
+    undo:  ( level, cmd ) => rotateLoop( level, cmd.loopIndex, cmd.x, cmd.y, -cmd.angle ),
+  },
+  DeleteLoop: {
+    name: 'DeleteLoop',
+    apply: ( level, cmd ) => deleteLoop( level, cmd.loopIndex             ),
+    undo:  ( level, cmd ) => addLoop   ( level, cmd.loopIndex, cmd.points ),
+  },
+};
 
 export function newLevel() {
   return {
@@ -32,39 +64,67 @@ export function newLevel() {
   };
 }
 
-export function addLoop( level, cmd ) {
-  level.loops.splice( cmd.loopIndex, 0, cmd.points );
+
+export function applyCommand( level, cmd ) {
+  console.log( 'Applying: ' + JSON.stringify( cmd ) );
+
+  Edit[ cmd.type ].apply( level, cmd );
 }
 
-export function moveLoop( level, cmd ) {
-  level.loops[ cmd.loopIndex ].forEach( p => {
-    p[ 0 ] += cmd.dx;
-    p[ 1 ] += cmd.dy;
+export function undoCommand( level, cmd ) {
+  console.log( 'Undoing: ' + JSON.stringify( cmd ) );
+
+  Edit[ cmd.type ].undo( level, cmd );
+}
+
+function addPoint( level, loopIndex, pointIndex, point ) {
+  level.loops[ loopIndex ].splice( pointIndex, 0, point );
+}
+
+function movePoint( level, loopIndex, pointIndex, dx, dy ) {
+  const p = level.loops[ loopIndex ][ pointIndex ];
+  p[ 0 ] += dx;
+  p[ 1 ] += dy;
+}
+
+function deletePoint( level, loopIndex, pointIndex ) {
+  level.loops[ loopIndex ].splice( pointIndex, 1 );
+}
+
+
+function addLoop( level, loopIndex, points ) {
+  level.loops.splice( loopIndex, 0, points );
+}
+
+function moveLoop( level, loopIndex, dx, dy ) {
+  level.loops[ loopIndex ].forEach( p => {
+    p[ 0 ] += dx;
+    p[ 1 ] += dy;
   } );
 }
 
-export function resizeLoop( level, cmd ) {
-  const oldBounds = getBounds( level.loops[ cmd.loopIndex ] );
+function resizeLoop( level, loopIndex, resizeType, dx, dy ) {
+  const oldBounds = getBounds( level.loops[ loopIndex ] );
   const newBounds = Object.assign( {}, oldBounds );
 
-  if ( cmd.resizeType == ResizeType.NW ) {
-    newBounds.left += cmd.dx;
-    newBounds.top  += cmd.dy;
+  if ( resizeType == ResizeType.NW ) {
+    newBounds.left += dx;
+    newBounds.top  += dy;
   }
-  else if ( cmd.resizeType == ResizeType.NE ) {
-    newBounds.right += cmd.dx;
-    newBounds.top   += cmd.dy;
+  else if ( resizeType == ResizeType.NE ) {
+    newBounds.right += dx;
+    newBounds.top   += dy;
   }
-  else if ( cmd.resizeType == ResizeType.SE ) {
-    newBounds.right  += cmd.dx;
-    newBounds.bottom += cmd.dy;
+  else if ( resizeType == ResizeType.SE ) {
+    newBounds.right  += dx;
+    newBounds.bottom += dy;
   }
-  else if ( cmd.resizeType == ResizeType.SW ) {
-    newBounds.left   += cmd.dx;
-    newBounds.bottom += cmd.dy;
+  else if ( resizeType == ResizeType.SW ) {
+    newBounds.left   += dx;
+    newBounds.bottom += dy;
   }
 
-  level.loops[ cmd.loopIndex ].forEach( p => {
+  level.loops[ loopIndex ].forEach( p => {
     const u = ( p[ 0 ] - oldBounds.left ) / ( oldBounds.right - oldBounds.left );
     const v = ( p[ 1 ] - oldBounds.top )  / ( oldBounds.bottom - oldBounds.top );
     
@@ -73,36 +133,22 @@ export function resizeLoop( level, cmd ) {
   } );
 }
 
-export function rotateLoop( level, cmd ) {
-  level.loops[ cmd.loopIndex ].forEach( p => {
-    const cx = p[ 0 ] - cmd.x;
-    const cy = p[ 1 ] - cmd.y;
+function rotateLoop( level, loopIndex, x, y, angle ) {
+  level.loops[ loopIndex ].forEach( p => {
+    const cx = p[ 0 ] - x;
+    const cy = p[ 1 ] - y;
     const oldAng = Math.atan2( cy, cx );
     const dist = Math.hypot( cx, cy );
 
-    const newAng = oldAng + cmd.angle;
+    const newAng = oldAng + angle;
 
-    p[ 0 ] = cmd.x + dist * Math.cos( newAng );
-    p[ 1 ] = cmd.y + dist * Math.sin( newAng );
+    p[ 0 ] = x + dist * Math.cos( newAng );
+    p[ 1 ] = y + dist * Math.sin( newAng );
   } );
 }
 
-export function deleteLoop( level, cmd ) {
-  level.loops.splice( cmd.loopIndex, 1 );
-}
-
-export function addPoint( level, cmd ) {
-  level.loops[ cmd.loopIndex ].splice( cmd.pointIndex, 0, cmd.point );
-}
-
-export function movePoint( level, cmd ) {
-  const p = level.loops[ cmd.loopIndex ][ cmd.pointIndex ];
-  p[ 0 ] += cmd.dx;
-  p[ 1 ] += cmd.dy;
-}
-
-export function deletePoint( level, cmd ) {
-  level.loops[ cmd.loopIndex ].splice( cmd.pointIndex, 1 );
+function deleteLoop( level, loopIndex ) {
+  level.loops.splice( loopIndex, 1 );
 }
 
 function getBounds( loop ) {
