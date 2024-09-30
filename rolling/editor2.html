@@ -15,6 +15,7 @@
 <button id="save">Save</button>
 <button id="load">Load</button>
 <button id="undo">Undo</button>
+<button id="clear">Clear</button>
 
 <script type="module">
   import { Canvas } from './Canvas.js';
@@ -49,16 +50,20 @@
 
   let mode = Mode.Edit;
 
-  const editorState = JSON.parse( localStorage.getItem( EditorStateKey ) ) ?? {
-    level: Level.newLevel(),
-    undoStack: [],
+  let editorState = JSON.parse( localStorage.getItem( EditorStateKey ) ) ?? newEditorState();
+  function newEditorState( levelJson ) {
+    return {
+      level: levelJson ?? Level.newLevel(),
+      undoStack: [],
+      selectedIndex: null,
+    }
   }
 
   let world;
   
   const POINT_RADIUS = 0.06;
 
-  let selectedIndex, hover;
+  let hover;
   let active;
 
   const SIZE = 16;
@@ -82,8 +87,8 @@
       } );
       
       // Bounds
-      if ( selectedIndex != null ) {
-        const boundsInfo = getBoundsInfo( getBounds( editorState.level.loops[ selectedIndex ] ) );
+      if ( editorState.selectedIndex != null ) {
+        const boundsInfo = getBoundsInfo( getBounds( editorState.level.loops[ editorState.selectedIndex ] ) );
         
         ctx.fillStyle = ctx.strokeStyle = '#fffa';
 
@@ -221,10 +226,10 @@
         }
       }
       else if ( under.type == HoverType.Loop ) {
-        selectedIndex = null;
+        editorState.selectedIndex = null;
 
         if ( e.buttons & 1 ) {
-          selectedIndex = under.loopIndex;
+          editorState.selectedIndex = under.loopIndex;
           
           active = {
             type: 'MoveLoop',
@@ -358,7 +363,7 @@
 
             applyCommand( active );
 
-            selectedIndex = active.loopIndex;
+            editorState.selectedIndex = active.loopIndex;
           }
         }
 
@@ -437,8 +442,18 @@
       console.log( 'Undoing: ' + JSON.stringify( cmd ) );
       Level.undoCommand( editorState.level, cmd );
 
-      selectedIndex = null;   // causes problems if we delete selected loop
+      editorState.selectedIndex = null;   // causes problems if we delete selected loop
     }
+
+    canvas.redraw();
+  }
+
+  function load( json ) {
+    if ( json != null ) {
+      editorState = newEditorState( json );
+    }
+
+    canvas.redraw();
   }
 
   function makeLoop( left, top, right, bottom ) {
@@ -464,8 +479,8 @@
 
   function getHoverUnder( targetX, targetY ) {
     // Resize selected
-    if ( selectedIndex != null ) {
-      const boundsInfo = getBoundsInfo( getBounds( editorState.level.loops[ selectedIndex ] ) );
+    if ( editorState.selectedIndex != null ) {
+      const boundsInfo = getBoundsInfo( getBounds( editorState.level.loops[ editorState.selectedIndex ] ) );
 
       let closestPoint, closestIndex, closestDist = Infinity;
       boundsInfo.points.forEach( ( p, index ) => {
@@ -482,7 +497,7 @@
         return  {
           type: HoverType.Resize,
           resizeType: closestIndex * 2,  // resizeTypes alternate between point and edge
-          loopIndex: selectedIndex,
+          loopIndex: editorState.selectedIndex,
         };
       }
     }
@@ -574,35 +589,39 @@
     }
   }
 
-  document.getElementById( 'play' ).addEventListener( 'click', e => {
-    if ( mode == Mode.Edit ) {
-      mode = Mode.Play;
-      document.getElementById( 'play' ).innerText = 'Edit';
-      world = new World( editorState.level.loops );
-      canvas.start();
+  const buttonActions = {
+    'play': ( e ) => {
+      if ( mode == Mode.Edit ) {
+        mode = Mode.Play;
+        document.getElementById( 'play' ).innerText = 'Edit';
+        world = new World( editorState.level.loops );
+        canvas.start();
+      }
+      else if ( mode == Mode.Play ) {
+        canvas.stop();
+
+        mode = Mode.Edit;
+        document.getElementById( 'play' ).innerText = 'Play';
+        world = null;
+        canvas.redraw();
+      }
+    },
+    'save': ( e ) => {
+      alert( JSON.stringify( editorState.level ) );
+    },
+    'load': ( e ) => {
+      load( JSON.parse( prompt() ) );
+    },
+    'undo': ( e ) => {
+      undo();
+    },
+    'clear': ( e ) => {
+      editorState = newEditorState();
     }
-    else if ( mode == Mode.Play ) {
-      canvas.stop();
+  }
 
-      mode = Mode.Edit;
-      document.getElementById( 'play' ).innerText = 'Play';
-      world = null;
-      canvas.redraw();
-    }
-  } );
-
-  document.getElementById( 'save' ).addEventListener( 'click', e => {
-    alert( JSON.stringify( editorState.level ) );
-  } );
-
-  document.getElementById( 'load' ).addEventListener( 'click', e => {
-    editorState.level = JSON.parse( prompt() );
-    canvas.redraw();
-  } );
-
-  document.getElementById( 'undo' ).addEventListener( 'click', e => {
-    undo();
-    canvas.redraw();
-  } );
+  for ( const buttonId in buttonActions ) {
+    document.getElementById( buttonId ).addEventListener( 'click', buttonActions[ buttonId ] );
+  }
 
 </script>

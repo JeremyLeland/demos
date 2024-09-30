@@ -9,6 +9,10 @@ const BOUNCE_DAMPING = 0.7;
 const BOUNCE_FRICTION = 0.05;
 
 
+// TODO: Don't roll across large angle changes, bounce off instead
+// TODO: Only count as hit if we are facing normal (not coming from behind)
+
+
 export class World {
   
   player;
