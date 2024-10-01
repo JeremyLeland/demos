@@ -3,8 +3,8 @@ import { Line } from './Line.js';
 const EPSILON = 1e-6;
 const GRAVITY = 0.00001;
 
-const ROLL_ANGLE = 0.5;
-const ROLL_FRICTION = 0.2; //0.5;
+const ROLL_ANGLE = 0.1;
+const ROLL_FRICTION = 0.5;
 const BOUNCE_DAMPING = 0.7;
 const BOUNCE_FRICTION = 0.05;
 
@@ -35,10 +35,23 @@ export class World {
       }
     } );
 
-    this.player = { x: -2, y: -6, dx: 0, dy: 0, radius: 0.2 };
+    this.player = { x: -2, y: -6, dx: 0, dy: 0, ax: 0, ay: 0, radius: 0.2 };
   }
 
   update( dt ) {
+
+    // 0. See if we are already colliding with something
+    //    - If so, back out of it, and this is our current line
+    // -- LOOP (up to N times) --
+    // 1. If we are colliding, are we rolling or bouncing?
+    //    - Set dx/dy and ax/ay appropriately
+    //    - Find next collision
+    // 2. If we are not colliding
+    //    - Find next collision
+    // 3. Update ball until next collision (or dt)
+    // 4. Back to step 1
+    
+
     let currentLine = null, currentDist = EPSILON;  // currentDist start value is "snap" distance
     this.#lines.forEach( line => {
       const dist = line.distanceFrom( this.player );
@@ -57,34 +70,11 @@ export class World {
 
       this.player.x -= Math.cos( normalAngle ) * currentDist;
       this.player.y -= Math.sin( normalAngle ) * currentDist;
-
-      const playerAngle = Math.atan2( this.player.dy, this.player.dx );
-
-      if ( Math.abs( deltaAngle( slopeAngle, playerAngle ) ) < ROLL_ANGLE ||
-           Math.abs( deltaAngle( playerAngle, slopeAngle + Math.PI ) ) < ROLL_ANGLE ) {
-        // roll
-      }
-      else {
-        const normX = Math.cos( normalAngle );
-        const normY = Math.sin( normalAngle );
-        const vDotN = this.player.dx * normX + this.player.dy * normY;
-
-        const lineSlopeX = Math.cos( slopeAngle );
-        const lineSlopeY = Math.sin( slopeAngle );
-        const vDotF = this.player.dx * lineSlopeX + this.player.dy * lineSlopeY;
-
-        this.player.dx -= 2 * vDotN * normX * BOUNCE_DAMPING + vDotF * lineSlopeX * BOUNCE_FRICTION;
-        this.player.dy -= 2 * vDotN * normY * BOUNCE_DAMPING + vDotF * lineSlopeY * BOUNCE_FRICTION;
-
-        currentLine = null;
-      }
     }
-
-    let nextTime = dt;
 
     for ( let step = 0; step < 5; step ++ ) {
 
-      let ax, ay;
+      let nextTime = dt, nextLine = null;
 
       if ( currentLine ) {
         const normalAngle = currentLine.normalAngle;
@@ -93,66 +83,89 @@ export class World {
         const lineSlopeX = Math.cos( slopeAngle );
         const lineSlopeY = Math.sin( slopeAngle );
 
-        const proj = this.player.dx * lineSlopeX + this.player.dy * lineSlopeY;
+        // TODO: Move this into the loop so we'll bounce during rolls
+        // If we bounce, don't roll!
+        const playerAngle = Math.atan2( this.player.dy, this.player.dx );
+        if ( Math.abs( deltaAngle( slopeAngle, playerAngle ) ) < ROLL_ANGLE ||
+             Math.abs( deltaAngle( playerAngle, slopeAngle + Math.PI ) ) < ROLL_ANGLE ) {
+          const proj = this.player.dx * lineSlopeX + this.player.dy * lineSlopeY;
 
-        const playerSlopeX = proj < 0 ? -lineSlopeX : lineSlopeX;
-        const playerSlopeY = proj < 0 ? -lineSlopeY : lineSlopeY;
+          const playerSlopeX = proj < 0 ? -lineSlopeX : lineSlopeX;
+          const playerSlopeY = proj < 0 ? -lineSlopeY : lineSlopeY;
 
-        const speed = Math.hypot( this.player.dx, this.player.dy );
-        this.player.dx = playerSlopeX * speed;
-        this.player.dy = playerSlopeY * speed;
+          const speed = Math.hypot( this.player.dx, this.player.dy );
+          this.player.dx = playerSlopeX * speed;
+          this.player.dy = playerSlopeY * speed;
 
-        // https://stickmanphysics.com/stickman-physics-home/forces/incline-planes/
-        const a = GRAVITY * ( lineSlopeY - ROLL_FRICTION * playerSlopeX );    // TODO: base friction on line slope or player slope?
-        ax = a * lineSlopeX;
-        ay = a * lineSlopeY;
+          // https://stickmanphysics.com/stickman-physics-home/forces/incline-planes/
+          const a = GRAVITY * ( lineSlopeY - ROLL_FRICTION * playerSlopeX );    // TODO: base friction on line slope or player slope?
+          this.player.ax = a * lineSlopeX;
+          this.player.ay = a * lineSlopeY;
 
-        // Find stop time, see if that is before next line
-        // Do we need to account for difference between static friction and kinetic friction?
-        // Difference between slowing to a stop on a downhill and slowing to change direction on uphill
-        const brakeDistance = Math.pow( speed, 2 ) / ( 2 * ROLL_FRICTION * GRAVITY );
-        const brakeTime = speed == 0 ? Infinity : ( 2 * brakeDistance ) / ( 0 + speed );
+          // Find stop time, see if that is before next line
+          // Do we need to account for difference between static friction and kinetic friction?
+          // Difference between slowing to a stop on a downhill and slowing to change direction on uphill
+          const brakeDistance = Math.pow( speed, 2 ) / ( 2 * ROLL_FRICTION * GRAVITY );
+          const brakeTime = speed == 0 ? Infinity : ( 2 * brakeDistance ) / ( 0 + speed );
 
-        nextTime = Math.min( dt, brakeTime );
+          console.log( 'brakeDistance: ' + brakeDistance );
+          console.log( 'brakeTime: ' + brakeTime );
 
-        // NOTE: This is only valid when moving on a linear slope. Need to do something different below
-        let nextLine = null;
-        this.#lines.forEach( line => {
-          if ( currentLine != line ) {
-            const dist = line.getSlopeDist( this.player, playerSlopeX, playerSlopeY );
+          nextTime = Math.min( nextTime, brakeTime );
 
-            const time = getTime( speed, a, dist );
+          // NOTE: This is only valid when moving on a linear slope. Need to do something different below
+          this.#lines.forEach( line => {
+            if ( currentLine != line ) {
+              const dist = line.getSlopeDist( this.player, playerSlopeX, playerSlopeY );
 
-            if ( EPSILON < time && time < nextTime ) {
-              nextLine = line;
-              nextTime = time;
+              const time = getTime( speed, a, dist );
+
+              if ( EPSILON < time && time < nextTime ) {
+                nextLine = line;
+                nextTime = time;
+              }
             }
-          }
-        } );
+          } );
+        }
+        else {
+          const normX = Math.cos( normalAngle );
+          const normY = Math.sin( normalAngle );
+          const vDotN = this.player.dx * normX + this.player.dy * normY;
 
-        if ( nextLine ) {
-          currentLine = nextLine;
-        } 
+          const lineSlopeX = Math.cos( slopeAngle );
+          const lineSlopeY = Math.sin( slopeAngle );
+          const vDotF = this.player.dx * lineSlopeX + this.player.dy * lineSlopeY;
+
+          this.player.dx -= 2 * vDotN * normX * BOUNCE_DAMPING + vDotF * lineSlopeX * BOUNCE_FRICTION;
+          this.player.dy -= 2 * vDotN * normY * BOUNCE_DAMPING + vDotF * lineSlopeY * BOUNCE_FRICTION;
+          this.player.ax = 0;
+          this.player.ay = GRAVITY;
+
+          // TODO: Find next line
+          // TODO: Check for next line, adjust nextTime appropriately
+          // Can't use the linear distance above, since we'll be doing parabolic motion
+
+          currentLine = null;
+        }
       }
       else {
-        ax = 0;
-        ay = GRAVITY;
-
-        // TODO: Check for next line, adjust nextTime appropriately
-        //       Can't use the linear distance above, since we'll be doing parabolic motion
+        this.player.ax = 0;
+        this.player.ay = GRAVITY;
       }
-
-      this.player.x += this.player.dx * nextTime + 0.5 * ax * nextTime * nextTime;
-      this.player.y += this.player.dy * nextTime + 0.5 * ay * nextTime * nextTime;
       
-      this.player.dx += ax * nextTime;
-      this.player.dy += ay * nextTime;
+      this.player.x += this.player.dx * nextTime + 0.5 * this.player.ax * nextTime * nextTime;
+      this.player.y += this.player.dy * nextTime + 0.5 * this.player.ay * nextTime * nextTime;
+      
+      this.player.dx += this.player.ax * nextTime;
+      this.player.dy += this.player.ay * nextTime;
       
       dt -= nextTime;
 
       if ( dt <= 0 ) {
         break;
       }
+
+      currentLine = nextLine;
     }
   }
 
