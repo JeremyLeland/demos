@@ -74,7 +74,7 @@ export class World {
 
     for ( let step = 0; step < 5; step ++ ) {
 
-      let nextTime = dt, nextLine = null;
+      let nextTime = dt, nextLine = null, stopped = false;
 
       if ( currentLine ) {
         const normalAngle = currentLine.normalAngle;
@@ -86,16 +86,19 @@ export class World {
         // TODO: Move this into the loop so we'll bounce during rolls
         // If we bounce, don't roll!
         const playerAngle = Math.atan2( this.player.dy, this.player.dx );
+        const playerSpeed = Math.hypot( this.player.dx, this.player.dy );
+
         if ( Math.abs( deltaAngle( slopeAngle, playerAngle ) ) < ROLL_ANGLE ||
              Math.abs( deltaAngle( playerAngle, slopeAngle + Math.PI ) ) < ROLL_ANGLE ) {
+          console.log( 'Rolling, step = ' + step + ' playerAngle: ' + playerAngle + ' playerSpeed: ' + playerSpeed + ' dx: ' + this.player.dx + ', dy: ' + this.player.dy );
+
           const proj = this.player.dx * lineSlopeX + this.player.dy * lineSlopeY;
 
           const playerSlopeX = proj < 0 ? -lineSlopeX : lineSlopeX;
           const playerSlopeY = proj < 0 ? -lineSlopeY : lineSlopeY;
-
-          const speed = Math.hypot( this.player.dx, this.player.dy );
-          this.player.dx = playerSlopeX * speed;
-          this.player.dy = playerSlopeY * speed;
+          
+          this.player.dx = playerSlopeX * playerSpeed;
+          this.player.dy = playerSlopeY * playerSpeed;
 
           // https://stickmanphysics.com/stickman-physics-home/forces/incline-planes/
           const a = GRAVITY * ( lineSlopeY - ROLL_FRICTION * playerSlopeX );    // TODO: base friction on line slope or player slope?
@@ -105,20 +108,26 @@ export class World {
           // Find stop time, see if that is before next line
           // Do we need to account for difference between static friction and kinetic friction?
           // Difference between slowing to a stop on a downhill and slowing to change direction on uphill
-          const brakeDistance = Math.pow( speed, 2 ) / ( 2 * ROLL_FRICTION * GRAVITY );
-          const brakeTime = speed == 0 ? Infinity : ( 2 * brakeDistance ) / ( 0 + speed );
+          const brakeDistance = Math.pow( playerSpeed, 2 ) / ( 2 * ROLL_FRICTION * GRAVITY );
+          const brakeTime = playerSpeed == 0 ? Infinity : ( 2 * brakeDistance ) / ( 0 + playerSpeed );
 
-          console.log( 'brakeDistance: ' + brakeDistance );
-          console.log( 'brakeTime: ' + brakeTime );
+          // console.log( 'brakeDistance: ' + brakeDistance );
+          // console.log( 'brakeTime: ' + brakeTime );
 
-          nextTime = Math.min( nextTime, brakeTime );
+
+          // TODO: Need to stop further processing somehow when we are hitting brake time
+          if ( brakeTime < nextTime ) {
+            nextTime = brakeTime;
+            stopped = true;
+          }
+          // nextTime = Math.min( nextTime, brakeTime );
 
           // NOTE: This is only valid when moving on a linear slope. Need to do something different below
           this.#lines.forEach( line => {
             if ( currentLine != line ) {
               const dist = line.getSlopeDist( this.player, playerSlopeX, playerSlopeY );
 
-              const time = getTime( speed, a, dist );
+              const time = getTime( playerSpeed, a, dist );
 
               if ( EPSILON < time && time < nextTime ) {
                 nextLine = line;
@@ -128,6 +137,8 @@ export class World {
           } );
         }
         else {
+          console.log( 'Bouncing, step = ' + step + ' playerAngle: ' + playerAngle + ' playerSpeed: ' + playerSpeed + ' dx: ' + this.player.dx + ', dy: ' + this.player.dy );
+
           const normX = Math.cos( normalAngle );
           const normY = Math.sin( normalAngle );
           const vDotN = this.player.dx * normX + this.player.dy * normY;
@@ -149,6 +160,7 @@ export class World {
         }
       }
       else {
+        console.log( 'No current line! step = ' + step );
         this.player.ax = 0;
         this.player.ay = GRAVITY;
       }
@@ -161,7 +173,7 @@ export class World {
       
       dt -= nextTime;
 
-      if ( dt <= 0 ) {
+      if ( dt <= 0 || stopped ) {
         break;
       }
 
