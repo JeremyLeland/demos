@@ -86,17 +86,15 @@ export class World {
         // TODO: Move this into the loop so we'll bounce during rolls
         // If we bounce, don't roll!
         const playerAngle = Math.atan2( this.player.dy, this.player.dx );
-        const playerSpeed = Math.hypot( this.player.dx, this.player.dy );
-
+        
         if ( Math.abs( deltaAngle( slopeAngle, playerAngle ) ) < ROLL_ANGLE ||
              Math.abs( deltaAngle( playerAngle, slopeAngle + Math.PI ) ) < ROLL_ANGLE ) {
-          console.log( 'Rolling, step = ' + step + ' playerAngle: ' + playerAngle + ' playerSpeed: ' + playerSpeed + ' dx: ' + this.player.dx + ', dy: ' + this.player.dy );
-
           const proj = this.player.dx * lineSlopeX + this.player.dy * lineSlopeY;
 
           const playerSlopeX = proj < 0 ? -lineSlopeX : lineSlopeX;
           const playerSlopeY = proj < 0 ? -lineSlopeY : lineSlopeY;
           
+          const playerSpeed = Math.hypot( this.player.dx, this.player.dy );
           this.player.dx = playerSlopeX * playerSpeed;
           this.player.dy = playerSlopeY * playerSpeed;
 
@@ -137,8 +135,6 @@ export class World {
           } );
         }
         else {
-          console.log( 'Bouncing, step = ' + step + ' playerAngle: ' + playerAngle + ' playerSpeed: ' + playerSpeed + ' dx: ' + this.player.dx + ', dy: ' + this.player.dy );
-
           const normX = Math.cos( normalAngle );
           const normY = Math.sin( normalAngle );
           const vDotN = this.player.dx * normX + this.player.dy * normY;
@@ -160,7 +156,6 @@ export class World {
         }
       }
       else {
-        console.log( 'No current line! step = ' + step );
         this.player.ax = 0;
         this.player.ay = GRAVITY;
       }
