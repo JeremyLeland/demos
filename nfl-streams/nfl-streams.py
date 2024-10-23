@@ -1,9 +1,15 @@
+import argparse
 import base64
 import requests
 import re
 from bs4 import BeautifulSoup
 from urllib.parse import quote
 
+parser = argparse.ArgumentParser()
+parser.add_argument( 'dest', type = str, help = "Destination playlist file" )
+args = parser.parse_args()
+
+lines = []
 
 def doStreameast():
   STREAMEAST_URL = 'https://www.streameast.gd/nfl-streams'
@@ -23,8 +29,8 @@ def doStreameast():
       encoded_url = match.group( 1 )
       playlist = base64.b64decode( encoded_url ).decode( 'utf-8' )
 
-      print( f'#EXTINF:-1 , { title }' )
-      print( playlist )
+      lines.append( f'#EXTINF:-1 , { title }\n' )
+      lines.append( f'{ playlist }\n' )
 
 
 def doWeakspell():
@@ -53,12 +59,15 @@ def doWeakspell():
 
     playlist = gethls_json[ 'rawUrl' ]
 
-    print( f'#EXTINF:-1 tvg-logo="{ img }" , { title }' )
-    print( playlist )
+    lines.append( f'#EXTINF:-1 tvg-logo="{ img }" , { title }\n' )
+    lines.append( f'{ playlist }\n' )
 
 
 
-print( '#EXTM3U' )
+lines.append( '#EXTM3U\n' )
 
 doStreameast()
 # doWeakspell()
+
+with open( args.dest, mode='w' ) as file:
+  file.writelines( lines )
