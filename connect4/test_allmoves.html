@@ -1,0 +1,52 @@
+<title>Connect 4</title>
+<meta name="viewport" content="width=device-width, user-scalable=no">
+<link rel="stylesheet" href="./style.css">
+
+<script type="module">
+
+import { Connect4 } from './Connect4.js';
+
+let game = Connect4.newGame( 1 );
+
+const allMoves = getNextMoves( 5 );
+
+console.log( allMoves );
+
+
+function getNextMoves( depth ) {
+  const moves = [];
+
+  game.getPossibleMoves().forEach( move => {
+    game.applyMove( move );
+  
+    const item = {
+      move: move,
+    };
+
+    const score = game.getScore();
+
+    if ( Math.abs( score ) == 4 || depth == 1 ) {
+      item.score = score;
+    }
+    else {
+      item.nextMoves = getNextMoves( depth - 1 );
+
+      let best = 0;
+      item.nextMoves.forEach( nextMove => {
+        if ( Math.abs( nextMove.score ) > Math.abs( best ) ) {
+          best = nextMove.score;
+        }
+      } );
+
+      item.score = best;
+    }
+
+    moves.push( item );
+
+    game.undo();
+  } );
+
+  return moves;
+}
+
+</script>
