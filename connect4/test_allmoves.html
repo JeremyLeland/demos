@@ -2,51 +2,145 @@
 <meta name="viewport" content="width=device-width, user-scalable=no">
 <link rel="stylesheet" href="./style.css">
 
+
 <script type="module">
 
+import { Canvas } from './Canvas.js';
 import { Connect4 } from './Connect4.js';
+
+// const XMLNS = 'http://www.w3.org/2000/svg';
 
 let game = Connect4.newGame( 1 );
 
-const allMoves = getNextMoves( 5 );
+// game.applyMove( [ 4, 5 ] );
+// game.applyMove( [ 4, 4 ] );
 
-console.log( allMoves );
+const nextMoves = game.getNextMoves( 3 );
+
+console.log( nextMoves );
+
+// const table = document.createElement( 'table' );
+// const tbody = document.createElement( 'tbody' );
+
+// const tr = document.createElement( 'tr' );
+// const td = document.createElement( 'td' );
+
+// const svg = document.createElementNS( XMLNS, 'svg' );
+// svg.setAttribute( 'viewBox', '-0.5 -0.5 7 6' );
+// svg.setAttribute( 'width', 100 );
+// svg.setAttribute( 'height', 100 );
+
+// for ( let row = 0; row < 6; row ++ ) {
+//   for ( let col = 0; col < 7; col ++ ) {
+//     const team = game.board[ col + row * 7 ];
+
+//     if ( team > 0 ) {
+//       const piece = document.createElementNS( XMLNS, 'circle' );
+      
+//       piece.setAttribute( 'cx', col );
+//       piece.setAttribute( 'cy', row );
+//       piece.setAttribute( 'r', 0.5 );
+//       piece.setAttribute( 'fill', team == 1 ? 'red' : 'yellow' );
+      
+//       svg.appendChild( piece );
+//     }
+//   }
+// }
 
 
-function getNextMoves( depth ) {
-  const moves = [];
+// td.appendChild( svg );
+// tr.appendChild( td );
+// tbody.appendChild( tr );
 
-  game.getPossibleMoves().forEach( move => {
-    game.applyMove( move );
-  
-    const item = {
-      move: move,
-    };
+// table.appendChild( tbody );
+// document.body.appendChild( table );
 
-    const score = game.getScore();
+const canvas = new Canvas();
+canvas.zoom = 1 / 7;
+canvas.scrollX = 0.5;
+canvas.scrollY = 1.5;
 
-    if ( Math.abs( score ) == 4 || depth == 1 ) {
-      item.score = score;
-    }
-    else {
-      item.nextMoves = getNextMoves( depth - 1 );
+canvas.draw = ( ctx ) => {
 
-      let best = 0;
-      item.nextMoves.forEach( nextMove => {
-        if ( Math.abs( nextMove.score ) > Math.abs( best ) ) {
-          best = nextMove.score;
+  game.draw( ctx );
+
+  drawNextMoves( nextMoves );
+
+  function drawNextMoves( nextMoves ) {
+    nextMoves.forEach( nextMove => {
+      game.applyMove( nextMove.move );
+
+      game.draw( ctx );
+
+      ctx.save(); {
+        ctx.translate( 0, 6 );
+        ctx.scale( 1/8, 1/8 );
+        ctx.translate( -3, 0 );
+
+        if ( nextMove.nextMoves ) {
+          drawNextMoves( nextMove.nextMoves );
         }
-      } );
+      }
+      ctx.restore();
+      
+      ctx.translate( 8, 0 );
 
-      item.score = best;
-    }
-
-    moves.push( item );
-
-    game.undo();
-  } );
-
-  return moves;
+      game.undo();
+    } );
+  }
 }
+
+//
+// Input
+//
+let mouse = {
+  x: 0,
+  y: 0,
+  down: false,
+};
+
+function updateMousePos( e ) {
+  mouse.x = canvas.getPointerX( e );
+  mouse.y = canvas.getPointerY( e );
+}
+
+canvas.canvas.addEventListener( 'pointerdown', e => {
+  updateMousePos( e );
+  mouse.down = true;
+} );
+
+canvas.canvas.addEventListener( 'pointermove', e => {
+  if ( mouse.down ) {
+    const lastX = mouse.x;
+    const lastY = mouse.y;
+    updateMousePos( e )
+    const moveX = mouse.x - lastX;
+    const moveY = mouse.y - lastY;
+
+    canvas.scrollX += moveX;
+    canvas.scrollY += moveY;
+
+    canvas.redraw();
+  }
+} );
+
+canvas.canvas.addEventListener( 'pointerup', e => {
+  mouse.down = false;
+} );
+
+canvas.canvas.addEventListener( 'wheel', e => {
+  if ( e.wheelDelta < 0 ) {
+    canvas.zoom *= 0.9;
+  }
+  else {
+    canvas.zoom /= 0.9;
+  }
+
+  // TODO: Base this on mouse location? (so we zoom in on area?)
+  canvas.scrollX = 1 / canvas.zoom / 2;
+  canvas.scrollY = 1 / canvas.zoom / 2;
+  
+  canvas.redraw();
+} );
 
 </script>

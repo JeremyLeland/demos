@@ -3,6 +3,8 @@ export class Canvas {
   scrollX = 0;
   scrollY = 0;
 
+  backgroundColor = 'black';
+
   #scale = 1;
   #offsetX = 0;
   #offsetY = 0;
@@ -38,15 +40,13 @@ export class Canvas {
         this.#scale = Math.min( inlineSize, blockSize );
 
         // this might get messed up if writing mode is vertical
-        this.#offsetX = inlineSize - this.#scale;
-        this.#offsetY = blockSize - this.#scale;
+        // Why did we have devicePixelRatio in here before? Is it needed by Safari?
+        this.#offsetX = ( inlineSize - this.#scale );// / devicePixelRatio;
+        this.#offsetY = ( blockSize - this.#scale );// / devicePixelRatio;
+
+        // console.log( 'offsetX = ' + this.#offsetX + ', offsetY = ' + this.#offsetY );
       } );
       
-      this.ctx.translate( this.#offsetX, this.#offsetY );
-
-      this.ctx.scale( devicePixelRatio, devicePixelRatio );
-      this.ctx.scale( this.#scale, this.#scale );
-
       this.redraw();
     } );
 
@@ -54,14 +54,25 @@ export class Canvas {
   }
 
   redraw() {
-    this.ctx.clearRect( 0, 0, this.ctx.canvas.width, this.ctx.canvas.height );
+    this.ctx.fillStyle = this.backgroundColor;
+    this.ctx.fillRect( 0, 0, this.ctx.canvas.width, this.ctx.canvas.height );
 
     this.ctx.save(); {
+      this.ctx.translate( this.#offsetX, this.#offsetY );
+
+      this.ctx.scale( devicePixelRatio, devicePixelRatio );
+      this.ctx.scale( this.#scale, this.#scale );
+
       this.ctx.scale( this.zoom, this.zoom );
       this.ctx.translate( this.scrollX, this.scrollY );
       this.ctx.lineWidth = this.zoom;
 
-      this.draw( this.ctx );
+      try {
+        this.draw( this.ctx );
+      }
+      catch ( e ) {
+        console.error( e );
+      }
     }
     this.ctx.restore();
   }

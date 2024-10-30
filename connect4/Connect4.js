@@ -149,7 +149,7 @@ export class Connect4 {
     this.setAt( move[ 0 ], move[ 1 ], this.turn );
 
     const longest = this.getLongestAt( move[ 0 ], move[ 1 ] );
-    if ( longest >= 4 ) {
+    if ( Math.abs( longest ) >= 4 ) {
       this.victory = this.turn;
       // console.log( `Player ${ this.turn } wins with ${ longest } in a row!` );
     }
@@ -263,24 +263,36 @@ export class Connect4 {
   getNextMoves( depth ) {
     const moves = [];
   
-    game.getPossibleMoves().forEach( move => {
-      game.applyMove( move );
+    this.getPossibleMoves().forEach( move => {
+      this.applyMove( move );
     
       const item = {
         move: move,
       };
   
-      const score = game.getScore();
+      const score = this.getScore();
   
       if ( Math.abs( score ) == 4 || depth <= 1 ) {
         item.score = score;
       }
       else {
         item.nextMoves = this.getNextMoves( depth - 1 );
+
+        // How to account for a move that gets 4 now being better than a move that gets 4 in several moves?
   
-        let best = 0;
+        // TODO: Need to min/max here. It's assuming best moves for same player in every case
+        //       Need to take in which player we are optimizing for to properly summarize
+
+        // FIXME: Why is it getting zero so often now?
+
+        const minFunc = ( a, b ) => a < b;
+        const maxFunc = ( a, b ) => a > b;
+
+        const func = this.turn == 1 ? minFunc : maxFunc;
+
+        let best = this.turn == 1 ? Infinity : -Infinity;
         item.nextMoves.forEach( nextMove => {
-          if ( Math.abs( nextMove.score ) > Math.abs( best ) ) {
+          if ( func( nextMove.score, best ) ) {
             best = nextMove.score;
           }
         } );
@@ -290,7 +302,7 @@ export class Connect4 {
   
       moves.push( item );
   
-      game.undo();
+      this.undo();
     } );
   
     return moves;

@@ -37,42 +37,22 @@
     if ( !game.update( dt ) ) {
       game.toLocalStore();
 
+      // NOTE: Hardcoded for 2nd AI player only at the moment (wants positive moves)
       if ( game.victory == 0 && game.aiPlayers.includes( game.turn ) ) {
 
+        const nextMoves = game.getNextMoves( 4 );
+        
+        console.log( nextMoves );
+
         let bestMove, bestScore = -Infinity;
-        game.getPossibleMoves().forEach( move => {
-          const score = Math.pow( game.applyMove( move ), 2 );
-
-          console.log( `Move ${ move } has initial score of ${ score }` );
-
-          let worstMove, worstScore = 0;
-
-          game.getPossibleMoves().forEach( move2 => {
-            const score2 = Math.pow( game.applyMove( move2 ), 3 );
-
-            if ( score2 > 0 ) {
-              game.undo();
-            }
-
-            console.log( `  Next move ${ move2 } has score of ${ score2 }` );
-
-            if ( score2 > worstScore ) {
-              worstMove = move2;
-              worstScore = score2;
-            }
-          } );
-
-          game.undo();
-
-          const adjustedScore = score - worstScore;
-
-          console.log( `Move ${ move } has adjusted score of ${ adjustedScore }` );
-
-          if ( adjustedScore > bestScore || ( adjustedScore == bestScore && Math.random() < 0.5 ) ) {
-            bestMove = move;
-            bestScore = adjustedScore;
+        nextMoves.forEach( nextMove => {
+          if ( nextMove.score > bestScore || ( nextMove.score == bestScore && Math.random() < 0.5 ) ) {
+            bestMove = nextMove.move;
+            bestScore = nextMove.score;
           }
         } );
+
+        console.log( `Found bestMove ${ bestMove } with score ${ bestScore }` );
 
         game.active.x = bestMove[ 0 ];
         game.active.y = -1;
