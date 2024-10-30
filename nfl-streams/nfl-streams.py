@@ -22,15 +22,17 @@ def doStreameast():
   for link in upcoming.find_all( 'a' ):
     title = link.find( 'span', 'd-md-inline' ).text.strip()
     page_url = link.get( 'href' )
-    page_html = requests.get( page_url ).text
 
-    match = re.search( r"source: window.atob\('(.+?)'\),", page_html )
-    if match:
-      encoded_url = match.group( 1 )
-      playlist = base64.b64decode( encoded_url ).decode( 'utf-8' )
+    for end in [ '', '/1', '/2' ]:
+      page_html = requests.get( page_url + end ).text
 
-      lines.append( f'#EXTINF:-1 , { title }\n' )
-      lines.append( f'{ playlist }\n' )
+      match = re.search( r"source: window.atob\('(.+?)'\),", page_html )
+      if match:
+        encoded_url = match.group( 1 )
+        playlist = base64.b64decode( encoded_url ).decode( 'utf-8' )
+
+        lines.append( f'#EXTINF:-1 , { title }\n' )
+        lines.append( f'{ playlist }\n' )
 
 
 def doWeakspell():
