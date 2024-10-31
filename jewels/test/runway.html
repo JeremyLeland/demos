@@ -10,6 +10,7 @@ const jewelFuncs = [
   drawTwo,
   drawThree,
   drawFour,
+  drawFive,
 ];
 
 const canvas = new Canvas();
@@ -110,6 +111,23 @@ function drawFour( ctx ) {
 
   getAngles( 0, Math.PI, 3 ).forEach( angle => {
     points.push( [ Math.cos( angle ) * 0.8, Math.sin( angle ) ] );
+  } );
+
+  drawLayered( ctx, points, 0.6 );
+}
+
+function drawFive( ctx ) {
+  ctx.fillStyle = 'blue';
+  ctx.strokeStyle = 'black';
+
+  const points = [];
+
+  getAngles( -Math.PI / 2, Math.PI / 2, 6 ).forEach( angle => {
+    points.push( [ Math.cos( angle ) * 0.6, Math.sin( angle ) ] );
+  } );
+
+  getAngles( Math.PI / 2, Math.PI * 3/2, 6 ).forEach( angle => {
+    points.push( [ Math.cos( angle ) * 0.6, Math.sin( angle ) ] );
   } );
 
   drawLayered( ctx, points, 0.6 );
