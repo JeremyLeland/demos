@@ -1,7 +1,7 @@
 import { JewelInfo } from './Jewels.js';
 
-const Cols = 5;
-const Rows = 5;
+const Cols = 6;
+const Rows = 6;
 
 const GridPath = new Path2D();
 for ( let x = 0; x <= Cols; x ++ ) {
@@ -14,7 +14,25 @@ for ( let y = 0; y <= Rows; y ++ ) {
 }
 
 export class Board {
-  pieces;
+  pieces = [];
+
+  static randomBoard() {
+    const board = new Board();
+
+    const jewelTypes = Object.keys( JewelInfo );
+
+    for ( let y = 0; y < Rows; y ++ ) {
+      for ( let x = 0; x < Cols; x ++ ) {
+        board.pieces.push( {
+          type: jewelTypes[ Math.floor( Math.random() * jewelTypes.length ) ],
+          x: x,
+          y: y,
+        } );
+      }
+    }
+
+    return board;
+  }
 
   draw( ctx ) {
 
