@@ -64,7 +64,7 @@ export class Canvas {
       this.ctx.scale( this.#scale, this.#scale );
 
       this.ctx.scale( this.zoom, this.zoom );
-      this.ctx.translate( this.scrollX, this.scrollY );
+      this.ctx.translate( -this.scrollX, -this.scrollY );
       this.ctx.lineWidth = this.zoom;
 
       try {
@@ -107,10 +107,16 @@ export class Canvas {
   // TODO: Account for offset when centered canvas
 
   getPointerX( e ) {
-    return ( ( e.clientX - this.#offsetX / devicePixelRatio ) / this.#scale ) / this.zoom - this.scrollX;
+    return ( ( e.clientX - this.#offsetX / devicePixelRatio ) / this.#scale ) / this.zoom + this.scrollX;
   }
 
   getPointerY( e ) {
-    return ( ( e.clientY - this.#offsetY / devicePixelRatio ) / this.#scale ) / this.zoom - this.scrollY;
+    return ( ( e.clientY - this.#offsetY / devicePixelRatio ) / this.#scale ) / this.zoom + this.scrollY;
+  }
+
+  zoomAt( x, y, amount ) {
+    this.zoom *= amount;
+
+    
   }
 }

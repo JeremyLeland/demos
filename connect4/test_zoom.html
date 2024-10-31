@@ -1,0 +1,113 @@
+<title>Connect 4</title>
+<meta name="viewport" content="width=device-width, user-scalable=no">
+<link rel="stylesheet" href="./style.css">
+
+
+<script type="module">
+
+import { Canvas } from './Canvas.js';
+import { Connect4 } from './Connect4.js';
+
+let game = Connect4.newGame( 1 );
+
+const canvas = new Canvas();
+canvas.zoom = 1 / 5;
+canvas.scrollX = 0; //0.5;
+canvas.scrollY = -1; //1.5;
+
+
+//
+// TODO: Get zooming sorted out. Potentially move all this mouse stuff to canvas
+// Could have it figure out all the x/y/down and call our own down/move/up handlers
+// Give canvas pan and zoom functions that also fix mouse location after pan?
+
+canvas.draw = ( ctx ) => {
+  ctx.fillStyle = 'darkred';
+  ctx.fillRect( 0, 0, 5, 5 );
+
+  ctx.fillStyle = 'orange';
+  ctx.fillRect( 0, 0, 1, 1 );
+  ctx.fillStyle = 'yellow';
+  ctx.fillRect( 1, 1, 1, 1 );
+  ctx.fillStyle = 'green';
+  ctx.fillRect( 2, 2, 1, 1 );
+  ctx.fillStyle = 'blue';
+  ctx.fillRect( 3, 3, 1, 1 );
+  ctx.fillStyle = 'purple';
+  ctx.fillRect( 4, 4, 1, 1 );
+
+  ctx.lineWidth = 0.1 * canvas.zoom;
+  ctx.strokeStyle = 'gray';
+  for ( let i = 0; i < 5; i ++ ) {
+    ctx.strokeRect( i, 0, 1, 5 );
+    ctx.strokeRect( 0, i, 5, 1 );
+  }
+
+  debug( ctx, mouse, 4, 1 );
+}
+
+function debug( ctx, object, x, y ) {
+  ctx.font = `${ 0.05/canvas.zoom }px Arial`;
+  ctx.fillStyle = 'white';
+  JSON.stringify( object ).replace( /[\{\}]/gi,'').split( ',' ).forEach( ( str, index ) => {
+    ctx.fillText( str, ( x - canvas.scrollX ) * canvas.zoom, ( y - canvas.scrollY ) * canvas.zoom + 0.4 * index );
+  } );
+}
+
+//
+// Input
+//
+let mouse = {
+  x: 0,
+  y: 0,
+  down: false,
+};
+
+function updateMousePos( e ) {
+  mouse.x = canvas.getPointerX( e );
+  mouse.y = canvas.getPointerY( e );
+}
+
+canvas.canvas.addEventListener( 'pointerdown', e => {
+  updateMousePos( e );
+  mouse.down = true;
+} );
+
+canvas.canvas.addEventListener( 'pointermove', e => {
+  const lastX = mouse.x;
+  const lastY = mouse.y;
+  updateMousePos( e )
+  const moveX = mouse.x - lastX;
+  const moveY = mouse.y - lastY;
+  
+  if ( mouse.down ) {
+    canvas.scrollX -= moveX;
+    canvas.scrollY -= moveY;
+
+    mouse.x -= moveX;
+    mouse.y -= moveY;
+
+  }
+
+  canvas.redraw();
+} );
+
+canvas.canvas.addEventListener( 'pointerup', e => {
+  mouse.down = false;
+} );
+
+canvas.canvas.addEventListener( 'wheel', e => {
+  updateMousePos( e );
+
+  // Wheel down to zoom out, wheel up to zoom in
+  const ZOOM_SPEED = 0.9;
+  const zoomFactor = e.wheelDelta < 0 ? ZOOM_SPEED : 1 / ZOOM_SPEED;
+
+  canvas.zoom *= zoomFactor;
+  canvas.scrollX = mouse.x - ( mouse.x - canvas.scrollX ) / zoomFactor;
+  canvas.scrollY = mouse.y - ( mouse.y - canvas.scrollY ) / zoomFactor;
+
+  canvas.redraw();
+} );
+
+</script>
