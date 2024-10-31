@@ -28,15 +28,32 @@ canvas.draw = ( ctx ) => {
 }
 
 function drawOne( ctx ) {
+  const outer = new Path2D();
+  const inner = new Path2D();
+
   const EDGE = 0.3;
-  ctx.beginPath();
   [ [ -0.5, -EDGE ], [ -EDGE, -0.5 ], [ EDGE, -0.5 ], [ 0.5, -EDGE ], [ 0, 0.5 ] ].forEach( point => {
-    ctx.lineTo( ...point );
+    outer.lineTo( ...point );
   } );
-  ctx.closePath();
+  outer.closePath();
+
+  inner.moveTo( -0.5, -EDGE );
+  inner.lineTo(  0.5, -EDGE );
+
+  inner.moveTo( -0.15, -0.5 );
+  inner.lineTo( -0.3, -EDGE );
+  inner.lineTo( 0, 0.5 );
+
+  inner.moveTo( 0.15, -0.5 );
+  inner.lineTo( 0.3, -EDGE );
+  inner.lineTo( 0, 0.5 );
+
   ctx.fillStyle = 'red';
-  ctx.fill();
-  ctx.stroke();
+  ctx.fill( outer );
+
+  ctx.strokeStyle = 'black';
+  ctx.stroke( outer );
+  ctx.stroke( inner );
 }
 
 function drawTwo( ctx ) {
@@ -87,13 +104,13 @@ function drawFour( ctx ) {
 
   const points = [];
 
-  getAngles( -Math.PI, 0, 7 ).forEach( angle => {
+  getAngles( -Math.PI, 0, 6 ).forEach( angle => {
     points.push( [ Math.cos( angle ) * 0.4, Math.sin( angle ) * 0.5 ] );
   } );
 
-  points.push( [ 0.3, 0.3 ] );
-  points.push( [ 0, 0.5 ] );
-  points.push( [ -0.3, 0.3 ] );
+  getAngles( 0, Math.PI, 4 ).forEach( angle => {
+    points.push( [ Math.cos( angle ) * 0.4, Math.sin( angle ) * 0.5 ] );
+  } );
 
   drawLayered( ctx, points, 0.6 );
 }
