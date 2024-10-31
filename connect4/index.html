@@ -28,8 +28,8 @@
 
   const canvas = new Canvas();
   canvas.zoom = 1 / 7;
-  canvas.scrollX = 0.5;
-  canvas.scrollY = 1.5;
+  canvas.scrollX = -0.5;
+  canvas.scrollY = -1.5;
 
   let game = Connect4.fromLocalStore() ?? Connect4.newGame( 1 );
 
@@ -40,9 +40,9 @@
       // NOTE: Hardcoded for 2nd AI player only at the moment (wants positive moves)
       if ( game.victory == 0 && game.aiPlayers.includes( game.turn ) ) {
 
-        const nextMoves = game.getNextMoves( 4 );
+        const nextMoves = game.getNextMoves( 6 );
         
-        console.log( nextMoves );
+        // console.log( nextMoves );
 
         let bestMove, bestScore = -Infinity;
         nextMoves.forEach( nextMove => {
@@ -52,7 +52,7 @@
           }
         } );
 
-        console.log( `Found bestMove ${ bestMove } with score ${ bestScore }` );
+        // console.log( `Found bestMove ${ bestMove } with score ${ bestScore }` );
 
         game.active.x = bestMove[ 0 ];
         game.active.y = -1;
@@ -60,6 +60,9 @@
       }
       else {
         canvas.stop();
+
+        // TODO: Should we do one last frame here?
+        // (need clearer case to check, should be showing yellow piece while thinking)
       }
     }
   }
@@ -67,8 +70,6 @@
   canvas.draw = ( ctx ) => {
     game.draw( ctx );
   }
-
-  canvas.redraw();
 
   function updateActivePosition( e ) {
     const mouseX = canvas.getPointerX( e );

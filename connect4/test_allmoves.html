@@ -12,48 +12,19 @@ import { Connect4 } from './Connect4.js';
 
 let game = Connect4.newGame( 1 );
 
-// game.applyMove( [ 4, 5 ] );
-// game.applyMove( [ 4, 4 ] );
+// game.applyMove( [ 6, 5 ] );
 
-const nextMoves = game.getNextMoves( 3 );
+game.applyMove( [ 3, 5 ] );
+game.applyMove( [ 4, 5 ] );
+game.applyMove( [ 3, 4 ] );
+game.applyMove( [ 4, 4 ] );
+game.applyMove( [ 3, 3 ] );
+game.applyMove( [ 4, 3 ] );
+
+
+const nextMoves = game.getNextMoves( 4 );
 
 console.log( nextMoves );
-
-// const table = document.createElement( 'table' );
-// const tbody = document.createElement( 'tbody' );
-
-// const tr = document.createElement( 'tr' );
-// const td = document.createElement( 'td' );
-
-// const svg = document.createElementNS( XMLNS, 'svg' );
-// svg.setAttribute( 'viewBox', '-0.5 -0.5 7 6' );
-// svg.setAttribute( 'width', 100 );
-// svg.setAttribute( 'height', 100 );
-
-// for ( let row = 0; row < 6; row ++ ) {
-//   for ( let col = 0; col < 7; col ++ ) {
-//     const team = game.board[ col + row * 7 ];
-
-//     if ( team > 0 ) {
-//       const piece = document.createElementNS( XMLNS, 'circle' );
-      
-//       piece.setAttribute( 'cx', col );
-//       piece.setAttribute( 'cy', row );
-//       piece.setAttribute( 'r', 0.5 );
-//       piece.setAttribute( 'fill', team == 1 ? 'red' : 'yellow' );
-      
-//       svg.appendChild( piece );
-//     }
-//   }
-// }
-
-
-// td.appendChild( svg );
-// tr.appendChild( td );
-// tbody.appendChild( tr );
-
-// table.appendChild( tbody );
-// document.body.appendChild( table );
 
 const canvas = new Canvas();
 canvas.zoom = 1 / 7;
@@ -75,6 +46,12 @@ canvas.draw = ( ctx ) => {
       game.applyMove( nextMove.move );
 
       game.draw( ctx );
+
+      ctx.font = '8px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fffa';
+      ctx.fillText( nextMove.score, 3, 3 );
 
       ctx.save(); {
         ctx.translate( 0, 6 );

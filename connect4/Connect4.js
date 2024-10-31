@@ -149,6 +149,11 @@ export class Connect4 {
     this.setAt( move[ 0 ], move[ 1 ], this.turn );
 
     const longest = this.getLongestAt( move[ 0 ], move[ 1 ] );
+
+    if ( Math.abs( longest ) > 4 ) {
+      // debugger;
+    }
+
     if ( Math.abs( longest ) >= 4 ) {
       this.victory = this.turn;
       // console.log( `Player ${ this.turn } wins with ${ longest } in a row!` );
@@ -241,6 +246,7 @@ export class Connect4 {
   //
   // NOTE: Currently, tied boards may give -# or # depending on which pieces it finds first
   // TODO: Should tied boards be represented differently?
+  // NOW: Trying only win and loss numbers, zero otherwise
 
   getScore() {
     let longest = 0;
@@ -249,15 +255,20 @@ export class Connect4 {
       for ( let row = 0; row < Rows; row ++ ) {
         const longestAt = this.getLongestAt( col, row );
 
+        if ( Math.abs( longestAt ) >= 4 ) {
+          return longestAt;
+        }
+
         // console.log( `Longest at ${ col },${ row } is ${ longestAt }` );
 
-        if ( Math.abs( longestAt ) > Math.abs( longest ) ) {
-          longest = longestAt;
-        }
+        // if ( Math.abs( longestAt ) > Math.abs( longest ) ) {
+        //   longest = longestAt;
+        // }
       }
     }
 
-    return longest;
+    // return longest;
+    return 0;
   }
 
   getNextMoves( depth ) {
@@ -272,7 +283,7 @@ export class Connect4 {
   
       const score = this.getScore();
   
-      if ( Math.abs( score ) == 4 || depth <= 1 ) {
+      if ( Math.abs( score ) >= 4 || depth <= 1 ) {
         item.score = score;
       }
       else {
