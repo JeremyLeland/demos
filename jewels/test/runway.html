@@ -1,0 +1,135 @@
+<title>Draw Jewels</title>
+<link rel="stylesheet" href="../style.css">
+
+<script type="module">
+
+import { Canvas } from '../src/Canvas.js';
+
+const jewelFuncs = [
+  drawOne,
+  drawTwo,
+  drawThree,
+  drawFour,
+];
+
+const canvas = new Canvas();
+canvas.backgroundColor = 'tan';
+canvas.zoom = 1 / 5;
+
+canvas.draw = ( ctx ) => {
+
+  ctx.lineWidth = 0.1 * canvas.zoom;
+  ctx.translate( 1, 1 );
+
+  jewelFuncs.forEach( func => {
+    func( ctx );
+    ctx.translate( 1, 0 );
+  } );
+}
+
+function drawOne( ctx ) {
+  const EDGE = 0.3;
+  ctx.beginPath();
+  [ [ -0.5, -EDGE ], [ -EDGE, -0.5 ], [ EDGE, -0.5 ], [ 0.5, -EDGE ], [ 0, 0.5 ] ].forEach( point => {
+    ctx.lineTo( ...point );
+  } );
+  ctx.closePath();
+  ctx.fillStyle = 'red';
+  ctx.fill();
+  ctx.stroke();
+}
+
+function drawTwo( ctx ) {
+  ctx.fillStyle = 'white';
+  ctx.strokeStyle = 'black';
+  
+  drawLayered(
+    ctx, 
+    [ [ -0.5, 0 ], [ 0, -0.5 ], [ 0.5, 0 ], [ 0, 0.5 ] ],
+    0.6
+  );
+}
+
+function drawThree( ctx ) {
+  const outer = new Path2D();
+  const between = new Path2D();
+  const inner = new Path2D();
+
+  const OUTER_LEN = 0.5;
+  const INNER_LEN = 0.3;
+
+  getAngles( 0, Math.PI * 2, 8 ).forEach( angle => {
+    const cos = Math.cos( angle );
+    const sin = Math.sin( angle );
+
+    outer.lineTo( cos * OUTER_LEN, sin * OUTER_LEN );
+    inner.lineTo( cos * INNER_LEN, sin * INNER_LEN );
+
+    between.moveTo( cos * OUTER_LEN, sin * OUTER_LEN );
+    between.lineTo( cos * INNER_LEN, sin * INNER_LEN );
+  } );
+
+  outer.closePath();
+  inner.closePath();
+
+  ctx.fillStyle = 'orange';
+  ctx.fill( outer );
+
+  ctx.strokeStyle = 'black';
+  ctx.stroke( outer );
+  ctx.stroke( between );
+  ctx.stroke( inner );
+}
+
+function drawFour( ctx ) {
+  ctx.fillStyle = 'green';
+  ctx.strokeStyle = 'black';
+
+  const points = [];
+
+  getAngles( -Math.PI, 0, 7 ).forEach( angle => {
+    points.push( [ Math.cos( angle ) * 0.4, Math.sin( angle ) * 0.5 ] );
+  } );
+
+  points.push( [ 0.3, 0.3 ] );
+  points.push( [ 0, 0.5 ] );
+  points.push( [ -0.3, 0.3 ] );
+
+  drawLayered( ctx, points, 0.6 );
+}
+
+function drawLayered( ctx, points, innerSize ) {
+  const outer = new Path2D();
+  const inner = new Path2D();
+  const between = new Path2D();
+
+  points.forEach( p => {
+    outer.lineTo( ...p );
+
+    const angle = Math.atan2( p[ 1 ], p[ 0 ] );
+    const dist  = Math.hypot( p[ 0 ], p[ 1 ] );
+
+    const innerX = Math.cos( angle ) * ( dist * innerSize );
+    const innerY = Math.sin( angle ) * ( dist * innerSize );
+
+    inner.lineTo( innerX, innerY );
+
+    between.moveTo( ...p );
+    between.lineTo( innerX, innerY );
+  } );
+
+  outer.closePath();
+  inner.closePath();
+
+  ctx.fill( outer );
+
+  ctx.stroke( outer );
+  ctx.stroke( between );
+  ctx.stroke( inner );
+}
+
+function getAngles( start, end, steps ) {
+  return Array.from( Array( steps + 1 ), ( _, index ) => start + ( end - start ) * index / steps );
+}
+
+</script>
