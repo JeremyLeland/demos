@@ -17,6 +17,7 @@ export class Canvas {
     dx: 0,
     dy: 0,
     down: false,
+    wheel: 0,
   };
 
   constructor( canvas ) {
@@ -71,8 +72,6 @@ export class Canvas {
     this.canvas.addEventListener( 'pointerdown', e => {
       this.#mouse.x = this.getPointerX( e );
       this.#mouse.y = this.getPointerY( e );
-      this.#mouse.dx = 0;
-      this.#mouse.dy = 0;
       this.#mouse.down = true;
 
       this.pointerDown( this.#mouse );
@@ -87,14 +86,25 @@ export class Canvas {
       this.#mouse.dy = this.#mouse.y - lastY;
       
       this.pointerMove( this.#mouse );
+
+      this.#mouse.dx = 0;
+      this.#mouse.dy = 0;
     } );
 
     this.canvas.addEventListener( 'pointerup', e => {
-      this.#mouse.dx = 0;
-      this.#mouse.dy = 0;
       this.#mouse.down = false;
 
       this.pointerUp( this.#mouse );
+    } );
+
+    this.canvas.addEventListener( 'wheel', e => {
+      this.#mouse.x = this.getPointerX( e );
+      this.#mouse.y = this.getPointerY( e );
+      this.#mouse.wheel = e.wheelDelta;
+      
+      this.wheelInput( this.#mouse );
+
+      this.#mouse.wheel = 0;
     } );
   }
 
@@ -152,6 +162,7 @@ export class Canvas {
   pointerDown( pointerInfo ) {}
   pointerMove( pointerInfo ) {}
   pointerUp( pointerInfo ) {}
+  wheelInput( pointerInfo ) {}
 
   getPointerX( e ) {
     return ( ( e.clientX - this.#offsetX / devicePixelRatio ) / this.#scale ) / this.zoom + this.scrollX;
@@ -161,11 +172,14 @@ export class Canvas {
     return ( ( e.clientY - this.#offsetY / devicePixelRatio ) / this.#scale ) / this.zoom + this.scrollY;
   }
 
-  // zoomAt( x, y, amount ) {
-  //   this.zoom *= amount;
-
+  zoomAt( x, y, amount ) {
+    this.zoom *= amount;
     
-  // }
+    this.scrollX = x - ( x - this.scrollX ) / amount;
+    this.scrollY = y - ( y - this.scrollY ) / amount;
+
+    // Don't need to update pointer position because we intentionally kept it the same
+  }
 
 
 }

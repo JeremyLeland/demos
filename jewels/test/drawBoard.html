@@ -58,7 +58,6 @@ canvas.pointerMove = ( p ) => {
 }
 
 canvas.pointerUp = ( p ) => {
-
   selected.x = Math.round( selected.x );
   selected.y = Math.round( selected.y );
 
@@ -69,6 +68,13 @@ canvas.pointerUp = ( p ) => {
   moveAxis = null;
   other = null;
 
+  canvas.redraw();
+}
+
+canvas.wheelInput = ( p ) => {
+  const ZOOM_SPEED = 0.9;
+  canvas.zoomAt( p.x, p.y, p.wheel < 0 ? ZOOM_SPEED : 1 / ZOOM_SPEED );
+  
   canvas.redraw();
 }
 
