@@ -31,8 +31,40 @@ export const JewelInfo = {
     }
   } )(),
 
+  'Orange': ( () => {
+    const points = getAngles( 0, Math.PI * 2, 8 ).map( angle =>
+      [ Math.cos( angle ), Math.sin( angle ) ]
+    );
+
+    return {
+      fillStyle: 'orange',
+      fill: getPath( points ),
+      stroke: getLayeredPath( points, 0.6 ),
+    }
+  } )(),
+
+  'Blue': ( () => {
+    const points = [];
+
+    getAngles( -Math.PI / 2, Math.PI / 2, 6 ).forEach( angle => {
+      points.push( [ Math.cos( angle ) * 0.6, Math.sin( angle ) ] );
+    } );
+
+    getAngles( Math.PI / 2, Math.PI * 3/2, 6 ).forEach( angle => {
+      points.push( [ Math.cos( angle ) * 0.6, Math.sin( angle ) ] );
+    } );
+
+    return {
+      fillStyle: 'dodgerblue',
+      fill: getPath( points ),
+      stroke: getLayeredPath( points, 0.6 ),
+    }
+  } )(),
+
   'White': ( () => {
-    const points = [ [ -1, 0 ], [ 0, -1 ], [ 1, 0 ], [ 0, 1 ] ];
+    const points = getAngles( 0, Math.PI * 2, 4 ).map( angle =>
+      [ Math.cos( angle ), Math.sin( angle ) ]
+    );
 
     return {
       fillStyle: 'white',
