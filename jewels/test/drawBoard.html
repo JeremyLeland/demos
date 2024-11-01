@@ -11,6 +11,7 @@ import { Board } from '../src/Board.js';
 const board = Board.randomBoard();
 
 let selected, moveAxis;
+let other;
 
 const canvas = new Canvas();
 canvas.backgroundColor = 'tan';
@@ -26,6 +27,8 @@ canvas.draw = ( ctx ) => {
 
 canvas.pointerDown = ( p ) => {
   selected = board.pieces.find( e => Math.hypot( e.x - p.x, e.y - p.y ) < 0.5 );
+
+  canvas.redraw();
 }
 
 canvas.pointerMove = ( p ) => {
@@ -37,18 +40,36 @@ canvas.pointerMove = ( p ) => {
       else {
         moveAxis = { x: 0, y: 1 };
       }
+
+      const otherX = selected.x + moveAxis.x * Math.sign( p.dx );
+      const otherY = selected.y + moveAxis.y * Math.sign( p.dy );
+
+      other = board.pieces.find( e => e.x == otherX && e.y == otherY );
     }
 
     selected.x += moveAxis.x * p.dx;
     selected.y += moveAxis.y * p.dy;
+
+    other.x -= moveAxis.x * p.dx;
+    other.y -= moveAxis.y * p.dy;
   }
 
   canvas.redraw();
 }
 
 canvas.pointerUp = ( p ) => {
+
+  selected.x = Math.round( selected.x );
+  selected.y = Math.round( selected.y );
+
+  other.x = Math.round( other.x );
+  other.y = Math.round( other.y );
+
   selected = null;
   moveAxis = null;
+  other = null;
+
+  canvas.redraw();
 }
 
 
