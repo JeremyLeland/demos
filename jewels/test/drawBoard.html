@@ -10,6 +10,8 @@ import { Board } from '../src/Board.js';
 
 const board = Board.randomBoard();
 
+let selected, moveAxis;
+
 const canvas = new Canvas();
 canvas.backgroundColor = 'tan';
 canvas.zoom = 1 / 6;
@@ -20,6 +22,33 @@ canvas.draw = ( ctx ) => {
   ctx.lineWidth = 0.002 / canvas.zoom;
 
   board.draw( ctx );
+}
+
+canvas.pointerDown = ( p ) => {
+  selected = board.pieces.find( e => Math.hypot( e.x - p.x, e.y - p.y ) < 0.5 );
+}
+
+canvas.pointerMove = ( p ) => {
+  if ( p.down && selected ) {
+    if ( !moveAxis ) {
+      if ( Math.abs( p.dx ) > Math.abs( p.dy ) ) {
+        moveAxis = { x: 1, y: 0 };
+      }
+      else {
+        moveAxis = { x: 0, y: 1 };
+      }
+    }
+
+    selected.x += moveAxis.x * p.dx;
+    selected.y += moveAxis.y * p.dy;
+  }
+
+  canvas.redraw();
+}
+
+canvas.pointerUp = ( p ) => {
+  selected = null;
+  moveAxis = null;
 }
 
 

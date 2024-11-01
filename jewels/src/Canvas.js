@@ -11,6 +11,14 @@ export class Canvas {
 
   #reqId;
 
+  #mouse = {
+    x: 0,
+    y: 0,
+    dx: 0,
+    dy: 0,
+    down: false,
+  };
+
   constructor( canvas ) {
     this.canvas = canvas;
     
@@ -24,6 +32,10 @@ export class Canvas {
     this.canvas.oncontextmenu = () => { return false };
     
     this.ctx = this.canvas.getContext( '2d' /*, { alpha: false }*/ );
+
+    //
+    // Resize with parent element
+    //
 
     const resizeObserver = new ResizeObserver( entries => {
       entries.forEach( entry => {
@@ -51,6 +63,39 @@ export class Canvas {
     } );
 
     resizeObserver.observe( this.canvas );
+
+    //
+    // Pointer input
+    //
+
+    this.canvas.addEventListener( 'pointerdown', e => {
+      this.#mouse.x = this.getPointerX( e );
+      this.#mouse.y = this.getPointerY( e );
+      this.#mouse.dx = 0;
+      this.#mouse.dy = 0;
+      this.#mouse.down = true;
+
+      this.pointerDown( this.#mouse );
+    } );
+
+    this.canvas.addEventListener( 'pointermove', e => {
+      const lastX = this.#mouse.x;
+      const lastY = this.#mouse.y;
+      this.#mouse.x = this.getPointerX( e );
+      this.#mouse.y = this.getPointerY( e );
+      this.#mouse.dx = this.#mouse.x - lastX;
+      this.#mouse.dy = this.#mouse.y - lastY;
+      
+      this.pointerMove( this.#mouse );
+    } );
+
+    this.canvas.addEventListener( 'pointerup', e => {
+      this.#mouse.dx = 0;
+      this.#mouse.dy = 0;
+      this.#mouse.down = false;
+
+      this.pointerUp( this.#mouse );
+    } );
   }
 
   redraw() {
@@ -104,7 +149,9 @@ export class Canvas {
   update( dt ) {}
   draw( ctx ) {}
 
-  // TODO: Account for offset when centered canvas
+  pointerDown( pointerInfo ) {}
+  pointerMove( pointerInfo ) {}
+  pointerUp( pointerInfo ) {}
 
   getPointerX( e ) {
     return ( ( e.clientX - this.#offsetX / devicePixelRatio ) / this.#scale ) / this.zoom + this.scrollX;
@@ -114,9 +161,11 @@ export class Canvas {
     return ( ( e.clientY - this.#offsetY / devicePixelRatio ) / this.#scale ) / this.zoom + this.scrollY;
   }
 
-  zoomAt( x, y, amount ) {
-    this.zoom *= amount;
+  // zoomAt( x, y, amount ) {
+  //   this.zoom *= amount;
 
     
-  }
+  // }
+
+
 }
