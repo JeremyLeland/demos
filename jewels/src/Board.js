@@ -79,6 +79,60 @@ export class Board {
     } );
   }
 
+  // TODO: Better name!
+  checkWins() {
+    const pieceArray = Array( Cols * Rows );
+    const toRemove = new Set();
+
+    this.pieces.forEach( p => pieceArray[ p.x + p.y * Cols ] = p );
+
+    console.log( pieceArray );
+
+    for ( let row = 0; row < Rows; row ++ ) { 
+      for ( let col = 0; col < Cols; col ++ ) {
+        const startPiece = pieceArray[ col + row * Cols ];
+    
+        [
+          [ 1, 0 ],   // vertical
+          [ 0, 1 ],   // horizontal
+        ].forEach( orientation => {
+          let length = 1;
+          const linePieces = [ startPiece ];
+    
+          [ -1, 1 ].forEach( dir => {
+            let c = col, r = row;
+    
+            while ( true ) {
+              c += dir * orientation[ 0 ];
+              r += dir * orientation[ 1 ];
+    
+              if ( 0 <= c && c < Cols && 0 <= r && r < Rows ) {
+                const otherPiece = pieceArray[ c + r * Cols ];
+
+                if ( otherPiece.type == startPiece.type ) {
+                  length ++;
+                  linePieces.push( otherPiece )
+                }
+                else {
+                  break;
+                }
+              }
+              else {
+                break;
+              }
+            }
+          } );
+
+          if ( length >= 3 ) {
+            toRemove.add( ...linePieces );
+          }
+        } );
+      }
+    }
+
+    console.log( toRemove );
+  }
+
   startDrag( x, y ) {
     this.#selected = this.pieces.find( p => Math.hypot( x - p.x, y - p.y ) < 0.5 );
   }

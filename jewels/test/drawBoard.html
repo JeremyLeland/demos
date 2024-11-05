@@ -48,6 +48,8 @@ canvas.pointerUp = ( p ) => {
   board.stopDrag();
 
   canvas.redraw();
+
+  board.checkWins();
 }
 
 canvas.wheelInput = ( p ) => {
