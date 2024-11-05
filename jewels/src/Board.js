@@ -14,7 +14,6 @@ for ( let y = 0; y <= Rows; y ++ ) {
 }
 
 const Axis = {
-  None:       { x: 0, y: 0 },
   Horizontal: { x: 1, y: 0 },
   Vertical:   { x: 0, y: 1 },
 };
@@ -24,8 +23,9 @@ export class Board {
 
   #selected = null;
   #other = null;
-  #moveAxis = Axis.None;
-  #moveDist = 0;
+  #moveAxis = null;
+  #moveX = 0;
+  #moveY = 0;
 
   static randomBoard() {
     const board = new Board();
@@ -49,28 +49,18 @@ export class Board {
 
     ctx.strokeStyle = 'gray';
     ctx.stroke( GridPath );
-
-    const moveX = this.#moveAxis.x * this.#moveDist;
-    const moveY = this.#moveAxis.y * this.#moveDist;
-    
-    const other = this.#selected ? 
-      this.pieces.find( p => 
-        p.x == this.#selected.x + Math.sign( moveX ) && 
-        p.y == this.#selected.y + Math.sign( moveY ) 
-      ) :
-      null;
-
+  
     this.pieces.forEach( piece => {
       let x = piece.x;
       let y = piece.y;
 
-      if ( piece == this.#selected && other ) {
-        x += moveX;
-        y += moveY;
+      if ( piece == this.#selected ) {
+        x += this.#moveX;
+        y += this.#moveY;
       }
-      else if ( piece == other ) {
-        x -= moveX;
-        y -= moveY;
+      else if ( piece == this.#other ) {
+        x -= this.#moveX;
+        y -= this.#moveY;
       }
 
       ctx.translate( x, y );
@@ -94,18 +84,48 @@ export class Board {
   }
 
   moveDrag( dx, dy ) {
-    if ( this.#moveAxis == Axis.None ) {
-      this.#moveAxis = Math.abs( dx ) > Math.abs( dy ) ? Axis.Horizontal : Axis.Vertical;
+    if ( !this.#selected ) {
+      return;
     }
 
-    this.#moveDist += this.#moveAxis.x * dx;
-    this.#moveDist += this.#moveAxis.y * dy;
-    this.#moveDist = Math.max( -1, Math.min( 1, this.#moveDist ) );
+    if ( Math.abs( this.#moveX ) < 0.01 && Math.abs( this.#moveY ) < 0.01 ) {
+      this.#moveAxis = Math.abs( dx ) > Math.abs( dy ) ? Axis.Horizontal : Axis.Vertical;
+      this.#moveX = 0;
+      this.#moveY = 0;
+    }
+
+    this.#moveX = Math.max( -1, Math.min( 1, this.#moveX + this.#moveAxis.x * dx ) );
+    this.#moveY = Math.max( -1, Math.min( 1, this.#moveY + this.#moveAxis.y * dy ) );
+
+    this.#other = this.pieces.find( p => 
+      p.x == this.#selected.x + Math.sign( this.#moveX ) && 
+      p.y == this.#selected.y + Math.sign( this.#moveY ) 
+    );
+
+    // An invalid drag counts as no drag at all
+    // This makes dragging around edges and corners look better, so we can immediately choose a different axis
+    if ( this.#other == null ) {
+      this.#moveX = 0;
+      this.#moveY = 0;
+    }
   }
 
   stopDrag() {
-    this.#selected = null;
-    this.#moveAxis = Axis.None;
-    this.#moveDist = 0;
+    // TODO: Check for valid move
+    if ( this.#selected ) {
+      this.#selected.x = Math.round( this.#selected.x + this.#moveX );
+      this.#selected.y = Math.round( this.#selected.y + this.#moveY );
+      this.#selected = null;
+    }
+
+    if ( this.#other ) {
+      this.#other.x = Math.round( this.#other.x - this.#moveX );
+      this.#other.y = Math.round( this.#other.y - this.#moveY );
+      this.#other = null;
+    }
+
+    this.#moveAxis = null;
+    this.#moveX = 0;
+    this.#moveY = 0;
   }
 }
