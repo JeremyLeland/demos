@@ -16,7 +16,7 @@ export class Canvas {
     y: 0,
     dx: 0,
     dy: 0,
-    down: false,
+    buttons: 0,
     wheel: 0,
   };
 
@@ -72,7 +72,7 @@ export class Canvas {
     this.canvas.addEventListener( 'pointerdown', e => {
       this.#mouse.x = this.getPointerX( e );
       this.#mouse.y = this.getPointerY( e );
-      this.#mouse.down = true;
+      this.#mouse.buttons = e.buttons;
 
       this.pointerDown( this.#mouse );
     } );
@@ -92,7 +92,7 @@ export class Canvas {
     } );
 
     this.canvas.addEventListener( 'pointerup', e => {
-      this.#mouse.down = false;
+      this.#mouse.buttons = e.buttons;
 
       this.pointerUp( this.#mouse );
     } );

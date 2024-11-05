@@ -10,7 +10,7 @@ import { Board } from '../src/Board.js';
 
 const board = Board.randomBoard();
 
-let selected, moveAxis;
+let selected, moveAxis, moveDist = 0;
 let other;
 
 const canvas = new Canvas();
@@ -26,47 +26,26 @@ canvas.draw = ( ctx ) => {
 }
 
 canvas.pointerDown = ( p ) => {
-  selected = board.pieces.find( e => Math.hypot( e.x - p.x, e.y - p.y ) < 0.5 );
+  if ( p.buttons == 1 ) {
+    board.startDrag( p.x, p.y );  
+  }
+  else if ( p.buttons == 2 ) {
+    board.pieces = board.pieces.filter( e => Math.hypot( e.x - p.x, e.y - p.y ) < 0.5 );
+  }
 
   canvas.redraw();
 }
 
 canvas.pointerMove = ( p ) => {
-  if ( p.down && selected ) {
-    if ( !moveAxis ) {
-      if ( Math.abs( p.dx ) > Math.abs( p.dy ) ) {
-        moveAxis = { x: 1, y: 0 };
-      }
-      else {
-        moveAxis = { x: 0, y: 1 };
-      }
-
-      const otherX = selected.x + moveAxis.x * Math.sign( p.dx );
-      const otherY = selected.y + moveAxis.y * Math.sign( p.dy );
-
-      other = board.pieces.find( e => e.x == otherX && e.y == otherY );
-    }
-
-    selected.x += moveAxis.x * p.dx;
-    selected.y += moveAxis.y * p.dy;
-
-    other.x -= moveAxis.x * p.dx;
-    other.y -= moveAxis.y * p.dy;
+  if ( p.buttons == 1 ) {
+    board.moveDrag( p.dx, p.dy );
   }
 
   canvas.redraw();
 }
 
 canvas.pointerUp = ( p ) => {
-  selected.x = Math.round( selected.x );
-  selected.y = Math.round( selected.y );
-
-  other.x = Math.round( other.x );
-  other.y = Math.round( other.y );
-
-  selected = null;
-  moveAxis = null;
-  other = null;
+  board.stopDrag();
 
   canvas.redraw();
 }
@@ -74,7 +53,7 @@ canvas.pointerUp = ( p ) => {
 canvas.wheelInput = ( p ) => {
   const ZOOM_SPEED = 0.9;
   canvas.zoomAt( p.x, p.y, p.wheel < 0 ? ZOOM_SPEED : 1 / ZOOM_SPEED );
-  
+
   canvas.redraw();
 }
 
