@@ -23,6 +23,7 @@ export class Board {
   pieces = [];
 
   #selected = null;
+  #other = null;
   #moveAxis = Axis.None;
   #moveDist = 0;
 
@@ -63,7 +64,7 @@ export class Board {
       let x = piece.x;
       let y = piece.y;
 
-      if ( piece == this.#selected ) {
+      if ( piece == this.#selected && other ) {
         x += moveX;
         y += moveY;
       }
