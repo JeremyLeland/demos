@@ -1,6 +1,4 @@
-
-
-export const JewelInfo = {
+export const Info = {
   'Red': ( () => {
     const outer = new Path2D();
     const inner = new Path2D();
@@ -130,4 +128,9 @@ function getLayeredPath( points, innerSize ) {
 
 function getAngles( start, end, steps ) {
   return Array.from( Array( steps + 1 ), ( _, index ) => start + ( end - start ) * index / steps );
+}
+
+const jewelTypes = Object.keys( Info );
+export function getRandomType() {
+  return jewelTypes[ Math.floor( Math.random() * jewelTypes.length ) ]
 }

@@ -47,9 +47,10 @@ canvas.pointerMove = ( p ) => {
 canvas.pointerUp = ( p ) => {
   board.stopDrag();
 
+  board.checkWins();
+  
   canvas.redraw();
 
-  board.checkWins();
 }
 
 canvas.wheelInput = ( p ) => {

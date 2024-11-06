@@ -1,4 +1,4 @@
-import { JewelInfo } from './Jewels.js';
+import * as Jewels from './Jewels.js';
 
 const Cols = 6;
 const Rows = 6;
@@ -30,12 +30,10 @@ export class Board {
   static randomBoard() {
     const board = new Board();
 
-    const jewelTypes = Object.keys( JewelInfo );
-
     for ( let y = 0; y < Rows; y ++ ) {
       for ( let x = 0; x < Cols; x ++ ) {
         board.pieces.push( {
-          type: jewelTypes[ Math.floor( Math.random() * jewelTypes.length ) ],
+          type: Jewels.getRandomType(),
           x: x,
           y: y,
         } );
@@ -66,7 +64,7 @@ export class Board {
       ctx.translate( x, y );
       ctx.scale( 0.5, 0.5 );
 
-      const info = JewelInfo[ piece.type ];
+      const info = Jewels.Info[ piece.type ];
 
       ctx.fillStyle = info.fillStyle;
       ctx.fill( info.fill );
@@ -91,6 +89,11 @@ export class Board {
     for ( let row = 0; row < Rows; row ++ ) { 
       for ( let col = 0; col < Cols; col ++ ) {
         const startPiece = pieceArray[ col + row * Cols ];
+
+        // TODO: Shouldn't ever hit this once we fill in more pieces
+        if ( !startPiece ) {
+          continue;
+        }
     
         [
           [ 1, 0 ],   // vertical
@@ -109,7 +112,7 @@ export class Board {
               if ( 0 <= c && c < Cols && 0 <= r && r < Rows ) {
                 const otherPiece = pieceArray[ c + r * Cols ];
 
-                if ( otherPiece.type == startPiece.type ) {
+                if ( otherPiece?.type == startPiece.type ) {
                   length ++;
                   linePieces.push( otherPiece )
                 }
@@ -131,6 +134,39 @@ export class Board {
     }
 
     console.log( toRemove );
+
+    this.pieces = this.pieces.filter( p => !toRemove.has( p ) );
+
+    toRemove.forEach( p => pieceArray[ p.x + p.y * Cols ] = null );
+
+    console.log( pieceArray );
+
+    for ( let row = Rows - 1; row >= 0; row -- ) {
+      for ( let col = Cols - 1; col >= 0; col -- ) {
+        const index = col + row * Cols;
+        if ( !pieceArray[ index ] ) {
+          let aboveIndex = index - Cols;
+          while ( aboveIndex >= 0 && !pieceArray[ aboveIndex ] ) {
+            aboveIndex -= Cols;
+          }
+
+          if ( aboveIndex < 0 ) {
+            const piece = {
+              type: Jewels.getRandomType(),
+              x: col,
+              y: row,
+            };
+            this.pieces.push( piece );
+            pieceArray[ index ] = piece;
+          }
+          else {
+            pieceArray[ aboveIndex ].y = row;
+            pieceArray[ index ] = pieceArray[ aboveIndex ];
+            pieceArray[ aboveIndex ] = null;
+          }
+        }
+      }
+    }
   }
 
   startDrag( x, y ) {
@@ -182,4 +218,8 @@ export class Board {
     this.#moveX = 0;
     this.#moveY = 0;
   }
+}
+
+function randomType() {
+  return jewelTypes[ Math.floor( Math.random() * jewelTypes.length ) ]
 }
