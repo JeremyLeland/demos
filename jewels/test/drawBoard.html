@@ -19,11 +19,17 @@ canvas.zoom = 1 / 6;
 canvas.scrollX = -0.5;
 canvas.scrollY = -0.5;
 
+canvas.update = ( dt ) => {
+  board.update( dt );
+}
+
 canvas.draw = ( ctx ) => {
   ctx.lineWidth = 0.002 / canvas.zoom;
 
   board.draw( ctx );
 }
+
+canvas.start();
 
 canvas.pointerDown = ( p ) => {
   if ( p.buttons == 1 ) {
@@ -48,7 +54,7 @@ canvas.pointerUp = ( p ) => {
   board.stopDrag();
 
   board.checkWins();
-  
+
   canvas.redraw();
 
 }

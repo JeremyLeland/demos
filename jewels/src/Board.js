@@ -18,6 +18,8 @@ const Axis = {
   Vertical:   { x: 0, y: 1 },
 };
 
+const Gravity = 0.00001;
+
 export class Board {
   pieces = [];
 
@@ -36,11 +38,40 @@ export class Board {
           type: Jewels.getRandomType(),
           x: x,
           y: y,
+          dx: 0,
+          dy: 0,
         } );
       }
     }
 
     return board;
+  }
+
+  update( dt ) {
+    this.pieces.forEach( piece => {
+
+      // Gravity
+      const belowDist = this.pieces.filter( other => other.x == piece.x )
+        .map( other => other.y - piece.y - 1 )
+        .reduce( ( closest, dist ) => -1 < dist && dist < closest ? dist : closest, Rows - piece.y - 1 );
+
+      if ( belowDist > 0 ) {
+        const fallDist = piece.dy * dt + 0.5 * Gravity * dt ** 2;
+
+        if ( fallDist < belowDist ) {
+          piece.y += fallDist;
+          piece.dy += Gravity * dt;
+        }
+        else {
+          piece.y = Math.round( piece.y + belowDist );
+          piece.dy = 0;
+        }
+      }
+      
+      // TODO: Snapping after drag
+      // piece.x += piece.dx * dt;
+      
+    } );
   }
 
   draw( ctx ) {
@@ -84,17 +115,16 @@ export class Board {
 
     this.pieces.forEach( p => pieceArray[ p.x + p.y * Cols ] = p );
 
-    console.log( pieceArray );
+    // console.log( pieceArray );
 
     for ( let row = 0; row < Rows; row ++ ) { 
       for ( let col = 0; col < Cols; col ++ ) {
         const startPiece = pieceArray[ col + row * Cols ];
-
-        // TODO: Shouldn't ever hit this once we fill in more pieces
+    
         if ( !startPiece ) {
           continue;
         }
-    
+
         [
           [ 1, 0 ],   // vertical
           [ 0, 1 ],   // horizontal
@@ -133,40 +163,32 @@ export class Board {
       }
     }
 
-    console.log( toRemove );
+    // console.log( toRemove );
 
     this.pieces = this.pieces.filter( p => !toRemove.has( p ) );
 
-    toRemove.forEach( p => pieceArray[ p.x + p.y * Cols ] = null );
-
-    console.log( pieceArray );
-
-    for ( let row = Rows - 1; row >= 0; row -- ) {
-      for ( let col = Cols - 1; col >= 0; col -- ) {
-        const index = col + row * Cols;
-        if ( !pieceArray[ index ] ) {
-          let aboveIndex = index - Cols;
-          while ( aboveIndex >= 0 && !pieceArray[ aboveIndex ] ) {
-            aboveIndex -= Cols;
-          }
-
-          if ( aboveIndex < 0 ) {
-            const piece = {
-              type: Jewels.getRandomType(),
-              x: col,
-              y: row,
-            };
-            this.pieces.push( piece );
-            pieceArray[ index ] = piece;
-          }
-          else {
-            pieceArray[ aboveIndex ].y = row;
-            pieceArray[ index ] = pieceArray[ aboveIndex ];
-            pieceArray[ aboveIndex ] = null;
-          }
-        }
+    // Sort the rows and add new pieces above
+    const byRow = new Map();
+    toRemove.forEach( p => {
+      if ( !byRow.has( p.y ) ) {
+        byRow.set( p.y, [] );
       }
-    }
+      byRow.get( p.y ).push( p );
+    } );
+
+    const sortedRows = [ ...byRow.keys() ].sort().reverse();
+    
+    sortedRows.forEach( ( row, index ) => {
+      byRow.get( row ).forEach( p => {
+        this.pieces.push( {
+          type: Jewels.getRandomType(),
+          x: p.x,
+          y: -1 - index,
+          dx: 0,
+          dy: 0,
+        } );
+      } );
+    } );
   }
 
   startDrag( x, y ) {
