@@ -56,7 +56,7 @@ canvas.pointerUp = ( p ) => {
 
   canvas.redraw();
 
-  if ( board.checkWins() ) {
+  if ( board.update( 0 ) ) {
     canvas.start();
   }
 }

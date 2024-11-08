@@ -22,6 +22,7 @@ const Gravity = 0.00001;
 
 export class Board {
   pieces = [];
+  particles = [];
   readyForInput = true;
 
   #selected = null;
@@ -78,13 +79,23 @@ export class Board {
       
     } );
 
+    this.particles.forEach( part => {
+      part.x += part.dx * dt;
+      part.y += part.dy * dt + 0.5 * Gravity * dt ** 2;
+      part.angle += part.dAngle * dt;
+
+      part.dy += Gravity * dt;
+    } );
+    
+    this.particles = this.particles.filter( p => p.y < Rows );
+
     if ( !stillUpdating ) {
       stillUpdating = this.checkWins();
     }
 
     this.readyForInput = !stillUpdating;
 
-    return stillUpdating;
+    return stillUpdating || this.particles.length > 0;
   }
 
   draw( ctx ) {
@@ -118,6 +129,21 @@ export class Board {
 
       ctx.scale( 2, 2 );
       ctx.translate( -x, -y );
+    } );
+
+    this.particles.forEach( part => {
+      ctx.translate( part.x, part.y );
+      ctx.rotate( part.angle );
+      
+      const info = Jewels.Info[ part.type ];
+
+      ctx.fillStyle = info.fillStyle;
+      ctx.strokeStyle = 'black';
+      ctx.fillRect( -part.size / 2, -part.size / 2, part.size, part.size );
+      ctx.strokeRect( -part.size / 2, -part.size / 2, part.size, part.size );
+      
+      ctx.rotate( -part.angle );
+      ctx.translate( -part.x, -part.y );
     } );
   }
 
@@ -176,8 +202,6 @@ export class Board {
       }
     }
 
-    // console.log( toRemove );
-
     this.pieces = this.pieces.filter( p => !toRemove.has( p ) );
 
     // Sort the rows and add new pieces above
@@ -201,6 +225,26 @@ export class Board {
           dy: 0,
         } );
       } );
+    } );
+
+    // Add particles
+    toRemove.forEach( piece => {
+      for ( let i = 0; i < 50; i ++ ) { 
+        const dirAngle = Math.random() * Math.PI * 2;
+        const speed = 0.001 + Math.random() * 0.003;
+        const offset = Math.random() * 0.2;
+
+        this.particles.push( {
+          x: piece.x + Math.cos( dirAngle ) * offset,
+          y: piece.y + Math.sin( dirAngle ) * offset,
+          angle: Math.random() * Math.PI * 2,
+          size: 0.01 + Math.random() * 0.07,
+          dx: Math.cos( dirAngle ) * speed,
+          dy: Math.sin( dirAngle ) * speed,
+          dAngle: 0.01 + Math.random() * 0.01,
+          type: piece.type,
+        } );
+      }
     } );
 
     return toRemove.size > 0;

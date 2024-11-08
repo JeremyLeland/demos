@@ -83,7 +83,7 @@ export const Info = {
     } );
 
     return {
-      fillStyle: 'green',
+      fillStyle: 'limegreen',
       fill: getPath( points ),
       stroke: getLayeredPath( points, 0.6 ),
     }
