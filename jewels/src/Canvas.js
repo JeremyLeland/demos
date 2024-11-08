@@ -53,11 +53,10 @@ export class Canvas {
         this.#scale = Math.min( inlineSize, blockSize );
 
         // this might get messed up if writing mode is vertical
-        // Why did we have devicePixelRatio in here before? Is it needed by Safari?
-        this.#offsetX = ( inlineSize - this.#scale );// / devicePixelRatio;
-        this.#offsetY = ( blockSize - this.#scale );// / devicePixelRatio;
+        this.#offsetX = ( inlineSize - this.#scale ) / 2;
+        this.#offsetY = ( blockSize - this.#scale ) / 2;
 
-        // console.log( 'offsetX = ' + this.#offsetX + ', offsetY = ' + this.#offsetY );
+        console.log( 'inlineSize = ' + inlineSize + ', blockSize = ' + blockSize + ', scale = ' + this.#scale + ', offsetX = ' + this.#offsetX );
       } );
       
       this.redraw();
@@ -113,13 +112,14 @@ export class Canvas {
     this.ctx.fillRect( 0, 0, this.ctx.canvas.width, this.ctx.canvas.height );
 
     this.ctx.save(); {
-      this.ctx.translate( this.#offsetX, this.#offsetY );
-
       this.ctx.scale( devicePixelRatio, devicePixelRatio );
+
+      this.ctx.translate( this.#offsetX, this.#offsetY );
       this.ctx.scale( this.#scale, this.#scale );
 
       this.ctx.scale( this.zoom, this.zoom );
       this.ctx.translate( -this.scrollX, -this.scrollY );
+
       this.ctx.lineWidth = this.zoom;
 
       try {
@@ -165,11 +165,11 @@ export class Canvas {
   wheelInput( pointerInfo ) {}
 
   getPointerX( e ) {
-    return ( ( e.clientX - this.#offsetX / devicePixelRatio ) / this.#scale ) / this.zoom + this.scrollX;
+    return ( ( e.clientX - this.#offsetX ) / this.#scale ) / this.zoom + this.scrollX;
   }
 
   getPointerY( e ) {
-    return ( ( e.clientY - this.#offsetY / devicePixelRatio ) / this.#scale ) / this.zoom + this.scrollY;
+    return ( ( e.clientY - this.#offsetY ) / this.#scale ) / this.zoom + this.scrollY;
   }
 
   zoomAt( x, y, amount ) {

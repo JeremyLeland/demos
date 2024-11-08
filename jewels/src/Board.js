@@ -83,6 +83,7 @@ export class Board {
       part.x += part.dx * dt;
       part.y += part.dy * dt + 0.5 * Gravity * dt ** 2;
       part.angle += part.dAngle * dt;
+      part.alpha = Math.max( 0, part.alpha - 0.001 * dt );
 
       part.dy += Gravity * dt;
     } );
@@ -117,16 +118,15 @@ export class Board {
       }
 
       ctx.translate( x, y );
-      ctx.scale( 0.5, 0.5 );
+      ctx.scale( 0.5, 0.5 ); {
+        const info = Jewels.Info[ piece.type ];
 
-      const info = Jewels.Info[ piece.type ];
+        ctx.fillStyle = info.fillStyle;
+        ctx.fill( info.fill );
 
-      ctx.fillStyle = info.fillStyle;
-      ctx.fill( info.fill );
-
-      ctx.strokeStyle = 'black';
-      ctx.stroke( info.stroke );
-
+        ctx.strokeStyle = 'black';
+        ctx.stroke( info.stroke );
+      }
       ctx.scale( 2, 2 );
       ctx.translate( -x, -y );
     } );
@@ -134,14 +134,17 @@ export class Board {
     this.particles.forEach( part => {
       ctx.translate( part.x, part.y );
       ctx.rotate( part.angle );
-      
-      const info = Jewels.Info[ part.type ];
+      ctx.globalAlpha = part.alpha; {
+        const info = Jewels.Info[ part.type ];
 
-      ctx.fillStyle = info.fillStyle;
-      ctx.strokeStyle = 'black';
-      ctx.fillRect( -part.size / 2, -part.size / 2, part.size, part.size );
-      ctx.strokeRect( -part.size / 2, -part.size / 2, part.size, part.size );
-      
+        ctx.fillStyle = info.fillStyle;
+        ctx.fillRect( -part.size / 2, -part.size / 2, part.size, part.size );
+
+        ctx.strokeStyle = 'black';
+        ctx.strokeRect( -part.size / 2, -part.size / 2, part.size, part.size );
+        
+      }
+      ctx.globalAlpha = 1;
       ctx.rotate( -part.angle );
       ctx.translate( -part.x, -part.y );
     } );
@@ -229,7 +232,7 @@ export class Board {
 
     // Add particles
     toRemove.forEach( piece => {
-      for ( let i = 0; i < 50; i ++ ) { 
+      for ( let i = 0; i < 100; i ++ ) { 
         const dirAngle = Math.random() * Math.PI * 2;
         const speed = 0.001 + Math.random() * 0.003;
         const offset = Math.random() * 0.2;
@@ -239,6 +242,7 @@ export class Board {
           y: piece.y + Math.sin( dirAngle ) * offset,
           angle: Math.random() * Math.PI * 2,
           size: 0.01 + Math.random() * 0.07,
+          alpha: 1,
           dx: Math.cos( dirAngle ) * speed,
           dy: Math.sin( dirAngle ) * speed,
           dAngle: 0.01 + Math.random() * 0.01,
