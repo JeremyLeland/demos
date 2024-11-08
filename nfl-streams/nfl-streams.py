@@ -41,23 +41,27 @@ def doMediastreams():
   list_soup = BeautifulSoup( list_html, 'html.parser' )
 
   for link in list_soup.find_all( 'a', 'w-full' ):
-    # Button text is: Date <TAB> Teams <TAB> Time
-    # Using -2 because REDZONE entry doesn't have TAB after date for some reason
-    title = link.find( 'h3' ).text.split('\t')[ -2 ]
-    
-    page_url = MEDIASTREAMS_URL + link.get( 'href' )
-    page_html = requests.get( page_url ).text
-    page_soup = BeautifulSoup( page_html, 'html.parser' )
+    try:
+      # Button text is: Date <TAB> Teams <TAB> Time
+      # Using -2 because REDZONE entry doesn't have TAB after date for some reason
+      title = link.find( 'h3' ).text.split('\t')[ -2 ]
+      
+      page_url = MEDIASTREAMS_URL + link.get( 'href' )
+      page_html = requests.get( page_url ).text
+      page_soup = BeautifulSoup( page_html, 'html.parser' )
 
-    iframe_url = MEDIASTREAMS_URL + page_soup.find( 'iframe' ).get( 'src' )
-    iframe_html = requests.get( iframe_url ).text
-    
-    serv_match = re.search( r'var servs = \[\"(.+?)\"\]', iframe_html )
-    m3u8_match = re.search( r"'([^']*?.m3u8)'", iframe_html )
-    playlist = 'https://' + serv_match.group( 1 ) + m3u8_match.group( 1 )
+      iframe_url = MEDIASTREAMS_URL + page_soup.find( 'iframe' ).get( 'src' )
+      iframe_html = requests.get( iframe_url ).text
+      
+      serv_match = re.search( r'var servs = \[\"(.+?)\"\]', iframe_html )
+      m3u8_match = re.search( r"'([^']*?.m3u8)'", iframe_html )
+      playlist = 'https://' + serv_match.group( 1 ) + m3u8_match.group( 1 )
 
-    lines.append( f'#EXTINF:-1 , { title }\n' )
-    lines.append( f'{ playlist }\n' )
+      lines.append( f'#EXTINF:-1 , { title }\n' )
+      lines.append( f'{ playlist }\n' )
+    except Exception as e:
+      print( str( e ) )
+
 
 def doWeakspell():
   WEAKSPELL_URL = 'https://weakspell.to/category/nfl-streams'
