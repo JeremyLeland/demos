@@ -20,7 +20,9 @@ canvas.scrollX = -0.5;
 canvas.scrollY = -0.5;
 
 canvas.update = ( dt ) => {
-  board.update( dt );
+  if ( !board.update( dt ) ) {
+    canvas.stop();
+  }
 }
 
 canvas.draw = ( ctx ) => {
@@ -45,18 +47,18 @@ canvas.pointerDown = ( p ) => {
 canvas.pointerMove = ( p ) => {
   if ( p.buttons == 1 ) {
     board.moveDrag( p.dx, p.dy );
+    canvas.redraw();
   }
-
-  canvas.redraw();
 }
 
 canvas.pointerUp = ( p ) => {
   board.stopDrag();
 
-  board.checkWins();
-
   canvas.redraw();
 
+  if ( board.checkWins() ) {
+    canvas.start();
+  }
 }
 
 canvas.wheelInput = ( p ) => {

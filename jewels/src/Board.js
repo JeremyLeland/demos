@@ -22,6 +22,7 @@ const Gravity = 0.00001;
 
 export class Board {
   pieces = [];
+  readyForInput = true;
 
   #selected = null;
   #other = null;
@@ -48,6 +49,8 @@ export class Board {
   }
 
   update( dt ) {
+    let stillUpdating = false;
+
     this.pieces.forEach( piece => {
 
       // Gravity
@@ -61,6 +64,8 @@ export class Board {
         if ( fallDist < belowDist ) {
           piece.y += fallDist;
           piece.dy += Gravity * dt;
+
+          stillUpdating = true;
         }
         else {
           piece.y = Math.round( piece.y + belowDist );
@@ -72,6 +77,14 @@ export class Board {
       // piece.x += piece.dx * dt;
       
     } );
+
+    if ( !stillUpdating ) {
+      stillUpdating = this.checkWins();
+    }
+
+    this.readyForInput = !stillUpdating;
+
+    return stillUpdating;
   }
 
   draw( ctx ) {
@@ -189,13 +202,23 @@ export class Board {
         } );
       } );
     } );
+
+    return toRemove.size > 0;
   }
 
   startDrag( x, y ) {
+    if ( !this.readyForInput ) {
+      return;
+    }
+
     this.#selected = this.pieces.find( p => Math.hypot( x - p.x, y - p.y ) < 0.5 );
   }
 
   moveDrag( dx, dy ) {
+    if ( !this.readyForInput ) {
+      return;
+    }
+
     if ( !this.#selected ) {
       return;
     }
@@ -223,6 +246,10 @@ export class Board {
   }
 
   stopDrag() {
+    if ( !this.readyForInput ) {
+      return;
+    }
+
     // TODO: Check for valid move
     if ( this.#selected ) {
       this.#selected.x = Math.round( this.#selected.x + this.#moveX );
@@ -240,8 +267,4 @@ export class Board {
     this.#moveX = 0;
     this.#moveY = 0;
   }
-}
-
-function randomType() {
-  return jewelTypes[ Math.floor( Math.random() * jewelTypes.length ) ]
 }
