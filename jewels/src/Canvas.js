@@ -56,7 +56,7 @@ export class Canvas {
         this.#offsetX = ( inlineSize - this.#scale ) / 2;
         this.#offsetY = ( blockSize - this.#scale ) / 2;
 
-        console.log( 'inlineSize = ' + inlineSize + ', blockSize = ' + blockSize + ', scale = ' + this.#scale + ', offsetX = ' + this.#offsetX );
+        // console.log( 'inlineSize = ' + inlineSize + ', blockSize = ' + blockSize + ', scale = ' + this.#scale + ', offsetX = ' + this.#offsetX );
       } );
       
       this.redraw();

@@ -298,19 +298,31 @@ export class Board {
       return;
     }
 
-    // TODO: Check for valid move
-    if ( this.#selected ) {
-      this.#selected.x = Math.round( this.#selected.x + this.#moveX );
-      this.#selected.y = Math.round( this.#selected.y + this.#moveY );
-      this.#selected = null;
+    if ( !this.#selected ) {
+      return;
     }
 
-    if ( this.#other ) {
-      this.#other.x = Math.round( this.#other.x - this.#moveX );
-      this.#other.y = Math.round( this.#other.y - this.#moveY );
-      this.#other = null;
+    const finalMoveX = Math.round( this.#moveX );
+    const finalMoveY = Math.round( this.#moveY );
+
+    this.#selected.x += finalMoveX;
+    this.#selected.y += finalMoveY;
+
+    this.#other.x -= finalMoveX;
+    this.#other.y -= finalMoveY;
+    
+    // If we didn't make any lines, then put it back
+    if ( !this.checkWins() ) {
+      this.#selected.x -= finalMoveX;
+      this.#selected.y -= finalMoveY;
+
+      this.#other.x += finalMoveX;
+      this.#other.y += finalMoveY;
     }
 
+    this.#selected = null;
+    this.#other = null;
+    
     this.#moveAxis = null;
     this.#moveX = 0;
     this.#moveY = 0;
