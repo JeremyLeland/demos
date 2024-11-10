@@ -298,26 +298,24 @@ export class Board {
       return;
     }
 
-    if ( !this.#selected ) {
-      return;
-    }
+    if ( this.#selected && this.#other ) { 
+      const finalMoveX = Math.round( this.#moveX );
+      const finalMoveY = Math.round( this.#moveY );
 
-    const finalMoveX = Math.round( this.#moveX );
-    const finalMoveY = Math.round( this.#moveY );
+      this.#selected.x += finalMoveX;
+      this.#selected.y += finalMoveY;
 
-    this.#selected.x += finalMoveX;
-    this.#selected.y += finalMoveY;
+      this.#other.x -= finalMoveX;
+      this.#other.y -= finalMoveY;
+      
+      // If we didn't make any lines, then put it back
+      if ( !this.checkWins() ) {
+        this.#selected.x -= finalMoveX;
+        this.#selected.y -= finalMoveY;
 
-    this.#other.x -= finalMoveX;
-    this.#other.y -= finalMoveY;
-    
-    // If we didn't make any lines, then put it back
-    if ( !this.checkWins() ) {
-      this.#selected.x -= finalMoveX;
-      this.#selected.y -= finalMoveY;
-
-      this.#other.x += finalMoveX;
-      this.#other.y += finalMoveY;
+        this.#other.x += finalMoveX;
+        this.#other.y += finalMoveY;
+      }
     }
 
     this.#selected = null;
