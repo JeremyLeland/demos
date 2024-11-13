@@ -1,0 +1,91 @@
+<title>Flock around the mouse</title>
+<link rel="stylesheet" href="../style.css">
+
+<script type="module">
+
+import { Canvas } from '../src/Canvas.js';
+
+const canvas = new Canvas();
+canvas.backgroundColor = 'tan';
+canvas.zoom = 1 / 20;
+canvas.scrollX = -10;
+canvas.scrollY = -10;
+
+const entities = [];
+
+for ( let i = 0; i < 20; i ++ ) {
+  entities.push( newEntity( 0, 0, 'orange' ) );
+}
+
+
+function newEntity( x, y, color ) {
+  return {
+    x: x,
+    y: y,
+    dx: 0,
+    dy: 0,
+    ax: 0,
+    ay: 0,
+    radius: 0.5 + Math.random() * 0.5,
+    fillStyle: color,
+  };
+}
+
+canvas.update = ( dt ) => {
+  entities.forEach( entity => {
+    entity.dx = 0;
+    entity.dy = 0;
+
+    entities.filter( other => entity != other ).forEach( other => {
+      const cx = other.x - entity.x;
+      const cy = other.y - entity.y;
+      const angle = Math.atan2( cy, cx );
+      const dist = Math.hypot( cx, cy ) - entity.radius - other.radius;
+
+      // const val = Math.min( 0, dist ) * 0.01;
+      const val = Math.min( 0, sigma_1( dist ) ) * 0.01;
+      // const val = sigma_1( dist ) * ( dist < 0 ? 0.1 : 0.01 );
+
+      entity.dx += Math.cos( angle ) * val;
+      entity.dy += Math.sin( angle ) * val;
+    } );
+
+    entity.x += entity.dx * dt;
+    entity.y += entity.dy * dt;
+  } );
+}
+
+function sigma_1( z ) {
+  return z / Math.sqrt( 1 + z * z );
+}
+
+canvas.draw = ( ctx ) => {
+  ctx.lineWidth = 0.002 / canvas.zoom;
+
+  entities.forEach( entity => drawEntity( ctx, entity ) );
+}
+
+function drawEntity( ctx, entity ) {
+  ctx.beginPath();
+  ctx.arc( entity.x, entity.y, entity.radius, 0, Math.PI * 2 );
+  ctx.fillStyle = entity.fillStyle;
+  ctx.strokeStyle = 'black';
+  ctx.fill();
+  ctx.stroke();
+}
+
+canvas.start();
+
+canvas.pointerDown = ( p ) => {
+  canvas.redraw();
+}
+
+canvas.pointerMove = ( p ) => {
+  canvas.redraw();
+}
+
+canvas.pointerUp = ( p ) => {
+  canvas.redraw();
+}
+
+</script>
