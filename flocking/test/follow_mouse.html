@@ -4,6 +4,7 @@
 <script type="module">
 
 import { Canvas } from '../src/Canvas.js';
+import { ValuesPanel } from '../src/ValuesPanel.js';
 
 const canvas = new Canvas();
 canvas.backgroundColor = 'tan';
@@ -42,8 +43,10 @@ canvas.update = ( dt ) => {
     const ty = target.y - entity.y;
     const tAngle = Math.atan2( ty, tx );
 
-    entity.dx = Math.cos( tAngle ) * 0.01;
-    entity.dy = Math.sin( tAngle ) * 0.01;
+    // TODO: Make constants for weights, have value panel for constants
+
+    entity.dx = tx * 0.01; //Math.cos( tAngle ) * 0.01;
+    entity.dy = ty * 0.01; //Math.sin( tAngle ) * 0.01;
 
     entities.filter( other => entity != other ).forEach( other => {
       const cx = other.x - entity.x;
