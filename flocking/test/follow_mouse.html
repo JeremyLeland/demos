@@ -6,10 +6,8 @@
 import { Canvas } from '../src/Canvas.js';
 import { ValuesPanel } from '../src/ValuesPanel.js';
 
-const Constants = {
-  TargetWeight: 0.01,
-  AvoidWeight: 0.02,
-}
+// import { Constants, Flock } from './Exponential.js';
+import { Constants, Flock } from './OlfatiSaber.js';
 
 new ValuesPanel( Constants ).valueChanged = () => canvas.redraw();
 
@@ -43,48 +41,7 @@ function newEntity( x, y, color ) {
 const target = { x: 0, y: 0 };
 
 canvas.update = ( dt ) => {
-  entities.forEach( entity => {
-    entity.dx = 0;
-    entity.dy = 0;
-
-    const tx = target.x - entity.x;
-    const ty = target.y - entity.y;
-    const tAngle = Math.atan2( ty, tx );
-
-    // TODO: Make constants for weights, have value panel for constants
-
-    entity.dx = tx * Constants.TargetWeight; //Math.cos( tAngle ) * 0.01;
-    entity.dy = ty * Constants.TargetWeight; //Math.sin( tAngle ) * 0.01;
-
-    entities.filter( other => entity != other ).forEach( other => {
-      const cx = other.x - entity.x;
-      const cy = other.y - entity.y;
-      const angle = Math.atan2( cy, cx );
-      const dist = Math.hypot( cx, cy ) - entity.radius - other.radius;
-
-      // const val = Math.min( 0, dist ) * 0.01;
-      // const val = Math.min( 0, sigma_1( dist ) ) * 0.1;
-
-      const val = Math.exp( -1 * dist ) * Constants.AvoidWeight;
-      
-      // if ( dist < entity.radius + other.radius ) {
-      //   const val = 0.01 * ( entity.radius + other.radius ) / dist;
-        entity.dx -= Math.cos( angle ) * val;
-        entity.dy -= Math.sin( angle ) * val;
-      // }
-
-    } );
-
-    // entity.dx /= entities.length;
-    // entity.dy /= entities.length;
-
-    entity.x += entity.dx * dt;
-    entity.y += entity.dy * dt;
-  } );
-}
-
-function sigma_1( z ) {
-  return z / Math.sqrt( 1 + z * z );
+  Flock( entities, target, dt );
 }
 
 canvas.draw = ( ctx ) => {
