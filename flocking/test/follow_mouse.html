@@ -14,7 +14,7 @@ canvas.scrollY = -10;
 const entities = [];
 
 for ( let i = 0; i < 20; i ++ ) {
-  entities.push( newEntity( 0, 0, 'orange' ) );
+  entities.push( newEntity( 0, i / 10, 'orange' ) );
 }
 
 
@@ -31,10 +31,19 @@ function newEntity( x, y, color ) {
   };
 }
 
+const target = { x: 0, y: 0 };
+
 canvas.update = ( dt ) => {
   entities.forEach( entity => {
     entity.dx = 0;
     entity.dy = 0;
+
+    const tx = target.x - entity.x;
+    const ty = target.y - entity.y;
+    const tAngle = Math.atan2( ty, tx );
+
+    entity.dx = Math.cos( tAngle ) * 0.01;
+    entity.dy = Math.sin( tAngle ) * 0.01;
 
     entities.filter( other => entity != other ).forEach( other => {
       const cx = other.x - entity.x;
@@ -43,12 +52,21 @@ canvas.update = ( dt ) => {
       const dist = Math.hypot( cx, cy ) - entity.radius - other.radius;
 
       // const val = Math.min( 0, dist ) * 0.01;
-      const val = Math.min( 0, sigma_1( dist ) ) * 0.01;
-      // const val = sigma_1( dist ) * ( dist < 0 ? 0.1 : 0.01 );
+      // const val = Math.min( 0, sigma_1( dist ) ) * 0.1;
 
-      entity.dx += Math.cos( angle ) * val;
-      entity.dy += Math.sin( angle ) * val;
+      const val = Math.exp( -1 * dist ) * 0.01;
+      
+      
+      // if ( dist < entity.radius + other.radius ) {
+      //   const val = 0.01 * ( entity.radius + other.radius ) / dist;
+        entity.dx -= Math.cos( angle ) * val;
+        entity.dy -= Math.sin( angle ) * val;
+      // }
+
     } );
+
+    // entity.dx /= entities.length;
+    // entity.dy /= entities.length;
 
     entity.x += entity.dx * dt;
     entity.y += entity.dy * dt;
@@ -81,6 +99,8 @@ canvas.pointerDown = ( p ) => {
 }
 
 canvas.pointerMove = ( p ) => {
+  target.x = p.x;
+  target.y = p.y;
   canvas.redraw();
 }
 
