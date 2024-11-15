@@ -1,20 +1,26 @@
-// See: https://github.com/amirhosseinh77/Flocking-Multi-Agent
 // "Flocking for multi-agent dynamic systems: Algorithms and theory" by Olfati-Saber, Reza.
+
+// Confusing: https://github.com/amirhosseinh77/Flocking-Multi-Agent 
+// Clearer code: https://docs.ros.org/en/kinetic/api/olfati_saber_flocking/html/olfati__saber__flocking_8cpp_source.html 
+// Better documentation: https://github.com/zhubiii/mj-SaberFlocking/blob/main/src/algo1.py 
 
 // Alpha: Movement relative to neighbors?
 // Gamma: movement toward target?
 export const Constants = {
-  FlockDistance: 1,
+  FlockDistance: 3.5,
   WallDistance: 0.5,
   A: 5,
   B: 5,   // 0<A<=B 
   H: 0.2,
   EPSILON: 1, //0.1,   // how smooth the sigmoid functions are -- closer to one makes them settle in better when stopped
   TargetWeight: 0.01,
-  FlockWeight: 0.02,   // lowering this cuts down on jittering when dt is closer to normal
+  FlockWeight: 1,   // lowering this cuts down on jittering when dt is closer to normal
   WallWeight: 0.04,
+  C1_alpha: 4,
+  C2_alpha: 2,
+  C1_gamma: 4,
   C2_gamma: 0.2,
-  WTF: 10,
+  WTF: 200,
 };
 
 function sigma_1( z ) {
@@ -50,23 +56,24 @@ export function Flock( entities, target, dt ) {
     entity.dy ??= 0;
     entity.ax = entity.ay = 0;
 
-    const targetAngle = Math.atan2( target.y - entity.y, target.x - entity.x );
-    const targetDist = Math.hypot( target.x - entity.x, target.y - entity.y );
+    // const targetAngle = Math.atan2( target.y - entity.y, target.x - entity.x );
+    // const targetDist = Math.hypot( target.x - entity.x, target.y - entity.y );
 
-    const goalAngle = targetAngle;
+    // const goalAngle = targetAngle;
 
-    const weight = Constants.TargetWeight * sigma_1( targetDist );
+    // const weight = Constants.TargetWeight * sigma_1( targetDist );
 
-    entity.ax += weight * Math.cos( goalAngle );
-    entity.ay += weight * Math.sin( goalAngle );
+    // entity.ax += weight * Math.cos( goalAngle );
+    // entity.ay += weight * Math.sin( goalAngle );
     
+
+    let sumX = 0, sumY = 0;
 
     // Flocking
     entities.forEach( other => {
       if ( other != entity ) {
         const cx = other.x - entity.x;
         const cy = other.y - entity.y;
-        
         
         const lengthSquared = cx * cx + cy * cy;
 
@@ -80,11 +87,15 @@ export function Flock( entities, target, dt ) {
           
           const phi_sigma_grad = phiVal / Math.sqrt( 1 + Constants.EPSILON * lengthSquared );
           
-          entity.ax += bump * ( phi_sigma_grad * cx + other.dx - entity.dx );
-          entity.ay += bump * ( phi_sigma_grad * cy + other.dy - entity.dy );
+          sumX += bump * ( phi_sigma_grad * cx + other.dx - entity.dx );
+          sumY += bump * ( phi_sigma_grad * cy + other.dy - entity.dy );
         }
       }
+
     } );
+
+    entity.ax = Constants.C2_alpha * sumX - Constants.C1_gamma * sigma_1( entity.x - target.x ) - Constants.C2_gamma * entity.dx;
+    entity.ay = Constants.C2_alpha * sumY - Constants.C1_gamma * sigma_1( entity.y - target.y ) - Constants.C2_gamma * entity.dy;
 
     // // Should this push back harder somehow, to make up for fact that wall won't move?
     // // Agents are still ending up outside the walls somehow
@@ -110,8 +121,8 @@ export function Flock( entities, target, dt ) {
     // } );
 
     // Smooth it out somehow? (Not totaly sure what this does)
-    entity.ax -= Constants.C2_gamma * entity.dx;
-    entity.ay -= Constants.C2_gamma * entity.dy;
+    // entity.ax -= Constants.C2_gamma * entity.dx;
+    // entity.ay -= Constants.C2_gamma * entity.dy;
 
 
     // Attempting to limit accel makes us springy
@@ -125,21 +136,10 @@ export function Flock( entities, target, dt ) {
     //  - need to scale up accel as well at that point? -- then it gets all springy again
     const time = dt / Constants.WTF;
 
-
-    // TODO: Don't change direction more than certain amount, just slow down?
-    // TODO: Aim for the acceleration vector instead of immediately applying it? How does that look?
+    entity.x += entity.dx * time + 0.5 * entity.ax * time ** 2;
+    entity.y += entity.dy * time + 0.5 * entity.ax * time ** 2;
 
     entity.dx += entity.ax * time;
     entity.dy += entity.ay * time;
-
-    // const fixSpeed = Math.min( 1, Constants.WTF * Agent.maxSpeed / Math.hypot( entity.dx, entity.dy ) );
-    // entity.dx *= fixSpeed;
-    // entity.dy *= fixSpeed;
-    
-    entity.x += entity.dx * time;
-    entity.y += entity.dy * time;
-
-    // entity.angle = Math.atan2( entity.dy, entity.dx );
-
   } );
 };

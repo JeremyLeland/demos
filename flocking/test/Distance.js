@@ -1,12 +1,8 @@
 export const Constants = {
   TargetWeight: 0.01,
-  AvoidWeight: 0.02,
-  X: 5,
+  AvoidWeight: 0.05,
 }
 
-function sigma_1( z ) {
-  return z / Math.sqrt( 1 + z * z );
-}
 
 export function Flock( entities, target, dt ) {
   entities.forEach( entity => {
@@ -18,16 +14,12 @@ export function Flock( entities, target, dt ) {
       const cy = other.y - entity.y;
       const angle = Math.atan2( cy, cx );
       const dist = Math.hypot( cx, cy ) - entity.radius - other.radius;
-        
-      const val = Math.exp( -Constants.X * dist ) * Constants.AvoidWeight;
-      
-      entity.dx -= Math.cos( angle ) * val;
-      entity.dy -= Math.sin( angle ) * val;
-        
-    } );
 
-    // entity.dx /= entities.length;
-    // entity.dy /= entities.length;
+      const val = -Math.min( 0, dist ) * Constants.AvoidWeight;
+        
+      entity.dx -= Math.cos( angle ) * val;
+      entity.dy -= Math.sin( angle ) * val;        
+    } );
 
     // const tx = target.x - entity.x;
     // const ty = target.y - entity.y;
