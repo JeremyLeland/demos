@@ -1,10 +1,27 @@
 export const Constants = {
-  TargetWeight: 0.01,
+  TargetWeight: 0.001,
   AvoidWeight: 0.05,
 }
 
 
 export function Flock( entities, walls, target, dt ) {
+
+  entities.forEach( entity => {
+    const tx = target.x - entity.x;
+    const ty = target.y - entity.y;
+    const tAngle = Math.atan2( ty, tx );
+    const tDist = Math.hypot( tx, ty );
+
+    // TODO: Actual braking instead of sigma function?
+    const tWeight = Constants.TargetWeight * sigma_1( tDist );
+
+    entity.dx = tx * tWeight;
+    entity.dy = ty * tWeight;
+
+    entity.x += entity.dx * dt;
+    entity.y += entity.dy * dt;
+  } );
+
   entities.forEach( entity => {
     entity.dx = 0;
     entity.dy = 0;
@@ -34,17 +51,12 @@ export function Flock( entities, walls, target, dt ) {
       entity.dy += Math.sin( angle ) * val;
     } );
 
-    // const tx = target.x - entity.x;
-    // const ty = target.y - entity.y;
-    // const tAngle = Math.atan2( ty, tx );
-    // const tDist = Math.hypot( tx, ty );
-
-    // const tWeight = Constants.TargetWeight * sigma_1( tDist );
-
-    // entity.dx += tx * tWeight;
-    // entity.dy += ty * tWeight;
-
+    
     entity.x += entity.dx * dt;
     entity.y += entity.dy * dt;
   } );
+}
+
+function sigma_1( z ) {
+  return z / Math.sqrt( 1 + z * z );
 }
