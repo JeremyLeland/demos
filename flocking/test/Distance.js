@@ -4,10 +4,23 @@ export const Constants = {
 }
 
 
-export function Flock( entities, target, dt ) {
+export function Flock( entities, walls, target, dt ) {
   entities.forEach( entity => {
     entity.dx = 0;
     entity.dy = 0;
+
+    walls.forEach( wall => {
+      const angle = wall.normalAngle;
+      const dist = wall.distanceFrom( entity );
+
+      if ( -2 * entity.radius < dist && dist < 0 ) {
+        const val = dist * Constants.AvoidWeight;
+
+        entity.dx -= Math.cos( angle ) * val;
+        entity.dy -= Math.sin( angle ) * val;
+      }
+
+    } );
 
     entities.filter( other => entity != other ).forEach( other => {
       const cx = other.x - entity.x;
@@ -15,10 +28,10 @@ export function Flock( entities, target, dt ) {
       const angle = Math.atan2( cy, cx );
       const dist = Math.hypot( cx, cy ) - entity.radius - other.radius;
 
-      const val = -Math.min( 0, dist ) * Constants.AvoidWeight;
+      const val = Math.min( 0, dist ) * Constants.AvoidWeight;
         
-      entity.dx -= Math.cos( angle ) * val;
-      entity.dy -= Math.sin( angle ) * val;        
+      entity.dx += Math.cos( angle ) * val;
+      entity.dy += Math.sin( angle ) * val;
     } );
 
     // const tx = target.x - entity.x;

@@ -4,6 +4,7 @@
 <script type="module">
 
 import { Canvas } from '../src/Canvas.js';
+import { Line } from '../src/Line.js';
 import { ValuesPanel } from '../src/ValuesPanel.js';
 
 import { Constants, Flock } from './Distance.js';
@@ -20,10 +21,33 @@ canvas.scrollX = -10;
 canvas.scrollY = -10;
 
 const entities = [];
+const walls = [];
 
 for ( let i = 0; i < 10; i ++ ) {
   entities.push( newEntity( i / 10, i / 10, 'orange' ) );
 }
+
+const loops = [
+  [
+    [ -6, -5 ],
+    [ -5, 5 ],
+    [ 5, 5 ],
+    [ 6, -5 ],
+  ],
+  [
+    [ 3, 3 ],
+    [ 2, 3 ],
+    [ 2.5, -2 ],
+  ],
+];
+
+loops.forEach( loop => {
+  for ( let i = 0; i < loop.length; i ++ ) {
+    walls.push( 
+      new Line( ...loop[ i ], ...loop[ ( i + 1 ) % loop.length ] )
+    );
+  }
+} );
 
 
 function newEntity( x, y, color ) {
@@ -42,11 +66,13 @@ function newEntity( x, y, color ) {
 const target = { x: 0, y: 0 };
 
 canvas.update = ( dt ) => {
-  Flock( entities, target, dt );
+  Flock( entities, walls, target, dt );
 }
 
 canvas.draw = ( ctx ) => {
   ctx.lineWidth = 0.002 / canvas.zoom;
+
+  walls.forEach( wall => wall.draw( ctx ) );
 
   entities.forEach( entity => drawEntity( ctx, entity ) );
 }
