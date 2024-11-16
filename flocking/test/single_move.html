@@ -1,0 +1,161 @@
+<title>Flock around the mouse</title>
+<link rel="stylesheet" href="../style.css">
+
+<script type="module">
+
+import { Canvas } from '../src/Canvas.js';
+import { Line } from '../src/Line.js';
+import { ValuesPanel } from '../src/ValuesPanel.js';
+
+const canvas = new Canvas();
+canvas.backgroundColor = 'tan';
+canvas.zoom = 1 / 20;
+canvas.scrollX = -10;
+canvas.scrollY = -10;
+
+const Constants = {
+  MaxMoveSpeed: 0.01,
+  MaxTurnSpeed: 0.01,
+  MoveAccel: 0.00001,
+  BrakeAccel: -0.0001,
+  CloseEnough: 1,
+}
+new ValuesPanel( Constants );
+
+const entities = [];
+
+for ( let i = 0; i < 1; i ++ ) {
+  entities.push( newEntity( -10, 0, 'orange' ) );
+}
+
+function newEntity( x, y, color ) {
+  return {
+    x: x,
+    y: y,
+    angle: 0,
+    speed: 0,
+    accel: 0,
+    radius: 0.2 + Math.random() * 0.2,
+    fillStyle: color,
+  };
+}
+
+function moveEntity( entity, dt ) {
+  const moveDist = entity.speed * dt + 0.5 * entity.accel * dt ** 2;
+  entity.x += Math.cos( entity.angle ) * moveDist;
+  entity.y += Math.sin( entity.angle ) * moveDist;
+  
+  entity.speed += entity.accel * dt;
+}
+
+let target = { x: 0, y: 0 };
+
+// TODO: For these entities, only move in direction currently facing. Don't persist dx/dy
+
+canvas.update = ( dt ) => {
+  entities.forEach( entity => {
+
+    const tx = target.x - entity.x;
+    const ty = target.y - entity.y;
+    const targetAngle = Math.atan2( ty, tx );
+    const targetDist = Math.hypot( tx, ty );
+
+    // TODO: Turning
+
+    const brakeDist = ( entity.speed ** 2 ) / ( -2 * Constants.BrakeAccel );
+
+    console.log( 'targetDist = ' + targetDist + ', brakeDist = ' + brakeDist );
+
+    if ( targetDist < brakeDist ) {
+      console.log( 'Target within braking distance, braking' );
+      entity.accel = Constants.BrakeAccel;
+
+      const brakeTime = ( 0 - entity.speed ) / entity.accel;
+
+      if ( brakeTime <= dt ) {
+        moveEntity( entity, brakeTime );
+        entity.accel = 0;
+
+        console.log( 'Finished braking, entity: ' + JSON.stringify( entity ) );
+      }
+      else {
+        moveEntity( entity, dt );
+
+        console.log( 'Braking, entity: ' + JSON.stringify( entity ) );
+      }
+    }
+    else if ( targetDist > Constants.CloseEnough && entity.speed < Constants.MaxMoveSpeed ) {
+      console.log( 'Accelerating toward max speed' );
+
+      entity.accel = Constants.MoveAccel;
+
+      const maxTime = ( Constants.MaxMoveSpeed - entity.speed ) / entity.accel;
+
+      if ( maxTime < dt ) {
+        moveEntity( entity, maxTime );
+        entity.accel = 0;
+        moveEntity( entity, dt - maxTime );
+      }
+      else {
+        moveEntity( entity, dt );
+      }
+    }
+    else {
+      console.log( 'Moving at current speed' );
+
+      moveEntity( entity, dt );
+    }
+  
+  } );
+}
+
+canvas.draw = ( ctx ) => {
+  ctx.lineWidth = 0.002 / canvas.zoom;
+
+  entities.forEach( entity => drawEntity( ctx, entity ) );
+
+  // Draw target
+  ctx.beginPath();
+  ctx.arc( target.x, target.y, 0.1, 0, Math.PI * 2 );
+  ctx.fillStyle = 'black';
+  ctx.fill();
+}
+
+function drawEntity( ctx, entity ) {
+  ctx.beginPath();
+  ctx.arc( entity.x, entity.y, entity.radius, 0, Math.PI * 2 );
+  ctx.fillStyle = entity.fillStyle;
+  ctx.strokeStyle = 'black';
+  ctx.fill();
+  ctx.stroke();
+}
+
+canvas.start();
+
+function updateTarget( p ) {
+  target.x = p.x;
+  target.y = p.y;
+}
+
+canvas.pointerDown = ( p ) => {
+  if ( p.buttons == 1 ) {
+    updateTarget( p );
+  }
+  else {
+    entities.push( newEntity( p.x, p.y, 'orange' ) );
+  }
+}
+
+canvas.pointerMove = ( p ) => {
+  if ( p.buttons == 1 ) {
+    updateTarget( p );
+  }
+  else if ( p.buttons == 2 ) {
+    entities.push( newEntity( p.x, p.y, 'orange' ) );
+  }
+}
+
+canvas.pointerUp = ( p ) => {
+}
+
+</script>
