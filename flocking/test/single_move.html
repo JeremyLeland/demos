@@ -53,55 +53,81 @@ function rotateEntity( entity, targetAngle, dt ) {
   const targetAngleDelta = Util.deltaAngle( entity.angle, targetAngle );
   const turnDir = targetAngleDelta < 0 ? -1 : 1;
 
-  const angleBrakeDelta = ( 0 - entity.turnSpeed ** 2 ) / ( -turnDir * 2 * Constants.TurnAccel );
-  const angleAccelDelta = ( Constants.MaxMoveSpeed ** 2 - entity.turnSpeed ** 2 ) / ( 2 * Constants.TurnAccel );
+  // console.log( '\n=========================================\n' );
+  // console.log( `targetAngle = ${ targetAngle }, targetAngleDelta = ${ targetAngleDelta }` );
 
-  console.log( 'targetAngleDelta = ' + targetAngleDelta + ', angleBrakeDelta = ' + angleBrakeDelta + ', angleAccelDelta = ' + angleAccelDelta );
+  // Update in phases:
+  //  1. Accelerating
+  //  2. Max speed
+  //  3. Deccelerating
+  //  4. Stopped (don't update past this)
 
-  // Only accel if time to hit max speed and brake? Something to prevent us from accelerating when we're barely out of brake range
-  const brakeTime = ( 0 - entity.turnSpeed ) / ( -turnDir * Constants.TurnAccel );
-  const turnTime = targetAngleDelta / entity.turnSpeed;
-  const accelTime = ( turnDir * Constants.MaxTurnSpeed - entity.turnSpeed ) / ( turnDir * Constants.TurnAccel );
+  //
+  // Accelerating
+  //
 
-  // let updateTime = dt;
+  // Distance to accel from 0 to current speed + distance until target / 2 = total accel dist (and deccel dist)
+  // Use this to find max acceleration we could acheive
+  const distToCurrentSpeed = ( entity.turnSpeed ** 2 - 0 ) / ( turnDir * 2 * Constants.TurnAccel );
+  const distToTheoreticalMaxSpeed = ( distToCurrentSpeed + targetAngleDelta ) / 2;
+  const theoreticalMaxSpeed = Math.sqrt( 0 + 2 * Constants.TurnAccel * Math.abs( distToTheoreticalMaxSpeed ) );
+  const maxSpeed = turnDir * Math.min( theoreticalMaxSpeed, Constants.MaxTurnSpeed );
 
-  // TODO: Should we update until they are at brake range, then start decelerating? (so we don't overshoot it)
+  const distToMaxSpeed = ( maxSpeed ** 2 - entity.turnSpeed ** 2 ) / ( turnDir * 2 * Constants.TurnAccel );
+  const timeUntilMaxSpeed = ( maxSpeed - entity.turnSpeed ) / ( turnDir * Constants.TurnAccel );
+  
+  if ( dt > 0 ) {
+    if ( timeUntilMaxSpeed > 0 ) {
+      entity.turnAccel = turnDir * Constants.TurnAccel;
 
-  // If we're within braking distance, start braking!
-  if ( Math.abs( targetAngleDelta ) < Math.abs( angleBrakeDelta ) ) {
-    console.log( 'Within braking distance, braking' );
-    entity.turnAccel = -Math.sign( targetAngleDelta ) * Constants.TurnAccel;
+      const updateTime = Math.min( timeUntilMaxSpeed, dt );
 
-    console.log( '  turnAccel = ' + entity.turnAccel );
+      // console.log( `Acclerating for ${ updateTime } (timeUntilMaxSpeed = ${ timeUntilMaxSpeed })` );
 
-    const updateTime = Math.min( brakeTime, dt );
-    doRotate( entity, updateTime );
-
-    entity.turnAccel = 0;
+      doRotate( entity, updateTime );
+      dt -= updateTime;
+    }
   }
 
-  // Don't accelerate if we're close
-  else if ( entity.turnSpeed == 0 || Math.abs( targetAngleDelta ) > Constants.CloseEnoughAngle ) {
-    console.log( 'Accelerating' );
-
-    entity.turnAccel = Math.sign( targetAngleDelta ) * Constants.TurnAccel;
-
-    console.log( '  turnAccel = ' + entity.turnAccel );
-
-    const updateTime = Math.min( accelTime, dt );
-    doRotate( entity, updateTime );
-
-    entity.turnAccel = 0;
-    doRotate( entity, dt - updateTime );
-  }
-
-  // Otherwise, stay the course
-  else {
-    console.log( 'No change' );
+  //
+  // Cruising at max speed
+  //
+  if ( dt > 0 ) {
+    const brakeDist = ( 0 - maxSpeed ** 2 ) / ( -turnDir * 2 * Constants.TurnAccel );
+    const distToBrake = targetAngleDelta - distToMaxSpeed - brakeDist;
+    const timeUntilBrake = distToBrake / entity.turnSpeed;
     
-    entity.turnAccel = 0;
-    doRotate( entity, dt );
+    if ( timeUntilBrake > 0 ) {
+      entity.turnAccel = 0;
+
+      const updateTime = Math.min( timeUntilBrake, dt );
+
+      // console.log( `Cruising at ${ maxSpeed } for ${ updateTime } (timeUntilBrake = ${ timeUntilBrake })` );
+
+      doRotate( entity, updateTime );
+      dt -= updateTime;
+    }
   }
+
+  //
+  // Deccelerating
+  //
+  if ( dt > 0 ) {
+    const timeUntilStopped = ( 0 - entity.turnSpeed ) / ( -turnDir * Constants.TurnAccel );
+    
+    if ( timeUntilStopped > 0 ) {
+      entity.turnAccel = -turnDir * Constants.TurnAccel;
+
+      const updateTime = Math.min( timeUntilStopped, dt );
+
+      // console.log( `Deccelerating for ${ updateTime } (timeUntilStopped = ${ timeUntilStopped })` );
+
+      doRotate( entity, updateTime );
+      dt -= updateTime;
+    }
+  }
+  
+  // console.log( `After updates, dt = ${ dt } and entity = ${ JSON.stringify( entity ) }` );
 }
 
 function moveEntity( entity, dt ) {
@@ -112,7 +138,7 @@ function moveEntity( entity, dt ) {
   entity.moveSpeed += entity.moveAccel * dt;
 }
 
-let target = { x: 0, y: 0 };
+let target = { x: -8, y: -8 };
 
 // TODO: For these entities, only move in direction currently facing. Don't persist dx/dy
 
@@ -235,5 +261,10 @@ canvas.pointerMove = ( p ) => {
 
 canvas.pointerUp = ( p ) => {
 }
+
+// document.addEventListener( 'keydown', e => {
+//   canvas.update( 10 );
+//   canvas.redraw();
+// } );
 
 </script>
