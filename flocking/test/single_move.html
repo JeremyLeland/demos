@@ -15,12 +15,16 @@ canvas.scrollX = -10;
 canvas.scrollY = -10;
 
 const Constants = {
-  MaxMoveSpeed: 0.01,
-  MaxTurnSpeed: 0.01,
-  TurnAccel: 0.0001,
-  MoveAccel: 0.00001,   // TODO: Separate forward and brake accels?
-  CloseEnough: 1,
-  CloseEnoughAngle: 0.1,
+  Turn: {
+    MaxSpeed: 0.01,
+    Accel: 0.0001,
+    CloseEnough: 1,
+  },
+  Move: {
+    MaxSpeed: 0.01,
+    Accel: 0.00001,
+    CloseEnough: 0.1,
+  },
 }
 new ValuesPanel( Constants );
 
@@ -35,32 +39,32 @@ function newEntity( x, y, color ) {
     x: x,
     y: y,
     angle: 0,
-    turnSpeed: 0,
-    turnAccel: 0,
-    moveSpeed: 0,
-    moveAccel: 0,
+    turn: {
+      speed: 0,
+      accel: 0,
+    },
+    move: {
+      speed: 0,
+      accel: 0,
+    },
     radius: 0.5, //0.2 + Math.random() * 0.2,
     fillStyle: color,
   };
 }
 
 function doRotate( entity, dt ) {
-  entity.angle += entity.turnSpeed * dt + 0.5 * entity.turnAccel * dt ** 2;
-  entity.turnSpeed += entity.turnAccel * dt;
+  entity.angle += entity.turn.speed * dt + 0.5 * entity.turn.accel * dt ** 2;
+  entity.turn.speed += entity.turn.accel * dt;
 }
 
-function rotateEntity( entity, targetAngle, dt ) {
-  const targetAngleDelta = Util.deltaAngle( entity.angle, targetAngle );
-  const turnDir = targetAngleDelta < 0 ? -1 : 1;
-
-  // console.log( '\n=========================================\n' );
-  // console.log( `targetAngle = ${ targetAngle }, targetAngleDelta = ${ targetAngleDelta }` );
-
+function doAccel( entity, dt, property, doFunc, distance, CONSTS ) {
   // Update in phases:
   //  1. Accelerating
   //  2. Max speed
   //  3. Deccelerating
   //  4. Stopped (don't update past this)
+
+  const dir = distance < 0 ? -1 : 1;
 
   //
   // Accelerating
@@ -68,23 +72,23 @@ function rotateEntity( entity, targetAngle, dt ) {
 
   // Distance to accel from 0 to current speed + distance until target / 2 = total accel dist (and deccel dist)
   // Use this to find max acceleration we could acheive
-  const distToCurrentSpeed = ( entity.turnSpeed ** 2 - 0 ) / ( turnDir * 2 * Constants.TurnAccel );
-  const distToTheoreticalMaxSpeed = ( distToCurrentSpeed + targetAngleDelta ) / 2;
-  const theoreticalMaxSpeed = Math.sqrt( 0 + 2 * Constants.TurnAccel * Math.abs( distToTheoreticalMaxSpeed ) );
-  const maxSpeed = turnDir * Math.min( theoreticalMaxSpeed, Constants.MaxTurnSpeed );
+  const distToCurrentSpeed = ( property.speed ** 2 - 0 ) / ( dir * 2 * CONSTS.Accel );
+  const distToTheoreticalMaxSpeed = ( distToCurrentSpeed + distance ) / 2;
+  const theoreticalMaxSpeed = Math.sqrt( 0 + 2 * CONSTS.Accel * Math.abs( distToTheoreticalMaxSpeed ) );
+  const maxSpeed = dir * Math.min( theoreticalMaxSpeed, CONSTS.MaxSpeed );
 
-  const distToMaxSpeed = ( maxSpeed ** 2 - entity.turnSpeed ** 2 ) / ( turnDir * 2 * Constants.TurnAccel );
-  const timeUntilMaxSpeed = ( maxSpeed - entity.turnSpeed ) / ( turnDir * Constants.TurnAccel );
+  const distToMaxSpeed = ( maxSpeed ** 2 - property.speed ** 2 ) / ( dir * 2 * CONSTS.Accel );
+  const timeUntilMaxSpeed = ( maxSpeed - property.speed ) / ( dir * CONSTS.Accel );
   
   if ( dt > 0 ) {
     if ( timeUntilMaxSpeed > 0 ) {
-      entity.turnAccel = turnDir * Constants.TurnAccel;
+      property.accel = dir * CONSTS.Accel;
 
       const updateTime = Math.min( timeUntilMaxSpeed, dt );
 
       // console.log( `Acclerating for ${ updateTime } (timeUntilMaxSpeed = ${ timeUntilMaxSpeed })` );
 
-      doRotate( entity, updateTime );
+      doFunc( entity, updateTime );
       dt -= updateTime;
     }
   }
@@ -93,18 +97,18 @@ function rotateEntity( entity, targetAngle, dt ) {
   // Cruising at max speed
   //
   if ( dt > 0 ) {
-    const brakeDist = ( 0 - maxSpeed ** 2 ) / ( -turnDir * 2 * Constants.TurnAccel );
-    const distToBrake = targetAngleDelta - distToMaxSpeed - brakeDist;
-    const timeUntilBrake = distToBrake / entity.turnSpeed;
+    const brakeDist = ( 0 - maxSpeed ** 2 ) / ( -dir * 2 * CONSTS.Accel );
+    const distToBrake = distance - distToMaxSpeed - brakeDist;
+    const timeUntilBrake = distToBrake / property.speed;
     
     if ( timeUntilBrake > 0 ) {
-      entity.turnAccel = 0;
+      property.accel = 0;
 
       const updateTime = Math.min( timeUntilBrake, dt );
 
       // console.log( `Cruising at ${ maxSpeed } for ${ updateTime } (timeUntilBrake = ${ timeUntilBrake })` );
 
-      doRotate( entity, updateTime );
+      doFunc( entity, updateTime );
       dt -= updateTime;
     }
   }
@@ -113,16 +117,16 @@ function rotateEntity( entity, targetAngle, dt ) {
   // Deccelerating
   //
   if ( dt > 0 ) {
-    const timeUntilStopped = ( 0 - entity.turnSpeed ) / ( -turnDir * Constants.TurnAccel );
+    const timeUntilStopped = ( 0 - property.speed ) / ( -dir * CONSTS.Accel );
     
     if ( timeUntilStopped > 0 ) {
-      entity.turnAccel = -turnDir * Constants.TurnAccel;
+      property.accel = -dir * CONSTS.Accel;
 
       const updateTime = Math.min( timeUntilStopped, dt );
 
       // console.log( `Deccelerating for ${ updateTime } (timeUntilStopped = ${ timeUntilStopped })` );
 
-      doRotate( entity, updateTime );
+      doFunc( entity, updateTime );
       dt -= updateTime;
     }
   }
@@ -130,12 +134,16 @@ function rotateEntity( entity, targetAngle, dt ) {
   // console.log( `After updates, dt = ${ dt } and entity = ${ JSON.stringify( entity ) }` );
 }
 
-function moveEntity( entity, dt ) {
-  const moveDist = entity.moveSpeed * dt + 0.5 * entity.accel * dt ** 2;
+function doMove( entity, dt ) {
+  const moveDist = entity.move.speed * dt + 0.5 * entity.move.accel * dt ** 2;
   entity.x += Math.cos( entity.angle ) * moveDist;
   entity.y += Math.sin( entity.angle ) * moveDist;
   
-  entity.moveSpeed += entity.moveAccel * dt;
+  entity.move.speed += entity.move.accel * dt;
+}
+
+function moveEntity( entity, dt ) {
+
 }
 
 let target = { x: -8, y: -8 };
@@ -150,7 +158,9 @@ canvas.update = ( dt ) => {
     const targetAngle = Math.atan2( ty, tx );
     const targetDist = Math.hypot( tx, ty );
 
-    rotateEntity( entity, targetAngle, dt );
+    const targetAngleDelta = Util.deltaAngle( entity.angle, targetAngle );
+
+    doAccel( entity, dt, entity.turn, doRotate, targetAngleDelta, Constants.Turn );
 
     // const brakeDist = ( 0 - entity.moveSpeed ** 2 ) / ( 2 * -Constants.MoveAccel );
 
