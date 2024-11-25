@@ -1,6 +1,8 @@
+# Save to /usr/lib/systemd/system/nfl-streams.service
+
 [Unit]
 Description=Update NFL Streams m3u file
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python /home/iggames/Downloads/nfl-streams.py > /mnt/external/Streams/nfl-streams.m3u8
+ExecStart=/usr/bin/python /home/iggames/Downloads/nfl-streams.py --output /mnt/external/Streams/nfl-streams.m3u8

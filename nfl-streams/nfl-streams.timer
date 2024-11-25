@@ -1,3 +1,5 @@
+# Save to /usr/lib/systemd/system/nfl-streams.timer
+
 [Unit]
 Description=NFL Streams Update Scheduling
 

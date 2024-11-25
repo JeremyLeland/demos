@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import quote
 
 parser = argparse.ArgumentParser()
-parser.add_argument( 'dest', type = str, help = "Destination playlist file" )
+parser.add_argument( '--output', type = str, help = "Destination playlist file" )
 args = parser.parse_args()
 
 lines = []
@@ -100,5 +100,8 @@ lines.append( '#EXTM3U\n' )
 # doWeakspell()
 doMediastreams()
 
-with open( args.dest, mode='w' ) as file:
-  file.writelines( lines )
+if args.output is not None:
+  with open( args.output, mode='w' ) as file:
+    file.writelines( lines )
+
+print( ''.join( lines ) )
