@@ -148,7 +148,6 @@ function moveEntity( entity, dt ) {
 
 let target = { x: -8, y: -8 };
 
-// TODO: For these entities, only move in direction currently facing. Don't persist dx/dy
 
 canvas.update = ( dt ) => {
   entities.forEach( entity => {
@@ -160,51 +159,18 @@ canvas.update = ( dt ) => {
 
     const targetAngleDelta = Util.deltaAngle( entity.angle, targetAngle );
 
+    // TODO: Don't use constants object, give it max speed and accel separately (so we can adjust max speed)
+
     doAccel( entity, dt, entity.turn, doRotate, targetAngleDelta, Constants.Turn );
 
-    // const brakeDist = ( 0 - entity.moveSpeed ** 2 ) / ( 2 * -Constants.MoveAccel );
+    if ( targetDist > 0.001 ) {
+      doAccel( entity, dt, entity.move, doMove, targetDist, Constants.Move );
+    }
 
-    // console.log( 'targetDist = ' + targetDist + ', brakeDist = ' + brakeDist );
-
-    // if ( targetDist < brakeDist ) {
-    //   console.log( 'Target within braking distance, braking' );
-    //   entity.moveAccel = -Constants.MoveAccel;
-
-    //   const brakeTime = ( 0 - entity.speed ) / entity.moveAccel;
-
-    //   if ( brakeTime <= dt ) {
-    //     moveEntity( entity, brakeTime );
-    //     entity.moveAccel = 0;
-
-    //     console.log( 'Finished braking, entity: ' + JSON.stringify( entity ) );
-    //   }
-    //   else {
-    //     moveEntity( entity, dt );
-
-    //     console.log( 'Braking, entity: ' + JSON.stringify( entity ) );
-    //   }
-    // }
-    // else if ( targetDist > Constants.CloseEnough && entity.speed < Constants.MaxMoveSpeed ) {
-    //   console.log( 'Accelerating toward max speed' );
-
-    //   entity.moveAccel = Constants.MoveAccel;
-
-    //   const maxTime = ( Constants.MaxMoveSpeed - entity.speed ) / entity.moveAccel;
-
-    //   if ( maxTime < dt ) {
-    //     moveEntity( entity, maxTime );
-    //     entity.moveAccel = 0;
-    //     moveEntity( entity, dt - maxTime );
-    //   }
-    //   else {
-    //     moveEntity( entity, dt );
-    //   }
-    // }
-    // else {
-    //   console.log( 'Moving at current speed' );
-
-    //   moveEntity( entity, dt );
-    // }
+    // TODO: doAccel for move next
+    // Future TODO: Provide max speed as parameter, don't take from constants
+    //              This will let us adjust speed based on our angle to the target
+    //              We'll need to support slowing down if maxSpeed is less than current speed
   
   } );
 }
