@@ -9,6 +9,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument( '--output', type = str, help = "Destination playlist file" )
 args = parser.parse_args()
 
+# Common user agent
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.5249.119 Safari/537.36'
+
 lines = []
 
 def doStreameast():
@@ -33,6 +36,40 @@ def doStreameast():
 
         lines.append( f'#EXTINF:-1 , { title }\n' )
         lines.append( f'{ playlist }\n' )
+
+def doBuffstreams():
+  BUFFSTREAMS_URL = 'https://buffstreams.app/nflstreams'
+
+  list_html = requests.get( BUFFSTREAMS_URL ).text
+  list_soup = BeautifulSoup( list_html, 'html.parser' )
+
+  for link in list_soup.find_all( 'a', 'competition' ):
+    if link.find( 'span', 'live-color' ):
+      title = link.get( 'title' )
+
+      page_url = link.get( 'href' )
+      page_html = requests.get( page_url ).text
+      page_soup = BeautifulSoup( page_html, 'html.parser' )
+
+      embed_url = page_soup.find( 'iframe' ).get( 'src' )
+
+      embed_headers = {
+        'User-Agent': USER_AGENT,
+        'Referer': 'https://buffstreams.app/',
+      }
+
+      embed_html = requests.get( embed_url, headers = embed_headers ).text
+      
+      match = re.search( r"source: window.atob\('(.+?)'\),", embed_html )
+      if match:
+        encoded_url = match.group( 1 )
+        playlist = base64.b64decode( encoded_url ).decode( 'utf-8' )
+
+        response = requests.get( playlist, allow_redirects = False, headers = { 'Referer': 'https://googlapisapi.com/' } )
+        redirect_playlist = response.headers( 'Location' )
+
+        lines.append( f'#EXTINF:-1 , { title }\n' )
+        lines.append( f'{ redirect_playlist }\n' )
 
 def doMediastreams():
   MEDIASTREAMS_URL = 'https://techcabal.net/'
@@ -98,7 +135,9 @@ lines.append( '#EXTM3U\n' )
 
 # doStreameast()
 # doWeakspell()
-doMediastreams()
+# doMediastreams()
+
+doBuffstreams()
 
 if args.output is not None:
   with open( args.output, mode='w' ) as file:
