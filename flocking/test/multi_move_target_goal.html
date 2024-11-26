@@ -33,35 +33,16 @@ new ValuesPanel( Constants );
 const entities = [];
 const walls = [];
 
-for ( let i = 0; i < 1; i ++ ) {
+for ( let i = 0; i < 10; i ++ ) {
   entities.push( newEntity( 0, 0, 'orange' ) );
-  entities.push( newEntity( 0, 0, 'yellow' ) );
-  entities.push( newEntity( 0, 0, 'lime' ) );
-  entities.push( newEntity( 0, 0, 'red' ) );
-  entities.push( newEntity( 0, 0, 'dodgerblue' ) );
-  entities.push( newEntity( 0, 0, 'violet' ) );
 }
 
 const loops = [
   [
     [ -6, -6 ],
     [ -5, 6 ],
-    [ -6, 6 ],
-  ],
-  [
-    [ -5, 6 ],
-    [ 5, 6 ],
-    [ 5, 7 ],
-  ],
-  [
     [ 5, 6 ],
     [ 6, -6 ],
-    [ 6, 6 ],
-  ],
-  [
-    [ 6, -6 ],
-    [ -6, -6 ],
-    [ 6, -7 ],
   ],
   [
     [ 3, 3 ],
@@ -214,7 +195,23 @@ canvas.update = ( dt ) => {
     let dx = 0;
     let dy = 0;
 
-    
+    // TODO: Does it make a meaningful difference if we do this before or after entities?
+    walls.forEach( wall => {
+      const angle = wall.normalAngle;
+      const dist = wall.distanceFrom( entity.target.x, entity.target.y, entity.radius );
+
+      const goalDist = wall.distanceFrom( entity.goal.x, entity.goal.y, entity.radius );
+
+      if ( -2 * entity.radius < dist && dist < 0 ) {
+      // Only count wall if it comes between us and goal
+      // if ( dist < 0 && Math.sign( goalDist ) != Math.sign( dist ) ) {
+        const val = dist * Constants.WallWeight;
+
+        dx -= Math.cos( angle ) * val;
+        dy -= Math.sin( angle ) * val;
+      }
+
+    } );
 
     entities.filter( other => entity != other ).forEach( other => {
       const cx = other.target.x - entity.target.x;
@@ -228,29 +225,29 @@ canvas.update = ( dt ) => {
       dy += Math.sin( angle ) * val;
     } );
 
-    loops.forEach( loop => {
-      let bestNormalAngle, bestDist = -Infinity;
+    // loops.forEach( loop => {
+    //   let bestNormalAngle, bestDist = -Infinity;
 
-      for ( let i = 0; i < loop.length; i ++ ) {
-        const current = loop[ i ];
-        const next = loop[ ( i + 1 ) % loop.length ];
+    //   for ( let i = 0; i < loop.length; i ++ ) {
+    //     const current = loop[ i ];
+    //     const next = loop[ ( i + 1 ) % loop.length ];
 
-        const normalAngle = Math.atan2( current[ 0 ] - next[ 0 ], next[ 1 ] - current[ 1 ] );
-        const dist = distanceFromLine( ...current, ...next, entity.target.x, entity.target.y, entity.radius );
+    //     const normalAngle = Math.atan2( current[ 0 ] - next[ 0 ], next[ 1 ] - current[ 1 ] );
+    //     const dist = distanceFromLine( ...current, ...next, entity.target.x, entity.target.y, entity.radius );
 
-        if ( dist > bestDist ) {
-          bestNormalAngle = normalAngle;
-          bestDist = dist;
-        }
-      }
+    //     if ( dist > bestDist ) {
+    //       bestNormalAngle = normalAngle;
+    //       bestDist = dist;
+    //     }
+    //   }
 
-      if ( bestDist < 0 ) {
-        const val = bestDist * Constants.WallWeight;
+    //   if ( bestDist < 0 ) {
+    //     const val = bestDist * Constants.WallWeight;
 
-        dx -= Math.cos( bestNormalAngle ) * val;
-        dy -= Math.sin( bestNormalAngle ) * val;
-      }
-    } );
+    //     dx -= Math.cos( bestNormalAngle ) * val;
+    //     dy -= Math.sin( bestNormalAngle ) * val;
+    //   }
+    // } );
     
     
     entity.target.x += dx * dt;
@@ -273,7 +270,7 @@ canvas.update = ( dt ) => {
     //       We'll need to support slowing down if maxSpeed is less than current speed
     doAccel( entity, dt, entity.turn, doRotate, targetAngleDelta, Constants.Turn );
 
-    if ( targetDist > 0.001 ) {
+    if ( targetDist > 0.01 ) {
       doAccel( entity, dt, entity.move, doMove, targetDist, Constants.Move );
     }
 
@@ -284,14 +281,15 @@ canvas.draw = ( ctx ) => {
   ctx.lineWidth = 0.002 / canvas.zoom;
 
   ctx.strokeStyle = '#ff8';
-  loops.forEach( loop => {
-    for ( let i = 0; i < loop.length; i ++ ) {
-      const current = loop[ i ];
-      const next = loop[ ( i + 1 ) % loop.length ];
+  // loops.forEach( loop => {
+  //   for ( let i = 0; i < loop.length; i ++ ) {
+  //     const current = loop[ i ];
+  //     const next = loop[ ( i + 1 ) % loop.length ];
 
-      drawLine( ctx, ...current, ...next );
-    }
-  } );
+  //     drawLine( ctx, ...current, ...next );
+  //   }
+  // } );
+  walls.forEach( wall => wall.draw( ctx ) );
 
   entities.forEach( entity => drawEntity( ctx, entity ) );
 }
@@ -391,9 +389,21 @@ function distanceFromLine( x1, y1, x2, y2, x, y, radius ) {
 canvas.start();
 
 function updateGoal( p ) {
-  entities.forEach( e => {
-    const offsetX = e.target.x - e.goal.x;
-    const offsetY = e.target.y - e.goal.y;
+  entities.forEach( ( e, index ) => {
+
+    // Can use offset to have some control of where we end up relative to each other
+    // Try to avoid the lines by spacing people out a little
+
+    // Offset based on initial position
+    // const offsetX = e.target.x - e.goal.x;
+    // const offsetY = e.target.y - e.goal.y;
+
+    // Offset in a small circle
+    const angle = Math.PI * 2 * index / entities.length;
+    const dist = 0.1;
+    const offsetX = Math.cos( angle ) * dist;
+    const offsetY = Math.sin( angle ) * dist;
+
 
     e.goal.x = p.x;
     e.goal.y = p.y;
