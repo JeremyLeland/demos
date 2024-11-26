@@ -28,7 +28,7 @@ export function Flock( entities, walls, target, dt ) {
 
     walls.forEach( wall => {
       const angle = wall.normalAngle;
-      const dist = wall.distanceFrom( entity );
+      const dist = wall.distanceFrom( entity.x, entity.y, entity.radius );
 
       if ( -2 * entity.radius < dist && dist < 0 ) {
         const val = dist * Constants.AvoidWeight;

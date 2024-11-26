@@ -1,4 +1,4 @@
-<title>Turn and move toward target</title>
+<title>Spread out targets in front of us</title>
 <link rel="stylesheet" href="../style.css">
 
 <script type="module">
@@ -9,7 +9,7 @@ import * as Util from '../src/Util.js';
 import { ValuesPanel } from '../src/ValuesPanel.js';
 
 const canvas = new Canvas();
-canvas.backgroundColor = 'tan';
+canvas.backgroundColor = '#222';
 canvas.zoom = 1 / 20;
 canvas.scrollX = -10;
 canvas.scrollY = -10;
@@ -25,14 +25,20 @@ const Constants = {
     Accel: 0.00001,
     CloseEnough: 0.1,
   },
+  AvoidWeight: 0.05,
 }
 new ValuesPanel( Constants );
 
 const entities = [];
+const walls = [];
 
 for ( let i = 0; i < 1; i ++ ) {
   entities.push( newEntity( -10, 0, 'orange' ) );
+  entities.push( newEntity( -10, 2, 'yellow' ) );
+  entities.push( newEntity( -10, 4, 'lime' ) );
 }
+
+updateGoal( { x: -8, y: -8 } );
 
 function newEntity( x, y, color ) {
   return {
@@ -50,12 +56,12 @@ function newEntity( x, y, color ) {
     radius: 0.5, //0.2 + Math.random() * 0.2,
     fillStyle: color,
     target: {
-      x: -8,
-      y: -8,
+      x: 0,
+      y: 0,
     },
     goal: {
-      x: -8,
-      y: -8,
+      x: 0,
+      y: 0,
     },
   };
 }
@@ -155,8 +161,65 @@ function moveEntity( entity, dt ) {
 }
 
 canvas.update = ( dt ) => {
+  //
+  // Find targets
+  //
   entities.forEach( entity => {
+    const gx = entity.goal.x - entity.x;
+    const gy = entity.goal.y - entity.y;
+    const goalAngle = Math.atan2( gy, gx );
+    const goalDist = Math.hypot( gx, gy );
 
+    // TODO: Base this on speed, to make sure we aren't holding ourselves back?
+    //       Also to make sure we aren't missing things in front of us at slower speeds?
+    const targetDist = Math.min( goalDist, 1 );
+
+    entity.target.x = entity.x + Math.cos( goalAngle ) * targetDist;
+    entity.target.y = entity.y + Math.sin( goalAngle ) * targetDist;
+  } );
+
+  //
+  // Adjust targets
+  //
+
+  entities.forEach( entity => {
+    let dx = 0;
+    let dy = 0;
+
+    walls.forEach( wall => {
+      const angle = wall.normalAngle;
+      const dist = wall.distanceFrom( entity.target.x, entity.target.y, entity.radius );
+
+      if ( -2 * entity.radius < dist && dist < 0 ) {
+        const val = dist * Constants.AvoidWeight;
+
+        dx -= Math.cos( angle ) * val;
+        dy -= Math.sin( angle ) * val;
+      }
+
+    } );
+
+    entities.filter( other => entity != other ).forEach( other => {
+      const cx = other.target.x - entity.target.x;
+      const cy = other.target.y - entity.target.y;
+      const angle = Math.atan2( cy, cx );
+      const dist = Math.hypot( cx, cy ) - entity.radius - other.radius;
+
+      const val = Math.min( 0, dist ) * Constants.AvoidWeight;
+        
+      dx += Math.cos( angle ) * val;
+      dy += Math.sin( angle ) * val;
+    } );
+
+    
+    entity.target.x += dx * dt;
+    entity.target.y += dy * dt;
+  } );
+
+  //
+  // Move toward targets
+  //
+  entities.forEach( entity => {
     const tx = entity.target.x - entity.x;
     const ty = entity.target.y - entity.y;
     const targetAngle = Math.atan2( ty, tx );
@@ -165,18 +228,14 @@ canvas.update = ( dt ) => {
     const targetAngleDelta = Util.deltaAngle( entity.angle, targetAngle );
 
     // TODO: Don't use constants object, give it max speed and accel separately (so we can adjust max speed)
-
+    //       This will let us adjust speed based on our angle to the target
+    //       We'll need to support slowing down if maxSpeed is less than current speed
     doAccel( entity, dt, entity.turn, doRotate, targetAngleDelta, Constants.Turn );
 
     if ( targetDist > 0.001 ) {
       doAccel( entity, dt, entity.move, doMove, targetDist, Constants.Move );
     }
 
-    // TODO: doAccel for move next
-    // Future TODO: Provide max speed as parameter, don't take from constants
-    //              This will let us adjust speed based on our angle to the target
-    //              We'll need to support slowing down if maxSpeed is less than current speed
-  
   } );
 }
 
@@ -193,40 +252,55 @@ entityPath.closePath();
 
 function drawEntity( ctx, entity ) {
   ctx.translate( entity.x, entity.y );
-  ctx.rotate( entity.angle ); {
+  ctx.rotate( entity.angle );
+  ctx.scale( entity.radius, entity.radius ); {
     ctx.fillStyle = entity.fillStyle;
     ctx.fill( entityPath );
     ctx.strokeStyle = 'black';
     ctx.stroke( entityPath );
   }
+  ctx.scale( 1 / entity.radius, 1 / entity.radius );
   ctx.rotate( -entity.angle );
   ctx.translate( -entity.x, -entity.y );
+
+
+  // Draw target
+  ctx.strokeStyle = entity.fillStyle;
 
   ctx.beginPath();
   ctx.moveTo( entity.x, entity.y );
   ctx.lineTo( entity.target.x, entity.target.y );
-  ctx.strokeStyle = 'black';
+  ctx.stroke();
+  
+  ctx.beginPath();
+  ctx.arc( entity.target.x, entity.target.y, entity.radius, 0, Math.PI * 2 );
   ctx.stroke();
 
-  // Draw target
+  // Draw goal
+  ctx.fillStyle = ctx.strokeStyle = 'gray';
+
   ctx.beginPath();
-  ctx.arc( entity.target.x, entity.target.y, 0.1, 0, Math.PI * 2 );
-  ctx.fillStyle = 'black';
+  ctx.moveTo( entity.x, entity.y );
+  ctx.lineTo( entity.goal.x, entity.goal.y );
+  ctx.stroke();
+  
+  ctx.beginPath();
+  ctx.arc( entity.goal.x, entity.goal.y, 0.1, 0, Math.PI * 2 );
   ctx.fill();
 }
 
 canvas.start();
 
-function updateTarget( p ) {
+function updateGoal( p ) {
   entities.forEach( e => {
-    e.target.x = p.x;
-    e.target.y = p.y;
+    e.goal.x = p.x;
+    e.goal.y = p.y;
   } );
 }
 
 canvas.pointerDown = ( p ) => {
   if ( p.buttons == 1 ) {
-    updateTarget( p );
+    updateGoal( p );
   }
   else {
     entities.push( newEntity( p.x, p.y, 'orange' ) );
@@ -235,7 +309,7 @@ canvas.pointerDown = ( p ) => {
 
 canvas.pointerMove = ( p ) => {
   if ( p.buttons == 1 ) {
-    updateTarget( p );
+    updateGoal( p );
   }
   else if ( p.buttons == 2 ) {
     entities.push( newEntity( p.x, p.y, 'orange' ) );

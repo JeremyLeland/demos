@@ -41,7 +41,7 @@ export class Line {
     ctx.lineWidth *= 2;
   }
 
-  distanceFrom( entity ) {
+  distanceFrom( x, y, radius ) {
     const px = this.x2 - this.x1;
     const py = this.y2 - this.y1;
     const D = ( px * px ) + ( py * py );
@@ -50,17 +50,17 @@ export class Line {
     const normX = py / len;
     const normY = -px / len;
     
-    const u = ( ( entity.x - this.x1 ) * px + ( entity.y - this.y1 ) * py ) / D;
-    const offset = 0; //entity.radius / len;
+    const u = ( ( x - this.x1 ) * px + ( y - this.y1 ) * py ) / D;
+    const offset = 0; // radius / len;
 
     if ( u + offset <= 0 ) {
-      return Math.hypot( entity.x - this.x1, entity.y - this.y1 ) - entity.radius;
+      return Math.hypot( x - this.x1, y - this.y1 ) - radius;
     }
     else if ( 1 <= u - offset ) {
-      return Math.hypot( entity.x - this.x2, entity.y - this.y2 ) - entity.radius;
+      return Math.hypot( x - this.x2, y - this.y2 ) - radius;
     }
     else {
-      return ( entity.x - this.x1 ) * normX + ( entity.y - this.y1 ) * normY - entity.radius;
+      return ( x - this.x1 ) * normX + ( y - this.y1 ) * normY - radius;
     }
   }
 
