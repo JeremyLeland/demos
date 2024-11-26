@@ -1,0 +1,197 @@
+<title>Spread out targets at goal</title>
+<link rel="stylesheet" href="../style.css">
+
+<script type="module">
+
+import { Canvas } from '../src/Canvas.js';
+import { Line } from '../src/Line.js';
+import * as Util from '../src/Util.js';
+import { ValuesPanel } from '../src/ValuesPanel.js';
+
+const canvas = new Canvas();
+canvas.backgroundColor = '#222';
+canvas.zoom = 1 / 20;
+canvas.scrollX = -10;
+canvas.scrollY = -10;
+
+const entity = newEntity( 0, 0, 'orange' );
+
+const loops = [
+  // [
+  //   [ -6, -6 ],
+  //   [ -5, 6 ],
+  //   [ 5, 6 ],
+  //   [ 6, -6 ],
+  // ],
+  // [
+  //   [ 3, 3 ],
+  //   [ 0.5, 0 ],
+  //   [ 2.5, -2 ],
+  // ],
+  [
+    [ -3, 3 ],
+    [ -2.5, -2 ],
+    [ -0.5, 0 ],
+  ],
+];
+
+function newEntity( x, y, color ) {
+  return {
+    x: x,
+    y: y,
+    angle: 0,
+    radius: 0.5, //0.2 + Math.random() * 0.2,
+    fillStyle: color,
+  };
+}
+
+canvas.draw = ( ctx ) => {
+  ctx.lineWidth = 0.002 / canvas.zoom;
+
+
+  drawEntity( ctx, entity );
+
+  
+  loops.forEach( loop => {
+
+    let bestNormalAngle, bestDist = -Infinity;
+
+    for ( let i = 0; i < loop.length; i ++ ) {
+      const current = loop[ i ];
+      const next = loop[ ( i + 1 ) % loop.length ];
+
+      ctx.strokeStyle = '#ff8';
+      drawLine( ctx, ...current, ...next );
+
+      const normalAngle = Math.atan2( current[ 0 ] - next[ 0 ], next[ 1 ] - current[ 1 ] );
+      const dist = distanceFromLine( ...current, ...next, entity.x, entity.y, entity.radius );
+
+      if ( dist > bestDist ) {
+        bestNormalAngle = normalAngle;
+        bestDist = dist;
+      }
+
+      if ( dist < 0 ) {
+        ctx.beginPath();
+        ctx.moveTo(
+          entity.x - Math.cos( normalAngle ) * entity.radius, 
+          entity.y - Math.sin( normalAngle ) * entity.radius,
+        );
+        ctx.lineTo(
+          entity.x - Math.cos( normalAngle ) * ( entity.radius + dist ),
+          entity.y - Math.sin( normalAngle ) * ( entity.radius + dist ),
+        );
+        ctx.strokeStyle = 'darkred';
+        ctx.stroke();
+      }
+    }
+
+    if ( bestDist < 0 ) {
+      const movedEntity = Object.assign( {}, entity );
+      movedEntity.fillStyle = '#8008';
+
+      movedEntity.x -= Math.cos( bestNormalAngle ) * bestDist;
+      movedEntity.y -= Math.sin( bestNormalAngle ) * bestDist;
+
+      drawEntity( ctx, movedEntity );
+    }
+  } );
+
+
+
+}
+
+const entityPath = new Path2D();
+entityPath.arc( 0, 0, 1, 0, Math.PI * 2 );
+entityPath.closePath();
+
+function drawEntity( ctx, entity ) {
+  ctx.translate( entity.x, entity.y );
+  ctx.rotate( entity.angle );
+  ctx.scale( entity.radius, entity.radius ); {
+    ctx.fillStyle = entity.fillStyle;
+    ctx.fill( entityPath );
+    ctx.strokeStyle = 'black';
+    ctx.stroke( entityPath );
+  }
+  ctx.scale( 1 / entity.radius, 1 / entity.radius );
+  ctx.rotate( -entity.angle );
+  ctx.translate( -entity.x, -entity.y );
+}
+
+function drawLine( ctx, x1, y1, x2, y2 ) {
+  ctx.beginPath();
+  ctx.moveTo( x1, y1 );
+  ctx.lineTo( x2, y2 );
+  // ctx.lineWidth = 1;
+  ctx.stroke();
+
+  const midX = ( x1 + x2 ) / 2;
+  const midY = ( y1 + y2 ) / 2;
+  const normalAngle = Math.atan2( x1 - x2, y2 - y1 );
+  const NORM_LEN = 0.5;
+
+  ctx.beginPath();
+  ctx.moveTo( midX, midY );
+  ctx.lineTo( 
+    midX + Math.cos( normalAngle ) * NORM_LEN, 
+    midY + Math.sin( normalAngle ) * NORM_LEN,
+  );
+  ctx.lineWidth /= 2;
+  ctx.stroke();
+  ctx.lineWidth *= 2;
+}
+
+function distanceFromLine( x1, y1, x2, y2, x, y, radius ) {
+  const px = x2 - x1;
+  const py = y2 - y1;
+  const D = ( px * px ) + ( py * py );
+
+  const len = Math.sqrt( D );
+  const normX = py / len;
+  const normY = -px / len;
+  
+  const u = ( ( x - x1 ) * px + ( y - y1 ) * py ) / D;
+  const offset = radius / len;
+
+  // TODO: Offset treats entity as a square, how would we make it a circle?
+
+  if ( u + offset <= 0 ) {
+    return Math.hypot( x - x1, y - y1 ) - radius;
+  }
+  else if ( 1 <= u - offset ) {
+    return Math.hypot( x - x2, y - y2 ) - radius;
+  }
+  else {
+    return ( x - x1 ) * normX + ( y - y1 ) * normY - radius;
+  }
+}
+
+canvas.start();
+
+function updateEntity( p ) {
+  entity.x = p.x;
+  entity.y = p.y;
+}
+
+canvas.pointerDown = ( p ) => {
+  if ( p.buttons == 1 ) {
+    updateEntity( p );
+  }
+}
+
+canvas.pointerMove = ( p ) => {
+  if ( p.buttons == 1 ) {
+    updateEntity( p );
+  }
+}
+
+canvas.pointerUp = ( p ) => {
+}
+
+// document.addEventListener( 'keydown', e => {
+//   canvas.update( 10 );
+//   canvas.redraw();
+// } );
+
+</script>
