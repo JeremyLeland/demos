@@ -4,6 +4,7 @@
 <script type="module">
 
 import { Canvas } from '../src/Canvas.js';
+import * as CellGrid from '../src/CellGrid.js';
 import { Line } from '../src/Line.js';
 import * as Util from '../src/Util.js';
 import { ValuesPanel } from '../src/ValuesPanel.js';
@@ -26,7 +27,8 @@ const Constants = {
     CloseEnough: 0.1,
   },
   AvoidWeight: 0.01,
-  WallWeight: 0.02
+  WallWeight: 0.02,
+  WallDistance: 0,
 }
 new ValuesPanel( Constants );
 
@@ -39,20 +41,20 @@ for ( let i = 0; i < 10; i ++ ) {
 
 const loops = [
   [
-    [ -6, -6 ],
-    [ -5, 6 ],
-    [ 5, 6 ],
-    [ 6, -6 ],
+    [ -8, -8 ],
+    [ -5, 8 ],
+    [ 5, 8 ],
+    [ 8, -8 ],
   ],
   [
-    [ 3, 3 ],
-    [ 0.5, 0 ],
-    [ 2.5, -2 ],
+    [ 4, 4 ],
+    [ 0.6, 0 ],
+    [ 3.5, -3 ],
   ],
   [
-    [ -3, 3 ],
-    [ -2.5, -2 ],
-    [ -0.5, 0 ],
+    [ -4, 4 ],
+    [ -3.5, -3 ],
+    [ -0.6, 0 ],
   ],
 ];
 
@@ -63,6 +65,9 @@ loops.forEach( loop => {
     );
   }
 } );
+
+const cells = CellGrid.fromPoints( loops );
+const flowMap = CellGrid.getFlowMap( cells );
 
 updateGoal( { x: 0, y: 0 } );
 
@@ -224,32 +229,7 @@ canvas.update = ( dt ) => {
       dx += Math.cos( angle ) * val;
       dy += Math.sin( angle ) * val;
     } );
-
-    // loops.forEach( loop => {
-    //   let bestNormalAngle, bestDist = -Infinity;
-
-    //   for ( let i = 0; i < loop.length; i ++ ) {
-    //     const current = loop[ i ];
-    //     const next = loop[ ( i + 1 ) % loop.length ];
-
-    //     const normalAngle = Math.atan2( current[ 0 ] - next[ 0 ], next[ 1 ] - current[ 1 ] );
-    //     const dist = distanceFromLine( ...current, ...next, entity.target.x, entity.target.y, entity.radius );
-
-    //     if ( dist > bestDist ) {
-    //       bestNormalAngle = normalAngle;
-    //       bestDist = dist;
-    //     }
-    //   }
-
-    //   if ( bestDist < 0 ) {
-    //     const val = bestDist * Constants.WallWeight;
-
-    //     dx -= Math.cos( bestNormalAngle ) * val;
-    //     dy -= Math.sin( bestNormalAngle ) * val;
-    //   }
-    // } );
-    
-    
+        
     entity.target.x += dx * dt;
     entity.target.y += dy * dt;
   } );
@@ -258,40 +238,63 @@ canvas.update = ( dt ) => {
   // Move toward targets
   //
   entities.forEach( entity => {
-    const tx = entity.target.x - entity.x;
-    const ty = entity.target.y - entity.y;
-    const targetAngle = Math.atan2( ty, tx );
-    const targetDist = Math.hypot( tx, ty );
 
-    const targetAngleDelta = Util.deltaAngle( entity.angle, targetAngle );
+    const targetCell = cells.find( c => c.contains( entity.target.x, entity.target.y ) );
+    const flowField = flowMap.get( targetCell );
 
-    // TODO: Don't use constants object, give it max speed and accel separately (so we can adjust max speed)
-    //       This will let us adjust speed based on our angle to the target
-    //       We'll need to support slowing down if maxSpeed is less than current speed
-    doAccel( entity, dt, entity.turn, doRotate, targetAngleDelta, Constants.Turn );
-
-    if ( targetDist > 0.01 ) {
-      doAccel( entity, dt, entity.move, doMove, targetDist, Constants.Move );
+    // Navigation
+    if ( flowField ) {
+      const cell = cells.find( c => c.contains( entity.x, entity.y ) );
+      const bestEdge = flowField.get( cell );
+      
+      const tx = entity.target.x - entity.x;
+      const ty = entity.target.y - entity.y;
+      const targetAngle = Math.atan2( ty, tx );
+      const targetDist = Math.hypot( tx, ty );
+      
+      const bestAngle = bestEdge ? getBestAngle( entity, bestEdge, targetAngle ) : targetAngle;
+      
+      const bestAngleDelta = Util.deltaAngle( entity.angle, bestAngle );
+      
+      // TODO: Don't use constants object, give it max speed and accel separately (so we can adjust max speed)
+      //       This will let us adjust speed based on our angle to the target
+      //       We'll need to support slowing down if maxSpeed is less than current speed
+      if ( targetDist > 0.01 ) {
+        doAccel( entity, dt, entity.turn, doRotate, bestAngleDelta, Constants.Turn );
+        doAccel( entity, dt, entity.move, doMove, targetDist, Constants.Move );
+      }
     }
-
+      
   } );
+}
+
+function getBestAngle( entity, bestEdge, targetAngle ) {
+  const slope = bestEdge.slopeAngle;
+  const offset = Constants.WallDistance + entity.radius;
+  const offsetX = Math.cos( slope ) * offset;
+  const offsetY = Math.sin( slope ) * offset;
+
+  // NOTE: This can run into problems if offset > ( bestEdge.length / 2 ), since it inverses the line
+  
+  return Util.clampAngle( 
+    targetAngle, 
+    Math.atan2( bestEdge.y2 - offsetY - entity.y, bestEdge.x2 - offsetX - entity.x ), 
+    Math.atan2( bestEdge.y1 + offsetY - entity.y, bestEdge.x1 + offsetX - entity.x ),
+  );
 }
 
 canvas.draw = ( ctx ) => {
   ctx.lineWidth = 0.002 / canvas.zoom;
 
   ctx.strokeStyle = '#ff8';
-  // loops.forEach( loop => {
-  //   for ( let i = 0; i < loop.length; i ++ ) {
-  //     const current = loop[ i ];
-  //     const next = loop[ ( i + 1 ) % loop.length ];
-
-  //     drawLine( ctx, ...current, ...next );
-  //   }
-  // } );
   walls.forEach( wall => wall.draw( ctx ) );
 
+  cells.forEach( cell => cell.draw( ctx ) );
+
   entities.forEach( entity => drawEntity( ctx, entity ) );
+
+  
+
 }
 
 const entityPath = new Path2D();
@@ -336,54 +339,6 @@ function drawEntity( ctx, entity ) {
   ctx.beginPath();
   ctx.arc( entity.goal.x, entity.goal.y, 0.1, 0, Math.PI * 2 );
   ctx.fill();
-}
-
-function drawLine( ctx, x1, y1, x2, y2 ) {
-  ctx.beginPath();
-  ctx.moveTo( x1, y1 );
-  ctx.lineTo( x2, y2 );
-  // ctx.lineWidth = 1;
-  ctx.stroke();
-
-  const midX = ( x1 + x2 ) / 2;
-  const midY = ( y1 + y2 ) / 2;
-  const normalAngle = Math.atan2( x1 - x2, y2 - y1 );
-  const NORM_LEN = 0.5;
-
-  ctx.beginPath();
-  ctx.moveTo( midX, midY );
-  ctx.lineTo( 
-    midX + Math.cos( normalAngle ) * NORM_LEN, 
-    midY + Math.sin( normalAngle ) * NORM_LEN,
-  );
-  ctx.lineWidth /= 2;
-  ctx.stroke();
-  ctx.lineWidth *= 2;
-}
-
-function distanceFromLine( x1, y1, x2, y2, x, y, radius ) {
-  const px = x2 - x1;
-  const py = y2 - y1;
-  const D = ( px * px ) + ( py * py );
-
-  const len = Math.sqrt( D );
-  const normX = py / len;
-  const normY = -px / len;
-  
-  const u = ( ( x - x1 ) * px + ( y - y1 ) * py ) / D;
-  const offset = radius / len;
-
-  // TODO: Offset treats entity as a square, how would we make it a circle?
-
-  if ( u + offset <= 0 ) {
-    return Math.hypot( x - x1, y - y1 ) - radius;
-  }
-  else if ( 1 <= u - offset ) {
-    return Math.hypot( x - x2, y - y2 ) - radius;
-  }
-  else {
-    return ( x - x1 ) * normX + ( y - y1 ) * normY - radius;
-  }
 }
 
 canvas.start();

@@ -51,7 +51,7 @@ export class Line {
     const normY = -px / len;
     
     const u = ( ( x - this.x1 ) * px + ( y - this.y1 ) * py ) / D;
-    const offset = 0; // radius / len;
+    const offset = radius / len;
 
     if ( u + offset <= 0 ) {
       return Math.hypot( x - this.x1, y - this.y1 ) - radius;
