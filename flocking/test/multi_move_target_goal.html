@@ -16,16 +16,10 @@ canvas.scrollX = -10;
 canvas.scrollY = -10;
 
 const Constants = {
-  Turn: {
-    MaxSpeed: 0.01,
-    Accel: 0.0001,
-    CloseEnough: 1,
-  },
-  Move: {
-    MaxSpeed: 0.01,
-    Accel: 0.00001,
-    CloseEnough: 0.1,
-  },
+  TurnMaxSpeed: 0.01,
+  TurnAccel: 0.0001,
+  MoveMaxSpeed: 0.005,
+  MoveAccel: 0.00001,
   AvoidWeight: 0.01,
   WallWeight: 0.02,
   WallDistance: 0,
@@ -39,26 +33,28 @@ for ( let i = 0; i < 10; i ++ ) {
   entities.push( newEntity( 0, 0, 'orange' ) );
 }
 
-const loops = [
-  [
-    [ -8, -8 ],
-    [ -5, 8 ],
-    [ 5, 8 ],
-    [ 8, -8 ],
-  ],
-  [
-    [ 4, 4 ],
-    [ 0.6, 0 ],
-    [ 3.5, -3 ],
-  ],
-  [
-    [ -4, 4 ],
-    [ -3.5, -3 ],
-    [ -0.6, 0 ],
-  ],
-];
+// const loops = [
+//   [
+//     [ -8, -8 ],
+//     [ -5, 8 ],
+//     [ 5, 8 ],
+//     [ 8, -8 ],
+//   ],
+//   [
+//     [ 4, 4 ],
+//     [ 0.6, 0 ],
+//     [ 3.5, -3 ],
+//   ],
+//   [
+//     [ -4, 4 ],
+//     [ -3.5, -3 ],
+//     [ -0.6, 0 ],
+//   ],
+// ];
 
-loops.forEach( loop => {
+const level = await ( await fetch( '../levels/test1.json' ) ).json();
+
+level.loops.forEach( loop => {
   for ( let i = 0; i < loop.length; i ++ ) {
     walls.push( 
       new Line( ...loop[ i ], ...loop[ ( i + 1 ) % loop.length ] )
@@ -66,7 +62,7 @@ loops.forEach( loop => {
   }
 } );
 
-const cells = CellGrid.fromPoints( loops );
+const cells = CellGrid.fromPoints( level.loops );
 const flowMap = CellGrid.getFlowMap( cells );
 
 updateGoal( { x: 0, y: 0 } );
@@ -102,7 +98,7 @@ function doRotate( entity, dt ) {
   entity.turn.speed += entity.turn.accel * dt;
 }
 
-function doAccel( entity, dt, property, doFunc, distance, CONSTS ) {
+function doAccel( entity, dt, property, doFunc, distance, MaxSpeed, Accel ) {
   // Update in phases:
   //  1. Accelerating
   //  2. Max speed
@@ -117,17 +113,17 @@ function doAccel( entity, dt, property, doFunc, distance, CONSTS ) {
 
   // Distance to accel from 0 to current speed + distance until target / 2 = total accel dist (and deccel dist)
   // Use this to find max acceleration we could acheive
-  const distToCurrentSpeed = ( property.speed ** 2 - 0 ) / ( dir * 2 * CONSTS.Accel );
+  const distToCurrentSpeed = ( property.speed ** 2 - 0 ) / ( dir * 2 * Accel );
   const distToTheoreticalMaxSpeed = ( distToCurrentSpeed + distance ) / 2;
-  const theoreticalMaxSpeed = Math.sqrt( 0 + 2 * CONSTS.Accel * Math.abs( distToTheoreticalMaxSpeed ) );
-  const maxSpeed = dir * Math.min( theoreticalMaxSpeed, CONSTS.MaxSpeed );
+  const theoreticalMaxSpeed = Math.sqrt( 0 + 2 * Accel * Math.abs( distToTheoreticalMaxSpeed ) );
+  const maxSpeed = dir * Math.min( theoreticalMaxSpeed, MaxSpeed );
 
-  const distToMaxSpeed = ( maxSpeed ** 2 - property.speed ** 2 ) / ( dir * 2 * CONSTS.Accel );
-  const timeUntilMaxSpeed = ( maxSpeed - property.speed ) / ( dir * CONSTS.Accel );
+  const distToMaxSpeed = ( maxSpeed ** 2 - property.speed ** 2 ) / ( dir * 2 * Accel );
+  const timeUntilMaxSpeed = ( maxSpeed - property.speed ) / ( dir * Accel );
   
   if ( dt > 0 ) {
     if ( timeUntilMaxSpeed > 0 ) {
-      property.accel = dir * CONSTS.Accel;
+      property.accel = dir * Accel;
 
       const updateTime = Math.min( timeUntilMaxSpeed, dt );
 
@@ -142,7 +138,7 @@ function doAccel( entity, dt, property, doFunc, distance, CONSTS ) {
   // Cruising at max speed
   //
   if ( dt > 0 ) {
-    const brakeDist = ( 0 - maxSpeed ** 2 ) / ( -dir * 2 * CONSTS.Accel );
+    const brakeDist = ( 0 - maxSpeed ** 2 ) / ( -dir * 2 * Accel );
     const distToBrake = distance - distToMaxSpeed - brakeDist;
     const timeUntilBrake = distToBrake / property.speed;
     
@@ -162,10 +158,10 @@ function doAccel( entity, dt, property, doFunc, distance, CONSTS ) {
   // Deccelerating
   //
   if ( dt > 0 ) {
-    const timeUntilStopped = ( 0 - property.speed ) / ( -dir * CONSTS.Accel );
+    const timeUntilStopped = ( 0 - property.speed ) / ( -dir * Accel );
     
     if ( timeUntilStopped > 0 ) {
-      property.accel = -dir * CONSTS.Accel;
+      property.accel = -dir * Accel;
 
       const updateTime = Math.min( timeUntilStopped, dt );
 
@@ -260,8 +256,8 @@ canvas.update = ( dt ) => {
       //       This will let us adjust speed based on our angle to the target
       //       We'll need to support slowing down if maxSpeed is less than current speed
       if ( targetDist > 0.01 ) {
-        doAccel( entity, dt, entity.turn, doRotate, bestAngleDelta, Constants.Turn );
-        doAccel( entity, dt, entity.move, doMove, targetDist, Constants.Move );
+        doAccel( entity, dt, entity.turn, doRotate, bestAngleDelta, Constants.TurnMaxSpeed, Constants.TurnAccel );
+        doAccel( entity, dt, entity.move, doMove, targetDist, Constants.MoveMaxSpeed, Constants.MoveAccel );
       }
     }
       

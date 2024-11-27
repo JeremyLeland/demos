@@ -190,7 +190,7 @@ export class Cell {
 
     if ( Cell.Debug ) {
       ctx.beginPath();
-      ctx.arc( this.x, this.y, 0.5, 0, Math.PI * 2 );
+      ctx.arc( this.x, this.y, 0.2, 0, Math.PI * 2 );
       ctx.fillStyle = 'red';
       ctx.fill();
 
