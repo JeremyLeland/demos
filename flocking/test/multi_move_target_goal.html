@@ -113,13 +113,21 @@ function doAccel( entity, dt, property, doFunc, distance, MaxSpeed, Accel ) {
 
   // Distance to accel from 0 to current speed + distance until target / 2 = total accel dist (and deccel dist)
   // Use this to find max acceleration we could acheive
-  const distToCurrentSpeed = ( property.speed ** 2 - 0 ) / ( dir * 2 * Accel );
-  const distToTheoreticalMaxSpeed = ( distToCurrentSpeed + distance ) / 2;
-  const theoreticalMaxSpeed = Math.sqrt( 0 + 2 * Accel * Math.abs( distToTheoreticalMaxSpeed ) );
+
+  // TODO: Handle MaxSpeed less than current speed (slow down!)
+
+  const initialAccel = ( property.speed > MaxSpeed ? -1 : 1 ) * dir * Accel;
+
+  // d = d1 + d2
+  // Accel: v^2 = v0^2 + 2ad1
+  // Deccel:  0 = v^2 + 2( -a )d2
+  // Comes out to:
+  // v = sqrt( ad + 0.5*v0^2 )
+  const theoreticalMaxSpeed = Math.sqrt( initialAccel * distance + 0.5 * property.speed ** 2 );
   const maxSpeed = dir * Math.min( theoreticalMaxSpeed, MaxSpeed );
 
-  const distToMaxSpeed = ( maxSpeed ** 2 - property.speed ** 2 ) / ( dir * 2 * Accel );
-  const timeUntilMaxSpeed = ( maxSpeed - property.speed ) / ( dir * Accel );
+  const distToMaxSpeed = ( maxSpeed ** 2 - property.speed ** 2 ) / ( 2 * initialAccel );
+  const timeUntilMaxSpeed = ( maxSpeed - property.speed ) / ( initialAccel );
   
   if ( dt > 0 ) {
     if ( timeUntilMaxSpeed > 0 ) {
@@ -252,12 +260,26 @@ canvas.update = ( dt ) => {
       
       const bestAngleDelta = Util.deltaAngle( entity.angle, bestAngle );
       
-      // TODO: Don't use constants object, give it max speed and accel separately (so we can adjust max speed)
-      //       This will let us adjust speed based on our angle to the target
-      //       We'll need to support slowing down if maxSpeed is less than current speed
+      
       if ( targetDist > 0.01 ) {
         doAccel( entity, dt, entity.turn, doRotate, bestAngleDelta, Constants.TurnMaxSpeed, Constants.TurnAccel );
-        doAccel( entity, dt, entity.move, doMove, targetDist, Constants.MoveMaxSpeed, Constants.MoveAccel );
+
+        // Modulate max speed based on how long until we run into something (if we're about to crash, slow down!)
+        // let bestHitTime = Infinity;
+
+        // entities.filter( other => entity != other ).forEach( other => {
+        //   const hitTime = timeUntilHit( entity, other );
+
+        //   if ( 0 < hitTime && hitTime < bestHitTime ) {
+        //     bestHitTime = hitTime;
+        //   }
+        // } );
+
+        // const speedMult = Math.min( bestHitTime, 500 ) / 500;
+
+        const speedMult = ( Constants.TurnMaxSpeed - Math.abs( entity.turn.speed ) ) / Constants.TurnMaxSpeed;
+
+        doAccel( entity, dt, entity.move, doMove, targetDist, speedMult * Constants.MoveMaxSpeed, Constants.MoveAccel );
       }
     }
       
@@ -277,6 +299,32 @@ function getBestAngle( entity, bestEdge, targetAngle ) {
     Math.atan2( bestEdge.y2 - offsetY - entity.y, bestEdge.x2 - offsetX - entity.x ), 
     Math.atan2( bestEdge.y1 + offsetY - entity.y, bestEdge.x1 + offsetX - entity.x ),
   );
+}
+
+function timeUntilHit( a, b ) {
+  // See when ships would collide if continuing at their current direction and rate of speed
+  // This will return a negative value if the collision would have occurred in the past
+  // See https://stackoverflow.com/questions/33140999/at-what-delta-time-will-two-objects-collide
+  // (Line-Line was http://www.jeffreythompson.org/collision-detection/line-line.php)
+  const cx = a.x - b.x;
+  const cy = a.y - b.y;
+
+  const adx = Math.cos( a.angle ) * a.move.speed;
+  const ady = Math.sin( a.angle ) * a.move.speed;
+
+  const bdx = Math.cos( b.angle ) * b.move.speed;
+  const bdy = Math.sin( b.angle ) * b.move.speed;
+
+  const vx = adx - bdx;
+  const vy = ady - bdy;
+
+  const rr = a.radius + b.radius; // + buffer
+
+  const A = vx ** 2 + vy ** 2;
+  const B = 2 * ( cx * vx + cy * vy );
+  const C = cx ** 2 + cy ** 2 - rr ** 2;
+
+  return Util.solveQuadratic( A, B, C );
 }
 
 canvas.draw = ( ctx ) => {
