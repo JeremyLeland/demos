@@ -1,0 +1,413 @@
+<title>Keep distance from others while moving toward goal</title>
+<link rel="stylesheet" href="../style.css">
+
+<input style="position: absolute; bottom: 0; width: 99%" id="time" type="range" min="0" value="0" max="5000" step="1" autocomplete="off"/>
+
+<script type="module">
+
+import { Canvas } from '../src/Canvas.js';
+import * as CellGrid from '../src/CellGrid.js';
+import { Line } from '../src/Line.js';
+import * as Util from '../src/Util.js';
+import { ValuesPanel } from '../src/ValuesPanel.js';
+
+const canvas = new Canvas();
+canvas.backgroundColor = '#222';
+canvas.zoom = 1 / 20;
+canvas.scrollX = -10;
+canvas.scrollY = -10;
+
+const Constants = {
+  TurnMaxSpeed: 0.01,
+  TurnAccel: 0.0001,
+  MoveMaxSpeed: 0.005,
+  MoveAccel: 0.00001,
+  AvoidWeight: 0.01,
+  WallWeight: 0.02,
+  WallDistance: 0,
+}
+new ValuesPanel( Constants );
+
+let lastTime = 0;
+
+const timeSlider = document.getElementById( 'time' );
+timeSlider.addEventListener( 'input', e => {
+  const newTime = +timeSlider.value;
+  const dt = newTime - lastTime;
+  lastTime = newTime;
+
+  canvas.update( dt );
+  canvas.redraw();
+} );
+
+const entities = [];
+const walls = [];
+
+// for ( let i = 0; i < 10; i ++ ) {
+//   entities.push( newEntity( 0, 0, 'orange' ) );
+// }
+
+for ( let i = 0; i < 3; i ++ ) {
+  entities.push( newEntity( -3 + i * 2, 0, 'orange' ) );
+}
+
+
+updateGoal( { x: 8, y: 0 } );
+
+function newEntity( x, y, color ) {
+  return {
+    x: x,
+    y: y,
+    angle: 0,
+    turn: {
+      speed: 0,
+      accel: 0,
+    },
+    move: {
+      speed: 0,
+      accel: 0,
+    },
+    radius: 0.5, //0.2 + Math.random() * 0.2,
+    fillStyle: color,
+    target: {
+      x: 0,
+      y: 0,
+    },
+    goal: {
+      x: 0,
+      y: 0,
+    },
+  };
+}
+
+function doRotate( entity, dt ) {
+  entity.angle += entity.turn.speed * dt + 0.5 * entity.turn.accel * dt ** 2;
+  entity.turn.speed += entity.turn.accel * dt;
+}
+
+function doAccel( entity, dt, property, doFunc, distance, MaxSpeed, Accel ) {
+  // Update in phases:
+  //  1. Accelerating
+  //  2. Max speed
+  //  3. Deccelerating
+  //  4. Stopped (don't update past this)
+
+  const dir = distance < 0 ? -1 : 1;
+
+  //
+  // Accelerating
+  //
+
+  // Distance to accel from 0 to current speed + distance until target / 2 = total accel dist (and deccel dist)
+  // Use this to find max acceleration we could acheive
+
+  // TODO: Handle MaxSpeed less than current speed (slow down!)
+
+  const initialAccel = ( property.speed > MaxSpeed ? -1 : 1 ) * dir * Accel;
+
+  // d = d1 + d2
+  // Accel: v^2 = v0^2 + 2ad1
+  // Deccel:  0 = v^2 + 2( -a )d2
+  // Comes out to:
+  // v = sqrt( ad + 0.5*v0^2 )
+  const theoreticalMaxSpeed = Math.sqrt( initialAccel * distance + 0.5 * property.speed ** 2 );
+  const maxSpeed = dir * Math.min( theoreticalMaxSpeed, MaxSpeed );
+
+  const distToMaxSpeed = ( maxSpeed ** 2 - property.speed ** 2 ) / ( 2 * initialAccel );
+  const timeUntilMaxSpeed = ( maxSpeed - property.speed ) / ( initialAccel );
+  
+  if ( dt > 0 ) {
+    if ( timeUntilMaxSpeed > 0 ) {
+      property.accel = dir * Accel;
+
+      const updateTime = Math.min( timeUntilMaxSpeed, dt );
+
+      // console.log( `Acclerating for ${ updateTime } (timeUntilMaxSpeed = ${ timeUntilMaxSpeed })` );
+
+      doFunc( entity, updateTime );
+      dt -= updateTime;
+    }
+  }
+
+  //
+  // Cruising at max speed
+  //
+  if ( dt > 0 ) {
+    const brakeDist = ( 0 - maxSpeed ** 2 ) / ( -dir * 2 * Accel );
+    const distToBrake = distance - distToMaxSpeed - brakeDist;
+    const timeUntilBrake = distToBrake / property.speed;
+    
+    if ( timeUntilBrake > 0 ) {
+      property.accel = 0;
+
+      const updateTime = Math.min( timeUntilBrake, dt );
+
+      // console.log( `Cruising at ${ maxSpeed } for ${ updateTime } (timeUntilBrake = ${ timeUntilBrake })` );
+
+      doFunc( entity, updateTime );
+      dt -= updateTime;
+    }
+  }
+
+  //
+  // Deccelerating
+  //
+  if ( dt > 0 ) {
+    const timeUntilStopped = ( 0 - property.speed ) / ( -dir * Accel );
+    
+    if ( timeUntilStopped > 0 ) {
+      property.accel = -dir * Accel;
+
+      const updateTime = Math.min( timeUntilStopped, dt );
+
+      // console.log( `Deccelerating for ${ updateTime } (timeUntilStopped = ${ timeUntilStopped })` );
+
+      doFunc( entity, updateTime );
+      dt -= updateTime;
+    }
+  }
+  
+  // console.log( `After updates, dt = ${ dt } and entity = ${ JSON.stringify( entity ) }` );
+}
+
+function doMove( entity, dt ) {
+  const moveDist = entity.move.speed * dt + 0.5 * entity.move.accel * dt ** 2;
+  entity.x += Math.cos( entity.angle ) * moveDist;
+  entity.y += Math.sin( entity.angle ) * moveDist;
+  
+  entity.move.speed += entity.move.accel * dt;
+}
+
+function moveEntity( entity, dt ) {
+
+}
+
+canvas.update = ( dt ) => {
+  //
+  // Adjust targets
+  //
+
+  entities.forEach( entity => {
+    let dx = 0;
+    let dy = 0;
+
+    entities.filter( other => entity != other ).forEach( other => {
+      const cx = other.target.x - entity.target.x;
+      const cy = other.target.y - entity.target.y;
+      const angle = Math.atan2( cy, cx );
+      const dist = Math.hypot( cx, cy ) - entity.radius - other.radius;
+
+      const val = Math.min( 0, dist ) * Constants.AvoidWeight;
+        
+      dx += Math.cos( angle ) * val;
+      dy += Math.sin( angle ) * val;
+    } );
+        
+    entity.target.x += dx * dt;
+    entity.target.y += dy * dt;
+  } );
+
+  //
+  // Move toward targets
+  //
+  entities.forEach( entity => {
+
+      const tx = entity.target.x - entity.x;
+      const ty = entity.target.y - entity.y;
+      const targetAngle = Math.atan2( ty, tx );
+      const targetDist = Math.hypot( tx, ty );
+      
+      const bestAngle = targetAngle;
+      
+      const bestAngleDelta = Util.deltaAngle( entity.angle, bestAngle );
+      
+      
+      if ( targetDist > 0.01 ) {
+        doAccel( entity, dt, entity.turn, doRotate, bestAngleDelta, Constants.TurnMaxSpeed, Constants.TurnAccel );
+
+        // Modulate max speed based on how long until we run into something (if we're about to crash, slow down!)
+        let bestHitTime = Infinity;
+
+        entities.filter( other => entity != other ).forEach( other => {
+
+          // TODO: If entity is in front of other, entity's timeUntilHit other should be infinity (other is doing the hitting)
+          const hitTime = timeUntilHit( entity, other );
+
+          if ( 0 < hitTime && hitTime < bestHitTime ) {
+            bestHitTime = hitTime;
+          }
+        } );
+
+        entity.debugBestHitTime = bestHitTime;
+
+        const speedMult = Math.min( bestHitTime, 500 ) / 500;
+
+        // const speedMult = ( Constants.TurnMaxSpeed - Math.abs( entity.turn.speed ) ) / Constants.TurnMaxSpeed;
+
+        doAccel( entity, dt, entity.move, doMove, targetDist, speedMult * Constants.MoveMaxSpeed, Constants.MoveAccel );
+      }
+      
+  } );
+}
+
+function getBestAngle( entity, bestEdge, targetAngle ) {
+  const slope = bestEdge.slopeAngle;
+  const offset = Constants.WallDistance + entity.radius;
+  const offsetX = Math.cos( slope ) * offset;
+  const offsetY = Math.sin( slope ) * offset;
+
+  // NOTE: This can run into problems if offset > ( bestEdge.length / 2 ), since it inverses the line
+  
+  return Util.clampAngle( 
+    targetAngle, 
+    Math.atan2( bestEdge.y2 - offsetY - entity.y, bestEdge.x2 - offsetX - entity.x ), 
+    Math.atan2( bestEdge.y1 + offsetY - entity.y, bestEdge.x1 + offsetX - entity.x ),
+  );
+}
+
+function timeUntilHit( a, b ) {
+  // See when ships would collide if continuing at their current direction and rate of speed
+  // This will return a negative value if the collision would have occurred in the past
+  // See https://stackoverflow.com/questions/33140999/at-what-delta-time-will-two-objects-collide
+  // (Line-Line was http://www.jeffreythompson.org/collision-detection/line-line.php)
+  const cx = a.x - b.x;
+  const cy = a.y - b.y;
+
+  const adx = Math.cos( a.angle ) * a.move.speed;
+  const ady = Math.sin( a.angle ) * a.move.speed;
+
+  const bdx = Math.cos( b.angle ) * b.move.speed;
+  const bdy = Math.sin( b.angle ) * b.move.speed;
+
+  const vx = adx - bdx;
+  const vy = ady - bdy;
+
+  const rr = a.radius + b.radius; // + buffer
+
+  const A = vx ** 2 + vy ** 2;
+  const B = 2 * ( cx * vx + cy * vy );
+  const C = cx ** 2 + cy ** 2 - rr ** 2;
+
+  return Util.solveQuadratic( A, B, C );
+}
+
+canvas.draw = ( ctx ) => {
+  ctx.lineWidth = 0.002 / canvas.zoom;
+
+  ctx.strokeStyle = '#ff8';
+
+  entities.forEach( entity => drawEntity( ctx, entity ) );
+
+  
+
+}
+
+const entityPath = new Path2D();
+entityPath.moveTo( 1, 0 );
+entityPath.arc( 0, 0, 1, 2, -2 );
+entityPath.closePath();
+
+function drawEntity( ctx, entity ) {
+  ctx.translate( entity.x, entity.y );
+  ctx.rotate( entity.angle );
+  ctx.scale( entity.radius, entity.radius ); {
+    ctx.fillStyle = entity.fillStyle;
+    ctx.fill( entityPath );
+    ctx.strokeStyle = 'black';
+    ctx.stroke( entityPath );
+  }
+  ctx.scale( 1 / entity.radius, 1 / entity.radius );
+  ctx.rotate( -entity.angle );
+  ctx.translate( -entity.x, -entity.y );
+
+
+  // Draw target
+  ctx.strokeStyle = entity.fillStyle;
+
+  ctx.beginPath();
+  ctx.moveTo( entity.x, entity.y );
+  ctx.lineTo( entity.target.x, entity.target.y );
+  ctx.stroke();
+  
+  ctx.beginPath();
+  ctx.arc( entity.target.x, entity.target.y, entity.radius, 0, Math.PI * 2 );
+  ctx.stroke();
+
+  // Draw goal
+  ctx.fillStyle = ctx.strokeStyle = 'gray';
+
+  ctx.beginPath();
+  ctx.moveTo( entity.x, entity.y );
+  ctx.lineTo( entity.goal.x, entity.goal.y );
+  ctx.stroke();
+  
+  ctx.beginPath();
+  ctx.arc( entity.goal.x, entity.goal.y, 0.1, 0, Math.PI * 2 );
+  ctx.fill();
+
+  // Debug info
+  ctx.font = '0.2px Arial';
+  // ctx.textAlign = 'center';
+  // ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fffa';
+  ctx.fillText( `bestHitTime = ${ entity.debugBestHitTime }`, entity.x - 1, entity.y );
+
+  console.log( `bestHitTime = ${ entity.debugBestHitTime }` );
+}
+
+// canvas.start();
+canvas.redraw();
+
+function updateGoal( p ) {
+  entities.forEach( ( e, index ) => {
+
+    // Can use offset to have some control of where we end up relative to each other
+    // Try to avoid the lines by spacing people out a little
+
+    // Offset based on initial position
+    // const offsetX = e.target.x - e.goal.x;
+    // const offsetY = e.target.y - e.goal.y;
+
+    // Offset in a small circle
+    const angle = Math.PI * 2 * index / entities.length;
+    const dist = 0.1;
+    const offsetX = Math.cos( angle ) * dist;
+    const offsetY = Math.sin( angle ) * dist;
+
+
+    e.goal.x = p.x;
+    e.goal.y = p.y;
+
+    // Start target at goal, then spread out during updates
+    e.target.x = e.goal.x + offsetX;
+    e.target.y = e.goal.y + offsetY;
+  } );
+}
+
+canvas.pointerDown = ( p ) => {
+  if ( p.buttons == 1 ) {
+    updateGoal( p );
+  }
+  else {
+    entities.push( newEntity( p.x, p.y, 'orange' ) );
+  }
+}
+
+canvas.pointerMove = ( p ) => {
+  if ( p.buttons == 1 ) {
+    updateGoal( p );
+  }
+  else if ( p.buttons == 2 ) {
+    entities.push( newEntity( p.x, p.y, 'orange' ) );
+  }
+}
+
+canvas.pointerUp = ( p ) => {
+}
+
+// document.addEventListener( 'keydown', e => {
+//   canvas.update( 10 );
+//   canvas.redraw();
+// } );
+
+</script>
