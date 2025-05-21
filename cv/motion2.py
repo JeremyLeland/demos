@@ -3,10 +3,10 @@
 # Should give us quicker results while we tweak analysis method
 #
 
+import argparse
 import csv
-from datetime import datetime, timedelta
 import cv2
-import os
+import glob
 
 def score_movement(video_path, frame_skip=1):
   cap = cv2.VideoCapture( video_path )
@@ -79,18 +79,24 @@ def score_movement(video_path, frame_skip=1):
 
   return sorted_rows
 
-# Example usage
+def processFile( input_path ):
+  result = score_movement( input_path, 2 )
 
-input_path = '/home/iggames/Downloads/olivia sleep/monday_test1.mp4'
+  # Save to CSV
+  csv_path = input_path.replace( '.mp4', '_scores.csv' )
 
-result = score_movement( input_path, 2 )
+  print( f"\nSaving output to { csv_path }" )
 
-# Save to CSV
-csv_path = input_path.replace( '.mp4', '_scores.csv' )
+  with open( csv_path, mode='w', newline='', encoding='utf-8' ) as csv_file:
+    writer = csv.DictWriter( csv_file, fieldnames = result[ 0 ].keys() )
+    writer.writeheader()
+    writer.writerows( result )
 
-print( f"\nSaving output to { csv_path }" )
 
-with open( csv_path, mode='w', newline='', encoding='utf-8' ) as csv_file:
-  writer = csv.DictWriter( csv_file, fieldnames = result[ 0 ].keys() )
-  writer.writeheader()
-  writer.writerows( result )
+parser = argparse.ArgumentParser()
+parser.add_argument( 'files', nargs='+', help='Path to input video file(s)' )
+args = parser.parse_args()
+
+for entry in args.files:
+  for inputFile in glob.glob( entry ):
+    processFile( inputFile )
