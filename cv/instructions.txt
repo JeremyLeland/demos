@@ -1,0 +1,30 @@
+1. Create a list of videos in order
+
+find -name "*.mp4" | sort | sed -e "s/^/file '/" -e "s/$/'/" > list.txt
+
+Run this command in Terminal in the "monday night" or "tuesday night" folder (I already ran it and included resulting list.txt)
+
+2. Use ffmpeg to concatenate and reduce frame rate (time-lapse effect)
+
+
+ffmpeg -f concat -safe 0 -i list.txt -filter:v "setpts=0.01*PTS" -an output.mp4
+
+This made about a 6 minute video at 500 MB (in about 15 minutes on my desktop)
+
+Going to try setpts of 0.01666 as well (should make one minute be one second)
+
+Run this in the same folder as the list.txt (in the "monday night" or "tuesday night" folder)
+
+Explanation:
+
+    -f concat: Tells ffmpeg to concatenate files listed in list.txt.
+
+    -safe 0: Allows use of absolute or relative paths.
+
+    -filter:v "setpts=0.1*PTS": Speeds up the video by 10× (adjust 0.1 as needed).
+
+    -an: Removes audio (optional, since time-lapses often don’t need sound).
+
+    output.mp4: Your final combined, sped-up video.
+
+
