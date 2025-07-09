@@ -6,11 +6,9 @@ Run this command in Terminal in the "monday night" or "tuesday night" folder (I 
 
 2. Use ffmpeg to concatenate and reduce frame rate (time-lapse effect)
 
-
-ffmpeg -f concat -safe 0 -i list.txt -filter:v "setpts=0.01*PTS" -an output.mp4
+ffmpeg -f concat -safe 0 -i list.txt -filter:v "setpts=0.01666*PTS" -an output.mp4
 
 This made about a 6 minute video at 500 MB (in about 15 minutes on my desktop)
-
 Going to try setpts of 0.01666 as well (should make one minute be one second)
 
 Run this in the same folder as the list.txt (in the "monday night" or "tuesday night" folder)
