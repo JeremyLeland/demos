@@ -142,3 +142,31 @@ function drawPipe( ctx, pipe, x, y ) {
 
   ctx.stroke();
 }
+
+//
+// Slider
+//
+const lengthSlider = document.createElement( 'input' );
+
+Object.assign( lengthSlider.style, {
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  width: '99%',
+} );
+
+Object.assign( lengthSlider, {
+  type: 'range',
+  value: flowPath.length / 2,
+  min: 0,
+  max: flowPath.length,
+  step: 0.01,
+} );
+
+document.body.appendChild( lengthSlider );
+
+lengthSlider.addEventListener( 'input', _ => {
+  flowLength = +lengthSlider.value;
+
+  canvas.redraw();
+} );
