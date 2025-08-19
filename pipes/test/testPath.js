@@ -29,6 +29,7 @@ map[ 5 + 2 * COLS ] = 0b0011;
 map[ 5 + 1 * COLS ] = 0b0110;
 map[ 4 + 1 * COLS ] = 0b1100;
 map[ 4 + 3 * COLS ] = 0b1001;
+map[ 5 + 3 * COLS ] = 0b0011;
 
 map[ 0 + 5 * COLS ] = 0b0001;
 map[ 1 + 5 * COLS ] = 0b0010;
@@ -62,34 +63,29 @@ canvas.draw = ( ctx ) => {
   let currPipe = map[ currX + currY * COLS ];
   let end = Math.log2( currPipe & -currPipe );
   
-  for ( let i = 0; i < flow.length; i ++ ) {
-    addPath( ctx, start, end, currX, currY, Math.min( 1, flow.length - i ), i == 0 );
-    
+  addPath( ctx, start, end, currX, currY, Math.min( 1, flow.length ), true );
+
+  for ( let i = 1; i < flow.length; i ++ ) {
     const dir = offset[ end ];
     currX += dir[ 0 ];
     currY += dir[ 1 ];
     
     currPipe = map[ currX + currY * COLS ];
     
-    // TODO: Make sure next start exists for currPipe!
     start = ( end + 2 ) % 4;
 
-    const straight = ( start + 2 ) % 4;
-    if ( currPipe & ( 1 << straight ) ) {
-      end = straight;
+    if ( !( currPipe & ( 1 << start ) ) ) {
+      console.log( 'Game over!' );    // TODO: Loss condition
+      break;
     }
-    else {
-      const left = ( start + 3 ) % 4;
-      if ( currPipe & ( 1 << left ) ) {
-        end = left;
-      }
-      else {
-        const right = ( start + 1 ) % 4;
-        if ( currPipe & ( 1 << right ) ) {
-          end = right;
-        }
-      }
-    }
+
+    const straight = ( start + 2 ) % 4;   // test straight first in case it's the cross piece
+    const left     = ( start + 3 ) % 4;
+    const right    = ( start + 1 ) % 4;
+
+    end = [ straight, left, right ].find( dir => currPipe & ( 1 << dir ) );
+
+    addPath( ctx, start, end, currX, currY, Math.min( 1, flow.length - i ) );
   }
 
   ctx.stroke();
@@ -123,8 +119,6 @@ const offset = [
   [  1,  0 ], // right
 ];
 
-
-// TODO: How to handle just 1 active bit? The "start" is middle in that case, and end is only bit
 
 function addPath( path, start, end, x, y, t, newPath = false ) {
   const startX = x + ( start < 0 ? 0 : 0.5 * offset[ start ][ 0 ] );
@@ -184,7 +178,7 @@ Object.assign( lengthSlider, {
   type: 'range',
   value: flow.length,
   min: 0,
-  max: 12,
+  max: 14,
   step: 0.01,
 } );
 
