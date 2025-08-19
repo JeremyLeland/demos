@@ -1,20 +1,14 @@
 import { Canvas } from '../src/common/Canvas.js';
 import { Grid } from '../src/common/Grid.js';
 
-const canvas = new Canvas();
-canvas.backgroundColor = '#321';
-// canvas.lineWidth = 1;
-canvas.zoom = 1 / 10;
-canvas.scrollX = -1;
-canvas.scrollY = -1;
-
-const grid = new Grid( 0, 0, 8, 8 );
 
 // TODO: Should figure this out by tracing the map, we shouldn't be saving it
 const flow = {
   start: [ 1, 1 ],
   length: 7.5,
 };
+
+let mouseCol, mouseRow;
 
 const COLS = 8, ROWS = 8;
 const map = Array( COLS * ROWS ).fill( 0 );
@@ -31,10 +25,21 @@ map[ 4 + 1 * COLS ] = 0b1100;
 map[ 4 + 3 * COLS ] = 0b1001;
 map[ 5 + 3 * COLS ] = 0b0011;
 
-map[ 0 + 5 * COLS ] = 0b0001;
-map[ 1 + 5 * COLS ] = 0b0010;
-map[ 2 + 5 * COLS ] = 0b0100;
-map[ 3 + 5 * COLS ] = 0b1000;
+// Testing start pieces
+// map[ 0 + 5 * COLS ] = 0b0001;
+// map[ 1 + 5 * COLS ] = 0b0010;
+// map[ 2 + 5 * COLS ] = 0b0100;
+// map[ 3 + 5 * COLS ] = 0b1000;
+
+
+const canvas = new Canvas();
+canvas.backgroundColor = '#321';
+// canvas.lineWidth = 1;
+canvas.zoom = 1 / 9;
+canvas.scrollX = -1;
+canvas.scrollY = -1;
+
+const grid = new Grid( 0, 0, COLS - 1, ROWS - 1 );
 
 canvas.draw = ( ctx ) => {
 
@@ -70,13 +75,18 @@ canvas.draw = ( ctx ) => {
     currX += dir[ 0 ];
     currY += dir[ 1 ];
     
+    if ( currX < 0 || currX >= COLS || currY < 0 || currY >= ROWS ) {
+      console.log( 'Out of bounds!' );
+      break;    // TODO: loss condition
+    }
+
     currPipe = map[ currX + currY * COLS ];
     
     start = ( end + 2 ) % 4;
 
     if ( !( currPipe & ( 1 << start ) ) ) {
-      console.log( 'Game over!' );    // TODO: Loss condition
-      break;
+      console.log( 'Game over!' );    
+      break;    // TODO: Loss condition
     }
 
     const straight = ( start + 2 ) % 4;   // test straight first in case it's the cross piece
@@ -91,6 +101,10 @@ canvas.draw = ( ctx ) => {
   ctx.stroke();
 
 
+  // Mouse
+  ctx.lineWidth = 0.05;
+  ctx.strokeStyle = 'white';
+  ctx.strokeRect( mouseCol - 0.5, mouseRow - 0.5, 1, 1 );
 }
 
 function addCurve( path, x1, y1, cx, cy, x2, y2, t = 1 ) {
@@ -178,7 +192,7 @@ Object.assign( lengthSlider, {
   type: 'range',
   value: flow.length,
   min: 0,
-  max: 14,
+  max: 18,
   step: 0.01,
 } );
 
@@ -189,3 +203,38 @@ lengthSlider.addEventListener( 'input', _ => {
 
   canvas.redraw();
 } );
+
+//
+// Input
+//
+
+const KeyToPipe = {
+  'q': 0b1100,
+  'w': 0b1010,
+  'e': 0b0110,
+  'a': 0b0101,
+  's': 0b1111,
+  'd': 0b0101,
+  'z': 0b1001,
+  'x': 0b1010,
+  'c': 0b0011,
+};
+
+document.addEventListener( 'keydown', e => {
+  const pipe = KeyToPipe[ e.key ];
+
+  if ( pipe != undefined &&
+       0 <= mouseCol && mouseCol < COLS &&
+       0 <= mouseRow && mouseRow < ROWS ) {
+    map[ mouseCol + mouseRow * COLS ] = pipe;
+  }
+
+  canvas.redraw();
+} );
+
+canvas.pointerMove = m => {
+  mouseCol = Math.round( m.x );
+  mouseRow = Math.round( m.y );
+
+  canvas.redraw();
+};
