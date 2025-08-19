@@ -10,27 +10,30 @@ canvas.scrollY = -1;
 
 const grid = new Grid( 0, 0, 8, 8 );
 
-const flowPath = [
-  [ 1, 1 ],
-  [ 2, 1 ],
-  [ 2, 2 ],
-  [ 2, 3 ],
-  [ 3, 3 ],
-  [ 3, 2 ],
-  [ 4, 2 ],
-];
-
-let flowLength = 4.75;
+// TODO: Should figure this out by tracing the map, we shouldn't be saving it
+const flow = {
+  start: [ 1, 1 ],
+  length: 7.5,
+};
 
 const COLS = 8, ROWS = 8;
 const map = Array( COLS * ROWS ).fill( 0 );
-map[ 1 + 1 * COLS ] = 0b1010;
+map[ 1 + 1 * COLS ] = 0b1000;
 map[ 2 + 1 * COLS ] = 0b0110;
 map[ 2 + 2 * COLS ] = 0b0101;
 map[ 2 + 3 * COLS ] = 0b1001;
 map[ 3 + 3 * COLS ] = 0b0011;
 map[ 3 + 2 * COLS ] = 0b1100;
 map[ 4 + 2 * COLS ] = 0b1111;
+map[ 5 + 2 * COLS ] = 0b0011;
+map[ 5 + 1 * COLS ] = 0b0110;
+map[ 4 + 1 * COLS ] = 0b1100;
+map[ 4 + 3 * COLS ] = 0b1001;
+
+map[ 0 + 5 * COLS ] = 0b0001;
+map[ 1 + 5 * COLS ] = 0b0010;
+map[ 2 + 5 * COLS ] = 0b0100;
+map[ 3 + 5 * COLS ] = 0b1000;
 
 canvas.draw = ( ctx ) => {
 
@@ -54,17 +57,39 @@ canvas.draw = ( ctx ) => {
 
   ctx.beginPath();
 
-  for ( let i = 0; i < flowLength; i ++ ) {
-    const prev = flowPath[ i - 1 ];
-    const curr = flowPath[ i ];
-    const next = flowPath[ i + 1 ];
+  let [ currX, currY ] = flow.start;
+  let start = -1;
+  let currPipe = map[ currX + currY * COLS ];
+  let end = Math.log2( currPipe & -currPipe );
+  
+  for ( let i = 0; i < flow.length; i ++ ) {
+    addPath( ctx, start, end, currX, currY, Math.min( 1, flow.length - i ), i == 0 );
+    
+    const dir = offset[ end ];
+    currX += dir[ 0 ];
+    currY += dir[ 1 ];
+    
+    currPipe = map[ currX + currY * COLS ];
+    
+    // TODO: Make sure next start exists for currPipe!
+    start = ( end + 2 ) % 4;
 
-    const start = offset.findIndex( prev ? e => e[ 0 ] == prev[ 0 ] - curr[ 0 ] && e[ 1 ] == prev[ 1 ] - curr[ 1 ] :
-                                           e => e[ 0 ] == curr[ 0 ] - next[ 0 ] && e[ 1 ] == curr[ 1 ] - next[ 1 ] );
-    const end   = offset.findIndex( next ? e => e[ 0 ] == next[ 0 ] - curr[ 0 ] && e[ 1 ] == next[ 1 ] - curr[ 1 ] :
-                                           e => e[ 0 ] == curr[ 0 ] - prev[ 0 ] && e[ 1 ] == curr[ 1 ] - prev[ 1 ] );
-
-    addPath( ctx, start, end, curr[ 0 ], curr[ 1 ], Math.min( 1, flowLength - i ), i == 0 );
+    const straight = ( start + 2 ) % 4;
+    if ( currPipe & ( 1 << straight ) ) {
+      end = straight;
+    }
+    else {
+      const left = ( start + 3 ) % 4;
+      if ( currPipe & ( 1 << left ) ) {
+        end = left;
+      }
+      else {
+        const right = ( start + 1 ) % 4;
+        if ( currPipe & ( 1 << right ) ) {
+          end = right;
+        }
+      }
+    }
   }
 
   ctx.stroke();
@@ -102,8 +127,8 @@ const offset = [
 // TODO: How to handle just 1 active bit? The "start" is middle in that case, and end is only bit
 
 function addPath( path, start, end, x, y, t, newPath = false ) {
-  const startX = x + 0.5 * offset[ start ][ 0 ];
-  const startY = y + 0.5 * offset[ start ][ 1 ];
+  const startX = x + ( start < 0 ? 0 : 0.5 * offset[ start ][ 0 ] );
+  const startY = y + ( start < 0 ? 0 : 0.5 * offset[ start ][ 1 ] );
   const endX = x + 0.5 * offset[ end ][ 0 ];
   const endY = y + 0.5 * offset[ end ][ 1 ];
 
@@ -126,14 +151,14 @@ function drawPipe( ctx, pipe, x, y ) {
     addPath( ctx, 1, 3, x, y, 1, true );
   }
   else {
-    let whichIndex = 0;
+    let whichIndex = 1;     // fill in end first, in case there's no start
     const sideIndices = [ -1, -1 ];
       
     // Assumes exactly two active bits
     for ( let side = 0; side < 4; side ++ ) {
       if ( pipe & ( 1 << side ) ) {
         sideIndices[ whichIndex ] = side;
-        whichIndex ++;
+        whichIndex --;
       }
     }
 
@@ -157,16 +182,16 @@ Object.assign( lengthSlider.style, {
 
 Object.assign( lengthSlider, {
   type: 'range',
-  value: flowPath.length / 2,
+  value: flow.length,
   min: 0,
-  max: flowPath.length,
+  max: 12,
   step: 0.01,
 } );
 
 document.body.appendChild( lengthSlider );
 
 lengthSlider.addEventListener( 'input', _ => {
-  flowLength = +lengthSlider.value;
+  flow.length = +lengthSlider.value;
 
   canvas.redraw();
 } );
