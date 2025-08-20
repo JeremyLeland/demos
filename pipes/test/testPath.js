@@ -2,7 +2,6 @@ import { Canvas } from '../src/common/Canvas.js';
 import { Grid } from '../src/common/Grid.js';
 
 
-// TODO: Should figure this out by tracing the map, we shouldn't be saving it
 const flow = {
   start: [ 1, 1 ],
   length: 7.5,
@@ -10,7 +9,7 @@ const flow = {
 
 let mouseCol, mouseRow;
 
-const COLS = 8, ROWS = 8;
+const COLS = 10, ROWS = 7;
 const map = Array( COLS * ROWS ).fill( 0 );
 map[ 1 + 1 * COLS ] = 0b1000;
 map[ 2 + 1 * COLS ] = 0b0110;
@@ -35,8 +34,8 @@ map[ 5 + 3 * COLS ] = 0b0011;
 const canvas = new Canvas();
 canvas.backgroundColor = '#321';
 // canvas.lineWidth = 1;
-canvas.zoom = 1 / 9;
-canvas.scrollX = -1;
+canvas.zoom = 1 / 8;
+canvas.scrollX = 0.5;
 canvas.scrollY = -1;
 
 const grid = new Grid( 0, 0, COLS - 1, ROWS - 1 );
@@ -56,6 +55,8 @@ canvas.draw = ( ctx ) => {
       drawPipe( ctx, map[ col + row * COLS ], col, row );
     }
   }
+
+  // TODO: What if we create a Path2D during update() (while finding path) and display during draw?
 
   // Flow
   ctx.lineWidth = 0.3;
