@@ -118,7 +118,7 @@ export class Canvas {
     } );
   }
 
-  redraw() {
+  #doDraw() {
     this.ctx.fillStyle = this.backgroundColor;
     this.ctx.fillRect( 0, 0, this.ctx.canvas.width, this.ctx.canvas.height );
 
@@ -151,7 +151,7 @@ export class Canvas {
         this.update( now - lastTime );
         lastTime = now;
 
-        this.redraw();
+        this.#doDraw();
 
         if ( this.#reqId ) {    // make sure we didn't stop it
           this.#reqId = requestAnimationFrame( animate );
@@ -166,6 +166,13 @@ export class Canvas {
     cancelAnimationFrame( this.#reqId );
     this.#reqId = null;   // so we can check if stopped
   }
+
+  redraw() {
+    if ( !this.#reqId ) {   // don't draw if we are animated
+      this.#doDraw();
+    }
+  }
+
 
   update( dt ) {}
   draw( ctx ) {}

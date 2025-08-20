@@ -1,0 +1,231 @@
+import { Grid } from '../src/common/Grid.js';
+
+const PlaceablePipes = [
+  0b0011,
+  0b0110,
+  0b1100,
+  0b1001,
+  0b0101,
+  0b1010,
+  0b1111,
+];
+
+const StartPipes = [
+  0b0001,
+  0b0010,
+  0b0100,
+  0b1000,
+];
+
+function randomFrom( array ) {
+  return array[ Math.floor( Math.random() * array.length ) ];
+}
+
+const GameStateKey = 'pipeDreamState';
+
+
+export class Board {
+  #grid;
+  #nextPipesOffset = 0;
+
+  static fromLocalStore() {
+    const gameState = JSON.parse( localStorage.getItem( GameStateKey ) );
+
+    if ( gameState ) {
+      return new Board( gameState );
+    }
+  }
+
+  toLocalStore() {
+    localStorage.setItem( GameStateKey, JSON.stringify( this ) );
+  }
+
+  static newGame() {
+    const board = new Board();
+
+    board.cols = 10;
+    board.rows = 7;
+
+    board.#grid = new Grid( 0, 0, board.cols - 1, board.rows - 1 );
+
+    board.start = [
+      Math.floor( board.cols * ( 0.25 + 0.5 * Math.random() ) ),
+      Math.floor( board.rows * ( 0.25 + 0.5 * Math.random() ) ),
+    ];
+
+    board.map = Array( board.cols * board.rows ).fill( 0 );
+    board.map[ board.start[ 0 ] + board.start[ 1 ] * board.cols ] = randomFrom( StartPipes );
+
+    board.nextPipes = Array.from( Array( 5 ), _ => randomFrom( PlaceablePipes ) );
+
+    board.flowLength = 0;
+
+    return board;
+  }
+
+  constructor( json ) {
+    Object.assign( this, json );
+  }
+
+  update( dt ) {
+    this.#nextPipesOffset = Math.min( 0, this.#nextPipesOffset + 0.002 * dt );
+  }
+
+  draw( ctx, mouseCol, mouseRow ) {
+    // Grid
+    ctx.lineWidth = 0.05;
+    this.#grid.draw( ctx );
+
+    // Pipes
+    ctx.lineWidth = 0.5;
+    ctx.strokeStyle = 'black';
+
+    for ( let row = 0; row < this.rows; row ++ ) {
+      for ( let col = 0; col < this.cols; col ++ ) {
+        drawPipe( ctx, this.map[ col + row * this.cols ], col, row );
+      }
+    }
+
+    this.nextPipes.forEach( ( pipe, index ) => {
+      drawPipe( ctx, pipe, -1, index + this.#nextPipesOffset );
+    } );
+
+    // Flow
+    ctx.lineWidth = 0.3;
+    ctx.strokeStyle = 'dodgerblue';
+
+    ctx.beginPath();
+
+    let [ currX, currY ] = this.start;
+    let start = -1;
+    let currPipe = this.map[ currX + currY * this.cols ];
+    let end = Math.log2( currPipe & -currPipe );
+    
+    addPath( ctx, start, end, currX, currY, Math.min( 1, this.flowLength ), true );
+
+    for ( let i = 1; i < this.flowLength; i ++ ) {
+      const dir = offset[ end ];
+      currX += dir[ 0 ];
+      currY += dir[ 1 ];
+      
+      if ( currX < 0 || currX >= this.cols || currY < 0 || currY >= this.rows ) {
+        console.log( 'Out of bounds!' );
+        break;    // TODO: loss condition
+      }
+
+      currPipe = this.map[ currX + currY * this.cols ];
+      
+      start = ( end + 2 ) % 4;
+
+      if ( !( currPipe & ( 1 << start ) ) ) {
+        console.log( 'Game over!' );    
+        break;    // TODO: Loss condition
+      }
+
+      const straight = ( start + 2 ) % 4;   // test straight first in case it's the cross piece
+      const left     = ( start + 3 ) % 4;
+      const right    = ( start + 1 ) % 4;
+
+      end = [ straight, left, right ].find( dir => currPipe & ( 1 << dir ) );
+
+      addPath( ctx, start, end, currX, currY, Math.min( 1, this.flowLength - i ) );
+    }
+
+    ctx.stroke();
+
+    if ( mouseCol != undefined && mouseRow != undefined ) {
+      // Pipe preview
+      ctx.lineWidth = 0.5;
+      ctx.strokeStyle = 'black';
+
+      ctx.globalAlpha = 0.5;
+      drawPipe( ctx, this.nextPipes[ this.nextPipes.length - 1 ], mouseCol, mouseRow );
+      ctx.globalAlpha = 1;
+      
+      // Grid outline
+      ctx.lineWidth = 0.05;
+      ctx.strokeStyle = 'white';
+      ctx.strokeRect( mouseCol - 0.5, mouseRow - 0.5, 1, 1 );
+    }
+  }
+
+  playerInput( col, row ) {
+    // next pipes are drawn from top to bottom, and we are pulling from bottom
+    this.map[ col + row * this.cols ] = this.nextPipes.pop();
+    this.nextPipes.unshift( randomFrom( PlaceablePipes ) );
+
+    this.#nextPipesOffset = -1;
+  }
+}
+
+
+
+
+function addCurve( path, x1, y1, cx, cy, x2, y2, t = 1 ) {
+  if ( t < 1 ) {
+    // https://en.wikipedia.org/wiki/De_Casteljau%27s_algorithm
+    const x01 = ( 1 - t ) * x1 + t * cx;
+    const y01 = ( 1 - t ) * y1 + t * cy;
+
+    const x12 = ( 1 - t ) * cx + t * x2;
+    const y12 = ( 1 - t ) * cy + t * y2;
+
+    const x012 = ( 1 - t ) * x01 + t * x12;
+    const y012 = ( 1 - t ) * y01 + t * y12;
+
+    path.quadraticCurveTo( x01, y01, x012, y012 );
+  }
+  else {
+    path.quadraticCurveTo( cx, cy, x2, y2 );
+  }
+}
+
+const offset = [
+  [  0, -1 ], // top
+  [ -1,  0 ], // left
+  [  0,  1 ], // bottom
+  [  1,  0 ], // right
+];
+
+
+function addPath( path, start, end, x, y, t, newPath = false ) {
+  const startX = x + ( start < 0 ? 0 : 0.5 * offset[ start ][ 0 ] );
+  const startY = y + ( start < 0 ? 0 : 0.5 * offset[ start ][ 1 ] );
+  const endX = x + 0.5 * offset[ end ][ 0 ];
+  const endY = y + 0.5 * offset[ end ][ 1 ];
+
+  if ( newPath ) {
+    path.moveTo( startX, startY );
+  }
+
+  addCurve( path, startX, startY, x, y, endX, endY, t );
+}
+
+function drawPipe( ctx, pipe, x, y ) {
+  if ( pipe == 0 ) {
+    return;
+  }
+
+  ctx.beginPath();
+  
+  if ( pipe == 0b1111 ) {
+    addPath( ctx, 0, 2, x, y, 1, true );
+    addPath( ctx, 1, 3, x, y, 1, true );
+  }
+  else {
+    let whichIndex = 1;     // fill in end first, in case there's no start
+    const sideIndices = [ -1, -1 ];
+      
+    // Assumes exactly two active bits
+    for ( let side = 0; side < 4; side ++ ) {
+      if ( pipe & ( 1 << side ) ) {
+        sideIndices[ whichIndex ] = side;
+        whichIndex --;
+      }
+    }
+
+    addPath( ctx, sideIndices[ 0 ], sideIndices[ 1 ], x, y, 1, true );
+  }
+
+  ctx.stroke();
+}
