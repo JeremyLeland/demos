@@ -3,7 +3,11 @@ import { Board } from '../src/Pipes.js';
 
 let mouseCol, mouseRow;
 
-const board = Board.fromLocalStore() ?? Board.newGame();
+const board = Board.fromLocalStore() ?? new Board();
+
+window.addEventListener( 'beforeunload', _ => {
+  board.toLocalStore();
+} );
 
 const canvas = new Canvas();
 canvas.backgroundColor = '#321';
@@ -14,6 +18,8 @@ canvas.scrollY = -1;
 
 canvas.update = ( dt ) => {
   board.update( dt );
+
+  lengthSlider.value = board.flowLength;
 }
 
 canvas.draw = ( ctx ) => {
@@ -22,33 +28,59 @@ canvas.draw = ( ctx ) => {
 
 canvas.start();
 
+
 //
-// Slider
+// UI
 //
+const playButton = document.createElement( 'button' );
+
+Object.assign( playButton.style, {
+  border: 0,
+  padding: 0,
+  verticalAlign: 'super',
+} );
+
+function updatePlayButtonLabel() {
+  playButton.textContent = board.flowSpeed == 0 ? '▶️' : '⏸️';
+}
+updatePlayButtonLabel();
+
+playButton.addEventListener( 'click', _ => {
+  board.flowSpeed = board.flowSpeed == 0 ? 0.001 : 0;
+  updatePlayButtonLabel();
+} );
+
 const lengthSlider = document.createElement( 'input' );
 
 Object.assign( lengthSlider.style, {
-  position: 'absolute',
-  left: 0,
-  top: 0,
-  width: '99%',
+  width: '90%',
 } );
 
 Object.assign( lengthSlider, {
   type: 'range',
   value: board.flowLength,
   min: 0,
-  max: 18,
+  max: 50,
   step: 0.01,
 } );
-
-document.body.appendChild( lengthSlider );
 
 lengthSlider.addEventListener( 'input', _ => {
   board.flowLength = +lengthSlider.value;
 
   canvas.redraw();
 } );
+
+const ui = document.createElement( 'div' );
+Object.assign( ui.style, {
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  width: '99%',
+} );
+
+ui.appendChild( playButton );
+ui.appendChild( lengthSlider );
+document.body.appendChild( ui );
 
 
 //

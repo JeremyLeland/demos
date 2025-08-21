@@ -40,34 +40,34 @@ export class Board {
     localStorage.setItem( GameStateKey, JSON.stringify( this ) );
   }
 
-  static newGame() {
-    const board = new Board();
-
-    board.cols = 10;
-    board.rows = 7;
-
-    board.#grid = new Grid( 0, 0, board.cols - 1, board.rows - 1 );
-
-    board.start = [
-      Math.floor( board.cols * ( 0.25 + 0.5 * Math.random() ) ),
-      Math.floor( board.rows * ( 0.25 + 0.5 * Math.random() ) ),
-    ];
-
-    board.map = Array( board.cols * board.rows ).fill( 0 );
-    board.map[ board.start[ 0 ] + board.start[ 1 ] * board.cols ] = randomFrom( StartPipes );
-
-    board.nextPipes = Array.from( Array( 5 ), _ => randomFrom( PlaceablePipes ) );
-
-    board.flowLength = 0;
-
-    return board;
-  }
-
   constructor( json ) {
     Object.assign( this, json );
+
+    this.cols ??= 10;
+    this.rows ??= 7;
+
+    this.#grid = new Grid( 0, 0, this.cols - 1, this.rows - 1 );
+
+    this.map ??= Array( this.cols * this.rows ).fill( 0 );
+
+    if ( this.start == undefined ) {
+      this.start = [
+        Math.floor( this.cols * ( 0.25 + 0.5 * Math.random() ) ),
+        Math.floor( this.rows * ( 0.25 + 0.5 * Math.random() ) ),
+      ];
+
+      this.map[ this.start[ 0 ] + this.start[ 1 ] * this.cols ] = randomFrom( StartPipes );
+    }
+
+    this.nextPipes ??= Array.from( Array( 5 ), _ => randomFrom( PlaceablePipes ) );
+
+    this.flowSpeed ??= 0;
+    this.flowLength ??= 0;
   }
 
   update( dt ) {
+    this.flowLength += this.flowSpeed * dt;
+
     this.#nextPipesOffset = Math.min( 0, this.#nextPipesOffset + 0.002 * dt );
   }
 
