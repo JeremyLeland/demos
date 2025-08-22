@@ -3,7 +3,7 @@ import { Board } from '../src/Pipes.js';
 
 let mouseCol, mouseRow;
 
-const board = Board.fromLocalStore() ?? new Board();
+let board = Board.fromLocalStore() ?? new Board();
 
 window.addEventListener( 'beforeunload', _ => {
   board.toLocalStore();
@@ -41,13 +41,20 @@ Object.assign( playButton.style, {
 } );
 
 function updatePlayButtonLabel() {
-  playButton.textContent = board.flowSpeed == 0 ? '▶️' : '⏸️';
+  playButton.textContent = board.flowSpeedMultiplier == 0 ? '▶️' : '⏸️';
 }
 updatePlayButtonLabel();
 
 playButton.addEventListener( 'click', _ => {
-  board.flowSpeed = board.flowSpeed == 0 ? 0.001 : 0;
+  board.flowSpeedMultiplier = ( board.flowSpeedMultiplier + 1 ) % 2;
   updatePlayButtonLabel();
+} );
+
+const resetButton = document.createElement( 'button' );
+resetButton.textContent = 'Reset';
+
+resetButton.addEventListener( 'click', _ => {
+  board = new Board();
 } );
 
 const lengthSlider = document.createElement( 'input' );
@@ -80,6 +87,7 @@ Object.assign( ui.style, {
 
 ui.appendChild( playButton );
 ui.appendChild( lengthSlider );
+ui.appendChild( resetButton );
 document.body.appendChild( ui );
 
 

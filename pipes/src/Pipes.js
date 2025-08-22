@@ -23,9 +23,12 @@ function randomFrom( array ) {
 
 const GameStateKey = 'pipeDreamState';
 
+const FlowSpeed = 0.0005;
+const FlowDelay = 10000;
 
 export class Board {
   #grid;
+  #flowPath;
   #nextPipesOffset = 0;
 
   static fromLocalStore() {
@@ -61,12 +64,64 @@ export class Board {
 
     this.nextPipes ??= Array.from( Array( 5 ), _ => randomFrom( PlaceablePipes ) );
 
-    this.flowSpeed ??= 0;
+    this.timeUntilFlow ??= FlowDelay;
+
+    this.flowSpeedMultiplier ??= 1;
     this.flowLength ??= 0;
+
+    this.defeat ??= false;
   }
 
   update( dt ) {
-    this.flowLength += this.flowSpeed * dt;
+    if ( this.defeat ) {
+      return;
+    }
+
+    this.timeUntilFlow = Math.max( 0, this.timeUntilFlow - dt );
+
+    if ( this.timeUntilFlow == 0 ) {
+      this.flowLength += FlowSpeed * this.flowSpeedMultiplier * dt;
+
+      //
+      // TODO: Avoid excessive garbage collection by not creating Path2D object each time?
+      //
+      this.#flowPath = new Path2D();
+
+      let [ currX, currY ] = this.start;
+      let start = -1;
+      let currPipe = this.map[ currX + currY * this.cols ];
+      let end = Math.log2( currPipe & -currPipe );
+      
+      addPath( this.#flowPath, start, end, currX, currY, Math.min( 1, this.flowLength ), true );
+
+      for ( let i = 1; i < this.flowLength; i ++ ) {
+        const dir = offset[ end ];
+        currX += dir[ 0 ];
+        currY += dir[ 1 ];
+        
+        if ( currX < 0 || currX >= this.cols || currY < 0 || currY >= this.rows ) {
+          this.defeat = true;
+          break;
+        }
+
+        currPipe = this.map[ currX + currY * this.cols ];
+        
+        start = ( end + 2 ) % 4;
+
+        if ( !( currPipe & ( 1 << start ) ) ) {
+          this.defeat = true;
+          break;
+        }
+
+        const straight = ( start + 2 ) % 4;   // test straight first in case it's the cross piece
+        const left     = ( start + 3 ) % 4;
+        const right    = ( start + 1 ) % 4;
+
+        end = [ straight, left, right ].find( dir => currPipe & ( 1 << dir ) );
+
+        addPath( this.#flowPath, start, end, currX, currY, Math.min( 1, this.flowLength - i ) );
+      }
+    }
 
     this.#nextPipesOffset = Math.min( 0, this.#nextPipesOffset + 0.002 * dt );
   }
@@ -91,49 +146,24 @@ export class Board {
     } );
 
     // Flow
-    ctx.lineWidth = 0.3;
-    ctx.strokeStyle = 'dodgerblue';
-
-    ctx.beginPath();
-
-    let [ currX, currY ] = this.start;
-    let start = -1;
-    let currPipe = this.map[ currX + currY * this.cols ];
-    let end = Math.log2( currPipe & -currPipe );
-    
-    addPath( ctx, start, end, currX, currY, Math.min( 1, this.flowLength ), true );
-
-    for ( let i = 1; i < this.flowLength; i ++ ) {
-      const dir = offset[ end ];
-      currX += dir[ 0 ];
-      currY += dir[ 1 ];
-      
-      if ( currX < 0 || currX >= this.cols || currY < 0 || currY >= this.rows ) {
-        console.log( 'Out of bounds!' );
-        break;    // TODO: loss condition
-      }
-
-      currPipe = this.map[ currX + currY * this.cols ];
-      
-      start = ( end + 2 ) % 4;
-
-      if ( !( currPipe & ( 1 << start ) ) ) {
-        console.log( 'Game over!' );    
-        break;    // TODO: Loss condition
-      }
-
-      const straight = ( start + 2 ) % 4;   // test straight first in case it's the cross piece
-      const left     = ( start + 3 ) % 4;
-      const right    = ( start + 1 ) % 4;
-
-      end = [ straight, left, right ].find( dir => currPipe & ( 1 << dir ) );
-
-      addPath( ctx, start, end, currX, currY, Math.min( 1, this.flowLength - i ) );
+    if ( this.#flowPath ) {
+      ctx.lineWidth = 0.3;
+      ctx.strokeStyle = 'dodgerblue';
+      ctx.stroke( this.#flowPath );
     }
 
-    ctx.stroke();
+    if ( this.defeat ) {
+      ctx.fillStyle = '#0005';
+      ctx.fillRect( -10, -10, 30, 30 );   // not sure how big it needs to be, just make it big
 
-    if ( mouseCol != undefined && mouseRow != undefined ) {
+      ctx.font = '1px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';   // this looks wrong in FF
+      
+      ctx.fillStyle = 'white';
+      ctx.fillText( 'Game Over', 4.5, 3 );
+    }
+    else if ( mouseCol != undefined && mouseRow != undefined ) {
       // Pipe preview
       ctx.lineWidth = 0.5;
       ctx.strokeStyle = 'black';
@@ -150,11 +180,13 @@ export class Board {
   }
 
   playerInput( col, row ) {
-    // next pipes are drawn from top to bottom, and we are pulling from bottom
-    this.map[ col + row * this.cols ] = this.nextPipes.pop();
-    this.nextPipes.unshift( randomFrom( PlaceablePipes ) );
-
-    this.#nextPipesOffset = -1;
+    if ( !this.defeat ) {
+      // next pipes are drawn from top to bottom, and we are pulling from bottom
+      this.map[ col + row * this.cols ] = this.nextPipes.pop();
+      this.nextPipes.unshift( randomFrom( PlaceablePipes ) );
+      
+      this.#nextPipesOffset = -1;
+    }
   }
 }
 
