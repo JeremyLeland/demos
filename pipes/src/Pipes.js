@@ -148,6 +148,9 @@ export class Board {
       
       ctx.fillStyle = 'white';
       ctx.fillText( 'Game Over', 4.5, 3 );
+
+      ctx.font = '0.5px Arial';
+      ctx.fillText( 'Click to Continue', 4.5, 4 );
     }
     else if ( this.mouseInBounds( mouseCol, mouseRow ) ) {
       // Pipe preview

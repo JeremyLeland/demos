@@ -214,7 +214,7 @@ export class GameState {
     try {
       const state = localStorage.getItem( this.#stateKey );
       const jsonState = JSON.parse( state );
-      Object.apply( this, jsonState );
+      Object.assign( this, jsonState );
     }
     catch( e ) {
       console.log( `Error parsing existing state JSON: ${ e } ` );
