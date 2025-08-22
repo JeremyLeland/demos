@@ -1,0 +1,11 @@
+- Splash screen when board is null
+- Combined game state, including board and (maybe later) high scores
+- Persist combined state. If board is null, show splash screen
+  - Add helper function to Canvas for this? 
+  - persistState( key, stateObject )
+- Make playable basic Pipe Dream, branch it, put it on website
+  - Then work on better version
+  - More like the hacking in Bioshock
+  - Make a maze of pipes, then rotate them all randomly
+  - Instead of placing pipes from list, rotate them by clicking
+  - I think this is more fun than basic Pipe Dream gameplay

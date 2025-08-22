@@ -198,6 +198,38 @@ export class Canvas {
 
     // Don't need to update pointer position because we intentionally kept it the same
   }
+}
 
+//
+// Persisting state to localStorage
+// - Not really a canvas thing, but putting here for now because I use it a lot
+//
 
+export class GameState {
+  #stateKey;
+
+  constructor( stateKey ) {
+    this.#stateKey = stateKey;
+
+    try {
+      const state = localStorage.getItem( this.#stateKey );
+      const jsonState = JSON.parse( state );
+      Object.apply( this, jsonState );
+    }
+    catch( e ) {
+      console.log( `Error parsing existing state JSON: ${ e } ` );
+    }
+
+    window.addEventListener( 'beforeunload', _ => {
+      this.save();
+    } );
+  }
+  
+  save() {
+    localStorage.setItem( this.#stateKey, JSON.stringify( this ) );
+  }
+
+  remove() {
+    localStorage.removeItem( this.#stateKey );
+  }
 }

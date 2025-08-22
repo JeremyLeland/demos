@@ -21,8 +21,6 @@ function randomFrom( array ) {
   return array[ Math.floor( Math.random() * array.length ) ];
 }
 
-const GameStateKey = 'pipeDreamState';
-
 const FlowSpeed = 0.0005;
 const FlowDelay = 10000;
 
@@ -30,18 +28,6 @@ export class Board {
   #grid;
   #flowPath;
   #nextPipesOffset = 0;
-
-  static fromLocalStore() {
-    const gameState = JSON.parse( localStorage.getItem( GameStateKey ) );
-
-    if ( gameState ) {
-      return new Board( gameState );
-    }
-  }
-
-  toLocalStore() {
-    localStorage.setItem( GameStateKey, JSON.stringify( this ) );
-  }
 
   constructor( json ) {
     Object.assign( this, json );
@@ -158,12 +144,12 @@ export class Board {
 
       ctx.font = '1px Arial';
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';   // this looks wrong in FF
+      ctx.textBaseline = 'middle';
       
       ctx.fillStyle = 'white';
       ctx.fillText( 'Game Over', 4.5, 3 );
     }
-    else if ( mouseCol != undefined && mouseRow != undefined ) {
+    else if ( this.mouseInBounds( mouseCol, mouseRow ) ) {
       // Pipe preview
       ctx.lineWidth = 0.5;
       ctx.strokeStyle = 'black';
@@ -180,17 +166,25 @@ export class Board {
   }
 
   playerInput( col, row ) {
-    if ( !this.defeat ) {
-      // next pipes are drawn from top to bottom, and we are pulling from bottom
-      this.map[ col + row * this.cols ] = this.nextPipes.pop();
-      this.nextPipes.unshift( randomFrom( PlaceablePipes ) );
-      
-      this.#nextPipesOffset = -1;
+    if ( this.defeat ) {
+      return;
     }
+
+    if ( !this.mouseInBounds( col, row ) ) {
+      return;
+    }
+
+    // next pipes are drawn from top to bottom, and we are pulling from bottom
+    this.map[ col + row * this.cols ] = this.nextPipes.pop();
+    this.nextPipes.unshift( randomFrom( PlaceablePipes ) );
+    
+    this.#nextPipesOffset = -1;
+  }
+
+  mouseInBounds( col, row ) {
+    return 0 <= col && col < this.cols && 0 <= row && row < this.rows;
   }
 }
-
-
 
 
 function addCurve( path, x1, y1, cx, cy, x2, y2, t = 1 ) {
