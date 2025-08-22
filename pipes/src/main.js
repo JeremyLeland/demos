@@ -11,8 +11,8 @@ if ( state.board ) {
 const canvas = new Canvas();
 canvas.backgroundColor = '#321';
 // canvas.lineWidth = 1;
-canvas.zoom = 1 / 8;
-canvas.scrollX = 0.5;
+canvas.zoom = 1 / 12;
+canvas.scrollX = -1.5;
 canvas.scrollY = -1;
 
 canvas.update = ( dt ) => {
