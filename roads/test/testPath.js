@@ -193,21 +193,40 @@ function drawArrowLine( ctx, start, end, width = 0.05, length = 0.1 ) {
 
 function drawArrowCurve( ctx, road, width = 0.05, length = 0.1 ) {
 
-  for ( let t = 0; t <= 1; t += length ) {
-    const pos = quadraticBezier( t, road.start, road.control[ 0 ], road.end );
-    
-    const tangent = quadraticTangent( t, road.start, road.control[ 0 ], road.end );
-    const angle = Math.atan2( tangent[ 1 ], tangent[ 0 ] );
+  const steps = 100;
+  // const table = [ { t: 0, length: 0 } ];
+  
+  let prev = quadraticBezier( 0, road.start, road.control[ 0 ], road.end );
+  let total_distance = 0;
 
-    const cos = Math.cos( angle );
-    const sin = Math.sin( angle );
+  for ( let i = 1; i <= steps; i ++ ) {
+    const t = i / steps;
 
-    ctx.beginPath();
-    ctx.moveTo( pos[ 0 ] + width * sin, pos[ 1 ] - width * cos );
-    ctx.lineTo( pos[ 0 ] - width * sin, pos[ 1 ] + width * cos );
-    ctx.lineTo( pos[ 0 ] + length * cos, pos[ 1 ] + length * sin );
-    ctx.closePath();
-    ctx.fill();
+    const point = quadraticBezier( t, road.start, road.control[ 0 ], road.end );
+    const dist = Math.hypot( point[ 0 ] - prev[ 0 ], point[ 1 ] - prev[ 1 ] );
+    prev = point;
+
+    total_distance += dist;
+    // table.push( { t: t, length: totalLength } );
+
+    if ( total_distance > length * 3 ) { 
+      const pos = quadraticBezier( t, road.start, road.control[ 0 ], road.end );
+      
+      const tangent = quadraticTangent( t, road.start, road.control[ 0 ], road.end );
+      const angle = Math.atan2( tangent[ 1 ], tangent[ 0 ] );
+      
+      const cos = Math.cos( angle );
+      const sin = Math.sin( angle );
+      
+      ctx.beginPath();
+      ctx.moveTo( pos[ 0 ] + width * sin, pos[ 1 ] - width * cos );
+      ctx.lineTo( pos[ 0 ] - width * sin, pos[ 1 ] + width * cos );
+      ctx.lineTo( pos[ 0 ] + length * cos, pos[ 1 ] + length * sin );
+      ctx.closePath();
+      ctx.fill();
+
+      total_distance = 0;
+    }
   }
 }
 
@@ -238,7 +257,7 @@ function quadraticTangent( t, P0, P1, P2 ) {
 function cubicTangent( t, P0, P1, P2, P3 ) {
   return [ 0, 1 ].map( i => 
     ( P1[ i ] - P0[ i ] ) * 3 * ( 1 - t ) ** 2          + 
-    ( P2[ i ] - P1[ i ] ) * 3 * ( 1 - t ) ** 1 * t ** 1 + 
+    ( P2[ i ] - P1[ i ] ) * 6 * ( 1 - t ) ** 1 * t ** 1 + 
     ( P3[ i ] - P2[ i ] ) * 3                  * t ** 2
   );
 }
@@ -266,7 +285,7 @@ Object.assign( distSlider, {
 document.body.appendChild( distSlider );
 
 distSlider.addEventListener( 'input', _ => {
-  distance = +distSlider.value;
+  total_distance = +distSlider.value;
 
   canvas.redraw();
 } );
