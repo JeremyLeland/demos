@@ -13,6 +13,7 @@ const roads = {
     end: [ 3, 5 ],
     next: [
       'bottom_OUT',
+      'top_OUT',
     ],
   },
 
@@ -45,7 +46,7 @@ const roads = {
   },
 };
 
-
+const path = [ 'left_IN', 'top_OUT' ];
 
 const canvas = new Canvas();
 canvas.backgroundColor = '#123';
@@ -89,6 +90,20 @@ canvas.draw = ( ctx ) => {
         drawArrowLine( ctx, road.end, roads[ next ].start, 0.03, 0.1 );
       } );
     }
+  }
+
+  // Our path
+  ctx.fillStyle = 'cyan';
+
+  for ( let i = 0; i < path.length; i ++ ) {
+    const road = roads[ path[ i ] ];
+    const next = roads[ path[ i + 1 ] ];
+  
+    drawArrowLine( ctx, road.start, road.end, 0.2, 0.3 );
+
+    if ( next ) {
+      drawArrowLine( ctx, road.end, next.start, 0.2, 0.3 );
+    }  
   }
 }
 
