@@ -1,0 +1,3 @@
+  - Replace zoom and scroll with bounds array [ left, top, right, bottom ]
+    - Change bounds in once place instead of several scroll and zoom calls
+    - Adjust function to zoom, add functions to translate
