@@ -1,3 +1,12 @@
   - Replace zoom and scroll with bounds array [ left, top, right, bottom ]
     - Change bounds in once place instead of several scroll and zoom calls
     - Adjust function to zoom, add functions to translate
+
+  - Draw gray road lines before direction arrows
+    - Maybe this will take care of intersections for us
+    - We can add detail later with the lane markers
+
+  - Do a separate test for bezier drawing
+    - Draw with uniform steps
+    - Draw with steps based on tangent?
+    - Approximate distance based on table
