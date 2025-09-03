@@ -7,20 +7,64 @@ let distance = 0;
 
 const roads = {
   first: {
-    start: [ 5, 6 ],
-    end: [ 3, 4 ],
+    start: [ 4, 6 ],
+    end: [ 2, 4 ],
     control: [
-      [ 5, 4 ],
+      [ 4, 4 ],
     ],
   },
   second: {
-    start: [ 3, 4 ],
-    end: [ 1, 2 ],
+    start: [ 2, 4 ],
+    end: [ 0, 2 ],
     control: [
-      [ 1, 4 ],
+      [ 0, 4 ],
+    ],
+  },
+  third: {
+    start: [ 0, 2 ],
+    end: [ 2, 0 ],
+    control: [
+      [ 0, 0 ],
+    ],
+  },
+  fourth: {
+    start: [ 2, 0 ],
+    end: [ 6, 0 ],
+    control: [
+      [ 4.5, 0 ],
+    ],
+  },
+  fifth: {
+    start: [ 6, 0 ],
+    end: [ 8, 2 ],
+    control: [
+      [ 8, 0 ],
+    ],
+  },
+  sixth: {
+    start: [ 8, 2 ],
+    end: [ 8, 6 ],
+    control: [
+      [ 8, 4 ],
+    ],
+  },
+  seventh: {
+    start: [ 8, 6 ],
+    end: [ 6, 8 ],
+    control: [
+      [ 8, 8 ],
+    ],
+  },
+  eighth: {
+    start: [ 6, 8 ],
+    end: [ 4, 6 ],
+    control: [
+      [ 4, 8 ],
     ],
   },
 };
+
+const path = [ roads.first, roads.second, roads.third, roads.fourth, roads.fifth, roads.sixth, roads.seventh, roads.eighth ];
 
 
 const canvas = new Canvas();
@@ -65,8 +109,6 @@ canvas.draw = ( ctx ) => {
       drawArrowOnCurveAtTime( ctx, road, Curve.getTimeFromTable( table, length ) );
     }
   }
-
-  const path = [ roads.first, roads.second ];
 
   ctx.fillStyle = 'cyan';
 
@@ -123,7 +165,7 @@ Object.assign( distSlider, {
   type: 'range',
   value: 0,
   min: 0,
-  max: 6,
+  max: path.length * 3.5,
   step: 0.01,
 } );
 
