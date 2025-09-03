@@ -1,8 +1,8 @@
-- Splash screen when board is null
-- Combined game state, including board and (maybe later) high scores
-- Persist combined state. If board is null, show splash screen
-  - Add helper function to Canvas for this? 
-  - persistState( key, stateObject )
+- Make canvas better fill available area with the desired bounds
+  - Current zoom/scroll is awkward
+  - Can we define desired bounds?
+      - Or maybe center x/y and width/height?
+  - Then we should scale as appropriate to fit all of bounds into available area, with whatever zoom needed
 - Make playable basic Pipe Dream, branch it, put it on website
   - Then work on better version
   - More like the hacking in Bioshock
