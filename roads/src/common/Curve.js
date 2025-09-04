@@ -25,12 +25,12 @@ export function getTimeFromTable( table, length ) {
   return time;
 }
 
-export function getQuadraticBezierTable( P0, P1, P2, steps = 100 ) {
-  return getBezierTable( t => quadraticBezier( t, P0, P1, P2, steps ) );
+export function getQuadraticBezierTable( P0, P1, P2, offset = 0, steps = 100 ) {
+  return getBezierTable( t => quadraticBezier( t, P0, P1, P2, offset ), steps );
 }
 
-export function getCubicBezierTable( P0, P1, P2, P3, steps = 100 ) {
-  return getBezierTable( t => cubicBezier( t, P0, P1, P2, P3, steps ) );
+export function getCubicBezierTable( P0, P1, P2, P3, offset = 0, steps = 100 ) {
+  return getBezierTable( t => cubicBezier( t, P0, P1, P2, P3, offset ), steps );
 }
 
 function getBezierTable( func, steps = 100 ) {
@@ -53,21 +53,40 @@ function getBezierTable( func, steps = 100 ) {
   return table;
 }
 
-export function quadraticBezier( t, P0, P1, P2 ) {
-  return [ 0, 1 ].map( i => 
+export function quadraticBezier( t, P0, P1, P2, offset = 0 ) {
+  const point = [ 0, 1 ].map( i => 
     P0[ i ] *     ( 1 - t ) ** 2          +
     P1[ i ] * 2 * ( 1 - t ) ** 1 * t ** 1 +
     P2[ i ]                      * t ** 2
   );
+
+  if ( offset ) {
+    offsetPoint( point, offset, quadraticTangent( t, P0, P1, P2, P3 ) );
+  }
+
+  return point;
 }
 
-export function cubicBezier( t, P0, P1, P2, P3 ) {
-  return [ 0, 1 ].map( i => 
+export function cubicBezier( t, P0, P1, P2, P3, offset = 0 ) {
+  const point = [ 0, 1 ].map( i => 
     P0[ i ] *     ( 1 - t ) ** 3          +
     P1[ i ] * 3 * ( 1 - t ) ** 2 * t ** 1 +
     P2[ i ] * 3 * ( 1 - t ) ** 1 * t ** 2 +
     P3[ i ]                      * t ** 3
   );
+
+  if ( offset ) {
+    offsetPoint( point, offset, cubicTangent( t, P0, P1, P2, P3 ) );
+  }
+
+  return point;
+}
+
+function offsetPoint( point, offset, tangent ) {
+  const angle = Math.atan2( tangent[ 1 ], tangent[ 0 ] );
+    
+  point[ 0 ] -= offset * Math.sin( angle );
+  point[ 1 ] += offset * Math.cos( angle );
 }
 
 export function quadraticTangent( t, P0, P1, P2 ) {

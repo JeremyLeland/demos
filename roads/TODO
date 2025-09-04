@@ -6,7 +6,7 @@
     - Maybe this will take care of intersections for us
     - We can add detail later with the lane markers
 
-  - Do a separate test for bezier drawing
-    - Draw with uniform steps
-    - Draw with steps based on tangent?
-    - Approximate distance based on table
+Parallel bezier curves may not be feasible
+  - Seems like the gaps won't be uniform
+  - Better to define one curve for the road, then offsets from the tangent for the lanes
+  - Will need different distance tables per lane eventually
