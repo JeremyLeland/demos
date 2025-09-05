@@ -54,13 +54,15 @@ const roads = {
   },
 };
 
+const path = [ roads.first_NORTH, roads.first_to_A, roads.A_EAST, roads.A_to_second, roads.second_NORTH ];
+
 const canvas = new Canvas();
 canvas.backgroundColor = '#123';
-canvas.zoom = 1 / 10;
+canvas.zoom = 1 / 14;
 canvas.scrollX = -1;
 canvas.scrollY = -1;
 
-const grid = new Grid( 0, 0, 8, 8 );
+const grid = new Grid( 0, 0, 12, 12 );
 
 canvas.draw = ( ctx ) => {
 
@@ -92,6 +94,21 @@ canvas.draw = ( ctx ) => {
   }
 
   // TODO: Draw at distance along path
+  ctx.fillStyle = 'cyan';
+  
+  let partialDistance = distance;
+
+  for ( let i = 0; i < path.length; i ++ ) { 
+    const length = getLength( path[ i ] );
+
+    if ( partialDistance > length ) {
+      partialDistance -= length;
+    }
+    else {
+      drawOnRoadAtDistance( ctx, path[ i ], partialDistance, drawArrow );
+      break;
+    }
+  }
 
   ctx.lineWidth = 0.01;
   grid.draw( ctx, '#fffa' );
@@ -189,6 +206,68 @@ function drawOnRoadAtDistance( ctx, road, distance, drawFunc ) {
   }
 }
 
+function getLength( road ) {
+  if ( road.control ) {
+    const v0 = normalize( [ 0, 1 ].map( i => road.start[ i ] - road.control[ i ] ) );
+    const v1 = normalize( [ 0, 1 ].map( i => road.end[ i ] - road.control[ i ] ) );
+
+    const radius = Math.hypot( ...[ 0, 1 ].map( i => road.start[ i ] - road.control[ i ] ) );
+
+    const dot = v0[ 0 ] * v1[ 0 ] + v0[ 1 ] * v1[ 1 ];
+    const angleBetween = Math.acos( dot )
+
+    // Ensure angle is not 0 or PI (no arc possible)
+    if ( angleBetween <= 0.0001 || Math.abs( Math.PI - angleBetween ) <= 0.0001 ) {
+      debugger;   // No arc, straight corner
+    }
+
+
+    // I think this part is if the radius is shorter than vector?
+    const tangentLen = radius / Math.tan( angleBetween / 2 );
+
+    const start = [ 0, 1 ].map( i => road.control[ i ] + v0[ i ] * tangentLen );
+    const end = [ 0, 1 ].map( i => road.control[ i ] + v1[ i ] * tangentLen );
+
+    const bisector = normalize( [ v0[ 0 ] + v1[ 0 ], v0[ 1 ] + v1[ 1 ] ] );
+
+
+    // FIXME: What is orientation supposed to do here? It's causing problems so far
+    //        Seems to be the opposite of whether it is clockwise, but that doesn't
+    //        seem to effect where the center is
+    // Rotate bisector 90 degrees to find center direction
+    const cross = v0[ 0 ] * v1[ 1 ] - v0[ 1 ] * v1[ 0 ];
+    // const orientation = cross < 0 ? -1 : 1;
+
+
+    const centerDistance = radius / Math.sin( angleBetween / 2 );
+
+
+    const center = [
+      road.control[ 0 ] + bisector[ 0 ] * centerDistance,// * orientation,
+      road.control[ 1 ] + bisector[ 1 ] * centerDistance,// * orientation,
+    ];
+
+    // Compute start and end angles
+    // These seem off when bigger radius
+    const startAngle = Math.atan2( start[ 1 ] - center[ 1 ], start[ 0 ] - center[ 0 ] );
+    const endAngle = Math.atan2( end[ 1 ] - center[ 1 ], end[ 0 ] - center[ 0 ] );
+
+    // Determine sweep direction
+    const clockwise = cross < 0;
+
+    // Compute angle at distance
+    let sweepAngle = endAngle - startAngle;
+    if (clockwise && sweepAngle < 0) sweepAngle += 2 * Math.PI;
+    if (!clockwise && sweepAngle > 0) sweepAngle -= 2 * Math.PI;
+
+
+    return Math.abs( sweepAngle * radius );
+  }
+  else {
+    return Math.hypot( road.end[ 0 ] - road.start[ 0 ], road.end[ 1 ] - road.start[ 1 ] );
+  }
+}
+
 function drawArrow( ctx, pos, angle, width = 0.15, length = 0.3 ) {
   const cos = Math.cos( angle );
   const sin = Math.sin( angle );
@@ -218,7 +297,7 @@ Object.assign( distSlider, {
   type: 'range',
   value: 0,
   min: 0,
-  max: 4,
+  max: 10,
   step: 0.01,
 } );
 

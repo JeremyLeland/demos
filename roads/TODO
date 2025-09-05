@@ -10,3 +10,21 @@ Parallel bezier curves may not be feasible
   - Seems like the gaps won't be uniform
   - Better to define one curve for the road, then offsets from the tangent for the lanes
   - Will need different distance tables per lane eventually
+
+What if we forget bezier curves and just do lines and arcs?
+  - Arcs can be precisely Parallel
+  - Maybe easier to calculate distance on?
+  - A simple city could be made up of a grid, with arcs for the turns between
+  - Lines would just be start/end, arcs would be start/end/radius
+  - Can tackle more interesting street curves in the sequal
+
+Another option: fuck all this and just do lines. Lots of lines. Lines are easy.
+  - Can build lines once and do quick math on everything
+  - Make curves of lines
+
+Use vector library for normalizing and addition
+
+Define "roads" as logical, named roadways. 
+Automatically figure out intersections with other roads.
+Build routes from that, which include arcs to turn at intersections.
+Take into account lanes.
