@@ -1,7 +1,7 @@
 import { Canvas } from '../src/common/Canvas.js';
 import { Grid } from '../src/common/Grid.js';
 
-let stepLength = 0.1;
+let distance = 1;
 
 // There's a difference between what we need to know to draw the roads 
 // and what we need to know to navigate them.
@@ -56,6 +56,9 @@ const routes = {
   },
 };
 
+
+const path = [ routes.first_NORTH, routes.first_to_A, routes.A_EAST, routes.A_to_second, routes.second_NORTH ];
+
 const canvas = new Canvas();
 canvas.backgroundColor = '#123';
 canvas.zoom = 1 / 14;
@@ -68,56 +71,40 @@ canvas.draw = ( ctx ) => {
 
   for ( const road of Object.values( routes ) ) {
 
-    const points = road.control ? getArcPoints( road.start, road.control, road.end, stepLength ) : [ road.start, road.end ];
+    const points = road.control ? getArcPoints( road.start, road.control, road.end ) : [ road.start, road.end ];
 
-    //
     // Stroke to debug
-    //
     ctx.lineWidth = 0.9;
-    // ctx.lineCap = 'square';
     ctx.strokeStyle = 'gray';
 
     ctx.beginPath();
     points.forEach( p => ctx.lineTo( ...p ) );
     ctx.stroke();
 
-    //
     // Arrows to show direction
-    //
     ctx.fillStyle = 'yellow';
 
-    const SPACING = 0.5;
-    let dist_until_next = 0;
+    for ( let length = 0; length < 8; length += 0.5 ) {
+      drawOnPointsAtDistance( ctx, points, length, drawArrow );
+    }
+  }
 
-    for ( let i = 1; i < points.length; i ++ ) {
-      const A = points[ i - 1 ];
-      const B = points[ i ];
+  // Draw at distance along path
+  ctx.fillStyle = 'cyan';
+  
+  let remainingDistance = distance;
 
-      const length = Math.hypot( B[ 0 ] - A[ 0 ], B[ 1 ] - A[ 1 ] );
+  for ( let i = 0; i < path.length; i ++ ) { 
+    const points = path[ i ].control ? getArcPoints( path[ i ].start, path[ i ].control, path[ i ].end ) : [ path[ i ].start, path[ i ].end ];
 
-      const stepsWithin = Math.ceil( length / SPACING );
+    const length = getLength( points );
 
-      let partial_dist = 0;
-      for ( let j = 0; j < stepsWithin; j ++ ) {
-
-        if ( partial_dist + dist_until_next < length ) {
-          const normalized_dist = ( partial_dist + dist_until_next ) / length;
-          const point = [
-            A[ 0 ] + normalized_dist * ( B[ 0 ] - A[ 0 ] ),
-            A[ 1 ] + normalized_dist * ( B[ 1 ] - A[ 1 ] ),
-          ];
-
-          const angle = Math.atan2( B[ 1 ] - A[ 1 ], B[ 0 ] - A[ 0 ] );
-
-          drawArrow( ctx, point, angle );
-
-          partial_dist += dist_until_next;
-          dist_until_next = SPACING;
-        }
-        else {
-          dist_until_next -= length - partial_dist;
-        }
-      }
+    if ( remainingDistance > length ) {
+      remainingDistance -= length;
+    }
+    else {
+      drawOnPointsAtDistance( ctx, points, remainingDistance, drawArrow );
+      break;
     }
   }
 
@@ -128,6 +115,44 @@ canvas.draw = ( ctx ) => {
 function normalize( v ) {
   const len = Math.hypot( ...v );
   return v.map( e => e / len );
+}
+
+function getLength( points ) {
+  let length = 0;
+
+  for ( let i = 1; i < points.length; i ++ ) {
+    const A = points[ i - 1 ];
+    const B = points[ i ];
+
+    length += Math.hypot( B[ 0 ] - A[ 0 ], B[ 1 ] - A[ 1 ] );
+  }
+
+  return length;
+}
+
+function drawOnPointsAtDistance( ctx, points, distance, drawFunc ) {
+  for ( let i = 1; i < points.length; i ++ ) {
+    const A = points[ i - 1 ];
+    const B = points[ i ];
+
+    const length = Math.hypot( B[ 0 ] - A[ 0 ], B[ 1 ] - A[ 1 ] );
+
+    if ( distance < length ) {
+      const normalized_dist = distance / length;
+      const point = [
+        A[ 0 ] + normalized_dist * ( B[ 0 ] - A[ 0 ] ),
+        A[ 1 ] + normalized_dist * ( B[ 1 ] - A[ 1 ] ),
+      ];
+
+      const angle = Math.atan2( B[ 1 ] - A[ 1 ], B[ 0 ] - A[ 0 ] );
+
+      drawFunc( ctx, point, angle );
+      break;
+    }
+    else {
+      distance -= length;
+    }
+  }
 }
 
 function getArcPoints( P0, P1, P2, stepLength = 0.1 ) {
@@ -234,16 +259,16 @@ Object.assign( distSlider.style, {
 
 Object.assign( distSlider, {
   type: 'range',
-  value: stepLength,
-  min: 0.1,
-  max: 1,
+  value: distance,
+  min: 0,
+  max: 10,
   step: 0.01,
 } );
 
 document.body.appendChild( distSlider );
 
 distSlider.addEventListener( 'input', _ => {
-  stepLength = +distSlider.value;
+  distance = +distSlider.value;
 
   canvas.redraw();
 } );
