@@ -15,7 +15,8 @@ What if we forget bezier curves and just do lines and arcs?
   - Arcs can be precisely Parallel
   - Maybe easier to calculate distance on?
   - A simple city could be made up of a grid, with arcs for the turns between
-  - Lines would just be start/end, arcs would be start/end/radius
+  - Lines would just be start/end, arcs would be center, radius, startAngle, endAngle
+    - Would generate arc info once when linking lines together
   - Can tackle more interesting street curves in the sequal
 
 Another option: fuck all this and just do lines. Lots of lines. Lines are easy.
