@@ -2,39 +2,89 @@ import { Canvas } from '../src/common/Canvas.js';
 import { Grid } from '../src/common/Grid.js';
 
 let distance = 0;
+let playerRoadName = 'first_NORTH';
+let playerDistance = 1;
 
 const roads = {
   A_EAST: {
-    start: [ 4, 4 ],
-    end: [ 6, 4 ],
+    start: [ 3, 6 ],
+    end: [ 5, 6 ],
   },
   A_WEST: {
-    start: [ 6, 3 ],
-    end: [ 4, 3 ],
-  },
-  first_NORTH: {
-    start: [ 3, 7 ],
+    start: [ 5, 5 ],
     end: [ 3, 5 ],
   },
-  first_SOUTH: {
-    start: [ 2, 5 ],
+  B_EAST: {
+    start: [ 3, 11 ],
+    end: [ 9, 11 ],
+  },
+  B_WEST: {
+    start: [ 9, 10 ],
+    end: [ 3, 10 ],
+  },
+  first_NORTH: {
+    start: [ 2, 9 ],
     end: [ 2, 7 ],
   },
-  second_NORTH: {
-    start: [ 8, 2 ],
-    end: [ 8, 0 ],
+  first_SOUTH: {
+    start: [ 1, 7 ],
+    end: [ 1, 9 ],
   },
-  second_SOUTH: {
-    start: [ 7, 0 ],
+  second_NORTH: {
+    start: [ 7, 4 ],
     end: [ 7, 2 ],
   },
+  second_SOUTH: {
+    start: [ 6, 2 ],
+    end: [ 6, 4 ],
+  },
+  // TODO: Remove this and do a half-circle link to third street
+  short_EAST: {
+    start: [ 8, 1 ],
+    end: [ 9, 1 ],
+  },
+  short_WEST: {
+    start: [ 9, 0 ],
+    end: [ 8, 0 ],
+  },
+  third_NORTH: {
+    start: [ 11, 9 ],
+    end: [ 11, 2 ],
+  },
+  third_SOUTH: {
+    start: [ 10, 2 ],
+    end: [ 10, 9 ],
+  },
+  // diagonal: {
+  //   start: [ 5, 10 ],
+  //   end: [ 4, 9 ],
+  // },
 };
 
+joinRoads( 'B_WEST', 'first_NORTH' );
 joinRoads( 'first_NORTH', 'A_EAST' );
 joinRoads( 'A_EAST', 'second_NORTH' );
+joinRoads( 'second_NORTH', 'short_EAST' );
+joinRoads( 'short_EAST', 'third_SOUTH' );
+joinRoads( 'third_SOUTH', 'B_WEST' );
 
+joinRoads( 'B_EAST', 'third_NORTH' );
+joinRoads( 'third_NORTH', 'short_WEST' );
+joinRoads( 'short_WEST', 'second_SOUTH' );
 joinRoads( 'second_SOUTH', 'A_WEST' );
 joinRoads( 'A_WEST', 'first_SOUTH' );
+joinRoads( 'first_SOUTH', 'B_EAST' );
+
+
+// TODO: Try to join arbitrary roads and look good (if possible)
+
+// joinRoads( 'diagonal', 'first_NORTH' );
+
+console.log( roads );
+
+//
+// TODO: Join parallel roads with a half circle
+//
 
 function joinRoads( A, B ) {
   const road1 = roads[ A ];
@@ -42,10 +92,14 @@ function joinRoads( A, B ) {
 
   const newName = `${ A }_to_${ B }`;
 
+  road1.next ??= [];
+  road1.next.push( newName );
+
   roads[ newName ] = getArcBetweenLines( ...road1.start, ...road1.end, ...road2.start, ...road2.end );
+  roads[ newName ].next = [ B ];
 }
 
-const path = [ roads.first_NORTH, roads.first_NORTH_to_A_EAST, roads.A_EAST, roads.A_EAST_to_second_NORTH, roads.second_NORTH ];
+// const path = [ roads.first_NORTH, roads.first_NORTH_to_A_EAST, roads.A_EAST, roads.A_EAST_to_second_NORTH, roads.second_NORTH ];
 
 const canvas = new Canvas();
 canvas.backgroundColor = '#123';
@@ -84,16 +138,20 @@ canvas.draw = ( ctx ) => {
   // TODO: Draw at distance along path
   ctx.fillStyle = 'cyan';
   
-  let partialDistance = distance;
+  let partialDistance = playerDistance + distance;
+  let partialRoadName = playerRoadName;
 
-  for ( let i = 0; i < path.length; i ++ ) { 
-    const length = getLength( path[ i ] );
+  for ( let i = 0; i < 100; i ++ ) {
+    const road = roads[ partialRoadName ];
+
+    const length = getLength( road );
 
     if ( partialDistance > length ) {
       partialDistance -= length;
+      partialRoadName = road.next[ 0 ];
     }
     else {
-      drawOnRoadAtDistance( ctx, path[ i ], partialDistance, drawArrow );
+      drawOnRoadAtDistance( ctx, road, partialDistance, drawArrow );
       break;
     }
   }
@@ -258,7 +316,7 @@ Object.assign( distSlider, {
   type: 'range',
   value: 0,
   min: 0,
-  max: 10,
+  max: 100,
   step: 0.01,
 } );
 
