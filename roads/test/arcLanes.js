@@ -2,8 +2,49 @@ import { Canvas } from '../src/common/Canvas.js';
 import { Grid } from '../src/common/Grid.js';
 
 let distance = 0;
-let playerRoadName = 'first_NORTH';
-let playerDistance = 1;
+
+const players = [
+  {
+    color: 'red',
+    roadName: 'first_NORTH',
+    roadDistance: 1,
+  },
+  {
+    color: 'orange',
+    roadName: 'first_SOUTH',
+    roadDistance: 0.5,
+  },
+  {
+    color: 'lime',
+    roadName: 'short_WEST',
+    roadDistance: 0,
+  },
+  {
+    color: 'cyan',
+    roadName: 'short_EAST',
+    roadDistance: 0.5,
+  },
+  {
+    color: 'purple',
+    roadName: 'third_NORTH',
+    roadDistance: 4,
+  },
+  {
+    color: 'brown',
+    roadName: 'third_SOUTH',
+    roadDistance: 2,
+  },
+  {
+    color: 'white',
+    roadName: 'B_EAST',
+    roadDistance: 1,
+  },
+  {
+    color: 'black',
+    roadName: 'B_WEST',
+    roadDistance: 2.5,
+  },
+];
 
 const roads = {
   A_EAST: {
@@ -135,26 +176,28 @@ canvas.draw = ( ctx ) => {
     }
   }
 
-  // TODO: Draw at distance along path
-  ctx.fillStyle = 'cyan';
+  // Draw at distance along path
+  players.forEach( player => {
+    let partialDistance = player.roadDistance + distance;
+    let partialRoadName = player.roadName;
+
+    for ( let i = 0; i < 100; i ++ ) {
+      const road = roads[ partialRoadName ];
+
+      const length = getLength( road );
+
+      if ( partialDistance > length ) {
+        partialDistance -= length;
+        partialRoadName = road.next[ 0 ];
+      }
+      else {
+        ctx.fillStyle = player.color;
+        drawOnRoadAtDistance( ctx, road, partialDistance, drawArrow );
+        break;
+      }
+    }
+  } );
   
-  let partialDistance = playerDistance + distance;
-  let partialRoadName = playerRoadName;
-
-  for ( let i = 0; i < 100; i ++ ) {
-    const road = roads[ partialRoadName ];
-
-    const length = getLength( road );
-
-    if ( partialDistance > length ) {
-      partialDistance -= length;
-      partialRoadName = road.next[ 0 ];
-    }
-    else {
-      drawOnRoadAtDistance( ctx, road, partialDistance, drawArrow );
-      break;
-    }
-  }
 
   ctx.lineWidth = 0.01;
   grid.draw( ctx, '#fffa' );
