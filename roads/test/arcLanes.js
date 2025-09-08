@@ -20,19 +20,6 @@ const roads = {
     start: [ 2, 5 ],
     end: [ 2, 7 ],
   },
-  first_to_A: {
-    center: [ 4, 5 ],
-    radius: 1,
-    startAngle: 3.141592653589793,
-    endAngle: -1.5707963267948966,
-  },
-  A_to_first: {
-    center: [ 4, 5 ],
-    radius: 2,
-    startAngle: -1.5707963267948966,
-    endAngle: 3.141592653589793,
-    counterclockwise: true,
-  },
   second_NORTH: {
     start: [ 8, 2 ],
     end: [ 8, 0 ],
@@ -41,22 +28,24 @@ const roads = {
     start: [ 7, 0 ],
     end: [ 7, 2 ],
   },
-  A_to_second: {
-    center: [ 6, 2 ],
-    radius: 2,
-    startAngle: 1.5707963267948966,
-    endAngle: 0,
-    counterclockwise: 1,
-  },
-  second_to_A: {
-    center: [ 6, 2 ],
-    radius: 1,
-    startAngle: 0,
-    endAngle: 1.5707963267948966,
-  },
 };
 
-const path = [ roads.first_NORTH, roads.first_to_A, roads.A_EAST, roads.A_to_second, roads.second_NORTH ];
+joinRoads( 'first_NORTH', 'A_EAST' );
+joinRoads( 'A_EAST', 'second_NORTH' );
+
+joinRoads( 'second_SOUTH', 'A_WEST' );
+joinRoads( 'A_WEST', 'first_SOUTH' );
+
+function joinRoads( A, B ) {
+  const road1 = roads[ A ];
+  const road2 = roads[ B ];
+
+  const newName = `${ A }_to_${ B }`;
+
+  roads[ newName ] = getArcBetweenLines( ...road1.start, ...road1.end, ...road2.start, ...road2.end );
+}
+
+const path = [ roads.first_NORTH, roads.first_NORTH_to_A_EAST, roads.A_EAST, roads.A_EAST_to_second_NORTH, roads.second_NORTH ];
 
 const canvas = new Canvas();
 canvas.backgroundColor = '#123';
@@ -154,98 +143,72 @@ function drawOnRoadAtDistance( ctx, road, distance, drawFunc ) {
 }
 
 // TODO: Use this code instead to generate arcs between two lines
-function getArcBetweenLines( A, B ) {
-  if ( road.control ) {
-    const v0 = normalize( [ 0, 1 ].map( i => road.start[ i ] - road.control[ i ] ) );
-    const v1 = normalize( [ 0, 1 ].map( i => road.end[ i ] - road.control[ i ] ) );
+function getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4 ) {
 
-    const radius = Math.hypot( ...[ 0, 1 ].map( i => road.start[ i ] - road.control[ i ] ) );
+  // Find intersection between lines, use this as control point
+  const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
 
-    const dot = v0[ 0 ] * v1[ 0 ] + v0[ 1 ] * v1[ 1 ];
-    const angleBetween = Math.acos( dot )
-
-    // Ensure angle is not 0 or PI (no arc possible)
-    if ( angleBetween <= 0.0001 || Math.abs( Math.PI - angleBetween ) <= 0.0001 ) {
-      debugger;   // No arc, straight corner
-    }
-
-
-    // I think this part is if the radius is shorter than vector?
-    const tangentLen = radius / Math.tan( angleBetween / 2 );
-
-    const start = [ 0, 1 ].map( i => road.control[ i ] + v0[ i ] * tangentLen );
-    const end = [ 0, 1 ].map( i => road.control[ i ] + v1[ i ] * tangentLen );
-
-    const bisector = normalize( [ v0[ 0 ] + v1[ 0 ], v0[ 1 ] + v1[ 1 ] ] );
-
-
-    // FIXME: What is orientation supposed to do here? It's causing problems so far
-    //        Seems to be the opposite of whether it is clockwise, but that doesn't
-    //        seem to effect where the center is
-    // Rotate bisector 90 degrees to find center direction
-    const cross = v0[ 0 ] * v1[ 1 ] - v0[ 1 ] * v1[ 0 ];
-    // const orientation = cross < 0 ? -1 : 1;
-
-
-    const centerDistance = radius / Math.sin( angleBetween / 2 );
-
-
-    const center = [
-      road.control[ 0 ] + bisector[ 0 ] * centerDistance,// * orientation,
-      road.control[ 1 ] + bisector[ 1 ] * centerDistance,// * orientation,
-    ];
-
-    // Compute start and end angles
-    // These seem off when bigger radius
-    const startAngle = Math.atan2( start[ 1 ] - center[ 1 ], start[ 0 ] - center[ 0 ] );
-    const endAngle = Math.atan2( end[ 1 ] - center[ 1 ], end[ 0 ] - center[ 0 ] );
-
-    console.log( {
-      center: center,
-      radius: radius,
-      startAngle: startAngle,
-      endAngle: endAngle,
-    } );
-
-    // Determine sweep direction
-    // TODO: Swap start/end angle if clockwise
-    const clockwise = cross < 0;
-
-    // Compute angle at distance
-    let sweepAngle = endAngle - startAngle;
-    if (clockwise && sweepAngle < 0) sweepAngle += 2 * Math.PI;
-    if (!clockwise && sweepAngle > 0) sweepAngle -= 2 * Math.PI;
-
-
-    const arcLength = Math.abs( sweepAngle * radius );
-
-    // Don't draw if outside arc length
-    if ( 0 <= distance && distance <= arcLength ) {
-      const angleOffset = ( distance / radius ) * (clockwise ? 1 : -1);
-      const angleAtD = startAngle + angleOffset;
-
-      // Final point
-      const pos = [
-        center[ 0 ] + radius * Math.cos(angleAtD),
-        center[ 1 ] + radius * Math.sin(angleAtD),
-      ];
-
-      drawFunc( ctx, pos, angleAtD + (clockwise ? 1 : -1) * Math.PI / 2 );
-    }
+  if ( D == 0 ) {
+    console.log( `Lines ${ x1 },${ y1 } -> ${ x2 },${ y2 } and ${ x3 },${ y3 } -> ${ x4 },${ y4 } are parallel, no arc possible` );
+    return;
   }
-  else {
-    const total_dist = Math.hypot( road.end[ 0 ] - road.start[ 0 ], road.end[ 1 ] - road.start[ 1 ] );
 
-    if ( 0 <= distance && distance <= total_dist ) {
-      const pos = [ 0, 1 ].map( 
-        i => road.start[ i ] + ( road.end[ i ] - road.start[ i ] ) * ( distance / total_dist )
-      );
-      
-      const angle = Math.atan2( road.end[ 1 ] - road.start[ 1 ], road.end[ 0 ] - road.start[ 0 ] );
-      
-      drawFunc( ctx, pos, angle );
-    }
+  const uA = ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D;
+  // const uB = ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D;
+
+  const intersection = [
+    x1 + ( x2 - x1 ) * uA,
+    y1 + ( y2 - y1 ) * uA,
+  ];
+
+  const v0 = normalize( [ x2 - intersection[ 0 ], y2 - intersection[ 1 ] ] );
+  const v1 = normalize( [ x3 - intersection[ 0 ], y3 - intersection[ 1 ] ] );
+
+  // const radius = Math.hypot( ...[ 0, 1 ].map( i => road.start[ i ] - road.control[ i ] ) );
+
+  const dot = v0[ 0 ] * v1[ 0 ] + v0[ 1 ] * v1[ 1 ];
+  const angleBetween = Math.acos( dot )
+
+  // Ensure angle is not 0 or PI (no arc possible)
+  if ( angleBetween <= 0.0001 || Math.abs( Math.PI - angleBetween ) <= 0.0001 ) {
+    console.log( `Lines parallel, no arc possible (a different way than above?)` );
+    return;
   }
+
+  const dist = Math.hypot( x2 - intersection[ 0 ], y2 - intersection[ 1 ] );  // NOTE: not normalized version above
+  const radius = dist / ( Math.tan( angleBetween / 2 ) );
+
+  const start = [ 0, 1 ].map( i => intersection[ i ] + v0[ i ] * radius );
+  const end = [ 0, 1 ].map( i => intersection[ i ] + v1[ i ] * radius );
+
+  const bisector = normalize( [ v0[ 0 ] + v1[ 0 ], v0[ 1 ] + v1[ 1 ] ] );
+
+  // FIXME: What is orientation supposed to do here? It's causing problems so far
+  //        Seems to be the opposite of whether it is clockwise, but that doesn't
+  //        seem to effect where the center is
+  // Rotate bisector 90 degrees to find center direction
+  const cross = v0[ 0 ] * v1[ 1 ] - v0[ 1 ] * v1[ 0 ];
+  // const orientation = cross < 0 ? -1 : 1;
+
+  const centerDistance = radius / Math.sin( angleBetween / 2 );
+
+
+  const center = [
+    intersection[ 0 ] + bisector[ 0 ] * centerDistance,// * orientation,
+    intersection[ 1 ] + bisector[ 1 ] * centerDistance,// * orientation,
+  ];
+
+  // Compute start and end angles
+  const startAngle = Math.atan2( start[ 1 ] - center[ 1 ], start[ 0 ] - center[ 0 ] );
+  const endAngle = Math.atan2( end[ 1 ] - center[ 1 ], end[ 0 ] - center[ 0 ] );
+
+  return {
+    center: center,
+    radius: radius,
+    startAngle: startAngle,
+    endAngle: endAngle,
+    counterclockwise: cross > 0,
+  };
 }
 
 function getLength( road ) {
