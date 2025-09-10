@@ -92,7 +92,10 @@ export function getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4, ctx ) {
     //        Seems to be the opposite of whether it is clockwise, but that doesn't
     //        seem to effect where the center is
     // Rotate bisector 90 degrees to find center direction
-    const cross = v0[ 0 ] * v1[ 1 ] - v0[ 1 ] * v1[ 0 ];
+    const r0 = normalize( [ x2 - x1, y2 - y1 ] );
+    const r1 = normalize( [ x4 - x3, y4 - y3 ] );
+
+    const cross = r0[ 0 ] * r1[ 1 ] - r0[ 1 ] * r1[ 0 ];
     // const orientation = cross < 0 ? -1 : 1;
 
     const centerDistance = radius / Math.sin( angleBetween / 2 );

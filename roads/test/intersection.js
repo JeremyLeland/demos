@@ -33,10 +33,15 @@ const roads = {
   },
 };
 
-joinRoads( 'NORTH', 'WEST' );
+// joinRoads( 'NORTH', 'WEST' );
 joinRoads( 'WEST', 'SOUTH' );
-joinRoads( 'SOUTH', 'EAST' );
+// joinRoads( 'SOUTH', 'EAST' );
 joinRoads( 'EAST', 'NORTH' );
+
+joinRoads( 'NORTH', 'EAST' );
+// joinRoads( 'EAST', 'SOUTH' );
+joinRoads( 'SOUTH', 'WEST' );
+// joinRoads( 'WEST', 'NORTH' );
 
 console.log( roads );
 
@@ -99,8 +104,8 @@ canvas.draw = ( ctx ) => {
     
     const roadLength = getLength( road );
 
-    console.log( road );
-    console.log( roadLength );
+    // console.log( road );
+    // console.log( roadLength );
 
     for ( let length = 0; length < roadLength; length += 0.5 ) {
       drawOnRoadAtDistance( ctx, road, length, drawArrow );
