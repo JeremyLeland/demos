@@ -3,6 +3,8 @@ export function getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4, ctx ) {
   // Find intersection between lines, use this as control point
   const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
 
+  console.log( D );
+
   if ( D == 0 ) {
     // console.log( `Lines ${ x1 },${ y1 } -> ${ x2 },${ y2 } and ${ x3 },${ y3 } -> ${ x4 },${ y4 } are parallel, no arc possible` );
     // return;
@@ -67,11 +69,11 @@ export function getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4, ctx ) {
     const dot = v0[ 0 ] * v1[ 0 ] + v0[ 1 ] * v1[ 1 ];
     const angleBetween = Math.acos( dot )
 
-    // Ensure angle is not 0 or PI (no arc possible)
-    if ( angleBetween <= 0.0001 || Math.abs( Math.PI - angleBetween ) <= 0.0001 ) {
-      console.log( `Lines parallel, no arc possible (a different way than above?)` );
-      return;
-    }
+    // // Ensure angle is not 0 or PI (no arc possible)
+    // if ( angleBetween <= 0.0001 || Math.abs( Math.PI - angleBetween ) <= 0.0001 ) {
+    //   console.log( `Lines parallel, no arc possible (a different way than above?)` );
+    //   return;
+    // }
 
     const dist = Math.hypot( x2 - intersection[ 0 ], y2 - intersection[ 1 ] );  // NOTE: not normalized version above
     const radius = dist / ( Math.tan( angleBetween / 2 ) );
@@ -139,7 +141,7 @@ export function getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4, ctx ) {
       radius: radius,
       startAngle: startAngle,
       endAngle: endAngle,
-      counterclockwise: cross > 0,
+      counterclockwise: cross > 0 && D > 0,
     };
   }
 }

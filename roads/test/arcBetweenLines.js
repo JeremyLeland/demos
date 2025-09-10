@@ -4,8 +4,8 @@ import * as Arc from '../src/common/Arc.js';
 
 const A = [ 3, 3 ];
 const B = [ 5, 3 ];
-const C = [ 7, 4 ];
-const D = [ 7, 6 ];
+const C = [ 5, 7 ];
+const D = [ 3, 7 ];
 
 const canvas = new Canvas();
 canvas.backgroundColor = '#123';
