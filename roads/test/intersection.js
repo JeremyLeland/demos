@@ -50,7 +50,12 @@ const roads = {
 };
 
 // Clover loops
+console.log( 'Clover loops CW' );
 joinRoads( 'WEST_LEFT', 'SOUTH_TOP' );
+// joinRoads( 'SOUTH_BOTTOM', 'EAST_LEFT' );
+// joinRoads( 'EAST_RIGHT', 'NORTH_BOTTOM' );
+// joinRoads( 'NORTH_TOP', 'WEST_RIGHT' );
+
 joinRoads( 'EAST_RIGHT', 'NORTH_BOTTOM' );
 joinRoads( 'NORTH_TOP', 'EAST_LEFT' );
 joinRoads( 'SOUTH_BOTTOM', 'WEST_RIGHT' );
@@ -62,9 +67,18 @@ joinRoads( 'EAST_LEFT', 'EAST_RIGHT' );
 joinRoads( 'WEST_RIGHT', 'WEST_LEFT' );
 
 // Right-turns
-// joinRoads( 'NORTH_BOTTOM', 'EAST_RIGHT' );
+// console.log( 'Right turns' );
+joinRoads( 'NORTH_BOTTOM', 'EAST_RIGHT' );
+joinRoads( 'WEST_RIGHT', 'NORTH_TOP' );
+joinRoads( 'SOUTH_TOP', 'WEST_LEFT' );
+joinRoads( 'EAST_LEFT', 'SOUTH_BOTTOM' );
 
-// Left-turns
+// // Left-turns
+// console.log( 'Left turns' );
+joinRoads( 'NORTH_BOTTOM', 'WEST_LEFT' );
+joinRoads( 'WEST_RIGHT', 'SOUTH_BOTTOM' );
+joinRoads( 'SOUTH_TOP', 'EAST_RIGHT' );
+joinRoads( 'EAST_LEFT', 'NORTH_TOP' );
 
 console.log( roads );
 
@@ -244,14 +258,6 @@ function drawArrow( ctx, pos, angle, width = 0.15, length = 0.3 ) {
   ctx.lineTo( pos[ 0 ] + length * cos, pos[ 1 ] + length * sin );
   ctx.closePath();
   ctx.fill();
-}
-
-function fixAngle( a ) {
-  return a > Math.PI ? a - Math.PI * 2 : a < -Math.PI ? a + Math.PI * 2 : a;
-}
-
-function deltaAngle( a, b ) {
-  return fixAngle( b - a );
 }
 
 
