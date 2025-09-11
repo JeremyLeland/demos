@@ -7,64 +7,41 @@ let distance = 0;
 // TODO: Create an intersection of two perpendicular roads with clover turns connecting them
 
 const players = [
-  // {
-  //   color: 'red',
-  //   roadName: 'EAST_LEFT',
-  //   roadDistance: 0,
-  // },
+  {
+    color: 'red',
+    roadName: 'EAST',
+    roadDistance: 0,
+  },
 ];
 
 const roads = {
-  EAST_LEFT: {
+  EAST: {
     start: [ 3, 6 ],
-    end: [ 4, 6 ],
-  },
-  EAST_RIGHT: {
-    start: [ 7, 6 ],
     end: [ 8, 6 ],
   },
-  WEST_RIGHT: {
+  WEST: {
     start: [ 8, 5 ],
-    end: [ 7, 5 ],
-  },
-  WEST_LEFT: {
-    start: [ 4, 5 ],
     end: [ 3, 5 ],
   },
-  NORTH_BOTTOM: {
+  NORTH: {
     start: [ 6, 8 ],
-    end: [ 6, 7 ],
-  },
-  NORTH_TOP: {
-    start: [ 6, 4 ],
     end: [ 6, 3 ],
   },
-  SOUTH_TOP: {
+  SOUTH: {
     start: [ 5, 3 ],
-    end: [ 5, 4 ],
-  },
-  SOUTH_BOTTOM: {
-    start: [ 5, 7 ],
     end: [ 5, 8 ],
   },
 };
 
-// Clover loops
-joinRoads( 'WEST_LEFT', 'SOUTH_TOP' );
-joinRoads( 'EAST_RIGHT', 'NORTH_BOTTOM' );
-joinRoads( 'NORTH_TOP', 'EAST_LEFT' );
-joinRoads( 'SOUTH_BOTTOM', 'WEST_RIGHT' );
+// joinRoads( 'NORTH', 'WEST' );
+joinRoads( 'WEST', 'SOUTH' );
+// joinRoads( 'SOUTH', 'EAST' );
+joinRoads( 'EAST', 'NORTH' );
 
-// Straight
-joinRoads( 'NORTH_BOTTOM', 'NORTH_TOP' );
-joinRoads( 'SOUTH_TOP', 'SOUTH_BOTTOM' );
-joinRoads( 'EAST_LEFT', 'EAST_RIGHT' );
-joinRoads( 'WEST_RIGHT', 'WEST_LEFT' );
-
-// Right-turns
-// joinRoads( 'NORTH_BOTTOM', 'EAST_RIGHT' );
-
-// Left-turns
+joinRoads( 'NORTH', 'EAST' );
+// joinRoads( 'EAST', 'SOUTH' );
+joinRoads( 'SOUTH', 'WEST' );
+// joinRoads( 'WEST', 'NORTH' );
 
 console.log( roads );
 
@@ -72,40 +49,26 @@ function joinRoads( A, B ) {
   const road1 = roads[ A ];
   const road2 = roads[ B ];
 
+  const arc = Arc.getArcBetweenLines( ...road1.start, ...road1.end, ...road2.start, ...road2.end );
+
   const newName = `${ A }_to_${ B }`;
+  roads[ newName ] = arc;
+
+  // Set nexts
   road1.next ??= [];
   road1.next.push( newName );
+  arc.next = [ B ];
   
-  // Check if roads are on same line
-  const [ x1, y1 ] = road1.start;
-  const [ x2, y2 ] = road1.end;
-  const [ x3, y3 ] = road2.start;
-  const [ x4, y4 ] = road2.end;
+  // Adjust roads to properly attach to arc
+  road1.end = [
+    arc.center[ 0 ] + arc.radius * Math.cos( arc.startAngle ),
+    arc.center[ 1 ] + arc.radius * Math.sin( arc.startAngle ),
+  ];
 
-  if ( ( y3 - y1 ) * ( x2 - x1 ) == ( y2 - y1 ) * ( x3 - x1 ) ) {
-    const line = {
-      start: road1.end,
-      end: road2.start,
-    };
-    roads[ newName ] = line;
-    line.next = [ B ];
-  }
-  else {
-    const arc = Arc.getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4 );
-    roads[ newName ] = arc;
-    arc.next = [ B ];
-    
-    // Adjust roads to properly attach to arc
-    road1.end = [
-      arc.center[ 0 ] + arc.radius * Math.cos( arc.startAngle ),
-      arc.center[ 1 ] + arc.radius * Math.sin( arc.startAngle ),
-    ];
-    
-    road2.start = [
-      arc.center[ 0 ] + arc.radius * Math.cos( arc.endAngle ),
-      arc.center[ 1 ] + arc.radius * Math.sin( arc.endAngle ),
-    ];
-  }
+  road2.start = [
+    arc.center[ 0 ] + arc.radius * Math.cos( arc.endAngle ),
+    arc.center[ 1 ] + arc.radius * Math.sin( arc.endAngle ),
+  ];
 }
 
 // const path = [ roads.first_NORTH, roads.first_NORTH_to_A_EAST, roads.A_EAST, roads.A_EAST_to_second_NORTH, roads.second_NORTH ];
