@@ -2,17 +2,6 @@ import { Canvas } from '../src/common/Canvas.js';
 import { Grid } from '../src/common/Grid.js';
 import * as Arc from '../src/common/Arc.js';
 
-let distance = 0;
-
-// TODO: Create an intersection of two perpendicular roads with clover turns connecting them
-
-const players = [
-  // {
-  //   color: 'red',
-  //   roadName: 'EAST_LEFT',
-  //   roadDistance: 0,
-  // },
-];
 
 const roads = {
   EAST_LEFT: {
@@ -50,7 +39,7 @@ const roads = {
 };
 
 // Clover loops
-console.log( 'Clover loops CW' );
+// console.log( 'Clover loops CW' );
 joinRoads( 'WEST_LEFT', 'SOUTH_TOP' );
 // joinRoads( 'SOUTH_BOTTOM', 'EAST_LEFT' );
 // joinRoads( 'EAST_RIGHT', 'NORTH_BOTTOM' );
@@ -81,6 +70,17 @@ joinRoads( 'SOUTH_TOP', 'EAST_RIGHT' );
 joinRoads( 'EAST_LEFT', 'NORTH_TOP' );
 
 console.log( roads );
+
+const players = Array.from( Array( 10 ), _ => { 
+  const roadName = randomFrom( Object.keys( roads ) );
+
+  return {
+    color: randomColor(),
+    speed: 0.005,
+    roadName: roadName,
+    roadDistance: Math.random() * getLength( roads[ roadName ] ),
+  };
+} );
 
 function joinRoads( A, B ) {
   const road1 = roads[ A ];
@@ -122,7 +122,6 @@ function joinRoads( A, B ) {
   }
 }
 
-// const path = [ roads.first_NORTH, roads.first_NORTH_to_A_EAST, roads.A_EAST, roads.A_EAST_to_second_NORTH, roads.second_NORTH ];
 
 const canvas = new Canvas();
 canvas.backgroundColor = '#123';
@@ -132,13 +131,34 @@ canvas.scrollY = -1;
 
 const grid = new Grid( 0, 0, 12, 12 );
 
+canvas.update = ( dt ) => {
+  // Draw at distance along path
+  players.forEach( player => {
+    player.roadDistance += player.speed * dt;
+    
+    for ( let i = 0; i < 10; i ++ ) {
+      const road = roads[ player.roadName ];
+
+      const length = getLength( road );
+
+      if ( player.roadDistance > length ) {
+        player.roadDistance -= length;
+        player.roadName = randomFrom( road.next );   // TODO: random? based on path?
+      }
+      else {
+        break;
+      }
+    }
+  } );
+}
+
 canvas.draw = ( ctx ) => {
 
   for ( const road of Object.values( roads ) ) {
     // Road itself
     ctx.lineWidth = 0.9;// 0.8;
     // ctx.lineCap = 'square';
-    ctx.strokeStyle = 'gray';
+    ctx.strokeStyle = '#555';
 
     ctx.beginPath();
     if ( road.center ) {
@@ -151,44 +171,29 @@ canvas.draw = ( ctx ) => {
     ctx.stroke();
 
     // Direction arrows
-    ctx.fillStyle = 'yellow';
+    // ctx.fillStyle = ctx.strokeStyle = 'yellow';
+    // ctx.lineWidth = 0.05;
     
-    const roadLength = getLength( road );
+    // const roadLength = getLength( road );
 
-    // console.log( road );
-    // console.log( roadLength );
-
-    for ( let length = 0; length < roadLength; length += 0.5 ) {
-      drawOnRoadAtDistance( ctx, road, length, drawArrow );
-    }
+    // for ( let length = 0; length < roadLength; length += 0.5 ) {
+    //   drawOnRoadAtDistance( ctx, road, length, drawArrow );
+    // }
   }
 
-  // Draw at distance along path
+  ctx.strokeStyle = 'black';
+  ctx.lineWidth = 0.02;
+
   players.forEach( player => {
-    let partialDistance = player.roadDistance + distance;
-    let partialRoadName = player.roadName;
-
-    for ( let i = 0; i < 100; i ++ ) {
-      const road = roads[ partialRoadName ];
-
-      const length = getLength( road );
-
-      if ( partialDistance > length ) {
-        partialDistance -= length;
-        partialRoadName = road.next[ 0 ];
-      }
-      else {
-        ctx.fillStyle = player.color;
-        drawOnRoadAtDistance( ctx, road, partialDistance, drawArrow );
-        break;
-      }
-    }
+    ctx.fillStyle = player.color;
+    drawOnRoadAtDistance( ctx, roads[ player.roadName ], player.roadDistance, drawArrow );
   } );
-  
 
   ctx.lineWidth = 0.01;
   grid.draw( ctx, '#fffa' );
 }
+
+canvas.start();
 
 function drawOnRoadAtDistance( ctx, road, distance, drawFunc ) {
   if ( road.center ) {
@@ -254,37 +259,17 @@ function drawArrow( ctx, pos, angle, width = 0.15, length = 0.3 ) {
   
   ctx.beginPath();
   ctx.moveTo( pos[ 0 ] + width * sin, pos[ 1 ] - width * cos );
-  ctx.lineTo( pos[ 0 ] - width * sin, pos[ 1 ] + width * cos );
   ctx.lineTo( pos[ 0 ] + length * cos, pos[ 1 ] + length * sin );
+  ctx.lineTo( pos[ 0 ] - width * sin, pos[ 1 ] + width * cos );
   ctx.closePath();
   ctx.fill();
+  ctx.stroke();
 }
 
+function randomFrom( array ) {
+  return array[ Math.floor( Math.random() * array.length ) ];
+}
 
-//
-// Slider
-//
-const distSlider = document.createElement( 'input' );
-
-Object.assign( distSlider.style, {
-  position: 'absolute',
-  left: 0,
-  top: 0,
-  width: '99%',
-} );
-
-Object.assign( distSlider, {
-  type: 'range',
-  value: 0,
-  min: 0,
-  max: 100,
-  step: 0.01,
-} );
-
-document.body.appendChild( distSlider );
-
-distSlider.addEventListener( 'input', _ => {
-  distance = +distSlider.value;
-
-  canvas.redraw();
-} );
+function randomColor() {
+  return `hsl( ${ Math.random() * 360 }deg, ${ Math.random() * 75 + 25 }%, ${ Math.random() * 40 + 40 }% )`;
+}
