@@ -1,7 +1,7 @@
+const MAX_UPDATE = 100;
+
 export class Canvas {
-  zoom = 1;
-  scrollX = 0;
-  scrollY = 0;
+  bounds = [ -5, -4, 5, 4 ];
 
   backgroundColor = 'black';
   lineWidth = 0.1;
@@ -53,13 +53,47 @@ export class Canvas {
         const inlineSize = entry.contentBoxSize[ 0 ].inlineSize;
         const blockSize = entry.contentBoxSize[ 0 ].blockSize;
 
-        this.#scale = Math.min( inlineSize, blockSize );
+        console.log('--- Resize ---' );
+
+        console.log( 'inlineSize = ' + inlineSize + ', blockSize = ' + blockSize );
+
+        const goalWidth = this.bounds[ 2 ] - this.bounds[ 0 ];
+        const goalHeight = this.bounds[ 3 ] - this.bounds[ 1 ];
+
+        console.log( 'goalWidth = ' + goalWidth + ', goalHeight = ' + goalHeight );
+
+        const widthRatio = inlineSize / goalWidth;
+        const heightRatio = blockSize / goalHeight;
+
+        console.log( 'widthRatio = ' + widthRatio + ', heightRatio = ' + heightRatio );
+
+        // // Width is smallest
+        // if ( inlineSize < blockSize ) {
+        //   if ( goalWidth > goalHeight ) {
+        //     this.#scale = inlineSize / goalWidth;
+        //   }
+        //   else {
+        //     this.#scale = inlineSize / goalHeight;
+        //   }
+        // }
+
+        // // Height is smallest
+        // else {
+        //   if ( goalWidth > goalHeight ) {
+        //     this.#scale = blockSize / goalWidth;
+        //   }
+        //   else {
+        //     this.#scale = blockSize / goalHeight;
+        //   }
+        // }
+
+        this.#scale = Math.min( widthRatio, heightRatio );
 
         // this might get messed up if writing mode is vertical
-        this.#offsetX = ( inlineSize - this.#scale ) / 2;
-        this.#offsetY = ( blockSize - this.#scale ) / 2;
+        this.#offsetX = 0.5 * this.#scale * ( ( inlineSize / this.#scale ) - goalWidth );
+        this.#offsetY = 0.5 * this.#scale * ( ( blockSize / this.#scale ) - goalHeight );
 
-        // console.log( 'inlineSize = ' + inlineSize + ', blockSize = ' + blockSize + ', scale = ' + this.#scale + ', offsetX = ' + this.#offsetX );
+        console.log( 'inlineSize = ' + inlineSize + ', blockSize = ' + blockSize + ', scale = ' + this.#scale + ', offsetX = ' + this.#offsetX + ', offsetY = ' + this.#offsetY );
       } );
       
       this.redraw();
@@ -128,8 +162,8 @@ export class Canvas {
       this.ctx.translate( this.#offsetX, this.#offsetY );
       this.ctx.scale( this.#scale, this.#scale );
 
-      this.ctx.scale( this.zoom, this.zoom );
-      this.ctx.translate( -this.scrollX, -this.scrollY );
+      // this.ctx.scale( this.zoom, this.zoom );
+      this.ctx.translate( -this.bounds[ 0 ], -this.bounds[ 1 ] );
 
       this.ctx.lineWidth = this.lineWidth;// / ( this.#scale * this.zoom );
 
@@ -148,7 +182,7 @@ export class Canvas {
       let lastTime;
       const animate = ( now ) => {
         lastTime ??= now;  // for first call only
-        this.update( now - lastTime );
+        this.update( Math.min( now - lastTime, MAX_UPDATE ) );
         lastTime = now;
 
         this.#doDraw();
@@ -183,20 +217,11 @@ export class Canvas {
   wheelInput( pointerInfo ) {}
 
   getPointerX( e ) {
-    return ( ( e.clientX - this.#offsetX ) / this.#scale ) / this.zoom + this.scrollX;
+    return ( ( e.clientX - this.#offsetX ) / this.#scale ) + this.bounds[ 0 ];
   }
 
   getPointerY( e ) {
-    return ( ( e.clientY - this.#offsetY ) / this.#scale ) / this.zoom + this.scrollY;
-  }
-
-  zoomAt( x, y, amount ) {
-    this.zoom *= amount;
-    
-    this.scrollX = x - ( x - this.scrollX ) / amount;
-    this.scrollY = y - ( y - this.scrollY ) / amount;
-
-    // Don't need to update pointer position because we intentionally kept it the same
+    return ( ( e.clientY - this.#offsetY ) / this.#scale ) + this.bounds[ 1 ];
   }
 }
 
