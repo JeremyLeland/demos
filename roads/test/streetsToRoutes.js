@@ -3,20 +3,88 @@ import { Grid } from '../src/common/Grid.js';
 import * as Arc from '../src/common/Arc.js';
 
 
-const roads = {
+const streets = {
   first: {
     start: [ 3, 6 ],
-    end: [ 6, 6 ],
+    end: [ 7, 6 ],
+    lanes: 1,
   },
   A: {
-    start: [ 5, 3 ],
-    end: [ 5, 7 ],
+    start: [ 5, 4 ],
+    end: [ 5, 8 ],
+    lanes: 1,
+  },
+  NW: {
+    start: [ 8, 4 ],
+    end: [ 10, 2 ],
+    lanes: 2,
+  },
+
+  NE: {
+    start: [ 11, 8 ],
+    end: [ 9, 6 ],
+    lanes: 3,
   },
 };
 
+const LANE_WIDTH = 1;
+
+const routes = makeRoutes( streets );
 
 
-console.log( roads );
+function makeRoutes( streets ) {
+  const routes = {};
+
+  for ( const [ name, street ] of Object.entries( streets ) ) {
+    const streetDX = street.end[ 0 ] - street.start[ 0 ];
+    const streetDY = street.end[ 1 ] - street.start[ 1 ];
+
+    const angle = Math.atan2( streetDY, streetDX );
+    const cos = Math.cos( angle );
+    const sin = Math.sin( angle );
+
+    // Generate lanes pattern (this might get more complicated later with extra lanes on one direction, turning lanes, etc)
+    const lanes = [];
+    for ( let i = -street.lanes; i < 0; i ++ ) {
+      lanes.push( i );
+    }
+
+    for ( let i = 1; i <= street.lanes; i ++ ) {
+      lanes.push( i );
+    }
+    
+    lanes.forEach( laneIndex => {
+
+      const offset = ( Math.sign( laneIndex ) * -0.5 + laneIndex ) * LANE_WIDTH;
+
+      const points = [
+        [ street.start[ 0 ] + offset * -sin, street.start[ 1 ] + offset * cos ],
+        [   street.end[ 0 ] + offset * -sin,   street.end[ 1 ] + offset * cos ],
+      ];
+
+
+      const route = {
+        start: laneIndex < 0 ? points[ 1 ] : points[ 0 ],
+        end:   laneIndex < 0 ? points[ 0 ] : points[ 1 ],
+      };
+
+      const routeDX = route.end[ 0 ] - route.start[ 0 ];
+      const routeDY = route.end[ 1 ] - route.start[ 1 ];
+
+      const dir = Math.abs( streetDX ) > Math.abs( streetDY ) ? ( routeDX < 0 ? 'WEST' : 'EAST' ) : ( routeDY < 0 ? 'NORTH' : 'SOUTH' );
+      const newName = `${ name }_${ dir }_${ Math.abs( laneIndex ) }`;
+
+      console.log( `${ newName }: ${ JSON.stringify( route ) }` );
+
+      routes[ newName ] = route;
+    } );
+  }
+
+  return routes;
+}
+
+
+// console.log( roads );
 
 const players = [];
 
@@ -90,40 +158,40 @@ canvas.update = ( dt ) => {
 
 canvas.draw = ( ctx ) => {
 
-  for ( const road of Object.values( roads ) ) {
+  for ( const route of Object.values( routes ) ) {
     // Road itself
-    ctx.lineWidth = 0.9;// 0.8;
+    ctx.lineWidth = LANE_WIDTH - 0.1;
     // ctx.lineCap = 'square';
     ctx.strokeStyle = '#555';
 
     ctx.beginPath();
-    if ( road.center ) {
-      ctx.arc( ...road.center, road.radius, road.startAngle, road.endAngle, road.counterclockwise );
+    if ( route.center ) {
+      ctx.arc( ...route.center, route.radius, route.startAngle, route.endAngle, route.counterclockwise );
     }
     else {
-      ctx.lineTo( ...road.start );
-      ctx.lineTo( ...road.end );
+      ctx.lineTo( ...route.start );
+      ctx.lineTo( ...route.end );
     }
     ctx.stroke();
 
     // Direction arrows
-    // ctx.fillStyle = ctx.strokeStyle = 'yellow';
-    // ctx.lineWidth = 0.05;
+    ctx.fillStyle = ctx.strokeStyle = 'yellow';
+    ctx.lineWidth = 0.05;
     
-    // const roadLength = getLength( road );
+    const roadLength = getLength( route );
 
-    // for ( let length = 0; length < roadLength; length += 0.5 ) {
-    //   drawOnRoadAtDistance( ctx, road, length, drawArrow );
-    // }
+    for ( let length = 0; length < roadLength; length += 0.5 ) {
+      drawOnRoadAtDistance( ctx, route, length, drawArrow );
+    }
   }
 
-  ctx.strokeStyle = 'black';
-  ctx.lineWidth = 0.02;
+  // ctx.strokeStyle = 'black';
+  // ctx.lineWidth = 0.02;
 
-  players.forEach( player => {
-    ctx.fillStyle = player.color;
-    drawOnRoadAtDistance( ctx, roads[ player.roadName ], player.roadDistance, drawArrow );
-  } );
+  // players.forEach( player => {
+  //   ctx.fillStyle = player.color;
+  //   drawOnRoadAtDistance( ctx, roads[ player.roadName ], player.roadDistance, drawArrow );
+  // } );
 
   ctx.lineWidth = 0.01;
   grid.draw( ctx, '#fffa' );
@@ -133,7 +201,6 @@ canvas.pointerDown = m => {
   console.log( 'x = ' + m.x + ', y = ' + m.y );
 };
 
-canvas.start();
 
 function drawOnRoadAtDistance( ctx, road, distance, drawFunc ) {
   if ( road.center ) {

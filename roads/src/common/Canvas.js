@@ -53,39 +53,18 @@ export class Canvas {
         const inlineSize = entry.contentBoxSize[ 0 ].inlineSize;
         const blockSize = entry.contentBoxSize[ 0 ].blockSize;
 
-        console.log('--- Resize ---' );
-
-        console.log( 'inlineSize = ' + inlineSize + ', blockSize = ' + blockSize );
+        // console.log('--- Resize ---' );
+        // console.log( 'inlineSize = ' + inlineSize + ', blockSize = ' + blockSize );
 
         const goalWidth = this.bounds[ 2 ] - this.bounds[ 0 ];
         const goalHeight = this.bounds[ 3 ] - this.bounds[ 1 ];
 
-        console.log( 'goalWidth = ' + goalWidth + ', goalHeight = ' + goalHeight );
+        // console.log( 'goalWidth = ' + goalWidth + ', goalHeight = ' + goalHeight );
 
         const widthRatio = inlineSize / goalWidth;
         const heightRatio = blockSize / goalHeight;
 
-        console.log( 'widthRatio = ' + widthRatio + ', heightRatio = ' + heightRatio );
-
-        // // Width is smallest
-        // if ( inlineSize < blockSize ) {
-        //   if ( goalWidth > goalHeight ) {
-        //     this.#scale = inlineSize / goalWidth;
-        //   }
-        //   else {
-        //     this.#scale = inlineSize / goalHeight;
-        //   }
-        // }
-
-        // // Height is smallest
-        // else {
-        //   if ( goalWidth > goalHeight ) {
-        //     this.#scale = blockSize / goalWidth;
-        //   }
-        //   else {
-        //     this.#scale = blockSize / goalHeight;
-        //   }
-        // }
+        // console.log( 'widthRatio = ' + widthRatio + ', heightRatio = ' + heightRatio );
 
         this.#scale = Math.min( widthRatio, heightRatio );
 
@@ -93,7 +72,7 @@ export class Canvas {
         this.#offsetX = 0.5 * this.#scale * ( ( inlineSize / this.#scale ) - goalWidth );
         this.#offsetY = 0.5 * this.#scale * ( ( blockSize / this.#scale ) - goalHeight );
 
-        console.log( 'inlineSize = ' + inlineSize + ', blockSize = ' + blockSize + ', scale = ' + this.#scale + ', offsetX = ' + this.#offsetX + ', offsetY = ' + this.#offsetY );
+        // console.log( 'inlineSize = ' + inlineSize + ', blockSize = ' + blockSize + ', scale = ' + this.#scale + ', offsetX = ' + this.#offsetX + ', offsetY = ' + this.#offsetY );
       } );
       
       this.redraw();
