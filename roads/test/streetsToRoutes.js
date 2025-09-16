@@ -6,7 +6,7 @@ import * as Arc from '../src/common/Arc.js';
 const streets = {
   first: {
     start: [ 3, 6 ],
-    end: [ 7, 6 ],
+    end: [ 11, 6 ],
     lanes: 1,
   },
   A: {
@@ -14,25 +14,198 @@ const streets = {
     end: [ 5, 8 ],
     lanes: 1,
   },
-  NW: {
-    start: [ 8, 4 ],
-    end: [ 10, 2 ],
-    lanes: 2,
+  B: {
+    start: [ 9, 4 ],
+    end: [ 9, 8 ],
+    lanes: 1,
   },
+  // NW: {
+  //   start: [ 8, 4 ],
+  //   end: [ 10, 2 ],
+  //   lanes: 2,
+  // },
 
-  NE: {
-    start: [ 11, 8 ],
-    end: [ 9, 6 ],
-    lanes: 3,
-  },
+  // NE: {
+  //   start: [ 11, 8 ],
+  //   end: [ 9, 6 ],
+  //   lanes: 3,
+  // },
 };
 
 const LANE_WIDTH = 1;
 
 const routes = makeRoutes( streets );
 
+let hoverRouteName;
 
 function makeRoutes( streets ) {
+
+  // 1. Handle intersections between streets
+  //    - Look for intersecting streets
+  //    - Break streets into segments
+  //    - Store ins and outs as intersection
+
+  // TODO: Should we duplicate streets to avoid altering original?
+
+  // const visited = [];
+  // const unvisited = Object.entries( streets );
+
+  // for ( let i = 0; i < 100; i ++ ) {
+  //   const [ name1, street1 ] = unvisited.pop();
+
+  //   unvisited.find( ( [ name2, street2 ] ) => {
+  //     // Find intersection between lines
+  //     const [ x1, y1 ] = street1.start;
+  //     const [ x2, y2 ] = street1.end;
+  //     const [ x3, y3 ] = street2.start;
+  //     const [ x4, y4 ] = street2.end;
+
+  //     const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
+      
+  //     // Is there a meaningful parallel/collinear case to account for here?
+  //     if ( D != 0 ) {
+  //       const uA = ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D;
+  //       const uB = ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D;
+        
+  //       if ( 0 <= uA && uA <= 1 && 0 <= uB && uB <= 1 ) {
+  //         const intersection = [
+  //           x1 + uA * ( x2 - x1 ),
+  //           y1 + uA * ( y2 - y1 ),
+  //         ];
+          
+  //         console.log( `Intersection between ${ name1 } and ${ name2 } at ${ intersection }` );
+  //       }
+  //     }
+  //   } );
+  // }
+
+
+  // TODO: Maybe save all the intersections for now, then break everything up later?
+  const intersections = [];
+
+  const visited = [];
+
+  for ( const [ name1, street1 ] of Object.entries( streets ) ) {
+    visited.push( name1 );
+
+    for ( const [ name2, street2 ] of Object.entries( streets ) ) {
+      if ( visited.includes( name2 ) ) {
+        continue;
+      }
+
+      // Find intersection between lines
+      const [ x1, y1 ] = street1.start;
+      const [ x2, y2 ] = street1.end;
+      const [ x3, y3 ] = street2.start;
+      const [ x4, y4 ] = street2.end;
+
+      const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
+      
+      // Is there a meaningful parallel/collinear case to account for here?
+      if ( D != 0 ) {
+        const uA = ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D;
+        const uB = ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D;
+        
+        if ( 0 <= uA && uA <= 1 && 0 <= uB && uB <= 1 ) {
+          const point = [
+            x1 + uA * ( x2 - x1 ),
+            y1 + uA * ( y2 - y1 ),
+          ];
+          
+          intersections.push( {
+            streets: [ name1, name2 ],
+            point: point,
+          } );
+        }
+      }
+    }
+  }
+  
+  console.log( intersections );
+
+  let splitIndex = 0;
+
+  // Could also maybe: 
+  //  1) find all intersections with our street in name
+  //  2) sort by intersection.point distance from start
+  //  3) create splits in that order, appending index
+  // Similar idea and same problems, might give better names and we'd know which intersections to update with new names  
+  //  - maybe too complicated, and it'll get messed up anyway if we do an incremental change later
+  //    - the other one doesn't require knowing all the other intersections and re-sorting them
+
+  intersections.forEach( intersection => {
+    const beforeStreets = intersection.streets;
+    const afterStreets = [];
+
+    beforeStreets.forEach( beforeStreet => {
+      const oldStreet = streets[ beforeStreet ];
+      delete streets[ beforeStreet ];
+
+      // TODO: Reference the original street name so we can modify that 
+      // instead of constantly appending split numbers (e.g. first_0_4_5_6 )
+      // Probably also useful later to get street info like proper name, maybe speed, etc
+
+      const splitA = `${ beforeStreet }_${ splitIndex ++ }`;
+      const splitB = `${ beforeStreet }_${ splitIndex ++ }`;
+
+      streets[ splitA ] = {
+        start: oldStreet.start,
+        end: intersection.point,
+        lanes: oldStreet.lanes,
+      };
+
+      streets[ splitB ] = {
+        start: intersection.point,
+        end: oldStreet.end,
+        lanes: oldStreet.lanes,
+      };
+
+      afterStreets.push( splitA, splitB );
+
+      const streetAngle = Math.atan2( 
+        oldStreet.end[ 1 ] - oldStreet.start[ 1 ], 
+        oldStreet.end[ 0 ] - oldStreet.start[ 0 ],
+      );
+
+      intersections.forEach( otherIntersection => {
+        if ( intersection == otherIntersection ) {
+          return;
+        }
+
+        for ( let i = 0; i < otherIntersection.streets.length; i ++ ) {
+          if ( otherIntersection.streets[ i ] == beforeStreet ) {
+            // TODO: check if intersection point is on splitA or splitB
+            //       need to add function to check if point is within line
+            //    actually, should just need to project intersection onto street to see if it's positive or negative
+            //      (for which side of split it gets)
+
+            // TODO: How would we handle this for arcs? Would need in terms of angles or distance
+
+            const intersectionAngle = Math.atan2( 
+              otherIntersection.point[ 1 ] - intersection.point[ 1 ], 
+              otherIntersection.point[ 0 ] - intersection.point[ 0 ],
+            );
+
+            if ( Math.abs( intersectionAngle - streetAngle ) < 0.1 ) {
+              console.log( `${ otherIntersection.point } is ahead of ${ intersection.point }, so setting to splitB` );
+              otherIntersection.streets[ i ] = splitB;
+            }
+            else {
+              console.log( `${ otherIntersection.point } is behind ${ intersection.point }, so setting to splitA` );
+              otherIntersection.streets[ i ] = splitA;
+            }
+          }
+        }
+      } );
+    } );
+
+    intersection.streets = afterStreets;
+  } );
+
+  console.log( streets );
+
+  
+  // 2. Create lanes
   const routes = {};
 
   for ( const [ name, street ] of Object.entries( streets ) ) {
@@ -57,24 +230,21 @@ function makeRoutes( streets ) {
 
       const offset = ( Math.sign( laneIndex ) * -0.5 + laneIndex ) * LANE_WIDTH;
 
-      const points = [
-        [ street.start[ 0 ] + offset * -sin, street.start[ 1 ] + offset * cos ],
-        [   street.end[ 0 ] + offset * -sin,   street.end[ 1 ] + offset * cos ],
-      ];
-
-
+      const A = [ street.start[ 0 ] + offset * -sin, street.start[ 1 ] + offset * cos ];
+      const B = [   street.end[ 0 ] + offset * -sin,   street.end[ 1 ] + offset * cos ];
+      
       const route = {
-        start: laneIndex < 0 ? points[ 1 ] : points[ 0 ],
-        end:   laneIndex < 0 ? points[ 0 ] : points[ 1 ],
+        start: laneIndex < 0 ? B : A,
+        end:   laneIndex < 0 ? A : B,
       };
 
       const routeDX = route.end[ 0 ] - route.start[ 0 ];
       const routeDY = route.end[ 1 ] - route.start[ 1 ];
 
       const dir = Math.abs( streetDX ) > Math.abs( streetDY ) ? ( routeDX < 0 ? 'WEST' : 'EAST' ) : ( routeDY < 0 ? 'NORTH' : 'SOUTH' );
-      const newName = `${ name }_${ dir }_${ Math.abs( laneIndex ) }`;
+      const newName = `${ name }_${ dir }_lane${ Math.abs( laneIndex ) }`;
 
-      console.log( `${ newName }: ${ JSON.stringify( route ) }` );
+      // console.log( `${ newName }: ${ JSON.stringify( route ) }` );
 
       routes[ newName ] = route;
     } );
@@ -84,7 +254,7 @@ function makeRoutes( streets ) {
 }
 
 
-// console.log( roads );
+console.log( routes );
 
 const players = [];
 
@@ -158,11 +328,13 @@ canvas.update = ( dt ) => {
 
 canvas.draw = ( ctx ) => {
 
-  for ( const route of Object.values( routes ) ) {
+  Object.entries( routes ).forEach( ( [ name, route ] ) => {
     // Road itself
     ctx.lineWidth = LANE_WIDTH - 0.1;
     // ctx.lineCap = 'square';
-    ctx.strokeStyle = '#555';
+    ctx.strokeStyle = name == hoverRouteName ? '#777' : '#555';
+
+    // TODO: Hover (brighter stroke if matches name)
 
     ctx.beginPath();
     if ( route.center ) {
@@ -183,7 +355,7 @@ canvas.draw = ( ctx ) => {
     for ( let length = 0; length < roadLength; length += 0.5 ) {
       drawOnRoadAtDistance( ctx, route, length, drawArrow );
     }
-  }
+  } );
 
   // ctx.strokeStyle = 'black';
   // ctx.lineWidth = 0.02;
@@ -195,10 +367,34 @@ canvas.draw = ( ctx ) => {
 
   ctx.lineWidth = 0.01;
   grid.draw( ctx, '#fffa' );
+
+  ctx.font = '0.4px Arial';
+  ctx.textBaseline = 'center';
+  ctx.fillText( hoverRouteName, 0, 0 );
 }
 
-canvas.pointerDown = m => {
-  console.log( 'x = ' + m.x + ', y = ' + m.y );
+canvas.pointerMove = m => {
+  hoverRouteName = Object.keys( routes ).find( name => {
+    const route = routes[ name ];
+    const [ x1, y1 ] = route.start;
+    const [ x2, y2 ] = route.end;
+
+    const px = x2 - x1;
+    const py = y2 - y1;
+
+    const u = ( ( m.x - x1 ) * px + ( m.y - y1 ) * py ) / ( ( px * px ) + ( py * py ) );
+
+    if ( 0 <= u && u <= 1 ) {
+      const hitX = x1 + u * px;
+      const hitY = y1 + u * py;
+
+      const dist = Math.hypot( hitX - m.x, hitY - m.y );
+
+      return dist < 0.2;
+    }
+  } );
+
+  canvas.redraw();
 };
 
 
