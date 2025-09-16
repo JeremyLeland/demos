@@ -2,21 +2,38 @@ import { Canvas } from '../src/common/Canvas.js';
 import { Grid } from '../src/common/Grid.js';
 import * as Arc from '../src/common/Arc.js';
 
+import { vec2 } from '../lib/gl-matrix.js'
+
 
 const streets = {
   first: {
-    start: [ 3, 6 ],
+    start: [ 1, 2 ],
+    end: [ 11, 2 ],
+    lanes: 1,
+  },
+  second: {
+    start: [ 1, 6 ],
     end: [ 11, 6 ],
     lanes: 1,
   },
+  third: {
+    start: [ 1, 10 ],
+    end: [ 11, 10 ],
+    lanes: 1,
+  },
   A: {
-    start: [ 5, 4 ],
-    end: [ 5, 8 ],
+    start: [ 1, 2 ],
+    end: [ 1, 10 ],
     lanes: 1,
   },
   B: {
-    start: [ 9, 4 ],
-    end: [ 9, 8 ],
+    start: [ 6, 2 ],
+    end: [ 6, 10 ],
+    lanes: 1,
+  },
+  C: {
+    start: [ 11, 2 ],
+    end: [ 11, 10 ],
     lanes: 1,
   },
   // NW: {
@@ -121,6 +138,7 @@ function makeRoutes( streets ) {
     }
   }
   
+  console.log( 'Intersections before:' );
   console.log( intersections );
 
   let splitIndex = 0;
@@ -139,7 +157,28 @@ function makeRoutes( streets ) {
 
     beforeStreets.forEach( beforeStreet => {
       const oldStreet = streets[ beforeStreet ];
-      delete streets[ beforeStreet ];
+
+      const streetVec = vec2.subtract( [], oldStreet.start, oldStreet.end );
+      vec2.normalize( streetVec, streetVec );
+
+      // Don't split if intersection is at start or end, just trim
+      if ( lineDist( oldStreet.start, intersection.point ) < 1e-6 ) {
+        console.log( `${ intersection.point } is near ${ oldStreet.start } so trimming start` );
+
+        vec2.add( oldStreet.start, oldStreet.start, vec2.scale( [], streetVec, -LANE_WIDTH ) );
+
+        afterStreets.push( beforeStreet );
+        return;
+      }
+      if ( lineDist( oldStreet.end, intersection.point ) < 1e-6 ) {
+        console.log( `${ intersection.point } is near ${ oldStreet.end } so trimming end` );
+
+        // TODO: Offset by LANE_WIDTH like below
+        vec2.add( oldStreet.end, oldStreet.end, vec2.scale( [], streetVec, LANE_WIDTH ) );
+
+        afterStreets.push( beforeStreet );
+        return;
+      };
 
       // TODO: Reference the original street name so we can modify that 
       // instead of constantly appending split numbers (e.g. first_0_4_5_6 )
@@ -148,24 +187,26 @@ function makeRoutes( streets ) {
       const splitA = `${ beforeStreet }_${ splitIndex ++ }`;
       const splitB = `${ beforeStreet }_${ splitIndex ++ }`;
 
+      delete streets[ beforeStreet ];
+    
+      // TODO: Account for multiple lanes (likely from reference to original street info)
+
       streets[ splitA ] = {
-        start: oldStreet.start,
-        end: intersection.point,
+        start: oldStreet.start, 
+        end: vec2.add( [], intersection.point, vec2.scale( [], streetVec, LANE_WIDTH ) ),
         lanes: oldStreet.lanes,
       };
 
       streets[ splitB ] = {
-        start: intersection.point,
+        start: vec2.add( [], intersection.point, vec2.scale( [], streetVec, -LANE_WIDTH ) ),
         end: oldStreet.end,
         lanes: oldStreet.lanes,
       };
 
       afterStreets.push( splitA, splitB );
 
-      const streetAngle = Math.atan2( 
-        oldStreet.end[ 1 ] - oldStreet.start[ 1 ], 
-        oldStreet.end[ 0 ] - oldStreet.start[ 0 ],
-      );
+      // Update all the other intersections
+      const streetAngle = lineAngle( oldStreet.start, oldStreet.end );
 
       intersections.forEach( otherIntersection => {
         if ( intersection == otherIntersection ) {
@@ -181,10 +222,7 @@ function makeRoutes( streets ) {
 
             // TODO: How would we handle this for arcs? Would need in terms of angles or distance
 
-            const intersectionAngle = Math.atan2( 
-              otherIntersection.point[ 1 ] - intersection.point[ 1 ], 
-              otherIntersection.point[ 0 ] - intersection.point[ 0 ],
-            );
+            const intersectionAngle = lineAngle( intersection.point, otherIntersection.point );
 
             if ( Math.abs( intersectionAngle - streetAngle ) < 0.1 ) {
               console.log( `${ otherIntersection.point } is ahead of ${ intersection.point }, so setting to splitB` );
@@ -202,6 +240,10 @@ function makeRoutes( streets ) {
     intersection.streets = afterStreets;
   } );
 
+  console.log( 'Intersections after splits:' );
+  console.log( intersections );
+
+  console.log( 'Streets after splits:' );
   console.log( streets );
 
   
@@ -253,7 +295,7 @@ function makeRoutes( streets ) {
   return routes;
 }
 
-
+console.log( 'Routes:' );
 console.log( routes );
 
 const players = [];
@@ -475,4 +517,12 @@ function randomFrom( array ) {
 
 function randomColor() {
   return `hsl( ${ Math.random() * 360 }deg, ${ Math.random() * 75 + 25 }%, ${ Math.random() * 40 + 40 }% )`;
+}
+
+function lineDist( P0, P1 ) {
+  return Math.hypot( P1[ 0 ] - P0[ 0 ], P1[ 1 ] - P0[ 1 ] );
+}
+
+function lineAngle( P0, P1 ) {
+  return Math.atan2( P1[ 1 ] - P0[ 1 ], P1[ 0 ] - P0[ 0 ] );
 }
