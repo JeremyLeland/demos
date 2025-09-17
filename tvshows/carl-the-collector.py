@@ -2,7 +2,7 @@ import requests
 import re
 from bs4 import BeautifulSoup
 
-urls = []
+# urls = []
 
 LIST_URL = 'https://pbskids.org/videos/carl-the-collector'
 
@@ -16,10 +16,12 @@ for link in list_soup.find_all( 'a' ):
 
     episode_url = f"https://pbskids.org{ url }"
 
-    print( episode_url )
+    # print( episode_url )
 
     episode_html = requests.get( episode_url ).text
-    # episode_soup = BeautifulSoup( episode_html, 'html.parser' )
+    episode_soup = BeautifulSoup( episode_html, 'html.parser' )
+
+    title = episode_soup.select_one( 'div[class*=videoTitle]' ).contents[ 0 ].replace('/',' - ')
 
     # Example:
     # "profile":"hls-16x9-1080p","url":"https://urs.pbs.org/redirect/6aab210556d64a649378b46d92f3575f/"
@@ -28,7 +30,9 @@ for link in list_soup.find_all( 'a' ):
     if match:
       video_url = match.group( 1 )
 
-      urls.append( video_url )
+      print( f"yt-dlp -o \"{ title }\" { video_url }")
+
+      # urls.append( video_url )
 
 # Can use this as argument to yt-dlp
-print( ' '.join( urls ) )
+# print( ' '.join( urls ) )
