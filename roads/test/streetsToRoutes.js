@@ -6,46 +6,35 @@ import { vec2 } from '../lib/gl-matrix.js'
 
 
 const streets = {
-  first: {
-    start: [ 1, 2 ],
-    end: [ 11, 2 ],
-    lanes: 1,
-  },
+  // first: {
+  //   start: [ 1, 2 ],
+  //   end: [ 11, 2 ],
+  //   lanes: 1,
+  // },
   second: {
     start: [ 1, 6 ],
     end: [ 11, 6 ],
     lanes: 1,
   },
-  third: {
-    start: [ 1, 10 ],
-    end: [ 11, 10 ],
-    lanes: 1,
-  },
-  A: {
-    start: [ 1, 2 ],
-    end: [ 1, 10 ],
-    lanes: 1,
-  },
+  // third: {
+  //   start: [ 1, 10 ],
+  //   end: [ 11, 10 ],
+  //   lanes: 1,
+  // },
+  // A: {
+  //   start: [ 1, 2 ],
+  //   end: [ 1, 10 ],
+  //   lanes: 1,
+  // },
   B: {
     start: [ 6, 2 ],
     end: [ 6, 10 ],
     lanes: 1,
   },
-  C: {
-    start: [ 11, 2 ],
-    end: [ 11, 10 ],
-    lanes: 1,
-  },
-  // NW: {
-  //   start: [ 8, 4 ],
-  //   end: [ 10, 2 ],
-  //   lanes: 2,
-  // },
-
-  // NE: {
-  //   start: [ 11, 8 ],
-  //   end: [ 9, 6 ],
-  //   lanes: 3,
+  // C: {
+  //   start: [ 11, 2 ],
+  //   end: [ 11, 10 ],
+  //   lanes: 1,
   // },
 };
 
@@ -142,14 +131,6 @@ function makeRoutes( streets ) {
   console.log( intersections );
 
   let splitIndex = 0;
-
-  // Could also maybe: 
-  //  1) find all intersections with our street in name
-  //  2) sort by intersection.point distance from start
-  //  3) create splits in that order, appending index
-  // Similar idea and same problems, might give better names and we'd know which intersections to update with new names  
-  //  - maybe too complicated, and it'll get messed up anyway if we do an incremental change later
-  //    - the other one doesn't require knowing all the other intersections and re-sorting them
 
   intersections.forEach( intersection => {
     const beforeStreets = intersection.streets;
@@ -267,6 +248,8 @@ function makeRoutes( streets ) {
     for ( let i = 1; i <= street.lanes; i ++ ) {
       lanes.push( i );
     }
+
+    street.routes = [];     // link lanes to parent street so we can find them for connecting intersections
     
     lanes.forEach( laneIndex => {
 
@@ -289,8 +272,67 @@ function makeRoutes( streets ) {
       // console.log( `${ newName }: ${ JSON.stringify( route ) }` );
 
       routes[ newName ] = route;
+
+      street.routes.push( newName );
     } );
   }
+
+  // 3. Link routes from intersections
+  intersections.forEach( intersection => {
+    for ( let i = 0; i < intersection.streets.length - 1; i ++ ) {
+      for ( let j = i + 1; j < intersection.streets.length; j ++ ) {
+        const fromRoutes = streets[ intersection.streets[ i ] ].routes;
+        const toRoutes = streets[ intersection.streets[ j ] ].routes;
+
+        // Currently assuming equal numbers of lanes
+        for ( let k = 0; k < fromRoutes.length && k < toRoutes.length; k ++ ) {
+
+          // TODO: Determine if we've reached opposite direction lanes by checking number of lanes in parent road
+
+          const fromName = k < 1 ? toRoutes[ k ] : fromRoutes[ k ];
+          const toName = k < 1 ? fromRoutes[ k ] : toRoutes[ k ];
+
+          const route1 = routes[ fromName ];
+          const route2 = routes[ toName ];
+
+          const newName = `${ fromName }_to_${ toName }`;
+          route1.next ??= [];
+          route1.next.push( newName );
+          
+          // Check if roads are on same line
+          const [ x1, y1 ] = route1.start;
+          const [ x2, y2 ] = route1.end;
+          const [ x3, y3 ] = route2.start;
+          const [ x4, y4 ] = route2.end;
+
+          if ( ( y3 - y1 ) * ( x2 - x1 ) == ( y2 - y1 ) * ( x3 - x1 ) ) {
+            const line = {
+              start: route1.end,
+              end: route2.start,
+            };
+            routes[ newName ] = line;
+            line.next = [ toName ];
+          }
+          else {
+            // const arc = Arc.getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4 );
+            // routes[ newName ] = arc;
+            // arc.next = [ toName ];
+            
+            // // Adjust roads to properly attach to arc
+            // route1.end = [
+            //   arc.center[ 0 ] + arc.radius * Math.cos( arc.startAngle ),
+            //   arc.center[ 1 ] + arc.radius * Math.sin( arc.startAngle ),
+            // ];
+            
+            // route2.start = [
+            //   arc.center[ 0 ] + arc.radius * Math.cos( arc.endAngle ),
+            //   arc.center[ 1 ] + arc.radius * Math.sin( arc.endAngle ),
+            // ];
+          }
+        }
+      }
+    }
+  } );
 
   return routes;
 }
@@ -298,47 +340,10 @@ function makeRoutes( streets ) {
 console.log( 'Routes:' );
 console.log( routes );
 
+console.log( 'Streets with routes:' );
+console.log( streets );
+
 const players = [];
-
-function joinRoads( A, B ) {
-  const road1 = roads[ A ];
-  const road2 = roads[ B ];
-
-  const newName = `${ A }_to_${ B }`;
-  road1.next ??= [];
-  road1.next.push( newName );
-  
-  // Check if roads are on same line
-  const [ x1, y1 ] = road1.start;
-  const [ x2, y2 ] = road1.end;
-  const [ x3, y3 ] = road2.start;
-  const [ x4, y4 ] = road2.end;
-
-  if ( ( y3 - y1 ) * ( x2 - x1 ) == ( y2 - y1 ) * ( x3 - x1 ) ) {
-    const line = {
-      start: road1.end,
-      end: road2.start,
-    };
-    roads[ newName ] = line;
-    line.next = [ B ];
-  }
-  else {
-    const arc = Arc.getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4 );
-    roads[ newName ] = arc;
-    arc.next = [ B ];
-    
-    // Adjust roads to properly attach to arc
-    road1.end = [
-      arc.center[ 0 ] + arc.radius * Math.cos( arc.startAngle ),
-      arc.center[ 1 ] + arc.radius * Math.sin( arc.startAngle ),
-    ];
-    
-    road2.start = [
-      arc.center[ 0 ] + arc.radius * Math.cos( arc.endAngle ),
-      arc.center[ 1 ] + arc.radius * Math.sin( arc.endAngle ),
-    ];
-  }
-}
 
 
 const canvas = new Canvas();
@@ -418,21 +423,26 @@ canvas.draw = ( ctx ) => {
 canvas.pointerMove = m => {
   hoverRouteName = Object.keys( routes ).find( name => {
     const route = routes[ name ];
-    const [ x1, y1 ] = route.start;
-    const [ x2, y2 ] = route.end;
+    if ( route.center ) {
 
-    const px = x2 - x1;
-    const py = y2 - y1;
+    }
+    else {
+      const [ x1, y1 ] = route.start;
+      const [ x2, y2 ] = route.end;
 
-    const u = ( ( m.x - x1 ) * px + ( m.y - y1 ) * py ) / ( ( px * px ) + ( py * py ) );
+      const px = x2 - x1;
+      const py = y2 - y1;
 
-    if ( 0 <= u && u <= 1 ) {
-      const hitX = x1 + u * px;
-      const hitY = y1 + u * py;
+      const u = ( ( m.x - x1 ) * px + ( m.y - y1 ) * py ) / ( ( px * px ) + ( py * py ) );
 
-      const dist = Math.hypot( hitX - m.x, hitY - m.y );
+      if ( 0 <= u && u <= 1 ) {
+        const hitX = x1 + u * px;
+        const hitY = y1 + u * py;
 
-      return dist < 0.2;
+        const dist = Math.hypot( hitX - m.x, hitY - m.y );
+
+        return dist < 0.2;
+      }
     }
   } );
 
