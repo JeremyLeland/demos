@@ -6,36 +6,36 @@ import { vec2 } from '../lib/gl-matrix.js'
 
 
 const streets = {
-  // first: {
-  //   start: [ 1, 2 ],
-  //   end: [ 11, 2 ],
-  //   lanes: 1,
-  // },
+  first: {
+    start: [ 1, 2 ],
+    end: [ 11, 2 ],
+    lanes: 1,
+  },
   second: {
     start: [ 1, 6 ],
     end: [ 11, 6 ],
     lanes: 1,
   },
-  // third: {
-  //   start: [ 1, 10 ],
-  //   end: [ 11, 10 ],
-  //   lanes: 1,
-  // },
-  // A: {
-  //   start: [ 1, 2 ],
-  //   end: [ 1, 10 ],
-  //   lanes: 1,
-  // },
+  third: {
+    start: [ 1, 10 ],
+    end: [ 11, 10 ],
+    lanes: 1,
+  },
+  A: {
+    start: [ 1, 2 ],
+    end: [ 1, 10 ],
+    lanes: 1,
+  },
   B: {
     start: [ 6, 2 ],
     end: [ 6, 10 ],
     lanes: 1,
   },
-  // C: {
-  //   start: [ 11, 2 ],
-  //   end: [ 11, 10 ],
-  //   lanes: 1,
-  // },
+  C: {
+    start: [ 11, 2 ],
+    end: [ 11, 10 ],
+    lanes: 1,
+  },
 };
 
 const LANE_WIDTH = 1;
@@ -281,60 +281,77 @@ function makeRoutes( streets ) {
   intersections.forEach( intersection => {
     for ( let i = 0; i < intersection.streets.length - 1; i ++ ) {
       for ( let j = i + 1; j < intersection.streets.length; j ++ ) {
-        const fromRoutes = streets[ intersection.streets[ i ] ].routes;
-        const toRoutes = streets[ intersection.streets[ j ] ].routes;
+        const thisStreet = streets[ intersection.streets[ i ] ];
+        const otherStreet = streets[ intersection.streets[ j ] ];
 
-        // Currently assuming equal numbers of lanes
-        for ( let k = 0; k < fromRoutes.length && k < toRoutes.length; k ++ ) {
+        // Our "ideal" orientation is from.end intersecting with to.start
+        // If this isn't the case, account for the backwards line
 
-          // TODO: Determine if we've reached opposite direction lanes by checking number of lanes in parent road
+        const thisBackwards = lineDist( thisStreet.start, intersection.point ) < lineDist( thisStreet.end, intersection.point );
+        const otherBackwards = lineDist( otherStreet.end, intersection.point ) < lineDist( otherStreet.start, intersection.point );
 
-          const fromName = k < 1 ? toRoutes[ k ] : fromRoutes[ k ];
-          const toName = k < 1 ? fromRoutes[ k ] : toRoutes[ k ];
+        console.log( 'fromBackwards: ' + thisBackwards + ', toBackwards: ' + otherBackwards );
 
-          const route1 = routes[ fromName ];
-          const route2 = routes[ toName ];
+        const thisRoutes = thisStreet.routes;
+        const otherRoutes = otherStreet.routes;
 
-          const newName = `${ fromName }_to_${ toName }`;
-          route1.next ??= [];
-          route1.next.push( newName );
-          
-          // Check if roads are on same line
-          const [ x1, y1 ] = route1.start;
-          const [ x2, y2 ] = route1.end;
-          const [ x3, y3 ] = route2.start;
-          const [ x4, y4 ] = route2.end;
+        // TODO: Account for number of lanes (instead of assuming 1)
+        for ( let k = 0; k < 2; k ++ ) {
+          const thisIndex  = thisBackwards  ? 1 - k : k;
+          const otherIndex = otherBackwards ? 1 - k : k;
 
-          if ( ( y3 - y1 ) * ( x2 - x1 ) == ( y2 - y1 ) * ( x3 - x1 ) ) {
-            const line = {
-              start: route1.end,
-              end: route2.start,
-            };
-            routes[ newName ] = line;
-            line.next = [ toName ];
-          }
-          else {
-            // const arc = Arc.getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4 );
-            // routes[ newName ] = arc;
-            // arc.next = [ toName ];
-            
-            // // Adjust roads to properly attach to arc
-            // route1.end = [
-            //   arc.center[ 0 ] + arc.radius * Math.cos( arc.startAngle ),
-            //   arc.center[ 1 ] + arc.radius * Math.sin( arc.startAngle ),
-            // ];
-            
-            // route2.start = [
-            //   arc.center[ 0 ] + arc.radius * Math.cos( arc.endAngle ),
-            //   arc.center[ 1 ] + arc.radius * Math.sin( arc.endAngle ),
-            // ];
-          }
+          const from = k < 1 ? otherRoutes[ otherIndex ] : thisRoutes[ thisIndex ];
+          const to   = k < 1 ? thisRoutes[ thisIndex ]   : otherRoutes[ otherIndex ];
+
+          joinRoutes( routes, from, to );
         }
       }
     }
   } );
 
   return routes;
+}
+
+function joinRoutes( routes, fromName, toName ) {
+  console.log( `Joining from ${ fromName } to ${ toName }` )
+
+  const route1 = routes[ fromName ];
+  const route2 = routes[ toName ];
+
+  const newName = `${ fromName }_to_${ toName }`;
+  route1.next ??= [];
+  route1.next.push( newName );
+  
+  // Check if roads are on same line
+  const [ x1, y1 ] = route1.start;
+  const [ x2, y2 ] = route1.end;
+  const [ x3, y3 ] = route2.start;
+  const [ x4, y4 ] = route2.end;
+
+  if ( ( y3 - y1 ) * ( x2 - x1 ) == ( y2 - y1 ) * ( x3 - x1 ) ) {
+    const line = {
+      start: route1.end,
+      end: route2.start,
+    };
+    routes[ newName ] = line;
+    line.next = [ toName ];
+  }
+  else {
+    const arc = Arc.getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4 );
+    routes[ newName ] = arc;
+    arc.next = [ toName ];
+    
+    // Adjust roads to properly attach to arc
+    route1.end = [
+      arc.center[ 0 ] + arc.radius * Math.cos( arc.startAngle ),
+      arc.center[ 1 ] + arc.radius * Math.sin( arc.startAngle ),
+    ];
+    
+    route2.start = [
+      arc.center[ 0 ] + arc.radius * Math.cos( arc.endAngle ),
+      arc.center[ 1 ] + arc.radius * Math.sin( arc.endAngle ),
+    ];
+  }
 }
 
 console.log( 'Routes:' );
@@ -379,7 +396,7 @@ canvas.draw = ( ctx ) => {
     // Road itself
     ctx.lineWidth = LANE_WIDTH - 0.1;
     // ctx.lineCap = 'square';
-    ctx.strokeStyle = name == hoverRouteName ? '#777' : '#555';
+    ctx.strokeStyle = name == hoverRouteName ? '#7778' : '#5558';
 
     // TODO: Hover (brighter stroke if matches name)
 
@@ -394,7 +411,7 @@ canvas.draw = ( ctx ) => {
     ctx.stroke();
 
     // Direction arrows
-    ctx.fillStyle = ctx.strokeStyle = 'yellow';
+    ctx.fillStyle = ctx.strokeStyle = '#ff08';
     ctx.lineWidth = 0.05;
     
     const roadLength = getLength( route );
