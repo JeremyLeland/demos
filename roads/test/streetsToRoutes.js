@@ -53,40 +53,7 @@ function makeRoutes( streets ) {
 
   // TODO: Should we duplicate streets to avoid altering original?
 
-  // const visited = [];
-  // const unvisited = Object.entries( streets );
-
-  // for ( let i = 0; i < 100; i ++ ) {
-  //   const [ name1, street1 ] = unvisited.pop();
-
-  //   unvisited.find( ( [ name2, street2 ] ) => {
-  //     // Find intersection between lines
-  //     const [ x1, y1 ] = street1.start;
-  //     const [ x2, y2 ] = street1.end;
-  //     const [ x3, y3 ] = street2.start;
-  //     const [ x4, y4 ] = street2.end;
-
-  //     const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
-      
-  //     // Is there a meaningful parallel/collinear case to account for here?
-  //     if ( D != 0 ) {
-  //       const uA = ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D;
-  //       const uB = ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D;
-        
-  //       if ( 0 <= uA && uA <= 1 && 0 <= uB && uB <= 1 ) {
-  //         const intersection = [
-  //           x1 + uA * ( x2 - x1 ),
-  //           y1 + uA * ( y2 - y1 ),
-  //         ];
-          
-  //         console.log( `Intersection between ${ name1 } and ${ name2 } at ${ intersection }` );
-  //       }
-  //     }
-  //   } );
-  // }
-
-
-  // TODO: Maybe save all the intersections for now, then break everything up later?
+  // Find intersections, then break up streets later
   const intersections = [];
 
   const visited = [];
@@ -360,7 +327,17 @@ console.log( routes );
 console.log( 'Streets with routes:' );
 console.log( streets );
 
-const players = [];
+
+const players = Array.from( Array( 10 ), _ => { 
+  const routeName = randomFrom( Object.keys( routes ) );
+
+  return {
+    color: randomColor(),
+    speed: 0.005,
+    routeName: routeName,
+    routeDistance: Math.random() * getLength( routes[ routeName ] ),
+  };
+} );
 
 
 const canvas = new Canvas();
@@ -372,16 +349,16 @@ const grid = new Grid( 0, 0, 12, 12 );
 canvas.update = ( dt ) => {
   // Draw at distance along path
   players.forEach( player => {
-    player.roadDistance += player.speed * dt;
+    player.routeDistance += player.speed * dt;
     
     for ( let i = 0; i < 10; i ++ ) {
-      const road = roads[ player.roadName ];
+      const route = routes[ player.routeName ];
 
-      const length = getLength( road );
+      const length = getLength( route );
 
-      if ( player.roadDistance > length ) {
-        player.roadDistance -= length;
-        player.roadName = randomFrom( road.next );   // TODO: random? based on path?
+      if ( player.routeDistance > length ) {
+        player.routeDistance -= length;
+        player.routeName = randomFrom( route.next );   // TODO: random? based on path?
       }
       else {
         break;
@@ -390,82 +367,92 @@ canvas.update = ( dt ) => {
   } );
 }
 
+const DRAW_ROADS = true;
+const DRAW_DIRECTION_ARROWS = false;
+const DRAW_PLAYERS = true;
+
 canvas.draw = ( ctx ) => {
 
   Object.entries( routes ).forEach( ( [ name, route ] ) => {
-    // Road itself
-    ctx.lineWidth = LANE_WIDTH - 0.1;
-    // ctx.lineCap = 'square';
-    ctx.strokeStyle = name == hoverRouteName ? '#7778' : '#5558';
-
-    // TODO: Hover (brighter stroke if matches name)
-
-    ctx.beginPath();
-    if ( route.center ) {
-      ctx.arc( ...route.center, route.radius, route.startAngle, route.endAngle, route.counterclockwise );
-    }
-    else {
-      ctx.lineTo( ...route.start );
-      ctx.lineTo( ...route.end );
-    }
-    ctx.stroke();
-
-    // Direction arrows
-    ctx.fillStyle = ctx.strokeStyle = '#ff08';
-    ctx.lineWidth = 0.05;
     
-    const roadLength = getLength( route );
-
-    for ( let length = 0; length < roadLength; length += 0.5 ) {
-      drawOnRoadAtDistance( ctx, route, length, drawArrow );
+    if ( DRAW_ROADS ) {
+      ctx.lineWidth = LANE_WIDTH - 0.1;
+      // ctx.lineCap = 'square';
+      ctx.strokeStyle = name == hoverRouteName ? '#7778' : '#5558';
+      
+      // TODO: Hover (brighter stroke if matches name)
+      
+      ctx.beginPath();
+      if ( route.center ) {
+        ctx.arc( ...route.center, route.radius, route.startAngle, route.endAngle, route.counterclockwise );
+      }
+      else {
+        ctx.lineTo( ...route.start );
+        ctx.lineTo( ...route.end );
+      }
+      ctx.stroke();
     }
-  } );
 
-  // ctx.strokeStyle = 'black';
-  // ctx.lineWidth = 0.02;
-
-  // players.forEach( player => {
-  //   ctx.fillStyle = player.color;
-  //   drawOnRoadAtDistance( ctx, roads[ player.roadName ], player.roadDistance, drawArrow );
-  // } );
-
-  ctx.lineWidth = 0.01;
-  grid.draw( ctx, '#fffa' );
-
-  ctx.font = '0.4px Arial';
-  ctx.textBaseline = 'center';
-  ctx.fillText( hoverRouteName, 0, 0 );
-}
-
-canvas.pointerMove = m => {
-  hoverRouteName = Object.keys( routes ).find( name => {
-    const route = routes[ name ];
-    if ( route.center ) {
-
-    }
-    else {
-      const [ x1, y1 ] = route.start;
-      const [ x2, y2 ] = route.end;
-
-      const px = x2 - x1;
-      const py = y2 - y1;
-
-      const u = ( ( m.x - x1 ) * px + ( m.y - y1 ) * py ) / ( ( px * px ) + ( py * py ) );
-
-      if ( 0 <= u && u <= 1 ) {
-        const hitX = x1 + u * px;
-        const hitY = y1 + u * py;
-
-        const dist = Math.hypot( hitX - m.x, hitY - m.y );
-
-        return dist < 0.2;
+    if ( DRAW_DIRECTION_ARROWS ) {
+      ctx.fillStyle = ctx.strokeStyle = '#ff08';
+      ctx.lineWidth = 0.05;
+      
+      const roadLength = getLength( route );
+      
+      for ( let length = 0; length < roadLength; length += 0.5 ) {
+        drawOnRoadAtDistance( ctx, route, length, drawArrow );
       }
     }
   } );
 
-  canvas.redraw();
-};
+  if ( DRAW_PLAYERS ) {
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 0.02;
+    
+    players.forEach( player => {
+      ctx.fillStyle = player.color;
+      drawOnRoadAtDistance( ctx, routes[ player.routeName ], player.routeDistance, drawArrow );
+    } );
+    
+    ctx.lineWidth = 0.01;
+    grid.draw( ctx, '#fffa' );
+  }
 
+  // ctx.font = '0.4px Arial';
+  // ctx.textBaseline = 'center';
+  // ctx.fillText( hoverRouteName, 0, 0 );
+}
+
+// canvas.pointerMove = m => {
+//   hoverRouteName = Object.keys( routes ).find( name => {
+//     const route = routes[ name ];
+//     if ( route.center ) {
+
+//     }
+//     else {
+//       const [ x1, y1 ] = route.start;
+//       const [ x2, y2 ] = route.end;
+
+//       const px = x2 - x1;
+//       const py = y2 - y1;
+
+//       const u = ( ( m.x - x1 ) * px + ( m.y - y1 ) * py ) / ( ( px * px ) + ( py * py ) );
+
+//       if ( 0 <= u && u <= 1 ) {
+//         const hitX = x1 + u * px;
+//         const hitY = y1 + u * py;
+
+//         const dist = Math.hypot( hitX - m.x, hitY - m.y );
+
+//         return dist < 0.2;
+//       }
+//     }
+//   } );
+
+//   canvas.redraw();
+// };
+
+canvas.start();
 
 function drawOnRoadAtDistance( ctx, road, distance, drawFunc ) {
   if ( road.center ) {
