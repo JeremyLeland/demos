@@ -4,38 +4,39 @@ import * as Arc from '../src/common/Arc.js';
 
 import { vec2 } from '../lib/gl-matrix.js'
 
+// TODO NEXT: 2 lanes for everything, make sure it all still links up correctly
 
 const streets = {
-  first: {
-    start: [ 1, 2 ],
-    end: [ 11, 2 ],
-    lanes: 1,
-  },
+  // first: {
+  //   start: [ 1, 2 ],
+  //   end: [ 11, 2 ],
+  //   lanes: 1,
+  // },
   second: {
     start: [ 1, 6 ],
     end: [ 11, 6 ],
-    lanes: 1,
+    lanes: 2,
   },
-  third: {
-    start: [ 1, 10 ],
-    end: [ 11, 10 ],
-    lanes: 1,
-  },
-  A: {
-    start: [ 1, 2 ],
-    end: [ 1, 10 ],
-    lanes: 1,
-  },
+  // third: {
+  //   start: [ 1, 10 ],
+  //   end: [ 11, 10 ],
+  //   lanes: 1,
+  // },
+  // A: {
+  //   start: [ 1, 2 ],
+  //   end: [ 1, 10 ],
+  //   lanes: 1,
+  // },
   B: {
     start: [ 6, 2 ],
     end: [ 6, 10 ],
-    lanes: 1,
+    lanes: 2,
   },
-  C: {
-    start: [ 11, 2 ],
-    end: [ 11, 10 ],
-    lanes: 1,
-  },
+  // C: {
+  //   start: [ 11, 2 ],
+  //   end: [ 11, 10 ],
+  //   lanes: 1,
+  // },
 };
 
 const LANE_WIDTH = 1;
@@ -109,11 +110,14 @@ function makeRoutes( streets ) {
       const streetVec = vec2.subtract( [], oldStreet.start, oldStreet.end );
       vec2.normalize( streetVec, streetVec );
 
+      // TODO: Back off by number of lanes in other street
+      const numLanes = 2;
+
       // Don't split if intersection is at start or end, just trim
       if ( lineDist( oldStreet.start, intersection.point ) < 1e-6 ) {
         console.log( `${ intersection.point } is near ${ oldStreet.start } so trimming start` );
 
-        vec2.add( oldStreet.start, oldStreet.start, vec2.scale( [], streetVec, -LANE_WIDTH ) );
+        vec2.add( oldStreet.start, oldStreet.start, vec2.scale( [], streetVec, -numLanes * LANE_WIDTH ) );
 
         afterStreets.push( beforeStreet );
         return;
@@ -121,8 +125,7 @@ function makeRoutes( streets ) {
       if ( lineDist( oldStreet.end, intersection.point ) < 1e-6 ) {
         console.log( `${ intersection.point } is near ${ oldStreet.end } so trimming end` );
 
-        // TODO: Offset by LANE_WIDTH like below
-        vec2.add( oldStreet.end, oldStreet.end, vec2.scale( [], streetVec, LANE_WIDTH ) );
+        vec2.add( oldStreet.end, oldStreet.end, vec2.scale( [], streetVec, numLanes * LANE_WIDTH ) );
 
         afterStreets.push( beforeStreet );
         return;
@@ -141,12 +144,12 @@ function makeRoutes( streets ) {
 
       streets[ splitA ] = {
         start: oldStreet.start, 
-        end: vec2.add( [], intersection.point, vec2.scale( [], streetVec, LANE_WIDTH ) ),
+        end: vec2.add( [], intersection.point, vec2.scale( [], streetVec, numLanes * LANE_WIDTH ) ),
         lanes: oldStreet.lanes,
       };
 
       streets[ splitB ] = {
-        start: vec2.add( [], intersection.point, vec2.scale( [], streetVec, -LANE_WIDTH ) ),
+        start: vec2.add( [], intersection.point, vec2.scale( [], streetVec, -numLanes * LANE_WIDTH ) ),
         end: oldStreet.end,
         lanes: oldStreet.lanes,
       };
@@ -263,12 +266,14 @@ function makeRoutes( streets ) {
         const otherRoutes = otherStreet.routes;
 
         // TODO: Account for number of lanes (instead of assuming 1)
-        for ( let k = 0; k < 2; k ++ ) {
-          const thisIndex  = thisBackwards  ? 1 - k : k;
-          const otherIndex = otherBackwards ? 1 - k : k;
+        const numLanes = 2;
 
-          const from = k < 1 ? otherRoutes[ otherIndex ] : thisRoutes[ thisIndex ];
-          const to   = k < 1 ? thisRoutes[ thisIndex ]   : otherRoutes[ otherIndex ];
+        for ( let k = 0; k < numLanes * 2; k ++ ) {
+          const thisIndex  = thisBackwards  ? numLanes * 2 - 1 - k : k;
+          const otherIndex = otherBackwards ? numLanes * 2 - 1 - k : k;
+
+          const from = k < numLanes ? otherRoutes[ otherIndex ] : thisRoutes[ thisIndex ];
+          const to   = k < numLanes ? thisRoutes[ thisIndex ]   : otherRoutes[ otherIndex ];
 
           joinRoutes( routes, from, to );
         }
@@ -327,6 +332,30 @@ console.log( routes );
 console.log( 'Streets with routes:' );
 console.log( streets );
 
+const nameDiv = document.createElement( 'div' );
+for ( const name of Object.keys( routes ) ) {
+  // const label = document.createTextNode( name );
+  // nameDiv.appendChild( label );
+
+  const div = document.createElement( 'div' );
+  div.innerText = name;
+
+  div.addEventListener( 'mouseover', _ => {
+    hoverRouteName = name;
+    canvas.redraw();
+  } );
+
+  nameDiv.appendChild( div );
+}
+
+document.body.appendChild( nameDiv );
+
+Object.assign( nameDiv.style, {
+  position: 'absolute',
+  left: 0,
+  top: 0,
+} );
+
 
 const players = Array.from( Array( 10 ), _ => { 
   const routeName = randomFrom( Object.keys( routes ) );
@@ -368,7 +397,7 @@ canvas.update = ( dt ) => {
 }
 
 const DRAW_ROADS = true;
-const DRAW_DIRECTION_ARROWS = false;
+const DRAW_DIRECTION_ARROWS = true;
 const DRAW_PLAYERS = true;
 
 canvas.draw = ( ctx ) => {
@@ -378,7 +407,7 @@ canvas.draw = ( ctx ) => {
     if ( DRAW_ROADS ) {
       ctx.lineWidth = LANE_WIDTH - 0.1;
       // ctx.lineCap = 'square';
-      ctx.strokeStyle = name == hoverRouteName ? '#7778' : '#5558';
+      ctx.strokeStyle = name == hoverRouteName ? '#777' : '#5555';
       
       // TODO: Hover (brighter stroke if matches name)
       
@@ -452,7 +481,7 @@ canvas.draw = ( ctx ) => {
 //   canvas.redraw();
 // };
 
-canvas.start();
+// canvas.start();
 
 function drawOnRoadAtDistance( ctx, road, distance, drawFunc ) {
   if ( road.center ) {
