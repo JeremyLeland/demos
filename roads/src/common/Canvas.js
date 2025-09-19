@@ -180,6 +180,15 @@ export class Canvas {
     this.#reqId = null;   // so we can check if stopped
   }
 
+  toggle() {
+    if ( this.#reqId ) {
+      this.stop();
+    }
+    else {
+      this.start();
+    }
+  }
+
   redraw() {
     if ( !this.#reqId ) {   // don't draw if we are animated
       this.#doDraw();

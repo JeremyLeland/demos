@@ -4,44 +4,55 @@ import * as Arc from '../src/common/Arc.js';
 
 import { vec2 } from '../lib/gl-matrix.js'
 
-// TODO NEXT: 2 lanes for everything, make sure it all still links up correctly
+// TODO: NEXT: Support mix of 1 lane and 2 lane
+//       Need reference to original street to know how many lanes
+
+const GRID_LEFT = 2;
+const GRID_TOP = 2;
+const BLOCK_WIDTH = 8;
+const BLOCK_HEIGHT = 7;
+
+const GRID_RIGHT = GRID_LEFT + BLOCK_WIDTH * 2;
+const GRID_BOTTOM = GRID_TOP + BLOCK_HEIGHT * 2;
 
 const streets = {
-  // first: {
-  //   start: [ 1, 2 ],
-  //   end: [ 11, 2 ],
-  //   lanes: 1,
-  // },
+  first: {
+    start: [ GRID_LEFT, GRID_TOP ],
+    end: [ GRID_RIGHT, GRID_TOP ],
+    lanes: 2,
+  },
   second: {
-    start: [ 1, 6 ],
-    end: [ 11, 6 ],
+    start: [ GRID_LEFT, GRID_TOP + BLOCK_HEIGHT ],
+    end: [ GRID_RIGHT, GRID_TOP + BLOCK_HEIGHT ],
     lanes: 2,
   },
-  // third: {
-  //   start: [ 1, 10 ],
-  //   end: [ 11, 10 ],
-  //   lanes: 1,
-  // },
-  // A: {
-  //   start: [ 1, 2 ],
-  //   end: [ 1, 10 ],
-  //   lanes: 1,
-  // },
+  third: {
+    start: [ GRID_LEFT, GRID_TOP + BLOCK_HEIGHT * 2 ],
+    end: [ GRID_RIGHT, GRID_TOP + BLOCK_HEIGHT * 2 ],
+    lanes: 2,
+  },
+  A: {
+    start: [ GRID_LEFT, GRID_TOP ],
+    end: [ GRID_LEFT, GRID_BOTTOM ],
+    lanes: 2,
+  },
   B: {
-    start: [ 6, 2 ],
-    end: [ 6, 10 ],
+    start: [ GRID_LEFT + BLOCK_WIDTH, GRID_TOP ],
+    end: [ GRID_LEFT + BLOCK_WIDTH, GRID_BOTTOM ],
     lanes: 2,
   },
-  // C: {
-  //   start: [ 11, 2 ],
-  //   end: [ 11, 10 ],
-  //   lanes: 1,
-  // },
+  C: {
+    start: [ GRID_LEFT + BLOCK_WIDTH * 2, GRID_TOP ],
+    end: [ GRID_LEFT + BLOCK_WIDTH * 2, GRID_BOTTOM ],
+    lanes: 2,
+  },
 };
 
 const LANE_WIDTH = 1;
 
 const routes = makeRoutes( streets );
+
+console.log( routes );
 
 let hoverRouteName;
 
@@ -260,7 +271,7 @@ function makeRoutes( streets ) {
         const thisBackwards = lineDist( thisStreet.start, intersection.point ) < lineDist( thisStreet.end, intersection.point );
         const otherBackwards = lineDist( otherStreet.end, intersection.point ) < lineDist( otherStreet.start, intersection.point );
 
-        console.log( 'fromBackwards: ' + thisBackwards + ', toBackwards: ' + otherBackwards );
+        // console.log( 'fromBackwards: ' + thisBackwards + ', toBackwards: ' + otherBackwards );
 
         const thisRoutes = thisStreet.routes;
         const otherRoutes = otherStreet.routes;
@@ -284,6 +295,7 @@ function makeRoutes( streets ) {
   return routes;
 }
 
+
 function joinRoutes( routes, fromName, toName ) {
   console.log( `Joining from ${ fromName } to ${ toName }` )
 
@@ -300,7 +312,7 @@ function joinRoutes( routes, fromName, toName ) {
   const [ x3, y3 ] = route2.start;
   const [ x4, y4 ] = route2.end;
 
-  if ( ( y3 - y1 ) * ( x2 - x1 ) == ( y2 - y1 ) * ( x3 - x1 ) ) {
+  if ( Math.abs( ( y3 - y1 ) * ( x2 - x1 ) - ( y2 - y1 ) * ( x3 - x1 ) ) < 1e-6 ) {
     const line = {
       start: route1.end,
       end: route2.start,
@@ -318,11 +330,19 @@ function joinRoutes( routes, fromName, toName ) {
       arc.center[ 0 ] + arc.radius * Math.cos( arc.startAngle ),
       arc.center[ 1 ] + arc.radius * Math.sin( arc.startAngle ),
     ];
+
+    if ( Number.isNaN( route1.end[ 0 ] ) || Number.isNaN( route1.end[ 1 ] ) ) {
+      debugger;
+    }
     
     route2.start = [
       arc.center[ 0 ] + arc.radius * Math.cos( arc.endAngle ),
       arc.center[ 1 ] + arc.radius * Math.sin( arc.endAngle ),
     ];
+
+    if ( Number.isNaN( route2.start[ 0 ] ) || Number.isNaN( route2.start[ 1 ] ) ) {
+      debugger;
+    }
   }
 }
 
@@ -354,6 +374,8 @@ Object.assign( nameDiv.style, {
   position: 'absolute',
   left: 0,
   top: 0,
+  height: '100%',
+  overflow: 'scroll',
 } );
 
 
@@ -371,9 +393,9 @@ const players = Array.from( Array( 10 ), _ => {
 
 const canvas = new Canvas();
 canvas.backgroundColor = '#123';
-canvas.bounds = [ -0.5, -0.5, 12.5, 12.5 ];
+canvas.bounds = [ -0.5, -0.5, 20.5, 20.5 ];
 
-const grid = new Grid( 0, 0, 12, 12 );
+const grid = new Grid( 0, 0, 20, 20 );
 
 canvas.update = ( dt ) => {
   // Draw at distance along path
@@ -397,7 +419,7 @@ canvas.update = ( dt ) => {
 }
 
 const DRAW_ROADS = true;
-const DRAW_DIRECTION_ARROWS = true;
+const DRAW_DIRECTION_ARROWS = false;
 const DRAW_PLAYERS = true;
 
 canvas.draw = ( ctx ) => {
@@ -480,6 +502,12 @@ canvas.draw = ( ctx ) => {
 
 //   canvas.redraw();
 // };
+
+document.addEventListener( 'keydown', e => {
+  if ( e.key == ' ' ) {
+    canvas.toggle();
+  }
+} );
 
 // canvas.start();
 
