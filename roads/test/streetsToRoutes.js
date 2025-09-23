@@ -16,36 +16,36 @@ const GRID_RIGHT = GRID_LEFT + BLOCK_WIDTH * 2;
 const GRID_BOTTOM = GRID_TOP + BLOCK_HEIGHT * 2;
 
 const streets = {
-  // first: {
-  //   start: [ GRID_LEFT, GRID_TOP ],
-  //   end: [ GRID_RIGHT, GRID_TOP ],
-  //   lanes: 2,
-  // },
+  first: {
+    start: [ GRID_LEFT, GRID_TOP ],
+    end: [ GRID_RIGHT, GRID_TOP ],
+    lanes: 2,
+  },
   second: {
     start: [ GRID_LEFT, GRID_TOP + BLOCK_HEIGHT ],
     end: [ GRID_RIGHT, GRID_TOP + BLOCK_HEIGHT ],
     lanes: 2,
   },
-  // third: {
-  //   start: [ GRID_LEFT, GRID_TOP + BLOCK_HEIGHT * 2 ],
-  //   end: [ GRID_RIGHT, GRID_TOP + BLOCK_HEIGHT * 2 ],
-  //   lanes: 2,
-  // },
-  // A: {
-  //   start: [ GRID_LEFT, GRID_TOP ],
-  //   end: [ GRID_LEFT, GRID_BOTTOM ],
-  //   lanes: 2,
-  // },
+  third: {
+    start: [ GRID_LEFT, GRID_TOP + BLOCK_HEIGHT * 2 ],
+    end: [ GRID_RIGHT, GRID_TOP + BLOCK_HEIGHT * 2 ],
+    lanes: 2,
+  },
+  A: {
+    start: [ GRID_LEFT, GRID_TOP ],
+    end: [ GRID_LEFT, GRID_BOTTOM ],
+    lanes: 2,
+  },
   B: {
     start: [ GRID_LEFT + BLOCK_WIDTH, GRID_TOP ],
     end: [ GRID_LEFT + BLOCK_WIDTH, GRID_BOTTOM ],
-    lanes: 1,
+    lanes: 2,
   },
-  // C: {
-  //   start: [ GRID_LEFT + BLOCK_WIDTH * 2, GRID_TOP ],
-  //   end: [ GRID_LEFT + BLOCK_WIDTH * 2, GRID_BOTTOM ],
-  //   lanes: 2,
-  // },
+  C: {
+    start: [ GRID_LEFT + BLOCK_WIDTH * 2, GRID_TOP ],
+    end: [ GRID_LEFT + BLOCK_WIDTH * 2, GRID_BOTTOM ],
+    lanes: 2,
+  },
 };
 
 const LANE_WIDTH = 1;
@@ -115,18 +115,14 @@ function makeRoutes( streets ) {
     const beforeStreets = intersection.streets;
     const afterStreets = [];
 
-    for ( let i = 0; i < intersection.streets.length; i ++ ) {
-      const beforeStreetName = beforeStreets[ i ];
-      const otherStreetName = beforeStreets[ ( i + 1 ) % intersection.streets.length ];
-
-      const oldStreet = streets[ beforeStreetName ];
-      const otherStreet = streets[ otherStreetName ];
+    beforeStreets.forEach( beforeStreet => {
+      const oldStreet = streets[ beforeStreet ];
 
       const streetVec = vec2.subtract( [], oldStreet.start, oldStreet.end );
       vec2.normalize( streetVec, streetVec );
 
-      // TODO: What if it's not a right angle?
-      const numLanes = otherStreet.lanes;
+      // TODO: Back off by number of lanes in other street
+      const numLanes = 2;
 
       // Don't split if intersection is at start or end, just trim
       if ( lineDist( oldStreet.start, intersection.point ) < 1e-6 ) {
@@ -134,7 +130,7 @@ function makeRoutes( streets ) {
 
         vec2.add( oldStreet.start, oldStreet.start, vec2.scale( [], streetVec, -numLanes * LANE_WIDTH ) );
 
-        afterStreets.push( beforeStreetName );
+        afterStreets.push( beforeStreet );
         return;
       }
       if ( lineDist( oldStreet.end, intersection.point ) < 1e-6 ) {
@@ -142,7 +138,7 @@ function makeRoutes( streets ) {
 
         vec2.add( oldStreet.end, oldStreet.end, vec2.scale( [], streetVec, numLanes * LANE_WIDTH ) );
 
-        afterStreets.push( beforeStreetName );
+        afterStreets.push( beforeStreet );
         return;
       };
 
@@ -150,8 +146,10 @@ function makeRoutes( streets ) {
       // instead of constantly appending split numbers (e.g. first_0_4_5_6 )
       // Probably also useful later to get street info like proper name, maybe speed, etc
 
-      const splitA = `${ beforeStreetName }_${ splitIndex ++ }`;
-      const splitB = `${ beforeStreetName }_${ splitIndex ++ }`;
+      const splitA = `${ beforeStreet }_${ splitIndex ++ }`;
+      const splitB = `${ beforeStreet }_${ splitIndex ++ }`;
+
+      delete streets[ beforeStreet ];
     
       // TODO: Account for multiple lanes (likely from reference to original street info)
 
@@ -178,7 +176,11 @@ function makeRoutes( streets ) {
         }
 
         for ( let i = 0; i < otherIntersection.streets.length; i ++ ) {
-          if ( otherIntersection.streets[ i ] == beforeStreetName ) {
+          if ( otherIntersection.streets[ i ] == beforeStreet ) {
+            // TODO: check if intersection point is on splitA or splitB
+            //       need to add function to check if point is within line
+            //    actually, should just need to project intersection onto street to see if it's positive or negative
+            //      (for which side of split it gets)
 
             // TODO: How would we handle this for arcs? Would need in terms of angles or distance
 
@@ -195,12 +197,9 @@ function makeRoutes( streets ) {
           }
         }
       } );
-    }
+    } );
 
     intersection.streets = afterStreets;
-
-    beforeStreets.forEach( beforeStreetName => delete streets[ beforeStreetName ] );
-
   } );
 
   console.log( 'Intersections after splits:' );
@@ -243,7 +242,6 @@ function makeRoutes( streets ) {
       const route = {
         start: laneIndex < 0 ? B : A,
         end:   laneIndex < 0 ? A : B,
-        // parent: name,
       };
 
       const routeDX = route.end[ 0 ] - route.start[ 0 ];
@@ -278,59 +276,18 @@ function makeRoutes( streets ) {
         const thisRoutes = thisStreet.routes;
         const otherRoutes = otherStreet.routes;
 
-
-        // What should a turn from a 2 lane street onto a 1 lane street look like?
-        //  - it's not going to be an even arc...should it be a curve and a straight segment?
-        //  - do we need to change up the lane numbers to make intersection match?
-
-
-        // Or how about we work from outside in, stopping as soon as we hit min of this.lanes,other.lanes?
-        
-        // TODO: Left-most lane should be turning left, rightmost lane should be turning right
-
         // TODO: Account for number of lanes (instead of assuming 1)
-        const numLanes = Math.min( thisStreet.lanes, otherStreet.lanes ); //2;
+        const numLanes = 2;
 
-        // Maybe we need to split this into two loops for the from/to split
+        for ( let k = 0; k < numLanes * 2; k ++ ) {
+          const thisIndex  = thisBackwards  ? numLanes * 2 - 1 - k : k;
+          const otherIndex = otherBackwards ? numLanes * 2 - 1 - k : k;
 
-        for ( let k = 0; k < numLanes; k ++ ) {
-          const thisIndex  = thisBackwards  ? thisStreet.lanes * 2 - 1 - k : k;
-          const otherIndex = otherBackwards ? otherStreet.lanes * 2 - 1 - k : k;
+          const from = k < numLanes ? otherRoutes[ otherIndex ] : thisRoutes[ thisIndex ];
+          const to   = k < numLanes ? thisRoutes[ thisIndex ]   : otherRoutes[ otherIndex ];
 
-          console.log( `Trying to link ${ thisIndex } to ${ otherIndex }` );
-
-          const from = otherRoutes[ otherIndex ];
-          const to   = thisRoutes[ thisIndex ];
-          
           joinRoutes( routes, from, to );
         }
-
-        for ( let k = 0; k < numLanes; k ++ ) {
-          const thisIndex  = thisBackwards  ? k : thisStreet.lanes * 2 - 1 - k;
-          const otherIndex = otherBackwards ? k : otherStreet.lanes * 2 - 1 - k;
-
-          console.log( `Trying to link ${ thisIndex } to ${ otherIndex }` );
-
-          const from = thisRoutes[ thisIndex ];
-          const to   = otherRoutes[ otherIndex ];
-          
-          joinRoutes( routes, from, to );
-        }
-
-        // for ( let k = 0; k < numLanes * 2; k ++ ) {
-        //   const thisIndex  = thisBackwards  ? thisStreet.lanes * 2 - 1 - k : k;
-        //   const otherIndex = otherBackwards ? otherStreet.lanes * 2 - 1 - k : k;
-
-        //   console.log( `Trying to link ${ thisIndex } to ${ otherIndex }` );
-
-        //   if ( thisIndex < thisStreet.lanes * 2 && otherIndex < otherStreet.lanes * 2 ) {
- 
-        //     const from = k < numLanes ? otherRoutes[ otherIndex ] : thisRoutes[ thisIndex ];
-        //     const to   = k < numLanes ? thisRoutes[ thisIndex ]   : otherRoutes[ otherIndex ];
-            
-        //     joinRoutes( routes, from, to );
-        //   }
-        // }
       }
     }
   } );
@@ -462,7 +419,7 @@ canvas.update = ( dt ) => {
 }
 
 const DRAW_ROADS = true;
-const DRAW_DIRECTION_ARROWS = true;
+const DRAW_DIRECTION_ARROWS = false;
 const DRAW_PLAYERS = true;
 
 canvas.draw = ( ctx ) => {
