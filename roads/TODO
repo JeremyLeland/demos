@@ -17,3 +17,9 @@ Define "roads" as logical, named roadways.
 Automatically figure out intersections with other roads.
 Build routes from that, which include arcs to turn at intersections.
 Take into account lanes.
+
+
+Elipses instead of arcs? Elipse length? Elipse join between lines?
+  - Elipses lose the power of arcs, they end up being like quadratic beziers
+  - Can't stack or easily get length without integrating
+  - See if I can stick with lines and arcs for now (use combined line and arc for long turns)

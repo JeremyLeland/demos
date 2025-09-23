@@ -4,25 +4,23 @@ import * as Arc from '../src/common/Arc.js';
 
 import { vec2 } from '../lib/gl-matrix.js'
 
-// TODO: NEXT: Support mix of 1 lane and 2 lane
-//       Need reference to original street to know how many lanes
 
 const streets = {
   first: {
-    start: [ 1, 5 ],
-    end: [ 7, 5 ],
+    start: [ 7, 5 ],
+    end: [ 1, 5 ],
     lanes: { left: 3, right: 3 },
   },
-  // A_up: {
-  //   start: [ 7, 5 ],
-  //   end: [ 7, 1 ],
-  //   lanes: { left: 2, right: 2 },
-  // },
-  A_down: {
-    start: [ 7, 5 ],
-    end: [ 7, 10 ],
+  A_up: {
+    start: [ 7, 1 ],
+    end: [ 7, 5 ],
     lanes: { left: 2, right: 2 },
   },
+  // A_down: {
+  //   start: [ 7, 10 ],
+  //   end: [ 7, 5 ],
+  //   lanes: { left: 2, right: 2 },
+  // },
 };
 
 const LANE_WIDTH = 1;
@@ -64,6 +62,9 @@ function makeRoutes( streets ) {
       const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
       
       // Is there a meaningful parallel/collinear case to account for here?
+      // TODO: You could have two collinear segments that touch each other.
+      //       It might happen while editing, maybe when removing lines from a grid
+      //       Should handle it at some point
       if ( D != 0 ) {
         const uA = ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D;
         const uB = ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D;
@@ -259,8 +260,6 @@ function makeRoutes( streets ) {
 
         console.log( 'Angle from ' + intersection.streets[ i ] + ' to ' + intersection.streets[ j ] + ': ' + angle );
 
-        // TODO: Link from left to right if angle > 0, right to left if angle < 0 ?
-
         
         // What should a turn from a 2 lane street onto a 1 lane street look like?
         //  - it's not going to be an even arc...should it be a curve and a straight segment?
@@ -268,23 +267,14 @@ function makeRoutes( streets ) {
         //  - do we need to change up the lane numbers to make intersection match?
 
 
-        // Or how about we work from outside in, stopping as soon as we hit min of this.lanes,other.lanes?
-        
-        // TODO: Left-most lane should be turning left, rightmost lane should be turning right
-        
-
-        // TODO: Account for number of lanes (instead of assuming 1)
         if ( angle < 0 ) {
-
           // Making left turns from right lanes
           const numLeftTurns = Math.min( thisStreet.lanes.right, otherStreet.lanes.right );
 
           for ( let k = 0; k < numLeftTurns; k ++ ) {
+            const from =  thisBackwards ?  thisStreet.routes.left[  thisStreet.lanes.left - 1 - k ] :  thisStreet.routes.right[ k ];
+            const to   = otherBackwards ? otherStreet.routes.left[ otherStreet.lanes.left - 1 - k ] : otherStreet.routes.right[ k ];
 
-            // TODO: Account for this/otherBackwards here
-            const from = thisStreet.routes.right[ k ];
-            const to   = otherStreet.routes.right[ k ];
-            
             joinRoutes( routes, from, to );
           }
 
@@ -292,11 +282,9 @@ function makeRoutes( streets ) {
           const numRightTurns = Math.min( thisStreet.lanes.left, otherStreet.lanes.left );
 
           for ( let k = 0; k < numRightTurns; k ++ ) {
+            const from = otherBackwards ? otherStreet.routes.right[ otherStreet.lanes.right - 1 - k ] : otherStreet.routes.left[ k ];
+            const to   =  thisBackwards ?  thisStreet.routes.right[  thisStreet.lanes.right - 1 - k ] :  thisStreet.routes.left[ k ];
 
-            // TODO: Account for this/otherBackwards here
-            const from = otherStreet.routes.left[ k ];
-            const to   = thisStreet.routes.left[ k ];
-            
             joinRoutes( routes, from, to );
           }
         }
@@ -305,11 +293,9 @@ function makeRoutes( streets ) {
           const numRightTurns = Math.min( thisStreet.lanes.right, otherStreet.lanes.right );
 
           for ( let k = 0; k < numRightTurns; k ++ ) {
+            const from =  thisBackwards ?  thisStreet.routes.left[ k ] :  thisStreet.routes.right[  thisStreet.lanes.right - 1 - k ];
+            const to   = otherBackwards ? otherStreet.routes.left[ k ] : otherStreet.routes.right[ otherStreet.lanes.right - 1 - k ];
 
-            // TODO: Account for this/otherBackwards here
-            const from = thisStreet.routes.right[ thisStreet.lanes.right - 1 - k ];
-            const to   = otherStreet.routes.right[ otherStreet.lanes.right - 1 - k ];
-            
             joinRoutes( routes, from, to );
           }
 
@@ -317,11 +303,9 @@ function makeRoutes( streets ) {
           const numLeftTurns = Math.min( thisStreet.lanes.left, otherStreet.lanes.left );
 
           for ( let k = 0; k < numLeftTurns; k ++ ) {
+            const from = otherBackwards ? otherStreet.routes.right[ k ] : otherStreet.routes.left[ otherStreet.lanes.right - 1 - k ];
+            const to   =  thisBackwards ?  thisStreet.routes.right[ k ] :  thisStreet.routes.left[  thisStreet.lanes.right - 1 - k ];
 
-            // TODO: Account for this/otherBackwards here
-            const from = otherStreet.routes.left[ otherStreet.lanes.right - 1 - k ];
-            const to   = thisStreet.routes.left[ thisStreet.lanes.right - 1 - k ];
-            
             joinRoutes( routes, from, to );
           }
         }
