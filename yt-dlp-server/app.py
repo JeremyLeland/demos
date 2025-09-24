@@ -10,7 +10,7 @@ progress_queue = queue.Queue()
 
 def run_yt_dlp(url):
     process = subprocess.Popen(
-        ['yt-dlp', '-P', '/mnt/external/!!! Olivia !!!/Downloads/', url],
+        ['yt-dlp', '-P', 'temp:/tmp/', '-P', '/mnt/external/!!! Olivia !!!/Downloads/', url],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
