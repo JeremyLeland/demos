@@ -1,0 +1,20 @@
+# Save this file to ~/.config/systemd/user/yt-dlp-server.service
+# Then run:
+# systemctl --user daemon-reexec
+# systemctl --user daemon-reload
+# systemctl --user enable yt-dlp-server.service
+# systemctl --user start yt-dlp-server.service
+
+
+[Unit]
+Description=YT-DLP Download Service
+After=network.target
+
+[Service]
+WorkingDirectory=%h/code/demos/yt-dlp-server
+ExecStart=/usr/bin/python3 app.py
+Restart=always
+
+[Install]
+WantedBy=default.target
+
