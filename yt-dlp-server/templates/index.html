@@ -2,36 +2,64 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>yt-dlp Web Downloader</title>
+  <meta name="viewport" content="width=device-width, user-scalable=no">
+  <title>yt-dlp Web Downloader</title>
+  <style>
+    body,html {
+      height: 100%;
+      margin: 0;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    form {
+      display: flex;
+    }
+
+    input {
+      flex-grow: 1;
+    }
+
+    pre {
+      flex-grow: 1;
+      background: 'gray';
+      overflow: auto;
+    }
+  </style>
 </head>
 <body>
-    <h1>Download a Video</h1>
+  <div class="container">
     <form id="download-form">
-        <input type="text" id="url" placeholder="Enter video URL" required>
-        <button type="submit">Download</button>
+      <input type="text" id="url" placeholder="Enter video URL" required>
+      <button type="submit">Download</button>
     </form>
-
+    
     <pre id="progress"></pre>
+  </div>
 
-    <script>
-        document.getElementById('download-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const url = document.getElementById('url').value;
+  <script>
+    document.getElementById('download-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const url = document.getElementById('url').value;
 
-            fetch('/start_download', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
-            });
+      fetch('/start_download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+      });
 
-            const progressElem = document.getElementById('progress');
-            progressElem.textContent = '';
+      const progressElem = document.getElementById('progress');
+      progressElem.textContent = '';
 
-            const evtSource = new EventSource('/progress');
-            evtSource.onmessage = function(event) {
-                progressElem.textContent += event.data + '\n';
-            };
-        });
-    </script>
+      const evtSource = new EventSource('/progress');
+      evtSource.onmessage = function(event) {
+        progressElem.textContent += event.data + '\n';
+      };
+    } );
+  </script>
 </body>
 </html>
