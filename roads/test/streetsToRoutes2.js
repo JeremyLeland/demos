@@ -9,22 +9,22 @@ const streets = {
   first: {
     start: [ 18, 3 ],
     end: [ 2, 3 ],
-    lanes: { left: 3, right: 3 },
+    lanes: { left: 3, right: 2 },
   },
   second: {
     start: [ 18, 12 ],
     end: [ 2, 12 ],
-    lanes: { left: 3, right: 3 },
+    lanes: { left: 2, right: 3 },
   },
   A: {
     start: [ 2, 3 ],
     end: [ 2, 12 ],
-    lanes: { left: 2, right: 2 },
+    lanes: { left: 2, right: 3 },
   },
   B: {
     start: [ 13, 3 ],
     end: [ 13, 12 ],
-    lanes: { left: 2, right: 2 },
+    lanes: { left: 3, right: 2 },
   },
 };
 
@@ -277,46 +277,64 @@ function makeRoutes( streets ) {
 
         if ( cross[ 2 ] > 0 ) {
           // Making right turns from thisStreet's right lanes
-          const numRightTurns = Math.min( thisStreet.lanes.right, otherStreet.lanes.right );
-
-          for ( let k = 0; k < numRightTurns; k ++ ) {
-            const from =  thisBackwards ?  thisStreet.routes.left[ k ] :  thisStreet.routes.right[  thisStreet.lanes.right - 1 - k ];
-            const to   = otherBackwards ? otherStreet.routes.left[ k ] : otherStreet.routes.right[ otherStreet.lanes.right - 1 - k ];
-
-            joinRoutes( routes, from, to );
+          {
+            const fromRoutes =  thisBackwards ?  thisStreet.routes.left :  thisStreet.routes.right;
+            const toRoutes   = otherBackwards ? otherStreet.routes.left : otherStreet.routes.right;
+            
+            const numTurns = Math.min( fromRoutes.length, toRoutes.length );
+            
+            for ( let k = 0; k < numTurns; k ++ ) {
+              const from = fromRoutes[  thisBackwards ? k : fromRoutes.length - 1 - k ];
+              const to   =   toRoutes[ otherBackwards ? k :   toRoutes.length - 1 - k ];
+              
+              joinRoutes( routes, from, to );
+            }
           }
 
           // Making left turns from otherStreet's left lanes (going in opposite direction of road)
-          const numLeftTurns = Math.min( thisStreet.lanes.left, otherStreet.lanes.left );
+          {
+            const fromRoutes = otherBackwards ? otherStreet.routes.right : otherStreet.routes.left;
+            const toRoutes   =  thisBackwards ?  thisStreet.routes.right :  thisStreet.routes.left;
 
-          // TODO: This might be wrong number of turns if left and right aren't equal...do I need to reorder this?
-
-          for ( let k = 0; k < numLeftTurns; k ++ ) {
-            const from = otherBackwards ? otherStreet.routes.right[ k ] : otherStreet.routes.left[ otherStreet.lanes.left - 1 - k ];
-            const to   =  thisBackwards ?  thisStreet.routes.right[ k ] :  thisStreet.routes.left[  thisStreet.lanes.left - 1 - k ];
-
-            joinRoutes( routes, from, to );
+            const numTurns = Math.min( fromRoutes.length, toRoutes.length );
+            
+            for ( let k = 0; k < numTurns; k ++ ) {
+              const from = fromRoutes[ otherBackwards ? k : fromRoutes.length - 1 - k ];
+              const to   =   toRoutes[  thisBackwards ? k :   toRoutes.length - 1 - k ];
+              
+              joinRoutes( routes, from, to );
+            }
           }
         }
         else if ( cross[ 2 ] < 0 ) {
           // Making left turns from thisStreet's right lanes
-          const numLeftTurns = Math.min( thisStreet.lanes.right, otherStreet.lanes.right );
+          {
+            const fromRoutes =  thisBackwards ?  thisStreet.routes.left : thisStreet.routes.right;
+            const toRoutes   = otherBackwards ? otherStreet.routes.left : otherStreet.routes.right;
 
-          for ( let k = 0; k < numLeftTurns; k ++ ) {
-            const from =  thisBackwards ?  thisStreet.routes.left[  thisStreet.lanes.left - 1 - k ] :  thisStreet.routes.right[ k ];
-            const to   = otherBackwards ? otherStreet.routes.left[ otherStreet.lanes.left - 1 - k ] : otherStreet.routes.right[ k ];
+            const numTurns = Math.min( fromRoutes.length, toRoutes.length );
 
-            joinRoutes( routes, from, to );
+            for ( let k = 0; k < numTurns; k ++ ) {
+              const from = fromRoutes[ thisBackwards ? fromRoutes.length - 1 - k : k ];
+              const to   =  toRoutes[ otherBackwards ?   toRoutes.length - 1 - k : k ];
+
+              joinRoutes( routes, from, to );
+            }
           }
 
           // Making right turns from otherStreet's left lanes (going in opposite direction of road)
-          const numRightTurns = Math.min( thisStreet.lanes.left, otherStreet.lanes.left );
+          {
+            const fromRoutes = otherBackwards ? otherStreet.routes.right : otherStreet.routes.left;
+            const toRoutes   =  thisBackwards ?  thisStreet.routes.right :  thisStreet.routes.left;
 
-          for ( let k = 0; k < numRightTurns; k ++ ) {
-            const from = otherBackwards ? otherStreet.routes.right[ otherStreet.lanes.right - 1 - k ] : otherStreet.routes.left[ k ];
-            const to   =  thisBackwards ?  thisStreet.routes.right[  thisStreet.lanes.right - 1 - k ] :  thisStreet.routes.left[ k ];
+            const numTurns = Math.min( fromRoutes.length, toRoutes.length );
 
-            joinRoutes( routes, from, to );
+            for ( let k = 0; k < numTurns; k ++ ) {
+              const from = fromRoutes[ otherBackwards ? fromRoutes.length - 1 - k : k ];
+              const to   =   toRoutes[  thisBackwards ?   toRoutes.length - 1 - k : k ];
+
+              joinRoutes( routes, from, to );
+            }
           }
         }
         else {
