@@ -7,24 +7,24 @@ import { vec2 } from '../lib/gl-matrix.js'
 
 const streets = {
   first: {
-    start: [ 18, 3 ],
+    start: /*[ 13, 3 ],*/ [ 18, 3 ],
     end: [ 2, 3 ],
-    lanes: { left: 3, right: 2 },
+    lanes: { left: 2, right: 1 },
   },
   second: {
-    start: [ 18, 12 ],
+    start: /*[ 13, 12 ],*/ [ 18, 12 ],
     end: [ 2, 12 ],
-    lanes: { left: 2, right: 3 },
+    lanes: { left: 1, right: 2 },
   },
   A: {
     start: [ 2, 3 ],
     end: [ 2, 12 ],
-    lanes: { left: 2, right: 3 },
+    lanes: { left: 1, right: 2 },
   },
   B: {
     start: [ 13, 3 ],
     end: [ 13, 12 ],
-    lanes: { left: 3, right: 2 },
+    lanes: { left: 2, right: 1 },
   },
 };
 
@@ -267,14 +267,6 @@ function makeRoutes( streets ) {
         console.log( `thisBackwards: ${ thisBackwards }, otherBackwards: ${ otherBackwards }, cross: ${ cross }` );
 
         
-        // What should a turn from a 2 lane street onto a 1 lane street look like?
-        //  - it's not going to be an even arc...should it be a curve and a straight segment?
-        //    - probably easiest. best way to keep using arcs.
-        //  - do we need to change up the lane numbers to make intersection match?
-
-
-        // TODO: Right turn is sometimes off? See demo
-
         if ( cross[ 2 ] > 0 ) {
           // Making right turns from thisStreet's right lanes
           {
@@ -362,14 +354,13 @@ function makeRoutes( streets ) {
 
 
 function joinRoutes( routes, fromName, toName ) {
-  // console.log( `Joining from ${ fromName } to ${ toName }` )
+  console.log( `Joining from ${ fromName } to ${ toName }` )
 
   const route1 = routes[ fromName ];
   const route2 = routes[ toName ];
 
-  const newName = `${ fromName }_to_${ toName }`;
+  const joinName = `${ fromName }_to_${ toName }`;
   route1.next ??= [];
-  route1.next.push( newName );
   
   // Check if roads are on same line
   const [ x1, y1 ] = route1.start;
@@ -378,17 +369,100 @@ function joinRoutes( routes, fromName, toName ) {
   const [ x4, y4 ] = route2.end;
 
   if ( Math.abs( ( y3 - y1 ) * ( x2 - x1 ) - ( y2 - y1 ) * ( x3 - x1 ) ) < 1e-6 ) {
+    const lineName = `${ joinName }_LINE`;
+
     const line = {
       start: route1.end,
       end: route2.start,
     };
-    routes[ newName ] = line;
+    routes[ lineName ] = line;
+
+    route1.next.push( lineName );
     line.next = [ toName ];
   }
   else {
-    const arc = Arc.getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4 );
-    routes[ newName ] = arc;
-    arc.next = [ toName ];
+
+    // Find distance to intersection. If it's not equal, make a small straight section so we can make it equal
+    const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
+
+    const uA = ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D;
+    // const uB = ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D;
+
+    const intersection = [
+      x1 + ( x2 - x1 ) * uA,
+      y1 + ( y2 - y1 ) * uA,
+    ];
+
+    const dist1 = Math.hypot( intersection[ 0 ] - x2, intersection[ 1 ] - y2 );
+    const dist2 = Math.hypot( x3 - intersection[ 0 ], y3 - intersection[ 1 ] );
+
+    console.log( `dist1 = ${ dist1 }, dist2 = ${ dist2 }` );
+
+    // Need line before arc
+    if ( dist1 > dist2 + 1e-6 ) {
+      console.log( 'Add before!' );
+
+      const beforeVec = vec2.subtract( [], route1.end, route1.start );
+      vec2.normalize( beforeVec, beforeVec );
+
+      console.log( 'beforeVec: ' + beforeVec );
+
+      const beforeLine = {
+        start: route1.end,
+        end: vec2.scaleAndAdd( [], route1.end, beforeVec, dist1 - dist2 ),
+      }
+
+      console.log( `beforeLine: ${ JSON.stringify( beforeLine ) }` );
+
+      const beforeName = `${ joinName }_BEFORE`;
+      routes[ beforeName ] = beforeLine;
+
+      const arcName = `${ joinName }_ARC`;
+      const arc = Arc.getArcBetweenLines( x1, y1, beforeLine.end[ 0 ], beforeLine.end[ 1 ], x3, y3, x4, y4 );
+      routes[ arcName ] = arc;
+      
+      route1.next.push( beforeName );
+      beforeLine.next = [ arcName ];
+      arc.next = [ toName ];
+    }
+
+    // Need line after arc
+    else if ( dist2 > dist1 + 1e-6 ) {
+      console.log( 'Add after!' );
+
+      const afterVec = vec2.subtract( [], route2.end, route2.start );
+      vec2.normalize( afterVec, afterVec );
+
+      console.log( 'afterVec: ' + afterVec );
+
+      const afterLine = {
+        start: vec2.scaleAndAdd( [], route2.start, afterVec, dist1 - dist2 ),
+        end: route2.start,
+      }
+
+      console.log( `afterLine: ${ JSON.stringify( afterLine ) }` );
+
+      const afterName = `${ joinName }_AFTER`;
+      routes[ afterName ] = afterLine;
+
+      const arcName = `${ joinName }_ARC`;
+      const arc = Arc.getArcBetweenLines( x1, y1, x2, y2, afterLine.start[ 0 ], afterLine.start[ 1 ], x4, y4 );
+      routes[ arcName ] = arc;
+      
+      route1.next.push( arcName );
+      arc.next = [ afterName ];
+      afterLine.next = [ toName ];
+    }
+
+    // Nothing before or after, just the arc
+    else {
+      const arcName = `${ joinName }_ARC`;
+      const arc = Arc.getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4 );
+      routes[ arcName ] = arc;
+      
+      route1.next.push( arcName );
+      arc.next = [ toName ];
+    }
     
     // Adjust roads to properly attach to arc
     // route1.end = [
