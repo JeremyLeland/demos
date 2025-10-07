@@ -7,24 +7,34 @@ import { vec2 } from '../lib/gl-matrix.js'
 
 const streets = {
   first: {
-    start: /*[ 13, 3 ],*/ [ 18, 3 ],
+    start: [ 22, 3 ],
     end: [ 2, 3 ],
-    lanes: { left: 2, right: 1 },
+    lanes: { left: 1, right: 1 },
   },
   second: {
-    start: /*[ 13, 12 ],*/ [ 18, 12 ],
+    start: [ 22, 12 ],
     end: [ 2, 12 ],
-    lanes: { left: 1, right: 2 },
+    lanes: { left: 2, right: 2 },
+  },
+  third: {
+    start: [ 22, 22 ],
+    end: [ 2, 22 ],
+    lanes: { left: 1, right: 1 },
   },
   A: {
     start: [ 2, 3 ],
-    end: [ 2, 12 ],
-    lanes: { left: 1, right: 2 },
+    end: [ 2, 22 ],
+    lanes: { left: 1, right: 1 },
   },
   B: {
     start: [ 13, 3 ],
-    end: [ 13, 12 ],
-    lanes: { left: 2, right: 1 },
+    end: [ 13, 22 ],
+    lanes: { left: 2, right: 2 },
+  },
+  C: {
+    start: [ 22, 3 ],
+    end: [ 22, 22 ],
+    lanes: { left: 1, right: 1 },
   },
 };
 
@@ -533,9 +543,9 @@ const players = Array.from( Array( 10 ), _ => {
 
 const canvas = new Canvas();
 canvas.backgroundColor = '#123';
-canvas.bounds = [ -0.5, -0.5, 15.5, 15.5 ];
+canvas.bounds = [ -0.5, -0.5, 25.5, 25.5 ];
 
-const grid = new Grid( 0, 0, 15, 15 );
+const grid = new Grid( 0, 0, 25, 25 );
 
 canvas.update = ( dt ) => {
   // Draw at distance along path
