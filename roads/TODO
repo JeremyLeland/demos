@@ -1,25 +1,16 @@
+- Intersections of diagonal (but still perpendicular) lines
+  - e.g. X instead of +
+  - Make sure the back-offs, connections, etc still look right
 
-Automatically break up and link roads at intersections
-  - Did it manually for now
+- Intersections of non-perpendicular lines
+  - Can we still get nice arcs for these? Or will they be all screwed up?
 
+- Street defined by arc instead of line
+  - Figure out lanes for this!
 
-Someday:
-  - Replace zoom and scroll with bounds array [ left, top, right, bottom ]
-    - Change bounds in once place instead of several scroll and zoom calls
-    - Adjust function to zoom, add functions to translate
-
-  - Draw gray road lines before direction arrows
-    - Maybe this will take care of intersections for us
-    - We can add detail later with the lane markers
-
-
-Define "roads" as logical, named roadways. 
-Automatically figure out intersections with other roads.
-Build routes from that, which include arcs to turn at intersections.
-Take into account lanes.
+- Intersections involving arcs
+  - Arc vs Line
+  - Arc vs Arc
 
 
-Elipses instead of arcs? Elipse length? Elipse join between lines?
-  - Elipses lose the power of arcs, they end up being like quadratic beziers
-  - Can't stack or easily get length without integrating
-  - See if I can stick with lines and arcs for now (use combined line and arc for long turns)
+Someday might want to just do lots of short lines (e.g. from bezier curve), but I like the simplicity of lines and arcs for now
