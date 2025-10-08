@@ -4,36 +4,66 @@ import { Grid } from '../src/common/Grid.js';
 import * as Roads from '../src/Roads.js';
 
 const streets = {
-  first: {
-    start: [ 22, 3 ],
-    end: [ 2, 3 ],
-    lanes: { left: 1, right: 1 },
-  },
-  second: {
-    start: [ 22, 12 ],
-    end: [ 2, 12 ],
+  up_right: {
+    start: [ 10, 20 ],
+    end: [ 20, 10 ],
     lanes: { left: 2, right: 2 },
   },
-  third: {
-    start: [ 22, 22 ],
-    end: [ 2, 22 ],
-    lanes: { left: 1, right: 1 },
-  },
-  A: {
-    start: [ 2, 3 ],
-    end: [ 2, 22 ],
-    lanes: { left: 1, right: 1 },
-  },
-  B: {
-    start: [ 13, 3 ],
-    end: [ 13, 22 ],
+  down_right: {
+    start: [ 10, 10 ],
+    end: [ 20, 20 ],
     lanes: { left: 2, right: 2 },
   },
-  C: {
-    start: [ 22, 3 ],
-    end: [ 22, 22 ],
-    lanes: { left: 1, right: 1 },
+  up_left: {
+    start: [ 20, 10 ],
+    end: [ 15, 5 ],
+    lanes: { left: 2, right: 2 },
   },
+  moo: {
+    start: [ 10, 10 ],
+    end: [ 15, 5 ],
+    lanes: { left: 2, right: 2 },
+  },
+  quack: {
+    start: [ 10, 20 ],
+    end: [ 15, 25 ],
+    lanes: { left: 2, right: 2 },
+  },
+  ribbit: {
+    start: [ 20, 20 ],
+    end: [ 15, 25 ],
+    lanes: { left: 2, right: 2 },
+  },
+  // first: {
+  //   start: [ 22, 3 ],
+  //   end: [ 2, 3 ],
+  //   lanes: { left: 1, right: 1 },
+  // },
+  // second: {
+  //   start: [ 22, 12 ],
+  //   end: [ 2, 12 ],
+  //   lanes: { left: 2, right: 2 },
+  // },
+  // third: {
+  //   start: [ 22, 22 ],
+  //   end: [ 2, 22 ],
+  //   lanes: { left: 1, right: 1 },
+  // },
+  // A: {
+  //   start: [ 2, 3 ],
+  //   end: [ 2, 22 ],
+  //   lanes: { left: 1, right: 1 },
+  // },
+  // B: {
+  //   start: [ 13, 3 ],
+  //   end: [ 13, 22 ],
+  //   lanes: { left: 2, right: 2 },
+  // },
+  // C: {
+  //   start: [ 22, 3 ],
+  //   end: [ 22, 22 ],
+  //   lanes: { left: 1, right: 1 },
+  // },
 };
 
 
@@ -85,9 +115,9 @@ const players = Array.from( Array( 10 ), _ => {
 
 const canvas = new Canvas();
 canvas.backgroundColor = '#123';
-canvas.bounds = [ -0.5, -0.5, 25.5, 25.5 ];
+canvas.bounds = [ -0.5, -0.5, 26.5, 26.5 ];
 
-const grid = new Grid( 0, 0, 25, 25 );
+const grid = new Grid( 0, 0, 26, 26 );
 
 canvas.update = ( dt ) => {
   // Draw at distance along path

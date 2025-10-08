@@ -466,37 +466,43 @@ const DRAW_ROADS = true;
 const DRAW_DIRECTION_ARROWS = true;
 
 export function drawRoads( ctx, routes, hoverRouteName ) {
+  
   Object.entries( routes ).forEach( ( [ name, route ] ) => {
-    
-    if ( DRAW_ROADS ) {
-      ctx.lineWidth = LANE_WIDTH - 0.1;
-      // ctx.lineCap = 'square';
-      ctx.strokeStyle = name == hoverRouteName ? '#777' : '#5555';
-      
-      // TODO: Hover (brighter stroke if matches name)
-      
-      ctx.beginPath();
-      if ( route.center ) {
-        ctx.arc( ...route.center, route.radius, route.startAngle, route.endAngle, route.counterclockwise );
-      }
-      else {
-        ctx.lineTo( ...route.start );
-        ctx.lineTo( ...route.end );
-      }
-      ctx.stroke();
-    }
-
-    if ( DRAW_DIRECTION_ARROWS ) {
-      ctx.fillStyle = ctx.strokeStyle = name == hoverRouteName ? '#ff0' : '#ff05';
-      ctx.lineWidth = 0.05;
-      
-      const roadLength = getRoadLength( route );
-      
-      for ( let length = 0; length < roadLength; length += 0.5 ) {
-        drawOnRoadAtDistance( ctx, route, length, drawArrow );
-      }
-    }
+    drawRoute( ctx, route, false );
   } );
+
+  if ( hoverRouteName ) {
+    drawRoute( ctx, routes[ hoverRouteName ], true /* debugDrawSolid */ );
+  }
+}
+
+function drawRoute( ctx, route, debugDrawSolid = true ) {
+  if ( DRAW_ROADS ) {
+    ctx.lineWidth = LANE_WIDTH - 0.1;
+    // ctx.lineCap = 'square';
+    ctx.strokeStyle = debugDrawSolid ? '#777' : '#5555';
+    
+    ctx.beginPath();
+    if ( route.center ) {
+      ctx.arc( ...route.center, route.radius, route.startAngle, route.endAngle, route.counterclockwise );
+    }
+    else {
+      ctx.lineTo( ...route.start );
+      ctx.lineTo( ...route.end );
+    }
+    ctx.stroke();
+  }
+
+  if ( DRAW_DIRECTION_ARROWS ) {
+    ctx.fillStyle = ctx.strokeStyle = debugDrawSolid ? '#ff0' : '#ff05';
+    ctx.lineWidth = 0.05;
+    
+    const roadLength = getRoadLength( route );
+    
+    for ( let length = 0; length < roadLength; length += 0.5 ) {
+      drawOnRoadAtDistance( ctx, route, length, drawArrow );
+    }
+  }
 }
 
 export function getRoadLength( road ) {

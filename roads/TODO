@@ -12,5 +12,7 @@
   - Arc vs Line
   - Arc vs Arc
 
+- Splitting and merging lanes
+  - e.g. splitting to add a left turn lane
 
 Someday might want to just do lots of short lines (e.g. from bezier curve), but I like the simplicity of lines and arcs for now
