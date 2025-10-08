@@ -329,6 +329,7 @@ function joinRoutes( routes, fromName, toName ) {
   const route2 = routes[ toName ];
 
   const joinName = `${ fromName }_to_${ toName }`;
+  
   route1.next ??= [];
   
   // Check if roads are on same line
@@ -350,6 +351,12 @@ function joinRoutes( routes, fromName, toName ) {
     line.next = [ toName ];
   }
   else {
+    let beforeLine, arc, afterLine;
+
+    const beforeName = `${ joinName }_BEFORE`;
+    const arcName = `${ joinName }_ARC`;
+    const afterName = `${ joinName }_AFTER`;
+
 
     // Find distance to intersection. If it's not equal, make a small straight section so we can make it equal
     const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
@@ -376,23 +383,17 @@ function joinRoutes( routes, fromName, toName ) {
 
       console.log( 'beforeVec: ' + beforeVec );
 
-      const beforeLine = {
+      beforeLine = {
         start: route1.end,
         end: vec2.scaleAndAdd( [], route1.end, beforeVec, dist1 - dist2 ),
       }
 
       console.log( `beforeLine: ${ JSON.stringify( beforeLine ) }` );
-
-      const beforeName = `${ joinName }_BEFORE`;
+      
       routes[ beforeName ] = beforeLine;
 
-      const arcName = `${ joinName }_ARC`;
-      const arc = Arc.getArcBetweenLines( x1, y1, beforeLine.end[ 0 ], beforeLine.end[ 1 ], x3, y3, x4, y4 );
+      arc = Arc.getArcBetweenLines( x1, y1, beforeLine.end[ 0 ], beforeLine.end[ 1 ], x3, y3, x4, y4 );
       routes[ arcName ] = arc;
-      
-      route1.next.push( beforeName );
-      beforeLine.next = [ arcName ];
-      arc.next = [ toName ];
     }
 
     // Need line after arc
@@ -404,53 +405,84 @@ function joinRoutes( routes, fromName, toName ) {
 
       console.log( 'afterVec: ' + afterVec );
 
-      const afterLine = {
+      afterLine = {
         start: vec2.scaleAndAdd( [], route2.start, afterVec, dist1 - dist2 ),
         end: route2.start,
       }
 
       console.log( `afterLine: ${ JSON.stringify( afterLine ) }` );
 
-      const afterName = `${ joinName }_AFTER`;
       routes[ afterName ] = afterLine;
 
-      const arcName = `${ joinName }_ARC`;
-      const arc = Arc.getArcBetweenLines( x1, y1, x2, y2, afterLine.start[ 0 ], afterLine.start[ 1 ], x4, y4 );
+      arc = Arc.getArcBetweenLines( x1, y1, x2, y2, afterLine.start[ 0 ], afterLine.start[ 1 ], x4, y4 );
       routes[ arcName ] = arc;
-      
-      route1.next.push( arcName );
-      arc.next = [ afterName ];
-      afterLine.next = [ toName ];
     }
 
     // Nothing before or after, just the arc
     else {
-      const arcName = `${ joinName }_ARC`;
-      const arc = Arc.getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4 );
+      arc = Arc.getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4 );
       routes[ arcName ] = arc;
-      
-      route1.next.push( arcName );
-      arc.next = [ toName ];
     }
     
-    // Adjust roads to properly attach to arc
-    // route1.end = [
-    //   arc.center[ 0 ] + arc.radius * Math.cos( arc.startAngle ),
-    //   arc.center[ 1 ] + arc.radius * Math.sin( arc.startAngle ),
-    // ];
+    //
+    // Adjust (or add) before and after roads to properly attach to arc
+    //
 
-    // if ( Number.isNaN( route1.end[ 0 ] ) || Number.isNaN( route1.end[ 1 ] ) ) {
-    //   debugger;
-    // }
+    const arcStart = [
+      arc.center[ 0 ] + arc.radius * Math.cos( arc.startAngle ),
+      arc.center[ 1 ] + arc.radius * Math.sin( arc.startAngle ),
+    ];
     
-    // route2.start = [
-    //   arc.center[ 0 ] + arc.radius * Math.cos( arc.endAngle ),
-    //   arc.center[ 1 ] + arc.radius * Math.sin( arc.endAngle ),
-    // ];
+    const arcEnd = [
+      arc.center[ 0 ] + arc.radius * Math.cos( arc.endAngle ),
+      arc.center[ 1 ] + arc.radius * Math.sin( arc.endAngle ),
+    ];
 
-    // if ( Number.isNaN( route2.start[ 0 ] ) || Number.isNaN( route2.start[ 1 ] ) ) {
-    //   debugger;
-    // }
+    if ( beforeLine ) {
+      beforeLine.end = arcStart;
+    }
+    else {
+      if ( Math.hypot( arcStart[ 0 ] - x2, arcStart[ 1 ] - y2 ) > 1e-6 ) {
+        beforeLine = {
+          start: route1.end,
+          end: arcStart,
+        };
+        routes[ beforeName ] = beforeLine;
+      }
+    }
+
+    if ( afterLine ) {
+      afterLine.start = arcEnd;
+    }
+    else {
+      if ( Math.hypot( x3 - arcEnd[ 0 ], y3 - arcEnd[ 1 ] ) > 1e-6 ) {
+        afterLine = {
+          start: arcEnd,
+          end: route2.start,
+        };
+        routes[ afterName ] = afterLine;
+      }
+    }
+
+    //
+    // Link sections of the route
+    //
+
+    if ( beforeLine ) {
+      route1.next.push( beforeName );
+      beforeLine.next = [ arcName ];
+    }
+    else {
+      route1.next.push( arcName );
+    }
+
+    if ( afterLine ) {
+      arc.next = [ afterName ];
+      afterLine.next = [ toName ];
+    }
+    else {
+      arc.next = [ toName ];
+    }
   }
 }
 

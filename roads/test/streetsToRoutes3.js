@@ -14,16 +14,28 @@ const streets = {
     end: [ 20, 20 ],
     lanes: { left: 2, right: 2 },
   },
-  up_left: {
+  neigh: {
     start: [ 20, 10 ],
-    end: [ 15, 5 ],
+    end: [ 22, 5 ],
     lanes: { left: 2, right: 2 },
   },
   moo: {
     start: [ 10, 10 ],
-    end: [ 15, 5 ],
+    end: [ 8, 5 ],
     lanes: { left: 2, right: 2 },
   },
+
+  squid: {
+    start: [ 22, 5 ],
+    end: [ 15, 2 ],
+    lanes: { left: 2, right: 2 },
+  },
+  horse: {
+    start: [ 8, 5 ],
+    end: [ 15, 2 ],
+    lanes: { left: 2, right: 2 },
+  },
+
   quack: {
     start: [ 10, 20 ],
     end: [ 15, 25 ],
