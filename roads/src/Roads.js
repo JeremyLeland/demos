@@ -28,33 +28,29 @@ export function makeRoutes( streets ) {
         continue;
       }
 
-      // Find intersection between lines
-      const [ x1, y1 ] = street1.start;
-      const [ x2, y2 ] = street1.end;
-      const [ x3, y3 ] = street2.start;
-      const [ x4, y4 ] = street2.end;
+      //
+      // TODO: Account for arcs
+      //
+      let point;
 
-      const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
+      if ( street1.center && street2.center ) {
+        point = getArcIntersection( street1, street2 );
+      }
+      else if ( street1.center ) {
+        point = getArcLineIntersection( street1, street2 );
+      }
+      else if ( street2.center ) {
+        point = getArcLineIntersection( street2, street1 );
+      }
+      else {
+        point = getLineIntersection( street1, street2 );
+      }
       
-      // Is there a meaningful parallel/collinear case to account for here?
-      // TODO: You could have two collinear segments that touch each other.
-      //       It might happen while editing, maybe when removing lines from a grid
-      //       Should handle it at some point
-      if ( D != 0 ) {
-        const uA = ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D;
-        const uB = ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D;
-        
-        if ( 0 <= uA && uA <= 1 && 0 <= uB && uB <= 1 ) {
-          const point = [
-            x1 + uA * ( x2 - x1 ),
-            y1 + uA * ( y2 - y1 ),
-          ];
-          
-          intersections.push( {
-            streets: [ name1, name2 ],
-            point: point,
-          } );
-        }
+      if ( point ) { 
+        intersections.push( {
+          streets: [ name1, name2 ],
+          point: point,
+        } );
       }
     }
   }
@@ -171,46 +167,78 @@ export function makeRoutes( streets ) {
   const routes = {};
 
   for ( const [ name, street ] of Object.entries( streets ) ) {
-    const streetDX = street.end[ 0 ] - street.start[ 0 ];
-    const streetDY = street.end[ 1 ] - street.start[ 1 ];
-
-    const angle = Math.atan2( streetDY, streetDX );
-    const cos = Math.cos( angle );
-    const sin = Math.sin( angle );
-
     const numLanes = street.lanes.left + street.lanes.right;
-
     street.routes = { left: [], right: [] };     // link lanes to parent street so we can find them for connecting intersections
-    
-    let laneOffset = 0.5 + -0.5 * LANE_WIDTH * numLanes;
 
-    [ 'left', 'right' ].forEach( laneDir => {
-      for ( let i = 0; i < street.lanes[ laneDir ]; i ++ ) {
-        const A = [ street.start[ 0 ] + laneOffset * -sin, street.start[ 1 ] + laneOffset * cos ];
-        const B = [   street.end[ 0 ] + laneOffset * -sin,   street.end[ 1 ] + laneOffset * cos ];
-        
-        // Left lanes are backwards
-        const route = {
-          start: laneDir == 'left' ? B : A,
-          end:   laneDir == 'left' ? A : B,
-          // parent: name,
-        };
+    const laneStepDir = street.counterclockwise ? 1 : -1
+    let laneOffset = laneStepDir * ( 0.5 + -0.5 * LANE_WIDTH * numLanes );
 
-        const routeDX = route.end[ 0 ] - route.start[ 0 ];
-        const routeDY = route.end[ 1 ] - route.start[ 1 ];
+    if ( street.center ) {
+      [ 'left', 'right' ].forEach( laneDir => {
+        for ( let i = 0; i < street.lanes[ laneDir ]; i ++ ) {
 
-        const dir = Math.abs( streetDX ) > Math.abs( streetDY ) ? ( routeDX < 0 ? 'WEST' : 'EAST' ) : ( routeDY < 0 ? 'NORTH' : 'SOUTH' );
-        const newName = `${ name }_${ dir }_lane_${ laneDir }_${ i }`;
+          // Left lanes are backwards
+          const route = {
+            center: street.center,
+            radius: street.radius + laneOffset,
+            // startAngle: street.startAngle,
+            // endAngle: street.endAngle,
+            // counterclockwise: street.counterclockwise,
+            startAngle: laneDir == 'left' ? street.endAngle   : street.startAngle,
+            endAngle:   laneDir == 'left' ? street.startAngle : street.endAngle,
+            counterclockwise: laneDir == 'left' ? !street.counterclockwise : !!street.counterclockwise,
 
-        // console.log( `${ newName }: ${ JSON.stringify( route ) }` );
+            // parent: name,
+          };
 
-        routes[ newName ] = route;
+          const newName = `${ name }_lane_${ laneDir }_${ i }`;
 
-        street.routes[ laneDir ].push( newName );
+          routes[ newName ] = route;
 
-        laneOffset += LANE_WIDTH;
-      }
-    } );
+          street.routes[ laneDir ].push( newName );
+
+          laneOffset += laneStepDir * LANE_WIDTH;
+        }
+      } );
+    }
+    else {
+      const streetDX = street.end[ 0 ] - street.start[ 0 ];
+      const streetDY = street.end[ 1 ] - street.start[ 1 ];
+
+      const angle = Math.atan2( streetDY, streetDX );
+      const cos = Math.cos( angle );
+      const sin = Math.sin( angle );
+
+      [ 'left', 'right' ].forEach( laneDir => {
+        for ( let i = 0; i < street.lanes[ laneDir ]; i ++ ) {
+          const A = [ street.start[ 0 ] + laneOffset * -sin, street.start[ 1 ] + laneOffset * cos ];
+          const B = [   street.end[ 0 ] + laneOffset * -sin,   street.end[ 1 ] + laneOffset * cos ];
+          
+          // Left lanes are backwards
+          const route = {
+            start: laneDir == 'left' ? B : A,
+            end:   laneDir == 'left' ? A : B,
+            // parent: name,
+          };
+
+          const routeDX = route.end[ 0 ] - route.start[ 0 ];
+          const routeDY = route.end[ 1 ] - route.start[ 1 ];
+
+
+          // TODO: Do we really care about this here? Could just use laneDir for uniqueness
+          const dir = Math.abs( streetDX ) > Math.abs( streetDY ) ? ( routeDX < 0 ? 'WEST' : 'EAST' ) : ( routeDY < 0 ? 'NORTH' : 'SOUTH' );
+          const newName = `${ name }_${ dir }_lane_${ laneDir }_${ i }`;
+
+          // console.log( `${ newName }: ${ JSON.stringify( route ) }` );
+
+          routes[ newName ] = route;
+
+          street.routes[ laneDir ].push( newName );
+
+          laneOffset += LANE_WIDTH;
+        }
+      } );
+    }
   }
 
   // 3. Link routes from intersections
@@ -320,6 +348,41 @@ export function makeRoutes( streets ) {
   } );
 
   return routes;
+}
+
+function getArcIntersection( A, B ) {
+
+}
+
+function getArcLineIntersection( arc, line ) {
+
+}
+
+function getLineIntersection( A, B ) {
+  const [ x1, y1 ] = A.start;
+  const [ x2, y2 ] = A.end;
+  const [ x3, y3 ] = B.start;
+  const [ x4, y4 ] = B.end;
+
+  const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
+  
+  // Is there a meaningful parallel/collinear case to account for here?
+  // TODO: You could have two collinear segments that touch each other.
+  //       It might happen while editing, maybe when removing lines from a grid
+  //       Should handle it at some point
+  if ( D != 0 ) {
+    const uA = ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D;
+    const uB = ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D;
+    
+    if ( 0 <= uA && uA <= 1 && 0 <= uB && uB <= 1 ) {
+      const point = [
+        x1 + uA * ( x2 - x1 ),
+        y1 + uA * ( y2 - y1 ),
+      ];
+      
+      return point;
+    }
+  }
 }
 
 function joinRoutes( routes, fromName, toName ) {

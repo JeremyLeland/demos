@@ -12,5 +12,23 @@
 
 - Splitting and merging lanes
   - e.g. splitting to add a left turn lane
+  - Change streets to have lane info as part of start and end:
+    street: {
+      start: {
+        pos: [ x, y ],
+        lanes: {
+          left: 1,
+          right: 2,
+        },
+      },
+      end: {
+        pos: [ x, y ],
+        lanes: {
+          left: 2,
+          right: 2,
+        },
+      },
+    }
+  - Longer, but I think it's the clearest way to save this info
 
 Someday might want to just do lots of short lines (e.g. from bezier curve), but I like the simplicity of lines and arcs for now
