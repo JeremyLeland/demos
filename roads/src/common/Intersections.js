@@ -1,4 +1,51 @@
-export function getArcLineIntersections( cx, cy, radius, startAngle, endAngle, counterclockwise, x1, y1, x2, y2 ) {
+export function getArcArcIntersections( 
+  cx1, cy1, radius1, startAngle1, endAngle1, counterclockwise1,
+  cx2, cy2, radius2, startAngle2, endAngle2, counterclockwise2,
+) {
+  // Find circle intersections
+  const dx = cx2 - cx1;
+  const dy = cy2 - cy1;
+  const d = Math.hypot( dx, dy );
+
+  // TODO: Is there a case here (like co-linear) where lines on same circle intersect at ends?
+
+  if ( d > radius1 + radius2 || d < Math.abs( radius1 - radius2 ) || d === 0 ) {
+    return []; // No intersection
+  }
+
+  const a = ( radius1 ** 2 - radius2 ** 2 + d ** 2 ) / ( 2 * d );
+  const h = Math.sqrt( radius1 ** 2 - a ** 2 );
+
+  const xm = cx1 + ( a * dx ) / d;
+  const ym = cy1 + ( a * dy ) / d;
+
+  const rx = -( dy * h ) / d;
+  const ry =  ( dx * h ) / d;
+
+  const p1 = [ xm + rx, ym + ry ];
+  const p2 = [ xm - rx, ym - ry ];
+
+  // Check if circle intersections are between arc angles
+  const results = [];
+
+  [ p1, p2 ].forEach( pt => {
+    const angle1 = Math.atan2( pt[ 1 ] - cy1, pt[ 0 ] - cx1 );
+    const angle2 = Math.atan2( pt[ 1 ] - cy2, pt[ 0 ] - cx2 );
+    if (
+      isBetweenAngles( angle1, startAngle1, endAngle1, counterclockwise1 ) &&
+      isBetweenAngles( angle2, startAngle2, endAngle2, counterclockwise2 )
+    ) {
+      results.push( pt );
+    }
+  } );
+
+  return results;
+}
+
+export function getArcLineIntersections( 
+  cx, cy, radius, startAngle, endAngle, counterclockwise, 
+  x1, y1, x2, y2 
+) {
   const dx = x2 - x1;
   const dy = y2 - y1;
 
