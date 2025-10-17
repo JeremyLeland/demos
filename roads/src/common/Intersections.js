@@ -103,7 +103,7 @@ function normalizeAngle( angle ) {
   return angle + ( 2 * Math.PI ) % ( 2 * Math.PI );
 }
 
-export function getLineLineIntersection( x1, y1, x2, y2, x3, y3, x4, y4 ) {
+export function getLineLineIntersections( x1, y1, x2, y2, x3, y3, x4, y4 ) {
   const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
   
   // Is there a meaningful parallel/collinear case to account for here?
@@ -116,9 +116,13 @@ export function getLineLineIntersection( x1, y1, x2, y2, x3, y3, x4, y4 ) {
     
     if ( 0 <= uA && uA <= 1 && 0 <= uB && uB <= 1 ) {
       return [
-        x1 + uA * ( x2 - x1 ),
-        y1 + uA * ( y2 - y1 ),
+        [
+          x1 + uA * ( x2 - x1 ),
+          y1 + uA * ( y2 - y1 ),
+        ]
       ];
     }
   }
+
+  return [];
 }
