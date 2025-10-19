@@ -84,7 +84,7 @@ export function getArcLineIntersections(
   return results; // May be 0, 1, or 2 points
 }
 
-function isBetweenAngles( testAngle, startAngle, endAngle, counterclockwise = false ) {
+export function isBetweenAngles( testAngle, startAngle, endAngle, counterclockwise = false ) {
   // Normalize angles
   const test = normalizeAngle( testAngle );
   const start = normalizeAngle( counterclockwise ? endAngle : startAngle );
