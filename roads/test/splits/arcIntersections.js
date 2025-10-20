@@ -73,6 +73,13 @@ canvas.draw = ( ctx ) => {
   //
   ctx.lineWidth = Constants.LaneWidth;
 
+
+  ctx.strokeStyle = 'tan';
+  ctx.beginPath();
+  ctx.moveTo( line.start[ 0 ], line.start[ 1 ] );
+  ctx.lineTo( line.end[ 0 ], line.end[ 1 ] );
+  ctx.stroke();
+
   ctx.strokeStyle = 'gray';
   ctx.beginPath();
   ctx.arc( arc.center[ 0 ], arc.center[ 1 ], arc.radius, arc.startAngle, arc.endAngle, arc.counterclockwise );
@@ -83,11 +90,6 @@ canvas.draw = ( ctx ) => {
   // ctx.arc( arc2.center[ 0 ], arc2.center[ 1 ], arc2.radius, arc2.startAngle, arc2.endAngle, arc2.counterclockwise );
   // ctx.stroke();
 
-  ctx.strokeStyle = 'tan';
-  ctx.beginPath();
-  ctx.moveTo( line.start[ 0 ], line.start[ 1 ] );
-  ctx.lineTo( line.end[ 0 ], line.end[ 1 ] );
-  ctx.stroke();
 
   //
   // Split arcs
@@ -96,85 +98,120 @@ canvas.draw = ( ctx ) => {
   const lineVec = vec2.subtract( [], line.end, line.start );
   vec2.normalize( lineVec, lineVec );
 
-  const firstInnerIntersections = Intersections.getArcLineIntersections( 
+
+
+  const leftLine = {
+    start: [
+      line.start[ 0 ] + 0.5 * Constants.LaneWidth *  lineVec[ 1 ],
+      line.start[ 1 ] + 0.5 * Constants.LaneWidth * -lineVec[ 0 ],
+    ],
+    end: [
+      line.end[ 0 ]   + 0.5 * Constants.LaneWidth *  lineVec[ 1 ],
+      line.end[ 1 ]   + 0.5 * Constants.LaneWidth * -lineVec[ 0 ],
+    ],
+  };
+
+  const rightLine = {
+    start: [
+      line.start[ 0 ] - 0.5 * Constants.LaneWidth *  lineVec[ 1 ],
+      line.start[ 1 ] - 0.5 * Constants.LaneWidth * -lineVec[ 0 ],
+    ],
+    end: [
+      line.end[ 0 ]   - 0.5 * Constants.LaneWidth *  lineVec[ 1 ],
+      line.end[ 1 ]   - 0.5 * Constants.LaneWidth * -lineVec[ 0 ],
+    ],
+  };
+
+  ctx.lineWidth = 0.1;
+  ctx.strokeStyle = 'orange';
+  ctx.beginPath();
+  ctx.moveTo( ...leftLine.start );
+  ctx.lineTo( ...leftLine.end );
+  ctx.stroke();
+
+  ctx.strokeStyle = 'brown';
+  ctx.beginPath();
+  ctx.moveTo( ...rightLine.start );
+  ctx.lineTo( ...rightLine.end );
+  ctx.stroke();
+
+  const leftInnerIntersections = Intersections.getArcLineIntersections( 
     arc.center[ 0 ], arc.center[ 1 ], arc.radius - Constants.LaneWidth / 2, arc.startAngle, arc.endAngle, arc.counterclockwise,
-    line.start[ 0 ] + 0.5 * Constants.LaneWidth *  lineVec[ 1 ], 
-    line.start[ 1 ] + 0.5 * Constants.LaneWidth * -lineVec[ 0 ], 
-    line.end[ 0 ]   + 0.5 * Constants.LaneWidth *  lineVec[ 1 ], 
-    line.end[ 1 ]   + 0.5 * Constants.LaneWidth * -lineVec[ 0 ],
+    leftLine.start[ 0 ], leftLine.start[ 1 ], leftLine.end[ 0 ], leftLine.end[ 1 ],
   );
 
-  const firstOuterIntersections = Intersections.getArcLineIntersections(
+  const leftOuterIntersections = Intersections.getArcLineIntersections(
     arc.center[ 0 ], arc.center[ 1 ], arc.radius + Constants.LaneWidth / 2, arc.startAngle, arc.endAngle, arc.counterclockwise,
-    line.start[ 0 ] + 0.5 * Constants.LaneWidth *  lineVec[ 1 ], 
-    line.start[ 1 ] + 0.5 * Constants.LaneWidth * -lineVec[ 0 ], 
-    line.end[ 0 ]   + 0.5 * Constants.LaneWidth *  lineVec[ 1 ], 
-    line.end[ 1 ]   + 0.5 * Constants.LaneWidth * -lineVec[ 0 ],
+    leftLine.start[ 0 ], leftLine.start[ 1 ], leftLine.end[ 0 ], leftLine.end[ 1 ],
   );
 
-  const secondInnerIntersections = Intersections.getArcLineIntersections( 
+  const rightInnerIntersections = Intersections.getArcLineIntersections( 
     arc.center[ 0 ], arc.center[ 1 ], arc.radius - Constants.LaneWidth / 2, arc.startAngle, arc.endAngle, arc.counterclockwise,
-    line.start[ 0 ] - 0.5 * Constants.LaneWidth *  lineVec[ 1 ], 
-    line.start[ 1 ] - 0.5 * Constants.LaneWidth * -lineVec[ 0 ], 
-    line.end[ 0 ]   - 0.5 * Constants.LaneWidth *  lineVec[ 1 ], 
-    line.end[ 1 ]   - 0.5 * Constants.LaneWidth * -lineVec[ 0 ],
+    rightLine.start[ 0 ], rightLine.start[ 1 ], rightLine.end[ 0 ], rightLine.end[ 1 ],
   );
 
-  const secondOuterIntersections = Intersections.getArcLineIntersections(
+  const rightOuterIntersections = Intersections.getArcLineIntersections(
     arc.center[ 0 ], arc.center[ 1 ], arc.radius + Constants.LaneWidth / 2, arc.startAngle, arc.endAngle, arc.counterclockwise,
-    line.start[ 0 ] - 0.5 * Constants.LaneWidth *  lineVec[ 1 ], 
-    line.start[ 1 ] - 0.5 * Constants.LaneWidth * -lineVec[ 0 ], 
-    line.end[ 0 ]   - 0.5 * Constants.LaneWidth *  lineVec[ 1 ], 
-    line.end[ 1 ]   - 0.5 * Constants.LaneWidth * -lineVec[ 0 ],
+    rightLine.start[ 0 ], rightLine.start[ 1 ], rightLine.end[ 0 ], rightLine.end[ 1 ],
   );
 
-  ctx.fillStyle = 'yellow';
-  firstInnerIntersections.forEach( point => {
-    ctx.beginPath();
-    ctx.arc( point[ 0 ], point[ 1 ], 0.1, 0, Math.PI * 2 );
-    ctx.fill();
-  } );
+  function drawIntersections( intersections, color ) {
+    ctx.fillStyle = color;
+    intersections.forEach( point => {
+      ctx.beginPath();
+      ctx.arc( point[ 0 ], point[ 1 ], 0.1, 0, Math.PI * 2 );
+      ctx.fill();
+    } );  
+  }
 
-  ctx.fillStyle = 'lime';
-  firstOuterIntersections.forEach( point => {
-    ctx.beginPath();
-    ctx.arc( point[ 0 ], point[ 1 ], 0.1, 0, Math.PI * 2 );
-    ctx.fill();
-  } );
+  drawIntersections( leftInnerIntersections, 'yellow' );
+  drawIntersections( leftOuterIntersections, 'lime' );
+  drawIntersections( rightInnerIntersections, 'dodgerblue' );
+  drawIntersections( rightOuterIntersections, 'violet' );
+  
 
-  ctx.fillStyle = 'dodgerblue';
-  secondInnerIntersections.forEach( point => {
-    ctx.beginPath();
-    ctx.arc( point[ 0 ], point[ 1 ], 0.1, 0, Math.PI * 2 );
-    ctx.fill();
-  } );
+  const startFirstDist = vec2.distance( leftLine.start, leftInnerIntersections[ 0 ] );
+  const startSecondDist = vec2.distance( rightLine.start, rightInnerIntersections[ 0 ] );
 
-  ctx.fillStyle = 'violet';
-  secondOuterIntersections.forEach( point => {
-    ctx.beginPath();
-    ctx.arc( point[ 0 ], point[ 1 ], 0.1, 0, Math.PI * 2 );
-    ctx.fill();
-  } );
+  const startDist = Math.min( startFirstDist, startSecondDist );
+  
+  const splitLineBefore = {
+    start: line.start,
+    end: vec2.scaleAndAdd( [], line.start, lineVec, startDist ),
+  };
+
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 1 * Constants.LaneWidth;
+
+  ctx.beginPath();
+  ctx.moveTo( ...splitLineBefore.start );
+  ctx.lineTo( ...splitLineBefore.end );
+  ctx.stroke();
+
+  //
+  // Note that this box is *not* quite how far we need to back off the line
+  // We need to find the outermost point of the arc to back off, which may be between the points
+  // Need shortest distance between arc and line (in this case, the end cap line)
 
 
   const firstInnerIntersectAngle = Math.atan2( 
-    firstInnerIntersections[ 0 ][ 1 ] - arc.center[ 1 ],
-    firstInnerIntersections[ 0 ][ 0 ] - arc.center[ 0 ],
+    leftInnerIntersections[ 0 ][ 1 ] - arc.center[ 1 ],
+    leftInnerIntersections[ 0 ][ 0 ] - arc.center[ 0 ],
   );
 
   const firstOuterIntersectAngle = Math.atan2( 
-    firstOuterIntersections[ 0 ][ 1 ] - arc.center[ 1 ],
-    firstOuterIntersections[ 0 ][ 0 ] - arc.center[ 0 ],
+    leftOuterIntersections[ 0 ][ 1 ] - arc.center[ 1 ],
+    leftOuterIntersections[ 0 ][ 0 ] - arc.center[ 0 ],
   );
 
   const secondInnerIntersectAngle = Math.atan2( 
-    secondInnerIntersections[ 0 ][ 1 ] - arc.center[ 1 ],
-    secondInnerIntersections[ 0 ][ 0 ] - arc.center[ 0 ],
+    rightInnerIntersections[ 0 ][ 1 ] - arc.center[ 1 ],
+    rightInnerIntersections[ 0 ][ 0 ] - arc.center[ 0 ],
   );
 
   const secondOuterIntersectAngle = Math.atan2( 
-    secondOuterIntersections[ 0 ][ 1 ] - arc.center[ 1 ],
-    secondOuterIntersections[ 0 ][ 0 ] - arc.center[ 0 ],
+    rightOuterIntersections[ 0 ][ 1 ] - arc.center[ 1 ],
+    rightOuterIntersections[ 0 ][ 0 ] - arc.center[ 0 ],
   );
 
   const minFirstAngle = Intersections.isBetweenAngles( 
