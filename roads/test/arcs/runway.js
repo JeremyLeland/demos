@@ -81,23 +81,53 @@ const routes = {
   },
 
   // Lane change 3
-  lane_change3_start: {
-    center: [ 3, 6 ],
-    radius: 2.5,
-    startAngle: -Math.PI,
-    endAngle: Math.asin( 2 / 2.5 ) - Math.PI,
-    counterclockwise: false,
-  },
-  lane_change3_end: {
-    center: [ 0, 2 ],
-    radius: 2.5,
-    startAngle: Math.asin( 2 / 2.5 ),
-    endAngle: 0,
-    counterclockwise: true,
-  },
+  // lane_change3_start: {
+  //   center: [ 3, 6 ],
+  //   radius: 2.5,
+  //   startAngle: -Math.PI,
+  //   endAngle: Math.asin( 2 / 2.5 ) - Math.PI,
+  //   counterclockwise: false,
+  // },
+  // lane_change3_end: {
+  //   center: [ 0, 2 ],
+  //   radius: 2.5,
+  //   startAngle: Math.asin( 2 / 2.5 ),
+  //   endAngle: 0,
+  //   counterclockwise: true,
+  // },
 };
 
+makeLaneChange( [ 0, 7 ], [ 1, 5 ], 'lane_change_3' );
+makeLaneChange( [ 0, 5 ], [ 1, 4 ], 'lane_change_4' );
+makeLaneChange( [ 0, 4 ], [ 1, 1 ], 'lane_change_5' );
 
+function makeLaneChange( start, end, name ) {
+  // TODO: Angled changes? End to left instead of right?
+  const width = ( end[ 0 ] - start[ 0 ] ) / 2;
+  const height = ( start[ 1 ] - end[ 1 ] ) / 2;
+
+  const r = ( width ** 2 + height ** 2 ) / ( 2 * width );
+  const theta = Math.asin( height / r );
+
+  console.log( r );
+  console.log( theta );
+
+  routes[ `${ name }_start` ] = {
+    center: [ start[ 0 ] + r, start[ 1 ] ],
+    radius: r,
+    startAngle: -Math.PI,
+    endAngle: -Math.PI + theta,
+    counterclockwise: false,
+  };
+
+  routes[ `${ name }_end` ] = {
+    center: [ end[ 0 ] - r, end[ 1 ] ],
+    radius: r,
+    startAngle: theta,
+    endAngle: 0,
+    counterclockwise: true,
+  };
+}
 
 canvas.draw = ( ctx ) => {
   ctx.lineWidth = 0.02;
