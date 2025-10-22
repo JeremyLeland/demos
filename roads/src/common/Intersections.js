@@ -100,7 +100,13 @@ export function isBetweenAngles( testAngle, startAngle, endAngle, counterclockwi
 }
 
 function normalizeAngle( angle ) {
-  return angle + ( 2 * Math.PI ) % ( 2 * Math.PI );
+  angle %= 2 * Math.PI;
+  
+  if ( angle < 0 ) {
+    angle += 2 * Math.PI;
+  }
+
+  return angle;
 }
 
 export function getLineLineIntersections( x1, y1, x2, y2, x3, y3, x4, y4 ) {
