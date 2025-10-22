@@ -85,21 +85,42 @@ const routes = {
 
 const intersections = {
   middle: {
-    loop1_TO_loop1: {
-      routes: [ 'loop1_TO_loop1_ARC' ],
-      yield: [ 'loop2_TO_loop1' ],
+    timing: {
+      total: 5000,
     },
-    loop1_TO_loop2: {
-      routes: [ 'loop1_TO_loop2_LINE1' ],
-      yield: [ 'loop2_TO_loop1', 'loop2_TO_loop2' ],
-    },
-    loop2_TO_loop1: {
-      routes: [ 'loop2_TO_loop1_LINE1' ],
-      yield: [ 'loop1_TO_loop1', 'loop1_TO_loop2' ],
-    },
-    loop2_TO_loop2: {
-      routes: [ 'loop2_TO_loop2_ARC' ],
-      yield: [ 'loop1_TO_loop2' ],
+    paths: {
+      loop1_TO_loop1: {
+        routes: [ 'loop1_TO_loop1_ARC' ],
+        yield: [ 'loop2_TO_loop1' ],
+        timing: {
+          start: 1000,
+          stop: 2000,
+        },
+      },
+      loop1_TO_loop2: {
+        routes: [ 'loop1_TO_loop2_LINE1' ],
+        yield: [ 'loop2_TO_loop1', 'loop2_TO_loop2' ],
+        timing: {
+          start: 2000,
+          stop: 3000,
+        },
+      },
+      loop2_TO_loop1: {
+        routes: [ 'loop2_TO_loop1_LINE1' ],
+        yield: [ 'loop1_TO_loop1', 'loop1_TO_loop2' ],
+        timing: {
+          start: 3000,
+          stop: 4000,
+        },
+      },
+      loop2_TO_loop2: {
+        routes: [ 'loop2_TO_loop2_ARC' ],
+        yield: [ 'loop1_TO_loop2' ],
+        timing: {
+          start: 4000,
+          stop: 5000,
+        },
+      },
     },
   },
 };
@@ -142,29 +163,61 @@ Object.assign( nameDiv.style, {
 // Drawing
 //
 
+let worldTime = 0;
+
+canvas.update = ( dt ) => {
+  worldTime += dt;
+}
+
 canvas.draw = ( ctx ) => {
   // Routes
   ctx.strokeStyle = '#555a';
   ctx.lineWidth = 0.4;
 
-  Object.entries( routes ).forEach( ( [ name, route ] ) => drawRoute( ctx, route ) );
+  ctx.fillStyle = '#ff0a';
+
+  Object.entries( routes ).forEach( ( [ name, route ] ) => {
+    drawRoute( ctx, route );
+
+    const roadLength = getRouteLength( route );
+      
+    for ( let length = 0; length < roadLength; length += 0.5 ) {
+      drawOnRouteAtDistance( ctx, route, length, drawArrow );
+    }
+  } );
 
   // Intersection debug
   if ( hoverIntersectionName ) {
     const intersection = intersections.middle[ hoverIntersectionName ];
 
-    ctx.strokeStyle = '#f00a'
+    ctx.strokeStyle = '#f00a';
     intersection.yield.forEach( yieldName => {
       intersections.middle[ yieldName ].routes.forEach( routeName => {
         drawRoute( ctx, routes[ routeName ] );
       } );
     } );
 
-    ctx.strokeStyle = '#0f0a'
+    ctx.strokeStyle = '#0f0a';
     intersection.routes.forEach( routeName => {
       drawRoute( ctx, routes[ routeName ] );
     } );
   }
+
+  const middleTime = worldTime % intersections.middle.timing.total;
+
+  Object.entries( intersections.middle.paths ).forEach( ( [ name, path ] ) => {
+
+    if ( path.timing.start <= middleTime && middleTime < path.timing.stop ) {
+      ctx.strokeStyle = '#0f0a';
+    }
+    else {
+      ctx.strokeStyle = '#f00a';
+    }
+
+    path.routes.forEach( routeName => {
+      drawRoute( ctx, routes[ routeName ] );
+    } );
+  } );
 
   ctx.strokeStyle = 'white';
   ctx.lineWidth = 0.02;
@@ -184,3 +237,67 @@ function drawRoute( ctx, route ) {
 
   ctx.stroke();
 }
+
+const arrowPath = new Path2D();
+arrowPath.moveTo( 0.25, 0 );
+arrowPath.lineTo( 0, 0.125 );
+arrowPath.lineTo( 0, -0.125 );
+arrowPath.closePath();
+
+function drawArrow( ctx ) {
+  ctx.fill( arrowPath );
+  // ctx.draw( arrowPath );
+}
+
+function getRouteLength( route ) {
+  if ( route.center ) {
+    let sweepAngle = route.endAngle - route.startAngle;
+
+    if ( !route.counterclockwise && sweepAngle < 0 ) {
+      sweepAngle += 2 * Math.PI;
+    }
+    else if ( route.counterclockwise && sweepAngle > 0 ) {
+      sweepAngle -= 2 * Math.PI;
+    }
+
+    return Math.abs( sweepAngle * route.radius );
+  }
+  else {
+    return vec2.distance( route.start, route.end );
+  }
+}
+
+function drawOnRouteAtDistance( ctx, route, distance, drawFunc ) {
+
+  let pos, angle;
+ 
+  if ( route.center ) {
+    const angleOffset = ( distance / route.radius ) * ( route.counterclockwise ? -1 : 1 );
+    const angleAtD = route.startAngle + angleOffset;
+
+    pos = vec2.scaleAndAdd( [], route.center, [ Math.cos( angleAtD ), Math.sin( angleAtD ) ], route.radius );
+    angle = angleAtD + ( route.counterclockwise ? -1 : 1 ) * Math.PI / 2;
+  }
+  else {
+    const lineVec = vec2.subtract( [], route.end, route.start );
+    vec2.normalize( lineVec, lineVec );
+
+    pos = vec2.scaleAndAdd( [], route.start, lineVec, distance );
+    angle = Math.atan2( lineVec[ 1 ], lineVec[ 0 ] );
+  }
+
+  ctx.save();
+
+  ctx.translate( ...pos );
+  ctx.rotate( angle );
+
+  drawFunc( ctx );
+
+  ctx.restore();
+}
+
+document.addEventListener( 'keydown', e => {
+  if ( e.key == ' ' ) {
+    canvas.toggle();
+  }
+} );
