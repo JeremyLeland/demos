@@ -261,7 +261,7 @@ Object.entries( intersections ).forEach( ( [ intersectionName, intersection ] ) 
   console.log( intersections );
 } );
 
-const players = Array.from( Array( 1 ), _ => { 
+const players = Array.from( Array( 10 ), _ => { 
   const routeName = randomFrom( Object.keys( routes ) );
 
   return {
@@ -332,15 +332,35 @@ canvas.update = ( dt ) => {
         desiredDistance -= length;
         desiredRouteName = randomFrom( route.next );   // TODO: random? based on path?
 
+        // Don't go into intersections unless path is open
         const middleTime = worldTime % intersections.middle.timing.duration;
         const intersectionPath = Object.values( intersections.middle.paths ).find( p => p.routes.includes( desiredRouteName ) );
         if ( intersectionPath ) {
           if ( middleTime < intersectionPath.timing.start || intersectionPath.timing.stop <= middleTime ) {
             break;
           }
-        }
+        } 
       }
       else {
+
+        // Don't get too close to other cars
+        const closePlayer = players.find( other => {
+          if ( player != other ) {
+            if ( desiredRouteName == other.routeName ) {
+              const dist = other.routeDistance - desiredDistance;
+
+              if ( 0 < dist && dist < 1 ) {
+                // console.log( `We are ${ desiredDistance }, other is ${ other.routeDistance } with dist of ${ dist }` );
+                return other;
+              }
+            }
+          }
+        } );
+
+        if ( closePlayer ) {
+          break;
+        }
+
         player.routeDistance = desiredDistance;
         player.routeName = desiredRouteName;
         break;
