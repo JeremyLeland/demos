@@ -6,23 +6,18 @@ import { Grid } from '../src/common/Grid.js';
 import * as Roads from '../src/Roads.js';
 
 const streets = {
-  test: {
+  arc1: {
     center: [ 10, 10 ],
-    radius: 10,
+    radius: 5,
     startAngle: 0,
     endAngle: -Math.PI / 2,
     counterclockwise: true,
 
-    lanes: { left: 2, right: 3 },
+    lanes: { left: 1, right: 1 },
   },
-  test2: {
-    center: [ 10, 10 ],
-    radius: 5,
-    startAngle: Math.PI,
-    endAngle: Math.PI + 1,
-    counterclockwise: false,
-
-    lanes: { left: 2, right: 3 },
+  line: {
+    start: [ 15, 10 ],
+    end: [ 15, 15 ],
   },
 };
 

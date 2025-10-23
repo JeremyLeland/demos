@@ -10,6 +10,10 @@
   - Arc vs Line
   - Arc vs Arc
 
+
+Automatic intersections between arbitrary lines is hard. 
+What if I did more like a train set, predefined acceptable intersections and pieces and linked them together?
+
 - Splitting and merging lanes
   - e.g. splitting to add a left turn lane
   - Change streets to have lane info as part of start and end:

@@ -1,4 +1,5 @@
 import * as Arc from './common/Arc.js';
+import * as Intersections from './common/Intersections.js';
 
 import { vec2 } from '../lib/gl-matrix.js'
 
@@ -31,26 +32,41 @@ export function makeRoutes( streets ) {
       //
       // TODO: Account for arcs
       //
-      let point;
 
-      if ( street1.center && street2.center ) {
-        point = getArcIntersection( street1, street2 );
-      }
-      else if ( street1.center ) {
-        point = getArcLineIntersection( street1, street2 );
-      }
-      else if ( street2.center ) {
-        point = getArcLineIntersection( street2, street1 );
-      }
-      else {
-        point = getLineIntersection( street1, street2 );
-      }
-      
-      if ( point ) { 
+      const addIntersection = ( point ) => {
         intersections.push( {
           streets: [ name1, name2 ],
           point: point,
         } );
+      }
+
+      if ( street1.center && street2.center ) {
+        Intersections.getArcArcIntersections( 
+          street1.center[ 0 ], street1.center[ 1 ], street1.radius, street1.startAngle, street1.endAngle, street1.counterclockwise, 
+          street2.center[ 0 ], street2.center[ 1 ], street2.radius, street2.startAngle, street2.endAngle, street2.counterclockwise,
+        ).forEach( point => addIntersection( point ) );
+      }
+      else if ( street1.center ) {
+        Intersections.getArcLineIntersections(
+          street1.center[ 0 ], street1.center[ 1 ], street1.radius, street1.startAngle, street1.endAngle, street1.counterclockwise, 
+          street2.start[ 0 ], street2.start[ 1 ], street2.end[ 0 ], street2.end[ 1 ],
+        ).forEach( point => addIntersection( point ) );
+      }
+      else if ( street2.center ) {
+        Intersections.getArcArcIntersections(
+          street2.center[ 0 ], street2.center[ 1 ], street2.radius, street2.startAngle, street2.endAngle, street2.counterclockwise,
+          street1.start[ 0 ], street1.start[ 1 ], street1.end[ 0 ], street1.end[ 1 ],
+        ).forEach( point => addIntersection( point ) );
+      }
+      else {
+        const point = getLineIntersection(
+          street1.start[ 0 ], street1.start[ 1 ], street1.end[ 0 ], street1.end[ 1 ],
+          street2.start[ 0 ], street2.start[ 1 ], street2.end[ 0 ], street2.end[ 1 ],
+        );
+
+        if ( point ) {
+          addIntersection( point );
+        }
       }
     }
   }
@@ -74,86 +90,105 @@ export function makeRoutes( streets ) {
 
       // console.log( `Comparing ${ oldStreet.start } and ${ oldStreet.end } to ${ intersection.point }...` );
 
-      const streetVec = vec2.subtract( [], oldStreet.start, oldStreet.end );
-      vec2.normalize( streetVec, streetVec );
+      //
+      // TODO: Intersection with arc
+      //   - Need to find start and end pos from angles and radius
+      //
 
-      // TODO: What if it's not a right angle?
-      const laneTrimOffset = 0.5 * LANE_WIDTH * ( otherStreet.lanes.left + otherStreet.lanes.right );
+      // TODO: makeRoutes is way too hard to test changes to
+      //   - Need to break this up into pieces that are easier to reason about and test on their own
+      //   - We're going to need to experiment with what splitting and offsetting arcs should look like
 
-      // Don't split if intersection is at start or end, just trim
-      if ( lineDist( oldStreet.start, intersection.point ) < 1e-6 ) {
-        // console.log( `${ intersection.point } is near ${ oldStreet.start } so trimming start` );
-
-        vec2.add( oldStreet.start, oldStreet.start, vec2.scale( [], streetVec, -laneTrimOffset ) );
-
-        afterStreets.push( beforeStreetName );
-        continue;
+      //
+      // Figure out how much this street is overlapping the other street so we can shorten it (or its resulting splits)
+      //
+      if ( oldStreet.center ) {
+        // If arc, change start/endAngle
+        //  - Except that will leave us at a weird angle. 
+        //  - If we're to stay perpendicular, we'd need to change center and radius
       }
-      if ( lineDist( oldStreet.end, intersection.point ) < 1e-6 ) {
-        // console.log( `${ intersection.point } is near ${ oldStreet.end } so trimming end` );
+      else {
+        // If line, move start/end
+        const streetVec = vec2.subtract( [], oldStreet.start, oldStreet.end );
+        vec2.normalize( streetVec, streetVec );
 
-        vec2.add( oldStreet.end, oldStreet.end, vec2.scale( [], streetVec, laneTrimOffset ) );
+        // TODO: What if it's not a right angle?
+        const laneTrimOffset = 0.5 * LANE_WIDTH * ( otherStreet.lanes.left + otherStreet.lanes.right );
 
-        afterStreets.push( beforeStreetName );
-        continue;
-      };
+        // Don't split if intersection is at start or end, just trim
+        if ( lineDist( oldStreet.start, intersection.point ) < 1e-6 ) {
+          // console.log( `${ intersection.point } is near ${ oldStreet.start } so trimming start` );
 
-      // TODO: Reference the original street name so we can modify that 
-      // instead of constantly appending split numbers (e.g. first_0_4_5_6 )
-      // Probably also useful later to get street info like proper name, maybe speed, etc
+          vec2.add( oldStreet.start, oldStreet.start, vec2.scale( [], streetVec, -laneTrimOffset ) );
 
-      const splitA = `${ beforeStreetName }_${ splitIndex ++ }`;
-      const splitB = `${ beforeStreetName }_${ splitIndex ++ }`;
-    
-      // TODO: Account for multiple lanes (likely from reference to original street info)
-
-      streets[ splitA ] = {
-        start: oldStreet.start, 
-        end: vec2.add( [], intersection.point, vec2.scale( [], streetVec, laneTrimOffset ) ),
-        lanes: oldStreet.lanes,
-      };
-
-      streets[ splitB ] = {
-        start: vec2.add( [], intersection.point, vec2.scale( [], streetVec, -laneTrimOffset ) ),
-        end: oldStreet.end,
-        lanes: oldStreet.lanes,
-      };
-
-      afterStreets.push( splitA, splitB );
-      streetNamesToDelete.push( beforeStreetName );
-
-      // Update all the other intersections
-      const streetAngle = lineAngle( oldStreet.start, oldStreet.end );
-
-      intersections.forEach( otherIntersection => {
-        if ( intersection == otherIntersection ) {
-          return;
+          afterStreets.push( beforeStreetName );
+          continue;
         }
+        if ( lineDist( oldStreet.end, intersection.point ) < 1e-6 ) {
+          // console.log( `${ intersection.point } is near ${ oldStreet.end } so trimming end` );
 
-        for ( let i = 0; i < otherIntersection.streets.length; i ++ ) {
-          if ( otherIntersection.streets[ i ] == beforeStreetName ) {
+          vec2.add( oldStreet.end, oldStreet.end, vec2.scale( [], streetVec, laneTrimOffset ) );
 
-            // TODO: How would we handle this for arcs? Would need in terms of angles or distance
+          afterStreets.push( beforeStreetName );
+          continue;
+        };
 
-            const intersectionAngle = lineAngle( intersection.point, otherIntersection.point );
+        // TODO: Reference the original street name so we can modify that 
+        // instead of constantly appending split numbers (e.g. first_0_4_5_6 )
+        // Probably also useful later to get street info like proper name, maybe speed, etc
 
-            if ( Math.abs( intersectionAngle - streetAngle ) < 0.1 ) {
-              // console.log( `${ otherIntersection.point } is ahead of ${ intersection.point }, so setting to splitB` );
-              otherIntersection.streets[ i ] = splitB;
-            }
-            else {
-              // console.log( `${ otherIntersection.point } is behind ${ intersection.point }, so setting to splitA` );
-              otherIntersection.streets[ i ] = splitA;
+        const splitA = `${ beforeStreetName }_${ splitIndex ++ }`;
+        const splitB = `${ beforeStreetName }_${ splitIndex ++ }`;
+      
+        // TODO: Account for multiple lanes (likely from reference to original street info)
+
+        streets[ splitA ] = {
+          start: oldStreet.start, 
+          end: vec2.add( [], intersection.point, vec2.scale( [], streetVec, laneTrimOffset ) ),
+          lanes: oldStreet.lanes,
+        };
+
+        streets[ splitB ] = {
+          start: vec2.add( [], intersection.point, vec2.scale( [], streetVec, -laneTrimOffset ) ),
+          end: oldStreet.end,
+          lanes: oldStreet.lanes,
+        };
+
+        afterStreets.push( splitA, splitB );
+        streetNamesToDelete.push( beforeStreetName );
+
+        // Update all the other intersections
+        const streetAngle = lineAngle( oldStreet.start, oldStreet.end );
+
+        intersections.forEach( otherIntersection => {
+          if ( intersection == otherIntersection ) {
+            return;
+          }
+
+          for ( let i = 0; i < otherIntersection.streets.length; i ++ ) {
+            if ( otherIntersection.streets[ i ] == beforeStreetName ) {
+
+              // TODO: How would we handle this for arcs? Would need in terms of angles or distance
+
+              const intersectionAngle = lineAngle( intersection.point, otherIntersection.point );
+
+              if ( Math.abs( intersectionAngle - streetAngle ) < 0.1 ) {
+                // console.log( `${ otherIntersection.point } is ahead of ${ intersection.point }, so setting to splitB` );
+                otherIntersection.streets[ i ] = splitB;
+              }
+              else {
+                // console.log( `${ otherIntersection.point } is behind ${ intersection.point }, so setting to splitA` );
+                otherIntersection.streets[ i ] = splitA;
+              }
             }
           }
-        }
-      } );
+        } );
+      }
+
+      intersection.streets = afterStreets;
+
+      streetNamesToDelete.forEach( name => delete streets[ name ] );
     }
-
-    intersection.streets = afterStreets;
-
-    streetNamesToDelete.forEach( name => delete streets[ name ] );
-
   } );
 
   // console.log( 'Intersections after splits:' );
