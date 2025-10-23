@@ -22,10 +22,12 @@ const routes = {
     startAngle: 0,
     endAngle: Math.PI / 2,
     counterclockwise: true,
+    next: [ 'end1' ],
   },
   start1: {
     start: [ 5, 4.5 ],
     end: [ 5, 3 ],
+    next: [ 'loop1' ],
   },
   end1: {
     start: [ 3, 5 ],
@@ -37,10 +39,12 @@ const routes = {
     startAngle: -Math.PI / 2,
     endAngle: Math.PI,
     counterclockwise: false,
+    next: [ 'end2' ],
   },
   start2: {
     start: [ 5.5, 5 ],
     end: [ 7, 5 ],
+    next: [ 'loop2' ],
   },
   end2: {
     start: [ 5, 7 ],
@@ -193,6 +197,10 @@ Object.entries( intersections ).forEach( ( [ intersectionName, intersection ] ) 
         const lineName = `${ pathName }_LINE`;
         routes[ lineName ] = line;
 
+        routes[ pathInfo.from ].next ??= [];
+        routes[ pathInfo.from ].next.push( lineName );
+        routes[ lineName ].next = [ pathInfo.to ];
+
         intersections[ intersectionName ].paths[ pathName ].routes = [ lineName ];
       }
       else {
@@ -240,13 +248,28 @@ Object.entries( intersections ).forEach( ( [ intersectionName, intersection ] ) 
       const arcName = `${ pathName }_ARC`;
       routes[ arcName ] = arc;
 
-      
+      routes[ pathInfo.from ].next ??= [];
+      routes[ pathInfo.from ].next.push( arcName );
+
+      routes[ arcName ].next = [ pathInfo.to ];
 
       intersections[ intersectionName ].paths[ pathName ].routes = [ arcName ];
     }
   } );
 
+  console.log( routes );
   console.log( intersections );
+} );
+
+const players = Array.from( Array( 1 ), _ => { 
+  const routeName = randomFrom( Object.keys( routes ) );
+
+  return {
+    color: randomColor(),
+    speed: 0.005,
+    routeName: routeName,
+    routeDistance: Math.random() * getRouteLength( routes[ routeName ] ),
+  };
 } );
 
 //
@@ -291,6 +314,39 @@ let worldTime = 0;
 
 canvas.update = ( dt ) => {
   worldTime += dt;
+
+  players.forEach( player => {
+
+    let desiredDistance = player.routeDistance + player.speed * dt;
+    let desiredRouteName = player.routeName;
+
+    // player.routeDistance += player.speed * dt;
+
+    // TODO: Try it first, go slower or stop if there are obstacles/closed paths
+    
+    for ( let i = 0; i < 10; i ++ ) {
+      const route = routes[ desiredRouteName ];
+      const length = getRouteLength( route );
+
+      if ( desiredDistance > length ) {
+        desiredDistance -= length;
+        desiredRouteName = randomFrom( route.next );   // TODO: random? based on path?
+
+        const middleTime = worldTime % intersections.middle.timing.duration;
+        const intersectionPath = Object.values( intersections.middle.paths ).find( p => p.routes.includes( desiredRouteName ) );
+        if ( intersectionPath ) {
+          if ( middleTime < intersectionPath.timing.start || intersectionPath.timing.stop <= middleTime ) {
+            break;
+          }
+        }
+      }
+      else {
+        player.routeDistance = desiredDistance;
+        player.routeName = desiredRouteName;
+        break;
+      }
+    }
+  } );
 }
 
 canvas.draw = ( ctx ) => {
@@ -342,6 +398,12 @@ canvas.draw = ( ctx ) => {
       drawRoute( ctx, routes[ routeName ] );
     } );
   } );
+
+  players.forEach( player => {
+    ctx.fillStyle = player.color;
+    drawOnRouteAtDistance( ctx, routes[ player.routeName ], player.routeDistance, drawArrow );
+  } );
+  
 
   ctx.strokeStyle = 'white';
   ctx.lineWidth = 0.02;
@@ -425,3 +487,11 @@ document.addEventListener( 'keydown', e => {
     canvas.toggle();
   }
 } );
+
+function randomFrom( array ) {
+  return array[ Math.floor( Math.random() * array.length ) ];
+}
+
+function randomColor() {
+  return `hsl( ${ Math.random() * 360 }deg, ${ Math.random() * 75 + 25 }%, ${ Math.random() * 40 + 40 }% )`;
+}
