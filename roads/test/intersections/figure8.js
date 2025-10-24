@@ -312,17 +312,57 @@ Object.assign( nameDiv.style, {
 
 let worldTime = 0;
 
+const FOLLOW_DISTANCE = 1;
+
 canvas.update = ( dt ) => {
   worldTime += dt;
 
   players.forEach( player => {
 
-    let desiredDistance = player.routeDistance + player.speed * dt;
+    // Look for other players first, so we can slow down smoothly
+    let closestDist = Infinity;
+
+    {
+      let routeName = player.routeName;
+      let previousDistance = 0;
+
+      for ( let i = 0; i < 10; i ++ ) {
+
+        // TODO: Find players (not us) in this route, check distances
+        players.forEach( other => {
+          if ( player != other && routeName == other.routeName ) {
+            const dist = previousDistance + other.routeDistance - player.routeDistance;
+
+            if ( 0 < dist && dist < closestDist ) {
+              closestDist = dist;
+            }
+          }
+        } );
+
+        const route = routes[ routeName ];
+        const length = getRouteLength( route );
+        
+        if ( player.routeDistance + FOLLOW_DISTANCE > previousDistance + length ) {
+          previousDistance += length;
+          
+          routeName = randomFrom( route.next );   // TODO: random? based on path?
+        }
+        else {
+          break;
+        }
+      }
+    }
+    
+    // console.log( `closest dist = ${ closestDist }` );
+
+    const speedModifier = Math.tanh( 3 * ( closestDist - FOLLOW_DISTANCE ) );
+
+    let desiredDistance = player.routeDistance + speedModifier * player.speed * dt;
     let desiredRouteName = player.routeName;
 
     // player.routeDistance += player.speed * dt;
 
-    // TODO: Try it first, go slower or stop if there are obstacles/closed paths
+    // TODO: Bring us to a smooth stop at blocked intersections (like we do with other cars above)
     
     for ( let i = 0; i < 10; i ++ ) {
       const route = routes[ desiredRouteName ];
@@ -342,25 +382,6 @@ canvas.update = ( dt ) => {
         } 
       }
       else {
-
-        // Don't get too close to other cars
-        const closePlayer = players.find( other => {
-          if ( player != other ) {
-            if ( desiredRouteName == other.routeName ) {
-              const dist = other.routeDistance - desiredDistance;
-
-              if ( 0 < dist && dist < 1 ) {
-                // console.log( `We are ${ desiredDistance }, other is ${ other.routeDistance } with dist of ${ dist }` );
-                return other;
-              }
-            }
-          }
-        } );
-
-        if ( closePlayer ) {
-          break;
-        }
-
         player.routeDistance = desiredDistance;
         player.routeName = desiredRouteName;
         break;
@@ -374,7 +395,7 @@ canvas.draw = ( ctx ) => {
   ctx.strokeStyle = '#555a';
   ctx.lineWidth = 0.4;
 
-  ctx.fillStyle = '#ff0a';
+  ctx.fillStyle = '#ff08';
 
   Object.entries( routes ).forEach( ( [ name, route ] ) => {
     drawRoute( ctx, route );
@@ -421,7 +442,7 @@ canvas.draw = ( ctx ) => {
 
   players.forEach( player => {
     ctx.fillStyle = player.color;
-    drawOnRouteAtDistance( ctx, routes[ player.routeName ], player.routeDistance, drawArrow );
+    drawOnRouteAtDistance( ctx, routes[ player.routeName ], player.routeDistance, drawCar );
   } );
   
 
@@ -446,13 +467,28 @@ function drawRoute( ctx, route ) {
 
 const arrowPath = new Path2D();
 arrowPath.moveTo( 0.25, 0 );
-arrowPath.lineTo( 0, 0.125 );
-arrowPath.lineTo( 0, -0.125 );
+arrowPath.lineTo( 0, 0.05 );
+arrowPath.lineTo( 0, -0.05 );
 arrowPath.closePath();
 
 function drawArrow( ctx ) {
   ctx.fill( arrowPath );
   // ctx.draw( arrowPath );
+}
+
+const carPath = new Path2D();
+carPath.moveTo( 0.25, -0.15 );
+carPath.lineTo( 0.25, 0.15 );
+carPath.lineTo( -0.25, 0.2 );
+carPath.lineTo( -0.25, -0.2 );
+carPath.closePath();
+
+function drawCar( ctx ) {
+  ctx.fill( carPath );
+
+  // ctx.strokeStyle = 'black';
+  // ctx.lineWidth = 0.1;
+  // ctx.stroke( carPath );
 }
 
 function getRouteLength( route ) {
