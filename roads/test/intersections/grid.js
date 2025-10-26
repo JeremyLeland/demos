@@ -11,107 +11,99 @@ const canvas = new Canvas();
 canvas.backgroundColor = '#123';
 canvas.bounds = [ grid.minX - 0.5, grid.minY - 0.5, grid.maxX + 0.5, grid.maxY + 0.5 ];
 
+const NUM_PLAYERS = 2;
+
 const streets = {
 
 }
 
 const routes = {
-  loop1: {
-    center: [ 3, 3 ],
-    radius: 2,
-    startAngle: 0,
-    endAngle: Math.PI / 2,
-    counterclockwise: true,
-    next: [ 'end1' ],
+  A: {
+    start: [ 3, 1 ],
+    end: [ 5, 1 ],
   },
-  start1: {
-    start: [ 5, 4.5 ],
-    end: [ 5, 3 ],
-    next: [ 'loop1' ],
+  B: {
+    start: [ 5, 5 ],
+    end: [ 3, 5 ],
   },
-  end1: {
-    start: [ 3, 5 ],
-    end: [ 4.5, 5 ],
+  C: {
+    start: [ 3, 9 ],
+    end: [ 5, 9 ],
   },
-  loop2: {
-    center: [ 7, 7 ],
-    radius: 2,
-    startAngle: -Math.PI / 2,
-    endAngle: Math.PI,
-    counterclockwise: false,
-    next: [ 'end2' ],
+  first_above: {
+    start: [ 2, 4 ],
+    end: [ 2, 2 ],
   },
-  start2: {
-    start: [ 5.5, 5 ],
-    end: [ 7, 5 ],
-    next: [ 'loop2' ],
+  second_above: {
+    start: [ 6, 2 ],
+    end: [ 6, 4 ],
   },
-  end2: {
-    start: [ 5, 7 ],
-    end: [ 5, 5.5 ],
+  first_below: {
+    start: [ 2, 6 ],
+    end: [ 2, 8 ],
   },
-
-  // loop1_TO_loop1_ARC: {
-  //   center: [ 4.5, 4.5 ],
-  //   radius: 0.5,
-  //   startAngle: Math.PI / 2,
-  //   endAngle: 0,
-  //   counterclockwise: true,
-  // },
-  // loop1_TO_loop2_LINE1: {
-  //   start: [ 4.5, 5 ],
-  //   end: [ 5.5, 5 ],
-  // },
-
-  // loop2_TO_loop1_LINE1: {
-  //   start: [ 5, 5.5 ],
-  //   end: [ 5, 4.5 ],
-  // },
-  // loop2_TO_loop2_ARC: {
-  //   center: [ 5.5, 5.5 ],
-  //   radius: 0.5,
-  //   startAngle: Math.PI,
-  //   endAngle: -Math.PI / 2,
-  //   counterclockwise: false,
-  // }
+  second_below: {
+    start: [ 6, 8 ],
+    end: [ 6, 6 ],
+  },
 };
 
+[
+  // [ 'B', 'first_above' ],
+  [ 'first_above', 'A' ],
+  [ 'A', 'second_above' ],
+  // [ 'second_above', 'B' ],
+
+  [ 'first_below', 'C' ],
+  [ 'C', 'second_below' ],
+].forEach( pair => {
+  joinRoutes( routes, ...pair );
+} );
+
+
 const intersections = {
-  middle: {
+  left: {
     timing: {
       duration: 5000,
     },
     paths: {
-      end1_TO_start1: {
-        from: 'end1',
-        to: 'start1',
+      B_TO_first_above: {
+        from: 'B',
+        to: 'first_above',
         timing: {
           start: 1000,
           stop: 2000,
         },
       },
-      end1_TO_start2: {
-        from: 'end1',
-        to: 'start2',
+      B_TO_first_below: {
+        from: 'B',
+        to: 'first_below',
         timing: {
           start: 2000,
           stop: 3000,
         },
       },
-      end2_TO_start1: {
-        from: 'end2',
-        to: 'start1',
+    },
+  },
+  right: {
+    timing: {
+      duration: 5000,
+    },
+    paths: {
+      second_above_TO_B: {
+        from: 'second_above',
+        to: 'B',
         timing: {
-          start: 3000,
-          stop: 4000,
+          start: 1000,
+          stop: 2000,
         },
       },
-      end2_TO_start2: {
-        from: 'end2',
-        to: 'start2',
+      second_below_TO_B: {
+        from: 'second_below',
+        to: 'B',
         timing: {
-          start: 4000,
-          stop: 5000,
+          start: 1000,
+          stop: 2000,
         },
       },
     },
@@ -166,102 +158,112 @@ const intersections = {
 //   },
 // };
 
-// Process simplified intersection definition
-Object.entries( intersections ).forEach( ( [ intersectionName, intersection ] ) => {
-  
-  Object.entries( intersection.paths ).forEach( ( [ pathName, pathInfo ] ) => {
-    const from = routes[ pathInfo.from ];
-    const to = routes[ pathInfo.to ];
+// Join the two named routes from the given list
+// Return list of created path names
 
-    // const pathName = `${ pathInfo.from }_TO_${ pathInfo.to }`;
+function joinRoutes( routes, fromName, toName ) {
+  const from = routes[ fromName ];
+  const to = routes[ toName ];
 
-    // TODO: Find arc between, if applicable
+  const pathName = `${ fromName }_TO_${ toName }`;
 
-    // Center of arc will be on bisector of angle formed by two lines
+  // TODO: Find arc between, if applicable
 
-    // const v0 = vec2.subtract( [], from.start, from.end );
-    const A = vec2.subtract( [], from.end, from.start );
-    const B = vec2.subtract( [], to.end, to.start );
-    const C = vec2.subtract( [], to.start, from.start );
+  // Center of arc will be on bisector of angle formed by two lines
 
-    const A_cross_B = A[ 0 ] * B[ 1 ] - A[ 1 ] * B[ 0 ];
-    const C_cross_A = C[ 0 ] * A[ 1 ] - C[ 1 ] * A[ 0 ];
+  // const v0 = vec2.subtract( [], from.start, from.end );
+  const A = vec2.subtract( [], from.end, from.start );
+  const B = vec2.subtract( [], to.end, to.start );
+  const C = vec2.subtract( [], to.start, from.start );
 
-    if ( A_cross_B == 0 ) {
-      if ( C_cross_A == 0 ) {
-        const line = {
-          start: from.end,
-          end: to.start,
-        };
+  const A_cross_B = A[ 0 ] * B[ 1 ] - A[ 1 ] * B[ 0 ];
+  const C_cross_A = C[ 0 ] * A[ 1 ] - C[ 1 ] * A[ 0 ];
 
-        const lineName = `${ pathName }_LINE`;
-        routes[ lineName ] = line;
-
-        routes[ pathInfo.from ].next ??= [];
-        routes[ pathInfo.from ].next.push( lineName );
-        routes[ lineName ].next = [ pathInfo.to ];
-
-        intersections[ intersectionName ].paths[ pathName ].routes = [ lineName ];
-      }
-      else {
-        // Parallel
-      }
-    }
-    else {
-      const u = ( C[ 0 ] * B[ 1 ] - C[ 1 ] * B[ 0 ] ) / A_cross_B;
-
-      const intersection = vec2.scaleAndAdd( [], from.start, A, u );
-
-      vec2.normalize( A, A );
-      vec2.normalize( B, B );
-      
-      const angleBetween = vec2.angle( A, B );
-
-      const dist = vec2.distance( from.end, intersection );
-      const radius = dist / ( Math.tan( angleBetween / 2 ) );
-      const centerDistance = radius / Math.sin( angleBetween / 2 );
-      
-      // Reverse A to give us the proper bisector between vectors
-      const bisector = vec2.scaleAndAdd( [], B, A, -1 );
-      vec2.normalize( bisector, bisector );
-
-      const center = vec2.scaleAndAdd( [], intersection, bisector, centerDistance );
-
-      // Compute start and end angles
-      const tangentDist = radius / ( Math.tan( angleBetween / 2 ) );
-      const start = vec2.scaleAndAdd( [], intersection, A, -tangentDist );  // reversing A again
-      const end   = vec2.scaleAndAdd( [], intersection, B,  tangentDist );
-
-      const startAngle = Math.atan2( start[ 1 ] - center[ 1 ], start[ 0 ] - center[ 0 ] );
-      const endAngle = Math.atan2( end[ 1 ] - center[ 1 ], end[ 0 ] - center[ 0 ] );
-      
-      const arc = {
-        center: center,
-        radius: radius,
-        startAngle: startAngle,
-        endAngle: endAngle,
-        counterclockwise: A_cross_B < 0,
+  if ( A_cross_B == 0 ) {
+    if ( C_cross_A == 0 ) {
+      const line = {
+        start: from.end,
+        end: to.start,
       };
 
-      console.log( arc );
+      const lineName = `${ pathName }_LINE`;
+      routes[ lineName ] = line;
 
-      const arcName = `${ pathName }_ARC`;
-      routes[ arcName ] = arc;
+      routes[ fromName ].next ??= [];
+      routes[ fromName ].next.push( lineName );
+      routes[ lineName ].next = [ pathInfo.to ];
 
-      routes[ pathInfo.from ].next ??= [];
-      routes[ pathInfo.from ].next.push( arcName );
-
-      routes[ arcName ].next = [ pathInfo.to ];
-
-      intersections[ intersectionName ].paths[ pathName ].routes = [ arcName ];
+      // intersections[ intersectionName ].paths[ pathName ].routes = [ lineName ];
+      return [ lineName ];
     }
+    else {
+      // Parallel
+    }
+  }
+  else {
+    const u = ( C[ 0 ] * B[ 1 ] - C[ 1 ] * B[ 0 ] ) / A_cross_B;
+
+    const intersection = vec2.scaleAndAdd( [], from.start, A, u );
+
+    vec2.normalize( A, A );
+    vec2.normalize( B, B );
+    
+    const angleBetween = vec2.angle( A, B );
+
+    const dist = vec2.distance( from.end, intersection );
+    const radius = dist / ( Math.tan( angleBetween / 2 ) );
+    const centerDistance = radius / Math.sin( angleBetween / 2 );
+    
+    // Reverse A to give us the proper bisector between vectors
+    const bisector = vec2.scaleAndAdd( [], B, A, -1 );
+    vec2.normalize( bisector, bisector );
+
+    const center = vec2.scaleAndAdd( [], intersection, bisector, centerDistance );
+
+    // Compute start and end angles
+    const tangentDist = radius / ( Math.tan( angleBetween / 2 ) );
+    const start = vec2.scaleAndAdd( [], intersection, A, -tangentDist );  // reversing A again
+    const end   = vec2.scaleAndAdd( [], intersection, B,  tangentDist );
+
+    const startAngle = Math.atan2( start[ 1 ] - center[ 1 ], start[ 0 ] - center[ 0 ] );
+    const endAngle = Math.atan2( end[ 1 ] - center[ 1 ], end[ 0 ] - center[ 0 ] );
+    
+    const arc = {
+      center: center,
+      radius: radius,
+      startAngle: startAngle,
+      endAngle: endAngle,
+      counterclockwise: A_cross_B < 0,
+    };
+
+    console.log( arc );
+
+    const arcName = `${ pathName }_ARC`;
+    routes[ arcName ] = arc;
+
+    routes[ fromName ].next ??= [];
+    routes[ fromName ].next.push( arcName );
+
+    routes[ arcName ].next = [ toName ];
+
+    // intersections[ intersectionName ].paths[ pathName ].routes = [ arcName ];
+
+    return [ arcName ];
+  }
+}
+
+// Process simplified intersection definition
+Object.entries( intersections ).forEach( ( [ intersectionName, intersection ] ) => {
+  Object.entries( intersection.paths ).forEach( ( [ pathName, pathInfo ] ) => {
+    const pathNames = joinRoutes( routes, pathInfo.from, pathInfo.to );
+    intersections[ intersectionName ].paths[ pathName ].routes = pathNames;
   } );
 
   console.log( routes );
   console.log( intersections );
 } );
 
-const players = Array.from( Array( 10 ), _ => { 
+const players = Array.from( Array( NUM_PLAYERS ), _ => { 
   const routeName = randomFrom( Object.keys( routes ) );
 
   return {
@@ -278,32 +280,32 @@ const players = Array.from( Array( 10 ), _ => {
 
 let hoverIntersectionName;
 
-const nameDiv = document.createElement( 'div' );
-for ( const name of Object.keys( intersections.middle.paths ) ) {
-  // const label = document.createTextNode( name );
-  // nameDiv.appendChild( label );
+// const nameDiv = document.createElement( 'div' );
+// for ( const name of Object.keys( intersections.middle.paths ) ) {
+//   // const label = document.createTextNode( name );
+//   // nameDiv.appendChild( label );
 
-  const div = document.createElement( 'div' );
-  div.innerText = name;
+//   const div = document.createElement( 'div' );
+//   div.innerText = name;
 
-  div.addEventListener( 'mouseover', _ => {
-    hoverIntersectionName = name;
-    canvas.redraw();
-  } );
+//   div.addEventListener( 'mouseover', _ => {
+//     hoverIntersectionName = name;
+//     canvas.redraw();
+//   } );
 
-  nameDiv.appendChild( div );
-}
+//   nameDiv.appendChild( div );
+// }
 
-document.body.appendChild( nameDiv );
+// document.body.appendChild( nameDiv );
 
-Object.assign( nameDiv.style, {
-  position: 'absolute',
-  left: 0,
-  top: 0,
-  height: '100%',
-  overflow: 'scroll',
-  fontSize: '12px'
-} );
+// Object.assign( nameDiv.style, {
+//   position: 'absolute',
+//   left: 0,
+//   top: 0,
+//   height: '100%',
+//   overflow: 'scroll',
+//   fontSize: '12px'
+// } );
 
 
 //
@@ -328,7 +330,22 @@ canvas.update = ( dt ) => {
 
       for ( let i = 0; i < 10; i ++ ) {
 
-        // TODO: Find players (not us) in this route, check distances
+        // Find controlled intersections
+        Object.values( intersections ).forEach( intersection => {
+          const time = worldTime % intersection.timing.duration;
+          const intersectionPath = Object.values( intersection.paths ).find( p => p.routes.includes( routeName ) );
+          if ( intersectionPath ) {
+            if ( time < intersectionPath.timing.start || intersectionPath.timing.stop <= time ) {
+              const dist = previousDistance - player.routeDistance;
+
+              if ( 0 < dist && dist < closestDist ) {
+                closestDist = dist;
+              }
+            }
+          }
+        } );
+
+        // Find players (not us) in this route, check distances
         players.forEach( other => {
           if ( player != other && routeName == other.routeName ) {
             const dist = previousDistance + other.routeDistance - player.routeDistance;
@@ -345,7 +362,14 @@ canvas.update = ( dt ) => {
         if ( player.routeDistance + FOLLOW_DISTANCE > previousDistance + length ) {
           previousDistance += length;
           
-          routeName = randomFrom( route.next );   // TODO: random? based on path?
+
+          // TODO: I think this randomness is causing the jitter. 
+          // Sometimes we advance because our path is clear, and sometimes we backtrack because it isn't
+          // For now, always pick the first one. At some point, we'll have paths to goal.
+          // If we want to keep being random, need to make that decision once and save it somehow?
+
+          // routeName = randomFrom( route.next );   // TODO: random? based on path?
+          routeName = route.next[ 0 ];
         }
         else {
           break;
@@ -354,6 +378,8 @@ canvas.update = ( dt ) => {
     }
     
     // console.log( `closest dist = ${ closestDist }` );
+
+    // TODO: Different follow distance for cars and intersections...maybe incorporate into closestDiff above?
 
     const speedModifier = Math.tanh( 3 * ( closestDist - FOLLOW_DISTANCE ) );
 
@@ -372,15 +398,6 @@ canvas.update = ( dt ) => {
       if ( desiredDistance > length ) {
         desiredDistance -= length;
         desiredRouteName = randomFrom( route.next );   // TODO: random? based on path?
-
-        // Don't go into intersections unless path is open
-        const middleTime = worldTime % intersections.middle.timing.duration;
-        const intersectionPath = Object.values( intersections.middle.paths ).find( p => p.routes.includes( desiredRouteName ) );
-        if ( intersectionPath ) {
-          if ( middleTime < intersectionPath.timing.start || intersectionPath.timing.stop <= middleTime ) {
-            break;
-          }
-        } 
       }
       else {
         player.routeDistance = desiredDistance;
@@ -425,19 +442,20 @@ canvas.draw = ( ctx ) => {
   //   } );
   // }
 
-  const middleTime = worldTime % intersections.middle.timing.duration;
+  Object.entries( intersections ).forEach( ( [ intersectionName, intersection ] ) => {
+    const time = worldTime % intersection.timing.duration;
 
-  Object.entries( intersections.middle.paths ).forEach( ( [ name, path ] ) => {
+    Object.entries( intersection.paths ).forEach( ( [ name, path ] ) => {
+      if ( path.timing.start <= time && time < path.timing.stop ) {
+        ctx.strokeStyle = '#0f0a';
+      }
+      else {
+        ctx.strokeStyle = '#f00a';
+      }
 
-    if ( path.timing.start <= middleTime && middleTime < path.timing.stop ) {
-      ctx.strokeStyle = '#0f0a';
-    }
-    else {
-      ctx.strokeStyle = '#f00a';
-    }
-
-    path.routes.forEach( routeName => {
-      drawRoute( ctx, routes[ routeName ] );
+      path.routes.forEach( routeName => {
+        drawRoute( ctx, routes[ routeName ] );
+      } );
     } );
   } );
 
