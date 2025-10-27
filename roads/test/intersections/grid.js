@@ -11,7 +11,8 @@ const canvas = new Canvas();
 canvas.backgroundColor = '#123';
 canvas.bounds = [ grid.minX - 0.5, grid.minY - 0.5, grid.maxX + 0.5, grid.maxY + 0.5 ];
 
-const NUM_PLAYERS = 2;
+const NUM_PLAYERS = 10;
+const CAR_SIZE = 0.25;
 
 const streets = {
 
@@ -236,7 +237,7 @@ function joinRoutes( routes, fromName, toName ) {
       counterclockwise: A_cross_B < 0,
     };
 
-    console.log( arc );
+    // console.log( arc );
 
     const arcName = `${ pathName }_ARC`;
     routes[ arcName ] = arc;
@@ -263,14 +264,26 @@ Object.entries( intersections ).forEach( ( [ intersectionName, intersection ] ) 
   console.log( intersections );
 } );
 
+//
+// Players
+//
+
 const players = Array.from( Array( NUM_PLAYERS ), _ => { 
   const routeName = randomFrom( Object.keys( routes ) );
+
+  // generate a random path for now
+  const path = getRandomPath( routes, routeName, 6 );
+  // path.shift();   // remove our current routeName
 
   return {
     color: randomColor(),
     speed: 0.005,
     routeName: routeName,
     routeDistance: Math.random() * getRouteLength( routes[ routeName ] ),
+
+    path: path,
+    goalRouteName: path[ path.length - 1 ],
+    goalRouteDistance: 0.5 /*Math.random()*/ * getRouteLength( routes[ path[ path.length - 1 ] ] ),
   };
 } );
 
@@ -309,7 +322,7 @@ let hoverIntersectionName;
 
 
 //
-// Drawing
+// Update
 //
 
 let worldTime = 0;
@@ -320,6 +333,9 @@ canvas.update = ( dt ) => {
   worldTime += dt;
 
   players.forEach( player => {
+
+    // TEMP: routing -- pick (and save) a random next route for now
+    // player.path ??= 
 
     // Look for other players first, so we can slow down smoothly
     let closestDist = Infinity;
@@ -336,7 +352,7 @@ canvas.update = ( dt ) => {
           const intersectionPath = Object.values( intersection.paths ).find( p => p.routes.includes( routeName ) );
           if ( intersectionPath ) {
             if ( time < intersectionPath.timing.start || intersectionPath.timing.stop <= time ) {
-              const dist = previousDistance - player.routeDistance;
+              const dist = previousDistance - player.routeDistance - CAR_SIZE;
 
               if ( 0 < dist && dist < closestDist ) {
                 closestDist = dist;
@@ -348,13 +364,26 @@ canvas.update = ( dt ) => {
         // Find players (not us) in this route, check distances
         players.forEach( other => {
           if ( player != other && routeName == other.routeName ) {
-            const dist = previousDistance + other.routeDistance - player.routeDistance;
+            const dist = previousDistance + other.routeDistance - CAR_SIZE - player.routeDistance - FOLLOW_DISTANCE;
 
             if ( 0 < dist && dist < closestDist ) {
               closestDist = dist;
             }
           }
         } );
+
+        // Check against end of path
+        if ( routeName == player.goalRouteName ) {
+          const dist = previousDistance + player.goalRouteDistance - player.routeDistance;
+
+          if ( 0 < dist && dist < closestDist ) {
+            closestDist = dist;
+          }
+        }
+
+        if ( closestDist < Infinity ) {
+          break;
+        }
 
         const route = routes[ routeName ];
         const length = getRouteLength( route );
@@ -369,7 +398,7 @@ canvas.update = ( dt ) => {
           // If we want to keep being random, need to make that decision once and save it somehow?
 
           // routeName = randomFrom( route.next );   // TODO: random? based on path?
-          routeName = route.next[ 0 ];
+          routeName = player.path[ i + 1 ];
         }
         else {
           break;
@@ -381,7 +410,7 @@ canvas.update = ( dt ) => {
 
     // TODO: Different follow distance for cars and intersections...maybe incorporate into closestDiff above?
 
-    const speedModifier = Math.tanh( 3 * ( closestDist - FOLLOW_DISTANCE ) );
+    const speedModifier = Math.tanh( 3 * closestDist );
 
     let desiredDistance = player.routeDistance + speedModifier * player.speed * dt;
     let desiredRouteName = player.routeName;
@@ -397,7 +426,14 @@ canvas.update = ( dt ) => {
 
       if ( desiredDistance > length ) {
         desiredDistance -= length;
-        desiredRouteName = randomFrom( route.next );   // TODO: random? based on path?
+        // desiredRouteName = randomFrom( route.next );   // TODO: random? based on path?
+
+        player.path.shift()
+
+        // TODO: How to handle this when we've reached end of desired path?
+        if ( player.path.length > 0 ) {
+          desiredRouteName = player.path[ 0 ];
+        }
       }
       else {
         player.routeDistance = desiredDistance;
@@ -407,6 +443,23 @@ canvas.update = ( dt ) => {
     }
   } );
 }
+
+function getRandomPath( routes, start, steps ) {
+  const path = [ start ];
+
+  for ( let i = 0; i < steps; i ++ ) {
+    const route = routes[ path[ i ] ];
+    const next = randomFrom( route.next );
+
+    path.push( next );
+  }
+
+  return path;
+}
+
+//
+// Drawing
+//
 
 canvas.draw = ( ctx ) => {
   // Routes
@@ -462,6 +515,53 @@ canvas.draw = ( ctx ) => {
   players.forEach( player => {
     ctx.fillStyle = player.color;
     drawOnRouteAtDistance( ctx, routes[ player.routeName ], player.routeDistance, drawCar );
+
+    ctx.beginPath();
+
+    player.path.forEach( routeName => {
+      const route = routes[ routeName ];
+
+      if ( route.center ) {
+        // TODO: After that, figure out why the check ahead distances are all fucked up
+
+        const startAngle = routeName == player.routeName ?
+          route.startAngle + ( player.routeDistance / route.radius ) * ( route.counterclockwise ? -1 : 1 ) :
+          route.startAngle;
+
+        const endAngle = routeName == player.goalRouteName ?
+          route.startAngle + ( player.goalRouteDistance / route.radius ) * ( route.counterclockwise ? -1 : 1 ) :
+          route.endAngle;
+
+        ctx.arc( route.center[ 0 ], route.center[ 1 ], route.radius, startAngle, endAngle, route.counterclockwise );
+      }
+      else {
+        const lineVec = vec2.subtract( [], route.end, route.start );
+        vec2.normalize( lineVec, lineVec );
+        
+        if ( routeName == player.routeName ) {
+          const pos = vec2.scaleAndAdd( [], route.start, lineVec, player.routeDistance );
+          ctx.lineTo( ...pos );
+        }
+        else {
+          ctx.lineTo( ...route.start );
+        }
+
+        if ( routeName == player.goalRouteName ) {
+          const pos = vec2.scaleAndAdd( [], route.start, lineVec, player.goalRouteDistance );
+          ctx.lineTo( ...pos );
+        }
+        else {
+          ctx.lineTo( ...route.end );
+        }
+      }
+    } );
+      
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 0.05;
+    // ctx.setLineDash( [ 0.1, 0.1 ] );
+    ctx.stroke();
+    
+
   } );
   
 
