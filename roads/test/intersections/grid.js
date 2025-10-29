@@ -27,10 +27,10 @@ const routes = {
     start: [ 5, 5 ],
     end: [ 3, 5 ],
   },
-  C: {
-    start: [ 3, 9 ],
-    end: [ 5, 9 ],
-  },
+  // C: {
+  //   start: [ 3, 9 ],
+  //   end: [ 5, 9 ],
+  // },
   first_above: {
     start: [ 2, 4 ],
     end: [ 2, 2 ],
@@ -39,14 +39,14 @@ const routes = {
     start: [ 6, 2 ],
     end: [ 6, 4 ],
   },
-  first_below: {
-    start: [ 2, 6 ],
-    end: [ 2, 8 ],
-  },
-  second_below: {
-    start: [ 6, 8 ],
-    end: [ 6, 6 ],
-  },
+  // first_below: {
+  //   start: [ 2, 6 ],
+  //   end: [ 2, 8 ],
+  // },
+  // second_below: {
+  //   start: [ 6, 8 ],
+  //   end: [ 6, 6 ],
+  // },
 };
 
 [
@@ -55,12 +55,15 @@ const routes = {
   [ 'A', 'second_above' ],
   // [ 'second_above', 'B' ],
 
-  [ 'first_below', 'C' ],
-  [ 'C', 'second_below' ],
+  // [ 'first_below', 'C' ],
+  // [ 'C', 'second_below' ],
 ].forEach( pair => {
   joinRoutes( routes, ...pair );
 } );
 
+// TODO: Implement yielding -- path inactive based on cars in yield paths instead of timing
+//       This makes more sense for the merges in this figure-8-grid, as well as for right turns in
+//       larger intersections
 
 const intersections = {
   left: {
@@ -72,18 +75,18 @@ const intersections = {
         from: 'B',
         to: 'first_above',
         timing: {
-          start: 1000,
-          stop: 2000,
+          start: 3000,
+          stop: 4000,
         },
       },
-      B_TO_first_below: {
-        from: 'B',
-        to: 'first_below',
-        timing: {
-          start: 2000,
-          stop: 3000,
-        },
-      },
+      // B_TO_first_below: {
+      //   from: 'B',
+      //   to: 'first_below',
+      //   timing: {
+      //     start: 6000,
+      //     stop: 9000,
+      //   },
+      // },
     },
   },
   right: {
@@ -99,14 +102,14 @@ const intersections = {
           stop: 2000,
         },
       },
-      second_below_TO_B: {
-        from: 'second_below',
-        to: 'B',
-        timing: {
-          start: 1000,
-          stop: 2000,
-        },
-      },
+      // second_below_TO_B: {
+      //   from: 'second_below',
+      //   to: 'B',
+      //   timing: {
+      //     start: 6000,
+      //     stop: 9000,
+      //   },
+      // },
     },
   },
 };
@@ -260,16 +263,18 @@ Object.entries( intersections ).forEach( ( [ intersectionName, intersection ] ) 
     intersections[ intersectionName ].paths[ pathName ].routes = pathNames;
   } );
 
-  console.log( routes );
-  console.log( intersections );
+  // console.log( routes );
+  // console.log( intersections );
 } );
 
 //
 // Players
 //
 
-const players = Array.from( Array( NUM_PLAYERS ), _ => { 
-  const routeName = randomFrom( Object.keys( routes ) );
+const PLAYER_SPEED = 0.005;
+
+const players = Array.from( Array( 2 ), ( _, index ) => { 
+  const routeName = 'second_above'; //randomFrom( Object.keys( routes ) );
 
   // generate a random path for now
   const path = getRandomPath( routes, routeName, 6 );
@@ -277,9 +282,9 @@ const players = Array.from( Array( NUM_PLAYERS ), _ => {
 
   return {
     color: randomColor(),
-    speed: 0.005,
+    speed: 0,
     routeName: routeName,
-    routeDistance: Math.random() * getRouteLength( routes[ routeName ] ),
+    routeDistance: index * 0.5, //Math.random() * getRouteLength( routes[ routeName ] ),
 
     path: path,
     goalRouteName: path[ path.length - 1 ],
@@ -327,92 +332,89 @@ let hoverIntersectionName;
 
 let worldTime = 0;
 
-const FOLLOW_DISTANCE = 1;
+const FOLLOW_DISTANCE = 0.5;
 
 canvas.update = ( dt ) => {
   worldTime += dt;
+
+  // Find player speeds for next update based on how far they are from other players, intersections, etc
 
   players.forEach( player => {
 
     // TEMP: routing -- pick (and save) a random next route for now
     // player.path ??= 
 
-    // Look for other players first, so we can slow down smoothly
     let closestDist = Infinity;
 
-    {
-      let routeName = player.routeName;
-      let previousDistance = 0;
+    let previousDistance = 0;
 
-      for ( let i = 0; i < 10; i ++ ) {
+    // TODO: Should we just check along the player's path here?
+    player.path.find( routeName => {
+      // Find controlled intersections
+      Object.values( intersections ).forEach( intersection => {
+        const time = worldTime % intersection.timing.duration;
+        const intersectionPath = Object.values( intersection.paths ).find( p => p.routes.includes( routeName ) );
+        if ( intersectionPath ) {
+          if ( time < intersectionPath.timing.start || intersectionPath.timing.stop <= time ) {
+            const dist = previousDistance - player.routeDistance - CAR_SIZE;
 
-        // Find controlled intersections
-        Object.values( intersections ).forEach( intersection => {
-          const time = worldTime % intersection.timing.duration;
-          const intersectionPath = Object.values( intersection.paths ).find( p => p.routes.includes( routeName ) );
-          if ( intersectionPath ) {
-            if ( time < intersectionPath.timing.start || intersectionPath.timing.stop <= time ) {
-              const dist = previousDistance - player.routeDistance - CAR_SIZE;
-
-              if ( 0 < dist && dist < closestDist ) {
-                closestDist = dist;
-              }
-            }
-          }
-        } );
-
-        // Find players (not us) in this route, check distances
-        players.forEach( other => {
-          if ( player != other && routeName == other.routeName ) {
-            const dist = previousDistance + other.routeDistance - CAR_SIZE - player.routeDistance - FOLLOW_DISTANCE;
-
-            if ( 0 < dist && dist < closestDist ) {
+            if ( dist < closestDist ) {
               closestDist = dist;
             }
           }
-        } );
+        }
+      } );
 
-        // Check against end of path
-        if ( routeName == player.goalRouteName ) {
-          const dist = previousDistance + player.goalRouteDistance - player.routeDistance;
+      // Find players (not us) in this route, check distances
+      players.forEach( other => {
+        if ( player != other && routeName == other.routeName ) {
 
-          if ( 0 < dist && dist < closestDist ) {
-            closestDist = dist;
+          const otherDist = previousDistance + other.routeDistance;
+
+          if ( player.routeDistance < otherDist ) {
+            const dist = otherDist - player.routeDistance - CAR_SIZE * 2 - FOLLOW_DISTANCE
+
+            if ( dist < closestDist ) {
+              closestDist = dist;
+            }
           }
         }
+      } );
 
-        if ( closestDist < Infinity ) {
-          break;
-        }
+      // Check against end of path
+      if ( routeName == player.goalRouteName ) {
+        const dist = previousDistance + player.goalRouteDistance - player.routeDistance;
 
-        const route = routes[ routeName ];
-        const length = getRouteLength( route );
-        
-        if ( player.routeDistance + FOLLOW_DISTANCE > previousDistance + length ) {
-          previousDistance += length;
-          
-
-          // TODO: I think this randomness is causing the jitter. 
-          // Sometimes we advance because our path is clear, and sometimes we backtrack because it isn't
-          // For now, always pick the first one. At some point, we'll have paths to goal.
-          // If we want to keep being random, need to make that decision once and save it somehow?
-
-          // routeName = randomFrom( route.next );   // TODO: random? based on path?
-          routeName = player.path[ i + 1 ];
-        }
-        else {
-          break;
+        if ( dist < closestDist ) {
+          closestDist = dist;
         }
       }
-    }
+
+      if ( closestDist < Infinity ) {
+        return true;  // exit early, found something to stop us
+      }
+
+      const route = routes[ routeName ];
+      const length = getRouteLength( route );
+      
+      if ( player.routeDistance + FOLLOW_DISTANCE > previousDistance + length ) {
+        previousDistance += length;
+      }
+      else {
+        return true;  // return early, we've checked as far down path as we need to
+      }
+    } );
+    
     
     // console.log( `closest dist = ${ closestDist }` );
 
-    // TODO: Different follow distance for cars and intersections...maybe incorporate into closestDiff above?
+    // TODO: Different follow distance for cars and intersections...maybe incorporate into closestDist above?
 
-    const speedModifier = Math.tanh( 3 * closestDist );
+    player.speed = Math.tanh( 3 * closestDist ) * PLAYER_SPEED;
+  } );
 
-    let desiredDistance = player.routeDistance + speedModifier * player.speed * dt;
+  players.forEach( player => {
+    let desiredDistance = player.routeDistance + player.speed * dt;
     let desiredRouteName = player.routeName;
 
     // player.routeDistance += player.speed * dt;
@@ -556,7 +558,7 @@ canvas.draw = ( ctx ) => {
       }
     } );
       
-    ctx.strokeStyle = 'white';
+    ctx.strokeStyle = player.color;
     ctx.lineWidth = 0.05;
     // ctx.setLineDash( [ 0.1, 0.1 ] );
     ctx.stroke();
@@ -660,6 +662,10 @@ function drawOnRouteAtDistance( ctx, route, distance, drawFunc ) {
 document.addEventListener( 'keydown', e => {
   if ( e.key == ' ' ) {
     canvas.toggle();
+  }
+  else {
+    canvas.update( 100 );
+    canvas.redraw();
   }
 } );
 
