@@ -11,9 +11,6 @@ const canvas = new Canvas();
 canvas.backgroundColor = '#123';
 canvas.bounds = [ grid.minX - 0.5, grid.minY - 0.5, grid.maxX + 0.5, grid.maxY + 0.5 ];
 
-const NUM_PLAYERS = 10;
-const CAR_SIZE = 0.25;
-
 const streets = {
 
 }
@@ -27,10 +24,10 @@ const routes = {
     start: [ 5, 5 ],
     end: [ 3, 5 ],
   },
-  // C: {
-  //   start: [ 3, 9 ],
-  //   end: [ 5, 9 ],
-  // },
+  C: {
+    start: [ 3, 9 ],
+    end: [ 5, 9 ],
+  },
   first_above: {
     start: [ 2, 4 ],
     end: [ 2, 2 ],
@@ -39,24 +36,22 @@ const routes = {
     start: [ 6, 2 ],
     end: [ 6, 4 ],
   },
-  // first_below: {
-  //   start: [ 2, 6 ],
-  //   end: [ 2, 8 ],
-  // },
-  // second_below: {
-  //   start: [ 6, 8 ],
-  //   end: [ 6, 6 ],
-  // },
+  first_below: {
+    start: [ 2, 6 ],
+    end: [ 2, 8 ],
+  },
+  second_below: {
+    start: [ 6, 8 ],
+    end: [ 6, 6 ],
+  },
 };
 
 [
-  // [ 'B', 'first_above' ],
   [ 'first_above', 'A' ],
   [ 'A', 'second_above' ],
-  // [ 'second_above', 'B' ],
 
-  // [ 'first_below', 'C' ],
-  // [ 'C', 'second_below' ],
+  [ 'first_below', 'C' ],
+  [ 'C', 'second_below' ],
 ].forEach( pair => {
   joinRoutes( routes, ...pair );
 } );
@@ -79,14 +74,14 @@ const intersections = {
           stop: 4000,
         },
       },
-      // B_TO_first_below: {
-      //   from: 'B',
-      //   to: 'first_below',
-      //   timing: {
-      //     start: 6000,
-      //     stop: 9000,
-      //   },
-      // },
+      B_TO_first_below: {
+        from: 'B',
+        to: 'first_below',
+        timing: {
+          start: 1000,
+          stop: 2000,
+        },
+      },
     },
   },
   right: {
@@ -102,14 +97,14 @@ const intersections = {
           stop: 2000,
         },
       },
-      // second_below_TO_B: {
-      //   from: 'second_below',
-      //   to: 'B',
-      //   timing: {
-      //     start: 6000,
-      //     stop: 9000,
-      //   },
-      // },
+      second_below_TO_B: {
+        from: 'second_below',
+        to: 'B',
+        timing: {
+          start: 3000,
+          stop: 4000,
+        },
+      },
     },
   },
 };
@@ -271,10 +266,13 @@ Object.entries( intersections ).forEach( ( [ intersectionName, intersection ] ) 
 // Players
 //
 
+const NUM_PLAYERS = 2;
+const CAR_SIZE = 0.25;
+
 const PLAYER_SPEED = 0.005;
 
-const players = Array.from( Array( 2 ), ( _, index ) => { 
-  const routeName = 'second_above'; //randomFrom( Object.keys( routes ) );
+const players = Array.from( Array( NUM_PLAYERS ), ( _, index ) => { 
+  const routeName = randomFrom( Object.keys( routes ) );
 
   // generate a random path for now
   const path = getRandomPath( routes, routeName, 6 );
@@ -284,11 +282,11 @@ const players = Array.from( Array( 2 ), ( _, index ) => {
     color: randomColor(),
     speed: 0,
     routeName: routeName,
-    routeDistance: index * 0.5, //Math.random() * getRouteLength( routes[ routeName ] ),
+    routeDistance: Math.random() * getRouteLength( routes[ routeName ] ),
 
-    path: path,
-    goalRouteName: path[ path.length - 1 ],
-    goalRouteDistance: 0.5 /*Math.random()*/ * getRouteLength( routes[ path[ path.length - 1 ] ] ),
+    path: null,//path,
+    goalRouteName: null,//path[ path.length - 1 ],
+    goalRouteDistance: null,//0.5 /*Math.random()*/ * getRouteLength( routes[ path[ path.length - 1 ] ] ),
   };
 } );
 
@@ -337,19 +335,27 @@ const FOLLOW_DISTANCE = 0.5;
 canvas.update = ( dt ) => {
   worldTime += dt;
 
-  // Find player speeds for next update based on how far they are from other players, intersections, etc
-
+  // Make sure every player has a route first
   players.forEach( player => {
-
     // TEMP: routing -- pick (and save) a random next route for now
-    // player.path ??= 
-
+    if ( !player.path || player.path.length < 2 ) {
+      player.path = getRandomPath( routes, player.routeName, 6 );
+      player.goalRouteName = player.path[ player.path.length - 1 ];
+      player.goalRouteDistance = Math.random() * getRouteLength( routes[ player.goalRouteName ] );
+    }
+  } );
+  
+  // Find player speeds for next update based on how far they are from other players, intersections, etc
+  players.forEach( player => {
     let closestDist = Infinity;
 
     let previousDistance = 0;
 
-    // TODO: Should we just check along the player's path here?
     player.path.find( routeName => {
+
+      // TODO: How to handle being in middle of intersection that goes red?
+      //       Should probably ignore it. Maybe don't stop if we're past the beginning of intersection?
+
       // Find controlled intersections
       Object.values( intersections ).forEach( intersection => {
         const time = worldTime % intersection.timing.duration;
@@ -430,12 +436,15 @@ canvas.update = ( dt ) => {
         desiredDistance -= length;
         // desiredRouteName = randomFrom( route.next );   // TODO: random? based on path?
 
-        player.path.shift()
+        player.path.shift();
 
         // TODO: How to handle this when we've reached end of desired path?
-        if ( player.path.length > 0 ) {
-          desiredRouteName = player.path[ 0 ];
+        if ( player.path.length == 0 ) {
+          console.log( `path is empty?!? shouldn't happen` );
+          debugger;
         }
+
+        desiredRouteName = player.path[ 0 ];
       }
       else {
         player.routeDistance = desiredDistance;
@@ -520,7 +529,7 @@ canvas.draw = ( ctx ) => {
 
     ctx.beginPath();
 
-    player.path.forEach( routeName => {
+    player.path?.forEach( routeName => {
       const route = routes[ routeName ];
 
       if ( route.center ) {
