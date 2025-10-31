@@ -266,7 +266,7 @@ Object.entries( intersections ).forEach( ( [ intersectionName, intersection ] ) 
 // Players
 //
 
-const NUM_PLAYERS = 2;
+const NUM_PLAYERS = 10;
 const CAR_SIZE = 0.25;
 
 const PLAYER_SPEED = 0.005;
@@ -364,7 +364,8 @@ canvas.update = ( dt ) => {
           if ( time < intersectionPath.timing.start || intersectionPath.timing.stop <= time ) {
             const dist = previousDistance - player.routeDistance - CAR_SIZE;
 
-            if ( dist < closestDist ) {
+            // Ignore negative dists so we don't try to back out of an intersection
+            if ( 0 <= dist && dist < closestDist ) {
               closestDist = dist;
             }
           }
