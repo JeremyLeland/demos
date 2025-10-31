@@ -50,6 +50,11 @@ const routes = {
   [ 'first_above', 'A' ],
   [ 'A', 'second_above' ],
 
+  // if we don't do intersections for this
+    // [ 'B', 'first_above' ],
+    // [ 'second_above', 'B' ],
+
+
   [ 'first_below', 'C' ],
   [ 'C', 'second_below' ],
 ].forEach( pair => {
@@ -107,6 +112,20 @@ const intersections = {
       },
     },
   },
+  // center: {
+  //   timing: {
+  //     duration: 100,
+  //   },
+  //   paths: {
+  //     middle: {
+  //       routes: [ 'B' ],
+  //       timing: {
+  //         start: 1000,
+  //         stop: 2000,
+  //       },
+  //     }
+  //   },
+  // },
 };
 
 // Routes: keep track of the routes making up a connection (e.g. might have line + arc + line)
@@ -254,8 +273,11 @@ function joinRoutes( routes, fromName, toName ) {
 // Process simplified intersection definition
 Object.entries( intersections ).forEach( ( [ intersectionName, intersection ] ) => {
   Object.entries( intersection.paths ).forEach( ( [ pathName, pathInfo ] ) => {
-    const pathNames = joinRoutes( routes, pathInfo.from, pathInfo.to );
-    intersections[ intersectionName ].paths[ pathName ].routes = pathNames;
+    // Some routes are manually specified for testing and don't have from/to
+    if ( pathInfo.from && pathInfo.to ) {
+      const pathNames = joinRoutes( routes, pathInfo.from, pathInfo.to );
+      intersections[ intersectionName ].paths[ pathName ].routes = pathNames;
+    }
   } );
 
   // console.log( routes );
@@ -276,13 +298,14 @@ const players = Array.from( Array( NUM_PLAYERS ), ( _, index ) => {
 
   // generate a random path for now
   const path = getRandomPath( routes, routeName, 6 );
-  // path.shift();   // remove our current routeName
 
   return {
     color: randomColor(),
     speed: 0,
     routeName: routeName,
     routeDistance: Math.random() * getRouteLength( routes[ routeName ] ),
+    
+    index: index, // for debug
 
     path: null,//path,
     goalRouteName: null,//path[ path.length - 1 ],
@@ -331,6 +354,7 @@ let hoverIntersectionName;
 let worldTime = 0;
 
 const FOLLOW_DISTANCE = 0.5;
+const CHECK_DISTANCE = 1;
 
 canvas.update = ( dt ) => {
   worldTime += dt;
@@ -347,75 +371,20 @@ canvas.update = ( dt ) => {
   
   // Find player speeds for next update based on how far they are from other players, intersections, etc
   players.forEach( player => {
-    let closestDist = Infinity;
-
-    let previousDistance = 0;
-
-    player.path.find( routeName => {
-
-      // TODO: How to handle being in middle of intersection that goes red?
-      //       Should probably ignore it. Maybe don't stop if we're past the beginning of intersection?
-
-      // Find controlled intersections
-      Object.values( intersections ).forEach( intersection => {
-        const time = worldTime % intersection.timing.duration;
-        const intersectionPath = Object.values( intersection.paths ).find( p => p.routes.includes( routeName ) );
-        if ( intersectionPath ) {
-          if ( time < intersectionPath.timing.start || intersectionPath.timing.stop <= time ) {
-            const dist = previousDistance - player.routeDistance - CAR_SIZE;
-
-            // Ignore negative dists so we don't try to back out of an intersection
-            if ( 0 <= dist && dist < closestDist ) {
-              closestDist = dist;
-            }
-          }
-        }
-      } );
-
-      // Find players (not us) in this route, check distances
-      players.forEach( other => {
-        if ( player != other && routeName == other.routeName ) {
-
-          const otherDist = previousDistance + other.routeDistance;
-
-          if ( player.routeDistance < otherDist ) {
-            const dist = otherDist - player.routeDistance - CAR_SIZE * 2 - FOLLOW_DISTANCE
-
-            if ( dist < closestDist ) {
-              closestDist = dist;
-            }
-          }
-        }
-      } );
-
-      // Check against end of path
-      if ( routeName == player.goalRouteName ) {
-        const dist = previousDistance + player.goalRouteDistance - player.routeDistance;
-
-        if ( dist < closestDist ) {
-          closestDist = dist;
-        }
-      }
-
-      if ( closestDist < Infinity ) {
-        return true;  // exit early, found something to stop us
-      }
-
-      const route = routes[ routeName ];
-      const length = getRouteLength( route );
-      
-      if ( player.routeDistance + FOLLOW_DISTANCE > previousDistance + length ) {
-        previousDistance += length;
-      }
-      else {
-        return true;  // return early, we've checked as far down path as we need to
-      }
-    } );
     
-    
-    // console.log( `closest dist = ${ closestDist }` );
+    // We need to check ahead for players, or we'll quiver when we're near a road boundry
+    // Maybe just check all the forks with depth of 1 for now? 
+    // Doesn't work if FOLLOW_DISTANCE is longer than route length...
 
-    // TODO: Different follow distance for cars and intersections...maybe incorporate into closestDist above?
+    const routeDist = closestDistanceRoutes( player );
+    const carDist = closestDistanceCars( player, 0, player.routeName );
+    
+    // if ( player.index == 0 ) {
+    //   console.log( `route dist = ${ routeDist }` );
+    //   console.log( `car dist = ${ carDist }` );
+    // }
+
+    const closestDist = Math.min( routeDist, carDist );
 
     player.speed = Math.tanh( 3 * closestDist ) * PLAYER_SPEED;
   } );
@@ -454,6 +423,127 @@ canvas.update = ( dt ) => {
       }
     }
   } );
+}
+
+function closestDistanceRoutes( player ) {
+  let previousDistance = 0;
+
+  let closestDist = Infinity;
+
+  player.path.find( routeName => {
+    Object.values( intersections ).forEach( intersection => {
+      const time = worldTime % intersection.timing.duration;
+      const intersectionPath = Object.values( intersection.paths ).find( p => p.routes.includes( routeName ) );
+      if ( intersectionPath ) {
+        if ( time < intersectionPath.timing.start || intersectionPath.timing.stop <= time ) {
+          const dist = previousDistance - player.routeDistance - CAR_SIZE;
+
+          // Ignore negative dists so we don't try to back out of an intersection
+          if ( 0 <= dist && dist < closestDist ) {
+            closestDist = dist;
+          }
+        }
+      }
+    } );
+
+    // Check against end of path
+    if ( routeName == player.goalRouteName ) {
+      const dist = previousDistance + player.goalRouteDistance - player.routeDistance;
+
+      if ( dist < closestDist ) {
+        closestDist = dist;
+      }
+    }
+
+    if ( closestDist < Infinity ) {
+      return true;
+    }
+    else { 
+      const route = routes[ routeName ];
+      const length = getRouteLength( route );
+      
+      previousDistance += length;
+    }
+  } );
+
+  return closestDist;
+}
+
+function closestDistanceCars( player, previousDistance, routeName ) {
+
+  // if ( player.index == 0 ) {
+  //   console.log( `closestDistance( player, ${ previousDistance }, ${ routeName } )` );
+  // }
+
+  let closestDist = Infinity;
+
+  // TODO: Having an unneeded intersection blocked is preventing us from using the intersection we want...
+  //       A car on this intersection should slow us down, but not the intersection itself
+  //       Maybe we need separate functions to search for any cars on any paths vs intersections on just our path?
+  //        - put back the path.forEach() like we had it before for intersections and end of path checks
+  //        - do recursive function for just the cars
+
+  // // Find controlled intersections
+  // Object.values( intersections ).forEach( intersection => {
+  //   const time = worldTime % intersection.timing.duration;
+  //   const intersectionPath = Object.values( intersection.paths ).find( p => p.routes.includes( routeName ) );
+  //   if ( intersectionPath ) {
+  //     if ( time < intersectionPath.timing.start || intersectionPath.timing.stop <= time ) {
+  //       const dist = previousDistance - player.routeDistance - CAR_SIZE;
+
+  //       // Ignore negative dists so we don't try to back out of an intersection
+  //       if ( 0 <= dist && dist < closestDist ) {
+  //         closestDist = dist;
+  //       }
+  //     }
+  //   }
+  // } );
+
+  // Find players (not us) in this route, check distances
+  players.forEach( other => {
+    if ( player != other && routeName == other.routeName ) {
+
+      const otherDist = previousDistance + other.routeDistance;
+
+      if ( player.routeDistance < otherDist ) {
+        const dist = otherDist - player.routeDistance - CAR_SIZE * 2 - FOLLOW_DISTANCE
+
+        if ( dist < closestDist ) {
+          closestDist = dist;
+        }
+      }
+    }
+  } );
+
+  // // Check against end of path
+  // if ( routeName == player.goalRouteName ) {
+  //   const dist = previousDistance + player.goalRouteDistance - player.routeDistance;
+
+  //   if ( dist < closestDist ) {
+  //     closestDist = dist;
+  //   }
+  // }
+
+  if ( closestDist == Infinity ) {
+    const route = routes[ routeName ];
+    const length = getRouteLength( route );
+
+    // if ( player.index == 0 ) {
+    //   console.log( `  ${ player.routeDistance } + ${ FOLLOW_DISTANCE } > ${ previousDistance } + ${ length } ???` );
+    // }
+  
+    if ( player.routeDistance + CHECK_DISTANCE > previousDistance + length ) {
+      route.next.forEach( nextRouteName => {
+        const dist = closestDistanceCars( player, previousDistance + length, nextRouteName );
+
+        if ( dist < closestDist ) {
+          closestDist = dist;
+        }
+      } );
+    } 
+  }
+
+  return closestDist;
 }
 
 function getRandomPath( routes, start, steps ) {
