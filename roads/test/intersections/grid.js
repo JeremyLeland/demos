@@ -91,24 +91,26 @@ const intersections = {
   },
   right: {
     timing: {
-      duration: 5000,
+      duration: 100, //5000,
     },
     paths: {
       second_above_TO_B: {
         from: 'second_above',
         to: 'B',
         timing: {
-          start: 1000,
+          start: 0,//1000,
           stop: 2000,
         },
+        yield: [ 'second_below_TO_B' ],
       },
       second_below_TO_B: {
         from: 'second_below',
         to: 'B',
         timing: {
-          start: 3000,
+          start: 0, //3000,
           stop: 4000,
         },
+        yield: [ 'second_above_TO_B' ],
       },
     },
   },
@@ -394,9 +396,6 @@ canvas.update = ( dt ) => {
     let desiredRouteName = player.routeName;
 
     // player.routeDistance += player.speed * dt;
-
-    // TODO: Bring us to a smooth stop at blocked intersections (like we do with other cars above)
-    //       Take into account car radius (so we don't stop half-way into intersection )
     
     for ( let i = 0; i < 10; i ++ ) {
       const route = routes[ desiredRouteName ];
@@ -404,7 +403,6 @@ canvas.update = ( dt ) => {
 
       if ( desiredDistance > length ) {
         desiredDistance -= length;
-        // desiredRouteName = randomFrom( route.next );   // TODO: random? based on path?
 
         player.path.shift();
 
@@ -432,9 +430,29 @@ function closestDistanceRoutes( player ) {
 
   player.path.find( routeName => {
     Object.values( intersections ).forEach( intersection => {
-      const time = worldTime % intersection.timing.duration;
+
+      
       const intersectionPath = Object.values( intersection.paths ).find( p => p.routes.includes( routeName ) );
       if ( intersectionPath ) {
+        
+        // Open based on yield
+        // TODO: Route is closed if its "yield" path routes have players in them
+        intersectionPath.yield?.forEach( yieldPathName => {
+          if ( players.find( p => intersection.paths[ yieldPathName ].routes.includes( p.routeName ) ) ) {
+
+            // TODO: Don't duplicate this chunk of code from below
+            const dist = previousDistance - player.routeDistance - CAR_SIZE;
+
+            // Ignore negative dists so we don't try to back out of an intersection
+            if ( 0 <= dist && dist < closestDist ) {
+              closestDist = dist;
+            }
+          }
+        } );
+  
+        
+        // Open based on timing
+        const time = worldTime % intersection.timing.duration;
         if ( time < intersectionPath.timing.start || intersectionPath.timing.stop <= time ) {
           const dist = previousDistance - player.routeDistance - CAR_SIZE;
 
