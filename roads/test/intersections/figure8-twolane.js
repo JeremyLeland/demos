@@ -1,11 +1,10 @@
-// Trying a controlled intersection (e.g. stop sign or traffic lights)
-// Manually specify routes for now
+// Manaully making an intersection of a two-way road
 
 import { Canvas } from '../../src/common/Canvas.js';
 import { Grid } from '../../src/common/Grid.js';
 import { vec2 } from '../../lib/gl-matrix.js'
 
-const grid = new Grid( 0, 0, 10, 10 );
+const grid = new Grid( 0, 0, 12, 12 );
 
 const canvas = new Canvas();
 canvas.backgroundColor = '#123';
@@ -16,167 +15,228 @@ const streets = {
 }
 
 const routes = {
-  A: {
-    start: [ 3, 1 ],
-    end: [ 5, 1 ],
+  loop1_left: {
+    center: [ 3, 3 ],
+    radius: 2,
+    startAngle: Math.PI / 2,
+    endAngle: 0,
+    counterclockwise: false,
+    next: [ 'end1_left' ],
   },
-  B: {
-    start: [ 5, 5 ],
+  loop1_right: {
+    center: [ 3, 3 ],
+    radius: 3,
+    startAngle: 0,
+    endAngle: Math.PI / 2,
+    counterclockwise: true,
+    next: [ 'end1_right' ],
+  },
+  start1_left: {
+    start: [ 4.5, 5 ],
     end: [ 3, 5 ],
+    next: [ 'loop1_left' ],
   },
-  C: {
-    start: [ 3, 9 ],
-    end: [ 5, 9 ],
+  start1_right: {
+    start: [ 6, 4.5 ],
+    end: [ 6, 3 ],
+    next: [ 'loop1_right' ],
   },
-  first_above: {
-    start: [ 2, 4 ],
-    end: [ 2, 2 ],
+  end1_left: {
+    start: [ 5, 3 ],
+    end: [ 5, 4.5 ],
   },
-  second_above: {
-    start: [ 6, 2 ],
-    end: [ 6, 4 ],
+  end1_right: {
+    start: [ 3, 6 ],
+    end: [ 4.5, 6 ],
   },
-  first_below: {
-    start: [ 2, 6 ],
-    end: [ 2, 8 ],
+  loop2_left: {
+    center: [ 8, 8 ],
+    radius: 2,
+    startAngle: -Math.PI / 2,
+    endAngle: Math.PI,
+    counterclockwise: false,
+    next: [ 'end2_left' ],
   },
-  second_below: {
+  loop2_right: {
+    center: [ 8, 8 ],
+    radius: 3,
+    startAngle: Math.PI,
+    endAngle: -Math.PI / 2,
+    counterclockwise: true,
+    next: [ 'end2_right' ],
+  },
+  start2_left: {
+    start: [ 6.5, 6 ],
+    end: [ 8, 6 ],
+    next: [ 'loop2_left' ],
+  },
+  start2_right: {
+    start: [ 5, 6.5 ],
+    end: [ 5, 8 ],
+    next: [ 'loop2_right' ],
+  },
+  end2_left: {
     start: [ 6, 8 ],
-    end: [ 6, 6 ],
+    end: [ 6, 6.5 ],
+  },
+  end2_right: {
+    start: [ 8, 5 ],
+    end: [ 6.5, 5 ],
   },
 };
 
-[
-  [ 'first_above', 'A' ],
-  [ 'A', 'second_above' ],
 
-  // if we don't do intersections for this
-    // [ 'B', 'first_above' ],
-    // [ 'second_above', 'B' ],
+// [
+//   [ 'first_above', 'A' ],
+//   [ 'A', 'second_above' ],
+
+//   // if we don't do intersections for this
+//     // [ 'B', 'first_above' ],
+//     // [ 'second_above', 'B' ],
 
 
-  [ 'first_below', 'C' ],
-  [ 'C', 'second_below' ],
-].forEach( pair => {
-  joinRoutes( routes, ...pair );
-} );
-
-// TODO: Implement yielding -- path inactive based on cars in yield paths instead of timing
-//       This makes more sense for the merges in this figure-8-grid, as well as for right turns in
-//       larger intersections
+//   [ 'first_below', 'C' ],
+//   [ 'C', 'second_below' ],
+// ].forEach( pair => {
+//   joinRoutes( routes, ...pair );
+// } );
 
 const intersections = {
-  left: {
+  middle: {
     timing: {
-      duration: 5000,
+      duration: 4000,
     },
     paths: {
-      B_TO_first_above: {
-        from: 'B',
-        to: 'first_above',
+      // Straights
+      loop1_left_TO_loop2_right: {
+        from: 'end1_left',
+        to: 'start2_right',
+        timing: {
+          start: 0,
+          stop: 2000,
+        },
+      },
+      loop2_left_TO_loop1_right: {
+        from: 'end2_left',
+        to: 'start1_right',
+        timing: {
+          start: 0,
+          stop: 2000,
+        },
+      },
+      loop1_right_TO_loop2_left: {
+        from: 'end1_right',
+        to: 'start2_left',
+        timing: {
+          start: 2000,
+          stop: 4000,
+        },
+      },
+      loop2_right_TO_loop1_left: {
+        from: 'end2_right',
+        to: 'start1_left',
         timing: {
           start: 3000,
           stop: 4000,
         },
       },
-      B_TO_first_below: {
-        from: 'B',
-        to: 'first_below',
+
+
+      loop2_left_TO_loop2_left: {
+        from: 'end2_left',
+        to: 'start2_left',
         timing: {
           start: 1000,
           stop: 2000,
         },
       },
-    },
-  },
-  right: {
-    timing: {
-      duration: 5000,
-    },
-    paths: {
-      second_above_TO_B: {
-        from: 'second_above',
-        to: 'B',
-        timing: {
-          start: 1000,
-          stop: 2000,
-        },
-        yield: [ 'second_below_TO_B' ],
-      },
-      second_below_TO_B: {
-        from: 'second_below',
-        to: 'B',
+      loop1_left_TO_loop1_left: {
+        from: 'end1_left',
+        to: 'start1_left',
         timing: {
           start: 3000,
           stop: 4000,
         },
-        yield: [ 'second_above_TO_B' ],
+      },
+      loop2_right_TO_loop2_right: {
+        from: 'end2_right',
+        to: 'start2_right',
+        timing: {
+          start: 1000,
+          stop: 2000,
+        },
+      },
+      loop1_right_TO_loop1_right: {
+        from: 'end1_right',
+        to: 'start1_right',
+        timing: {
+          start: 3000,
+          stop: 4000,
+        },
+      },
+
+      loop2_left_TO_loop1_left: {
+        from: 'end2_left',
+        to: 'start1_left',
+        timing: {
+          start: 1000,
+          stop: 2000,
+        },
+      },
+      loop1_left_TO_loop2_left: {
+        from: 'end1_left',
+        to: 'start2_left',
+        timing: {
+          start: 3000,
+          stop: 4000,
+        },
+      },
+      loop2_right_TO_loop1_right: {
+        from: 'end2_right',
+        to: 'start1_right',
+        timing: {
+          start: 1000,
+          stop: 2000,
+        },
+      },
+      loop1_right_TO_loop2_right: {
+        from: 'end1_right',
+        to: 'start2_right',
+        timing: {
+          start: 3000,
+          stop: 4000,
+        },
       },
     },
   },
-  // center: {
-  //   timing: {
-  //     duration: 100,
-  //   },
-  //   paths: {
-  //     middle: {
-  //       routes: [ 'B' ],
-  //       timing: {
-  //         start: 1000,
-  //         stop: 2000,
-  //       },
-  //     }
-  //   },
-  // },
 };
 
-// Routes: keep track of the routes making up a connection (e.g. might have line + arc + line)
-// Yield: We cannot go if these connections are active (either with a light or with a car in them)
-//          - can we figure these out automatially? any routes not ending in our desired end?
-//          - also need to avoid routes that cross our path, that's tougher...
 
+const NUM_PLAYERS = 0;
+const CAR_SIZE = 0.25;
 
-// const intersections = {
-//   middle: {
-//     timing: {
-//       total: 5000,
-//     },
-//     paths: {
-//       loop1_TO_loop1: {
-//         routes: [ 'loop1_TO_loop1_ARC' ],
-//         yield: [ 'loop2_TO_loop1' ],
-//         timing: {
-//           start: 1000,
-//           stop: 2000,
-//         },
-//       },
-//       loop1_TO_loop2: {
-//         routes: [ 'loop1_TO_loop2_LINE1' ],
-//         yield: [ 'loop2_TO_loop1', 'loop2_TO_loop2' ],
-//         timing: {
-//           start: 2000,
-//           stop: 3000,
-//         },
-//       },
-//       loop2_TO_loop1: {
-//         routes: [ 'loop2_TO_loop1_LINE1' ],
-//         yield: [ 'loop1_TO_loop1', 'loop1_TO_loop2' ],
-//         timing: {
-//           start: 3000,
-//           stop: 4000,
-//         },
-//       },
-//       loop2_TO_loop2: {
-//         routes: [ 'loop2_TO_loop2_ARC' ],
-//         yield: [ 'loop1_TO_loop2' ],
-//         timing: {
-//           start: 4000,
-//           stop: 5000,
-//         },
-//       },
-//     },
-//   },
-// };
+const PLAYER_SPEED = 0.005;
+
+const players = Array.from( Array( NUM_PLAYERS ), ( _, index ) => { 
+  const routeName = randomFrom( Object.keys( routes ) );
+
+  // generate a random path for now
+  // const path = getRandomPath( routes, routeName, 6 );
+
+  return {
+    color: randomColor(),
+    speed: 0,
+    routeName: routeName,
+    routeDistance: Math.random() * getRouteLength( routes[ routeName ] ),
+    
+    index: index, // for debug
+
+    path: null,//path,
+    goalRouteName: null,//path[ path.length - 1 ],
+    goalRouteDistance: null,//0.5 /*Math.random()*/ * getRouteLength( routes[ path[ path.length - 1 ] ] ),
+  };
+} );
+
 
 // Join the two named routes from the given list
 // Return list of created path names
@@ -211,7 +271,7 @@ function joinRoutes( routes, fromName, toName ) {
 
       routes[ fromName ].next ??= [];
       routes[ fromName ].next.push( lineName );
-      routes[ lineName ].next = [ pathInfo.to ];
+      routes[ lineName ].next = [ toName ];
 
       // intersections[ intersectionName ].paths[ pathName ].routes = [ lineName ];
       return [ lineName ];
@@ -287,35 +347,6 @@ Object.entries( intersections ).forEach( ( [ intersectionName, intersection ] ) 
 } );
 
 //
-// Players
-//
-
-const NUM_PLAYERS = 10;
-const CAR_SIZE = 0.25;
-
-const PLAYER_SPEED = 0.005;
-
-const players = Array.from( Array( NUM_PLAYERS ), ( _, index ) => { 
-  const routeName = randomFrom( Object.keys( routes ) );
-
-  // generate a random path for now
-  const path = getRandomPath( routes, routeName, 6 );
-
-  return {
-    color: randomColor(),
-    speed: 0,
-    routeName: routeName,
-    routeDistance: Math.random() * getRouteLength( routes[ routeName ] ),
-    
-    index: index, // for debug
-
-    path: null,//path,
-    goalRouteName: null,//path[ path.length - 1 ],
-    goalRouteDistance: null,//0.5 /*Math.random()*/ * getRouteLength( routes[ path[ path.length - 1 ] ] ),
-  };
-} );
-
-//
 // UI to hover intersections for more info
 //
 
@@ -365,7 +396,7 @@ canvas.update = ( dt ) => {
   players.forEach( player => {
     // TEMP: routing -- pick (and save) a random next route for now
     if ( !player.path || player.path.length < 2 ) {
-      player.path = getRandomPath( routes, player.routeName, 6 );
+      player.path = getRandomPath( routes, player.routeName, 3 );
       player.goalRouteName = player.path[ player.path.length - 1 ];
       player.goalRouteDistance = Math.random() * getRouteLength( routes[ player.goalRouteName ] );
     }
@@ -436,7 +467,6 @@ function closestDistanceRoutes( player ) {
       if ( intersectionPath ) {
         
         // Open based on yield
-        // TODO: Route is closed if its "yield" path routes have players in them
         intersectionPath.yield?.forEach( yieldPathName => {
           if ( players.find( p => intersection.paths[ yieldPathName ].routes.includes( p.routeName ) ) ) {
 
@@ -452,13 +482,16 @@ function closestDistanceRoutes( player ) {
   
         
         // Open based on timing
-        const time = worldTime % intersection.timing.duration;
-        if ( time < intersectionPath.timing.start || intersectionPath.timing.stop <= time ) {
-          const dist = previousDistance - player.routeDistance - CAR_SIZE;
-
-          // Ignore negative dists so we don't try to back out of an intersection
-          if ( 0 <= dist && dist < closestDist ) {
-            closestDist = dist;
+        if ( intersection.timing && intersectionPath.timing ) {
+          const time = worldTime % intersection.timing.duration;
+          
+          if ( time < intersectionPath.timing.start || intersectionPath.timing.stop <= time ) {
+            const dist = previousDistance - player.routeDistance - CAR_SIZE;
+            
+            // Ignore negative dists so we don't try to back out of an intersection
+            if ( 0 <= dist && dist < closestDist ) {
+              closestDist = dist;
+            }
           }
         }
       }
@@ -489,33 +522,7 @@ function closestDistanceRoutes( player ) {
 
 function closestDistanceCars( player, previousDistance, routeName ) {
 
-  // if ( player.index == 0 ) {
-  //   console.log( `closestDistance( player, ${ previousDistance }, ${ routeName } )` );
-  // }
-
   let closestDist = Infinity;
-
-  // TODO: Having an unneeded intersection blocked is preventing us from using the intersection we want...
-  //       A car on this intersection should slow us down, but not the intersection itself
-  //       Maybe we need separate functions to search for any cars on any paths vs intersections on just our path?
-  //        - put back the path.forEach() like we had it before for intersections and end of path checks
-  //        - do recursive function for just the cars
-
-  // // Find controlled intersections
-  // Object.values( intersections ).forEach( intersection => {
-  //   const time = worldTime % intersection.timing.duration;
-  //   const intersectionPath = Object.values( intersection.paths ).find( p => p.routes.includes( routeName ) );
-  //   if ( intersectionPath ) {
-  //     if ( time < intersectionPath.timing.start || intersectionPath.timing.stop <= time ) {
-  //       const dist = previousDistance - player.routeDistance - CAR_SIZE;
-
-  //       // Ignore negative dists so we don't try to back out of an intersection
-  //       if ( 0 <= dist && dist < closestDist ) {
-  //         closestDist = dist;
-  //       }
-  //     }
-  //   }
-  // } );
 
   // Find players (not us) in this route, check distances
   players.forEach( other => {
@@ -533,22 +540,9 @@ function closestDistanceCars( player, previousDistance, routeName ) {
     }
   } );
 
-  // // Check against end of path
-  // if ( routeName == player.goalRouteName ) {
-  //   const dist = previousDistance + player.goalRouteDistance - player.routeDistance;
-
-  //   if ( dist < closestDist ) {
-  //     closestDist = dist;
-  //   }
-  // }
-
   if ( closestDist == Infinity ) {
     const route = routes[ routeName ];
     const length = getRouteLength( route );
-
-    // if ( player.index == 0 ) {
-    //   console.log( `  ${ player.routeDistance } + ${ FOLLOW_DISTANCE } > ${ previousDistance } + ${ length } ???` );
-    // }
   
     if ( player.routeDistance + CHECK_DISTANCE > previousDistance + length ) {
       route.next.forEach( nextRouteName => {
@@ -584,7 +578,7 @@ function getRandomPath( routes, start, steps ) {
 canvas.draw = ( ctx ) => {
   // Routes
   ctx.strokeStyle = '#555a';
-  ctx.lineWidth = 0.4;
+  ctx.lineWidth = 0.8;
 
   ctx.fillStyle = '#ff08';
 
@@ -615,20 +609,24 @@ canvas.draw = ( ctx ) => {
   //   } );
   // }
 
+  // Debug intersection timing
   Object.entries( intersections ).forEach( ( [ intersectionName, intersection ] ) => {
     const time = worldTime % intersection.timing.duration;
 
     Object.entries( intersection.paths ).forEach( ( [ name, path ] ) => {
-      if ( path.timing.start <= time && time < path.timing.stop ) {
-        ctx.strokeStyle = '#0f0a';
-      }
-      else {
-        ctx.strokeStyle = '#f00a';
-      }
+      if ( path.timing ) {
 
-      path.routes.forEach( routeName => {
-        drawRoute( ctx, routes[ routeName ] );
-      } );
+        if ( path.timing.start <= time && time < path.timing.stop ) {
+          ctx.strokeStyle = '#0f04';
+        }
+        else {
+          ctx.strokeStyle = '#f000';
+        }
+        
+        path.routes.forEach( routeName => {
+          drawRoute( ctx, routes[ routeName ] );
+        } );
+      }
     } );
   } );
 
@@ -642,8 +640,6 @@ canvas.draw = ( ctx ) => {
       const route = routes[ routeName ];
 
       if ( route.center ) {
-        // TODO: After that, figure out why the check ahead distances are all fucked up
-
         const startAngle = routeName == player.routeName ?
           route.startAngle + ( player.routeDistance / route.radius ) * ( route.counterclockwise ? -1 : 1 ) :
           route.startAngle;
@@ -706,8 +702,8 @@ function drawRoute( ctx, route ) {
 
 const arrowPath = new Path2D();
 arrowPath.moveTo( 0.25, 0 );
-arrowPath.lineTo( 0, 0.05 );
-arrowPath.lineTo( 0, -0.05 );
+arrowPath.lineTo( 0, 0.1 );
+arrowPath.lineTo( 0, -0.1 );
 arrowPath.closePath();
 
 function drawArrow( ctx ) {
@@ -794,3 +790,31 @@ function randomFrom( array ) {
 function randomColor() {
   return `hsl( ${ Math.random() * 360 }deg, ${ Math.random() * 75 + 25 }%, ${ Math.random() * 40 + 40 }% )`;
 }
+
+//
+// Slider
+//
+const timeSlider = document.createElement( 'input' );
+
+Object.assign( timeSlider.style, {
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  width: '99%',
+} );
+
+Object.assign( timeSlider, {
+  type: 'range',
+  value: 0,
+  min: 0,
+  max: intersections.middle.timing.duration,
+  step: 0.01,
+} );
+
+document.body.appendChild( timeSlider );
+
+timeSlider.addEventListener( 'input', _ => {
+  worldTime = +timeSlider.value;
+
+  canvas.redraw();
+} );
