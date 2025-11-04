@@ -107,121 +107,118 @@ const intersections = {
       duration: 4000,
     },
     paths: {
-      // Straights
-      loop1_left_TO_loop2_right: {
-        from: 'end1_left',
-        to: 'start2_right',
+
+      North_West: {
+        from: 'end2_left',
+        to: 'start1_left',
         timing: {
           start: 0,
-          stop: 2000,
+          stop: 1000,
         },
       },
-      loop2_left_TO_loop1_right: {
+      North: {
         from: 'end2_left',
         to: 'start1_right',
         timing: {
           start: 0,
+          stop: 1000,
+        },
+      },
+      North_East: {
+        from: 'end2_left',
+        to: 'start2_left',
+        timing: {
+          start: 0,
+          stop: 1000,
+        },
+      },
+
+      East_North: {
+        from: 'end1_right',
+        to: 'start1_right',
+        timing: {
+          start: 1000,
           stop: 2000,
         },
       },
-      loop1_right_TO_loop2_left: {
+      East: {
         from: 'end1_right',
+        to: 'start2_left',
+        timing: {
+          start: 1000,
+          stop: 2000,
+        },
+      },
+      East_South: {
+        from: 'end1_right',
+        to: 'start2_right',
+        timing: {
+          start: 1000,
+          stop: 2000,
+        },
+      },
+
+      South_East: {
+        from: 'end1_left',
         to: 'start2_left',
         timing: {
           start: 2000,
-          stop: 4000,
+          stop: 3000,
         },
       },
-      loop2_right_TO_loop1_left: {
-        from: 'end2_right',
-        to: 'start1_left',
-        timing: {
-          start: 3000,
-          stop: 4000,
-        },
-      },
-
-
-      loop2_left_TO_loop2_left: {
-        from: 'end2_left',
-        to: 'start2_left',
-        timing: {
-          start: 1000,
-          stop: 2000,
-        },
-      },
-      loop1_left_TO_loop1_left: {
+      South: {
         from: 'end1_left',
-        to: 'start1_left',
-        timing: {
-          start: 3000,
-          stop: 4000,
-        },
-      },
-      loop2_right_TO_loop2_right: {
-        from: 'end2_right',
         to: 'start2_right',
         timing: {
-          start: 1000,
-          stop: 2000,
+          start: 2000,
+          stop: 3000,
         },
       },
-      loop1_right_TO_loop1_right: {
-        from: 'end1_right',
-        to: 'start1_right',
+      South_West: {
+        from: 'end1_left',
+        to: 'start1_left',
         timing: {
-          start: 3000,
-          stop: 4000,
+          start: 2000,
+          stop: 3000,
         },
       },
 
-      loop2_left_TO_loop1_left: {
-        from: 'end2_left',
-        to: 'start1_left',
-        timing: {
-          start: 1000,
-          stop: 2000,
-        },
-      },
-      loop1_left_TO_loop2_left: {
-        from: 'end1_left',
-        to: 'start2_left',
-        timing: {
-          start: 3000,
-          stop: 4000,
-        },
-      },
-      loop2_right_TO_loop1_right: {
+      West_South: {
         from: 'end2_right',
-        to: 'start1_right',
-        timing: {
-          start: 1000,
-          stop: 2000,
-        },
-      },
-      loop1_right_TO_loop2_right: {
-        from: 'end1_right',
         to: 'start2_right',
         timing: {
           start: 3000,
           stop: 4000,
         },
       },
+      West: {
+        from: 'end2_right',
+        to: 'start1_left',
+        timing: {
+          start: 3000,
+          stop: 4000,
+        },
+      },
+      West_North: {
+        from: 'end2_right',
+        to: 'start1_right',
+        timing: {
+          start: 3000,
+          stop: 4000,
+        },
+      },      
     },
   },
 };
 
 
-const NUM_PLAYERS = 0;
+const NUM_PLAYERS = 10;
 const CAR_SIZE = 0.25;
 
 const PLAYER_SPEED = 0.005;
 
 const players = Array.from( Array( NUM_PLAYERS ), ( _, index ) => { 
   const routeName = randomFrom( Object.keys( routes ) );
-
-  // generate a random path for now
-  // const path = getRandomPath( routes, routeName, 6 );
 
   return {
     color: randomColor(),
