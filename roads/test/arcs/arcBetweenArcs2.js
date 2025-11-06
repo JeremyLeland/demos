@@ -1,61 +1,3 @@
-// Visualizing some slop to clean up later
-
-function findBlendCircle(c1, c2) {
-  const { x: x1, y: y1, r: r1 } = c1;
-  const { x: x2, y: y2, r: r2 } = c2;
-
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const d = Math.hypot(dx, dy);
-  if (d < 1e-9) return null; // concentric = no unique solution
-
-  // Solve for r3 numerically (external-external case)
-  // Equation: distance between circle centers = (r1 + r3) + (r2 + r3) - 2*sqrt((r1 + r3)*(r2 + r3) - ...)
-  // Easier: we can find r3 where two offset circles intersect.
-  function test(r3) {
-    return (r1 + r3 + r2 + r3) - d;
-  }
-
-  // Simple numeric estimate: start around overlap region
-  let r3 = Math.max(1e-6, (r1 + r2 - d) / 2);
-  if (r3 <= 0) r3 = Math.min(r1, r2) * 0.5;
-
-  // Build the two offset circles
-  const R1 = r1 + r3;
-  const R2 = r2 + r3;
-
-  // Intersection points of two circles of radii R1 and R2
-  const a = (R1 * R1 - R2 * R2 + d * d) / (2 * d);
-  const hSq = R1 * R1 - a * a;
-  if (hSq < 0) return null; // no intersection
-  const h = Math.sqrt(hSq);
-
-  // Midpoint along centerline
-  const xm = x1 + (a * dx) / d;
-  const ym = y1 + (a * dy) / d;
-
-  // Two intersection points — pick the one “outside” (higher y for example)
-  const x3a = xm + (h * dy) / d;
-  const y3a = ym - (h * dx) / d;
-  const x3b = xm - (h * dy) / d;
-  const y3b = ym + (h * dx) / d;
-
-  // Both candidate tangent circles
-  const candidates = [
-    { x: x3a, y: y3a, r: r3 },
-    { x: x3b, y: y3b, r: r3 }
-  ];
-
-  // return candidates;
-
-  // Pick the one outside both base circles
-  const outside = candidates.filter(c =>
-    Math.hypot(c.x - x1, c.y - y1) > r1 &&
-    Math.hypot(c.x - x2, c.y - y2) > r2
-  );
-
-  return outside.length ? outside[0] : candidates[0];
-}
 
 function tangentPoint(c1, c3) {
   const dx = c3.x - c1.x;
@@ -65,21 +7,12 @@ function tangentPoint(c1, c3) {
   return { x: c1.x + dx * t, y: c1.y + dy * t };
 }
 
-
-// Example: overlapping circles
-const c1 = { x: 0, y: 0, r: 3 };
-const c2 = { x: 4, y: 0, r: 2.5 };
-
-const blend = findBlendCircle(c1, c2);
-console.log("Blend circle:", blend);
-
-const t1 = tangentPoint(c1, blend);
-const t2 = tangentPoint(c2, blend);
-console.log("Tangent points:", t1, t2);
-
+const c1 = { pos: [ -2, 0 ], radius: 3 };
+const c2 = { pos: [ 2, 0 ], radius: 2.5 };
 
 import { Canvas } from '../../src/common/Canvas.js';
 import { Grid } from '../../src/common/Grid.js';
+import * as Intersections from '../../src/common/Intersections.js';
 
 const grid = new Grid( -5, -5, 5, 5 );
 
@@ -93,17 +26,52 @@ canvas.draw = ( ctx ) => {
 
   ctx.strokeStyle = 'white';
 
-  [ c1, c2, blend ].forEach( circle => {
-    ctx.beginPath();
-    ctx.arc( circle.x, circle.y, circle.r, 0, Math.PI * 2 );
-    // ctx.strokeStyle = arc.color;
-    ctx.stroke();
-  });
+  [ c1, c2 ].forEach( circle => drawCircle( ctx, ...circle.pos, circle.radius ) );
 
-  ctx.fillStyle = 'red';
-  [ t1, t2 ].forEach( p => {
-    ctx.beginPath();
-    ctx.arc( p.x, p.y, 0.05, 0, Math.PI * 2 );
-    ctx.fill();
-  })
+  // TODO: What's a good radius to use? Should it be based on size of circles? Or size of road?
+  // Previous one was using the size of the overlap region
+  // Also, should it be the same for all quadrents? Or does it look better if bigger for some, smaller for others?
+  const r3 = 0.5;
+
+  ctx.strokeStyle = 'tan';
+  drawCircle( ctx, ...c1.pos, c1.radius + r3 );
+  drawCircle( ctx, ...c2.pos, c2.radius + r3 );
+
+  ctx.strokeStyle = 'brown';
+  drawCircle( ctx, ...c1.pos, c1.radius - r3 );
+  drawCircle( ctx, ...c2.pos, c2.radius - r3 );
+
+  const external_external = Intersections.getCircleCircleIntersections( ...c1.pos, c1.radius + r3, ...c2.pos, c2.radius + r3 );
+  const internal_external = Intersections.getCircleCircleIntersections( ...c1.pos, c1.radius - r3, ...c2.pos, c2.radius + r3 );
+  const external_internal = Intersections.getCircleCircleIntersections( ...c1.pos, c1.radius + r3, ...c2.pos, c2.radius - r3 );
+  const internal_internal = Intersections.getCircleCircleIntersections( ...c1.pos, c1.radius - r3, ...c2.pos, c2.radius - r3 );
+
+  const colors = [ 'orange', 'yellow', 'lime', 'dodgerblue' ];
+
+  [ external_external, internal_external, external_internal, internal_internal ].forEach( ( side, index ) => {
+    side.forEach( p => {
+      ctx.fillStyle = ctx.strokeStyle = colors[ index ];
+      drawPoint( ctx, ...p );
+      drawCircle( ctx, ...p, r3 );
+    } );
+  } );  
+
+  // ctx.fillStyle = 'red';
+  // [ t1, t2 ].forEach( p => {
+  //   ctx.beginPath();
+  //   ctx.arc( p.x, p.y, 0.05, 0, Math.PI * 2 );
+  //   ctx.fill();
+  // })
+}
+
+function drawCircle( ctx, x, y, r ) {
+  ctx.beginPath();
+  ctx.arc( x, y, r, 0, Math.PI * 2 );
+  ctx.stroke();
+}
+
+function drawPoint( ctx, x, y ) {
+  ctx.beginPath();
+  ctx.arc( x, y, 0.05, 0, Math.PI * 2 );
+  ctx.fill();
 }

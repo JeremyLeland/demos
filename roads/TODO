@@ -3,8 +3,10 @@
   - Don't trim intersections as much if they aren't right angle
     - Make dependent on angle somehow
 
-- Street defined by arc instead of line
-  - Figure out lanes for this!
+- 4-way stop
+  - Simulate by quickly rotating short windows for each direction and specify yield?
+    - Yield should keep them from crashing
+    - Quickly rotating windows should prevent the same lane from going multiple times if someone else is waiting
 
 - Intersections involving arcs
   - Arc vs Line
