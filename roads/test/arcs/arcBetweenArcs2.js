@@ -7,12 +7,15 @@ function tangentPoint(c1, c3) {
   return { x: c1.x + dx * t, y: c1.y + dy * t };
 }
 
-const c1 = { pos: [ -2, 0 ], radius: 3 };
-const c2 = { pos: [ 2, 0 ], radius: 2.5 };
+const circles = [
+  { pos: [ -2, 0 ], radius: 3 },
+  { pos: [ 2, 0 ], radius: 2.5 }
+];
 
 import { Canvas } from '../../src/common/Canvas.js';
 import { Grid } from '../../src/common/Grid.js';
 import * as Intersections from '../../src/common/Intersections.js';
+import { vec2 } from '../../lib/gl-matrix.js'
 
 const grid = new Grid( -5, -5, 5, 5 );
 
@@ -26,42 +29,52 @@ canvas.draw = ( ctx ) => {
 
   ctx.strokeStyle = 'white';
 
-  [ c1, c2 ].forEach( circle => drawCircle( ctx, ...circle.pos, circle.radius ) );
+  circles.forEach( circle => drawCircle( ctx, ...circle.pos, circle.radius ) );
 
   // TODO: What's a good radius to use? Should it be based on size of circles? Or size of road?
   // Previous one was using the size of the overlap region
   // Also, should it be the same for all quadrents? Or does it look better if bigger for some, smaller for others?
+  // Maybe we should try to make it so all the tangent points line up?
+  //  - It'll be different streets trying to connect, though, so maybe it doesn't matter? Or will it?
   const r3 = 0.5;
 
   ctx.strokeStyle = 'tan';
-  drawCircle( ctx, ...c1.pos, c1.radius + r3 );
-  drawCircle( ctx, ...c2.pos, c2.radius + r3 );
+  drawCircle( ctx, ...circles[ 0 ].pos, circles[ 0 ].radius + r3 );
+  drawCircle( ctx, ...circles[ 1 ].pos, circles[ 1 ].radius + r3 );
 
   ctx.strokeStyle = 'brown';
-  drawCircle( ctx, ...c1.pos, c1.radius - r3 );
-  drawCircle( ctx, ...c2.pos, c2.radius - r3 );
+  drawCircle( ctx, ...circles[ 0 ].pos, circles[ 0 ].radius - r3 );
+  drawCircle( ctx, ...circles[ 1 ].pos, circles[ 1 ].radius - r3 );
 
-  const external_external = Intersections.getCircleCircleIntersections( ...c1.pos, c1.radius + r3, ...c2.pos, c2.radius + r3 );
-  const internal_external = Intersections.getCircleCircleIntersections( ...c1.pos, c1.radius - r3, ...c2.pos, c2.radius + r3 );
-  const external_internal = Intersections.getCircleCircleIntersections( ...c1.pos, c1.radius + r3, ...c2.pos, c2.radius - r3 );
-  const internal_internal = Intersections.getCircleCircleIntersections( ...c1.pos, c1.radius - r3, ...c2.pos, c2.radius - r3 );
+  const external_external = [ 1, 1 ];
+  const internal_external = [ -1, 1 ];
+  const external_internal = [ 1, -1 ];
+  const internal_internal = [ -1, -1 ];
 
   const colors = [ 'orange', 'yellow', 'lime', 'dodgerblue' ];
 
-  [ external_external, internal_external, external_internal, internal_internal ].forEach( ( side, index ) => {
-    side.forEach( p => {
-      ctx.fillStyle = ctx.strokeStyle = colors[ index ];
-      drawPoint( ctx, ...p );
-      drawCircle( ctx, ...p, r3 );
-    } );
-  } );  
+  [ external_external, internal_external, external_internal, internal_internal ].forEach( ( signs, index ) => {
+    const intersections = Intersections.getCircleCircleIntersections( 
+      ...circles[ 0 ].pos, circles[ 0 ].radius + signs[ 0 ] * r3, 
+      ...circles[ 1 ].pos, circles[ 1 ].radius + signs[ 1 ] * r3,
+    );
 
-  // ctx.fillStyle = 'red';
-  // [ t1, t2 ].forEach( p => {
-  //   ctx.beginPath();
-  //   ctx.arc( p.x, p.y, 0.05, 0, Math.PI * 2 );
-  //   ctx.fill();
-  // })
+    ctx.fillStyle = ctx.strokeStyle = colors[ index ];
+
+    intersections.forEach( p => {
+      // drawPoint( ctx, ...p );
+      drawCircle( ctx, ...p, r3 );
+
+      for ( let i = 0; i < 2; i ++ ) {
+        const tangent = vec2.scaleAndAdd( [], 
+          circles[ i ].pos, 
+          vec2.subtract( [], p, circles[ i ].pos ), 
+          circles[ i ].radius / ( circles[ i ].radius + signs[ i ] * r3 )
+        );
+        drawPoint( ctx, ...tangent );
+      }
+    } );
+  } );
 }
 
 function drawCircle( ctx, x, y, r ) {
