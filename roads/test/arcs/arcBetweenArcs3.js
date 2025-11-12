@@ -7,13 +7,13 @@ const pairs = [
       center: [ 2, 3 ], 
       radius: 2,
       startAngle: -3,
-      endAngle: 0,
+      endAngle: 1,
       counterclockwise: false,
     },
     { 
       center: [ 4, 2 ], 
       radius: 2,
-      startAngle: 2,
+      startAngle: 1,
       endAngle: -2,
       counterclockwise: false,
     },
@@ -341,30 +341,40 @@ canvas.draw = ( ctx ) => {
         ...pair[ 1 ].center, pair[ 1 ].radius + signs[ 1 ] * r3, pair[ 1 ].startAngle, pair[ 1 ].endAngle, pair[ 1 ].counterclockwise,
       );
 
-      offsetIntersections.forEach( p => {
-        // drawPoint( ctx, ...p );
-        // drawCircle( ctx, ...p, r3 );
+      // Handle multiple intersections here (take the closest)
+      let p, pDist = Infinity;
 
-        const tangents = [ 0, 1 ].map( i =>
-          vec2.scaleAndAdd( [], 
-            pair[ i ].center, 
-            vec2.subtract( [], p, pair[ i ].center ), 
-            pair[ i ].radius / ( pair[ i ].radius + signs[ i ] * r3 )
-          )
-        );
-
-        tangents.forEach( tangent => {
-          drawPoint( ctx, ...tangent );
-        } );
-
-        const angles = tangents.map( t => Math.atan2( t[ 1 ] - p[ 1 ], t[ 0 ] - p[ 0 ] ) );
-
-        drawArc( ctx, ...p, r3, ...angles, turn < 0 );
-
+      offsetIntersections.forEach( i => {
+        const dist = Math.hypot( i[ 0 ] - intersection[ 0 ], i[ 1 ] - intersection[ 1 ] );
+        if ( dist < pDist ) {
+          p = i;
+          pDist = dist;
+        }
       } );
+
+      const tangents = [ 0, 1 ].map( i =>
+        vec2.scaleAndAdd( [], 
+          pair[ i ].center, 
+          vec2.subtract( [], p, pair[ i ].center ), 
+          pair[ i ].radius / ( pair[ i ].radius + signs[ i ] * r3 )
+        )
+      );
+
+      tangents.forEach( tangent => {
+        drawPoint( ctx, ...tangent );
+      } );
+
+      const tangles = tangents.map( t => Math.atan2( t[ 1 ] - p[ 1 ], t[ 0 ] - p[ 0 ] ) );
+
+      drawArc( ctx, ...p, r3, ...tangles, turn < 0 );
     } );
   } );
 }
+
+function getArcBetweenArcs( arc1, arc2 ) {
+
+}
+
 
 const TWO_PI = Math.PI * 2;
 
