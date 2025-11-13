@@ -295,7 +295,7 @@ canvas.draw = ( ctx ) => {
       const roadLength = getRouteLength( arc );
 
       ctx.fillStyle = '#ff08';
-      for ( let length = 0; length < roadLength; length += 0.5 ) {
+      for ( let length = 0; length < roadLength; length += 0.25 ) {
         drawOnRouteAtDistance( ctx, arc, length, drawArrow );
       }
     } );
@@ -307,72 +307,70 @@ canvas.draw = ( ctx ) => {
     //  - It'll be different streets trying to connect, though, so maybe it doesn't matter? Or will it?
     // const r3 = 0.5;
 
+    const arcs = getArcsBetweenArcs( ...pair );
 
-    // TODO: Need to base this on the difference in angle between start and end lines
-    //       I think I did something similar for the earlier line-join-with-arc code
-    //       Look at that and see if it's helpful for figuring out whether we are 
-    //       external or internal to each circle
+    arcs.forEach( arc => {
+      drawArc( ctx, ...arc.center, arc.radius, arc.startAngle, arc.endAngle, arc.counterclockwise );
 
-    const intersections = Intersections.getArcArcIntersections(
-      ...pair[ 0 ].center, pair[ 0 ].radius, pair[ 0 ].startAngle, pair[ 0 ].endAngle, pair[ 0 ].counterclockwise,
-      ...pair[ 1 ].center, pair[ 1 ].radius, pair[ 1 ].startAngle, pair[ 1 ].endAngle, pair[ 1 ].counterclockwise,
-    );
+      const roadLength = getRouteLength( arc );
 
-    intersections.forEach( intersection => {
-      const angles = pair.map( a =>
-        Math.atan2( intersection[ 1 ] - a.center[ 1 ], intersection[ 0 ] - a.center[ 0 ] ) + ( a.counterclockwise ? -1 : 1 ) * Math.PI / 2
-      );
-
-      console.log( angles );
-
-      const turn = deltaAngle( ...angles );
-
-      console.log( turn );
-
-      ctx.fillStyle = ctx.strokeStyle = turn < 0 ? 'orange' : 'violet';
-
-      const signs = [ 
-        turn < 0 == !pair[ 0 ].counterclockwise ? 1 : -1, 
-        turn < 0 == !pair[ 1 ].counterclockwise ? 1 : -1,
-      ];
-
-      const offsetIntersections = Intersections.getArcArcIntersections(
-        ...pair[ 0 ].center, pair[ 0 ].radius + signs[ 0 ] * r3, pair[ 0 ].startAngle, pair[ 0 ].endAngle, pair[ 0 ].counterclockwise,
-        ...pair[ 1 ].center, pair[ 1 ].radius + signs[ 1 ] * r3, pair[ 1 ].startAngle, pair[ 1 ].endAngle, pair[ 1 ].counterclockwise,
-      );
-
-      // Handle multiple intersections here (take the closest)
-      let p, pDist = Infinity;
-
-      offsetIntersections.forEach( i => {
-        const dist = Math.hypot( i[ 0 ] - intersection[ 0 ], i[ 1 ] - intersection[ 1 ] );
-        if ( dist < pDist ) {
-          p = i;
-          pDist = dist;
-        }
-      } );
-
-      const tangents = [ 0, 1 ].map( i =>
-        vec2.scaleAndAdd( [], 
-          pair[ i ].center, 
-          vec2.subtract( [], p, pair[ i ].center ), 
-          pair[ i ].radius / ( pair[ i ].radius + signs[ i ] * r3 )
-        )
-      );
-
-      tangents.forEach( tangent => {
-        drawPoint( ctx, ...tangent );
-      } );
-
-      const tangles = tangents.map( t => Math.atan2( t[ 1 ] - p[ 1 ], t[ 0 ] - p[ 0 ] ) );
-
-      drawArc( ctx, ...p, r3, ...tangles, turn < 0 );
+      ctx.fillStyle = '#ff08';
+      for ( let length = 0; length < roadLength; length += 0.25 ) {
+        drawOnRouteAtDistance( ctx, arc, length, drawArrow );
+      }
     } );
   } );
 }
 
-function getArcBetweenArcs( arc1, arc2 ) {
+function getArcsBetweenArcs( arc1, arc2 ) {
+  const intersections = Intersections.getArcArcIntersections(
+    ...arc1.center, arc1.radius, arc1.startAngle, arc1.endAngle, arc1.counterclockwise,
+    ...arc2.center, arc2.radius, arc2.startAngle, arc2.endAngle, arc2.counterclockwise,
+  );
 
+  return intersections.map( intersection => {
+    const angles = [ arc1, arc2 ].map( a =>
+      Math.atan2( intersection[ 1 ] - a.center[ 1 ], intersection[ 0 ] - a.center[ 0 ] ) + ( a.counterclockwise ? -1 : 1 ) * Math.PI / 2
+    );
+
+    const turn = deltaAngle( ...angles );
+
+    const signs = [ arc1, arc2 ].map( a => turn < 0 == !a.counterclockwise ? 1 : -1 ); 
+
+    const offsetIntersections = Intersections.getArcArcIntersections(
+      ...arc1.center, arc1.radius + signs[ 0 ] * r3, arc1.startAngle, arc1.endAngle, arc1.counterclockwise,
+      ...arc2.center, arc2.radius + signs[ 1 ] * r3, arc2.startAngle, arc2.endAngle, arc2.counterclockwise,
+    );
+
+    // Handle multiple intersections here (take the closest)
+    let closest, closestDist = Infinity;
+
+    offsetIntersections.forEach( offInt => {
+      const dist = Math.hypot( offInt[ 0 ] - intersection[ 0 ], offInt[ 1 ] - intersection[ 1 ] );
+      if ( dist < closestDist ) {
+        closest = offInt;
+        closestDist = dist;
+      }
+    } );
+
+    const tangents = [ arc1, arc2 ].map( ( arc, index ) =>
+      vec2.scaleAndAdd( [],
+        arc.center,
+        vec2.subtract( [], closest, arc.center ), 
+        arc.radius / ( arc.radius + signs[ index ] * r3 )
+      )
+    );
+
+    const tangles = tangents.map( t => Math.atan2( t[ 1 ] - closest[ 1 ], t[ 0 ] - closest[ 0 ] ) );
+
+    return {
+      center: closest,
+      radius: r3,
+      startAngle: tangles[ 0 ],
+      endAngle: tangles[ 1 ],
+      counterclockwise: turn < 0,
+    }
+  } );
 }
 
 
