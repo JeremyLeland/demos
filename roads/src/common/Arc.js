@@ -1,149 +1,124 @@
-export function getArcBetweenLines( x1, y1, x2, y2, x3, y3, x4, y4, ctx ) {
+import * as Intersections from '../../src/common/Intersections.js';
+import { vec2 } from '../../lib/gl-matrix.js'
 
-  // Find intersection between lines, use this as control point
-  const D = ( y4 - y3 ) * ( x2 - x1 ) - ( x4 - x3 ) * ( y2 - y1 );
+export function getArcBetweenLines( from, to ) {
+  const A = vec2.subtract( [], from.end, from.start );
+  const B = vec2.subtract( [], to.end, to.start );
+  const C = vec2.subtract( [], to.start, from.start );
 
-  if ( D == 0 ) {
-    // console.log( `Lines ${ x1 },${ y1 } -> ${ x2 },${ y2 } and ${ x3 },${ y3 } -> ${ x4 },${ y4 } are parallel, no arc possible` );
-    // return;
+  const A_cross_B = A[ 0 ] * B[ 1 ] - A[ 1 ] * B[ 0 ];
+  // const C_cross_A = C[ 0 ] * A[ 1 ] - C[ 1 ] * A[ 0 ];
 
-    const center = [
-      ( x2 + x3 ) / 2,
-      ( y2 + y3 ) / 2,
-    ];
-
-    const radius = Math.hypot( x2 - center[ 0 ], y2 - center[ 1 ] );
-
-    const startAngle = Math.atan2( y2 - center[ 1 ], x2 - center[ 0 ] );
-    const endAngle = Math.atan2( y3 - center[ 1 ], x3 - center[ 0 ] );
-
-    // TODO: Not sure about this at all...
-    const v0 = normalize( [ x1 - center[ 0 ], y1 - center[ 1 ] ] );
-    const v1 = normalize( [ x4 - center[ 0 ], y4 - center[ 1 ] ] );
-    const cross = v0[ 0 ] * v1[ 1 ] - v0[ 1 ] * v1[ 0 ];
-
-
-    return {
-      center: center,
-      radius: radius,
-      startAngle: startAngle,
-      endAngle: endAngle,
-      counterclockwise: cross > 0,
-    };
+  if ( A_cross_B == 0 ) {
+    // if ( C_cross_A == 0 ) {
+      
+    // }
+    // else {
+    //   // Parallel
+    // }
   }
   else {
-    const uA = ( ( x4 - x3 ) * ( y1 - y3 ) - ( y4 - y3 ) * ( x1 - x3 ) ) / D;
-    // const uB = ( ( x2 - x1 ) * ( y1 - y3 ) - ( y2 - y1 ) * ( x1 - x3 ) ) / D;
+    const u = ( C[ 0 ] * B[ 1 ] - C[ 1 ] * B[ 0 ] ) / A_cross_B;
 
-    const intersection = [
-      x1 + ( x2 - x1 ) * uA,
-      y1 + ( y2 - y1 ) * uA,
-    ];
+    const intersection = vec2.scaleAndAdd( [], from.start, A, u );
 
-    if ( ctx ) {
-      ctx.beginPath();
-      ctx.arc( ...intersection, 0.1, 0, Math.PI * 2 );
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo( x1, y1 );
-      ctx.lineTo( ...intersection );
-      ctx.moveTo( x4, y4 );
-      ctx.lineTo( ...intersection );
-      ctx.stroke();
-    }
-
-    // TODO: Need to take into account if intersection is behind us. If so, do parallel case there too
-
-    const v0 = normalize( [ x2 - intersection[ 0 ], y2 - intersection[ 1 ] ] );
-    const v1 = normalize( [ x3 - intersection[ 0 ], y3 - intersection[ 1 ] ] );
-
-    // const radius = Math.hypot( ...[ 0, 1 ].map( i => road.start[ i ] - road.control[ i ] ) );
-
-    const dot = v0[ 0 ] * v1[ 0 ] + v0[ 1 ] * v1[ 1 ];
-    const angleBetween = Math.acos( dot )
-
-    // // Ensure angle is not 0 or PI (no arc possible)
-    // if ( angleBetween <= 0.0001 || Math.abs( Math.PI - angleBetween ) <= 0.0001 ) {
-    //   console.log( `Lines parallel, no arc possible (a different way than above?)` );
-    //   return;
-    // }
-
-    const dist = Math.hypot( x2 - intersection[ 0 ], y2 - intersection[ 1 ] );  // NOTE: not normalized version above
-    const radius = dist / ( Math.tan( angleBetween / 2 ) );
-
+    vec2.normalize( A, A );
+    vec2.normalize( B, B );
     
-    const bisector = normalize( [ v0[ 0 ] + v1[ 0 ], v0[ 1 ] + v1[ 1 ] ] );
+    const angleBetween = vec2.angle( A, B );
 
-    if ( ctx ) {
-      ctx.beginPath();
-      ctx.moveTo( ...intersection );
-      ctx.lineTo( intersection[ 0 ] + bisector[ 0 ] * radius, intersection[ 1 ] + bisector[ 1 ] * radius );
-      ctx.stroke();
-    }
-
-
+    const dist = vec2.distance( from.end, intersection );
+    const radius = dist / ( Math.tan( angleBetween / 2 ) );
     const centerDistance = radius / Math.sin( angleBetween / 2 );
+    
+    // Reverse A to give us the proper bisector between vectors
+    const bisector = vec2.scaleAndAdd( [], B, A, -1 );
+    vec2.normalize( bisector, bisector );
 
-    const center = [
-      intersection[ 0 ] + bisector[ 0 ] * centerDistance,// * orientation,
-      intersection[ 1 ] + bisector[ 1 ] * centerDistance,// * orientation,
-    ];
+    const center = vec2.scaleAndAdd( [], intersection, bisector, centerDistance );
 
     // Compute start and end angles
     const tangentDist = radius / ( Math.tan( angleBetween / 2 ) );
-    const start = [ 0, 1 ].map( i => intersection[ i ] + v0[ i ] * tangentDist );
-    const end = [ 0, 1 ].map( i => intersection[ i ] + v1[ i ] * tangentDist );
-
+    const start = vec2.scaleAndAdd( [], intersection, A, -tangentDist );  // reversing A again
+    const end   = vec2.scaleAndAdd( [], intersection, B,  tangentDist );
 
     const startAngle = Math.atan2( start[ 1 ] - center[ 1 ], start[ 0 ] - center[ 0 ] );
     const endAngle = Math.atan2( end[ 1 ] - center[ 1 ], end[ 0 ] - center[ 0 ] );
-
-    if ( ctx ) {
-      ctx.beginPath();
-      ctx.arc( ...center, radius, 0, Math.PI * 2 );
-      ctx.stroke();
-
-      [ start, end ].forEach( spot => {
-        ctx.beginPath();
-        ctx.arc( ...spot, 0.1, 0, Math.PI * 2 );
-        ctx.fill();
-      } );
-
-      // [ startAngle, endAngle ].forEach( angle => {
-      //   ctx.beginPath();
-      //   ctx.arc( 
-      //     center[ 0 ] + Math.cos( angle ) * radius, 
-      //     center[ 1 ] + Math.sin( angle ) * radius,
-      //     0.1, 
-      //     0, 
-      //     Math.PI * 2 
-      //   );
-      //   ctx.fill();
-      // } );
-    }
-
-    const firstAngle = Math.atan2( y2 - y1, x2 - x1 );
-    const betweenAngle = Math.atan2( y3 - y2, x3 - x2 );
-    const counterclockwise = deltaAngle( firstAngle, betweenAngle ) < 0;
-
+    
     return {
       center: center,
       radius: radius,
       startAngle: startAngle,
       endAngle: endAngle,
-      counterclockwise: counterclockwise,
+      counterclockwise: A_cross_B < 0,
     };
   }
 }
 
-function normalize( v ) {
-  const len = Math.hypot( ...v );
-  return v.map( e => e / len );
+export function getArcsBetweenArcs( from, to, radius ) {
+  const intersections = Intersections.getArcArcIntersections(
+    ...from.center, from.radius, from.startAngle, from.endAngle, from.counterclockwise,
+    ...to.center, to.radius, to.startAngle, to.endAngle, to.counterclockwise,
+  );
+
+  return intersections.map( intersection => {
+    const angles = [ from, to ].map( a =>
+      Math.atan2( intersection[ 1 ] - a.center[ 1 ], intersection[ 0 ] - a.center[ 0 ] ) + ( a.counterclockwise ? -1 : 1 ) * Math.PI / 2
+    );
+
+    const turn = deltaAngle( ...angles );
+
+    const signs = [ from, to ].map( a => turn < 0 == !a.counterclockwise ? 1 : -1 ); 
+
+    const offsetIntersections = Intersections.getArcArcIntersections(
+      ...from.center, from.radius + signs[ 0 ] * radius, from.startAngle, from.endAngle, from.counterclockwise,
+      ...to.center, to.radius + signs[ 1 ] * radius, to.startAngle, to.endAngle, to.counterclockwise,
+    );
+
+    // Handle multiple intersections here (take the closest)
+    let closest, closestDist = Infinity;
+
+    offsetIntersections.forEach( offInt => {
+      const dist = Math.hypot( offInt[ 0 ] - intersection[ 0 ], offInt[ 1 ] - intersection[ 1 ] );
+      if ( dist < closestDist ) {
+        closest = offInt;
+        closestDist = dist;
+      }
+    } );
+
+    const tangents = [ from, to ].map( ( arc, index ) =>
+      vec2.scaleAndAdd( [],
+        arc.center,
+        vec2.subtract( [], closest, arc.center ), 
+        arc.radius / ( arc.radius + signs[ index ] * radius )
+      )
+    );
+
+    const tangles = tangents.map( t => Math.atan2( t[ 1 ] - closest[ 1 ], t[ 0 ] - closest[ 0 ] ) );
+
+    return {
+      center: closest,
+      radius: radius,
+      startAngle: tangles[ 0 ],
+      endAngle: tangles[ 1 ],
+      counterclockwise: turn < 0,
+    }
+  } );
 }
 
+
+const TWO_PI = Math.PI * 2;
+
 function fixAngle( a ) {
-  return a > Math.PI ? a - Math.PI * 2 : a < -Math.PI ? a + Math.PI * 2 : a;
+  if ( a > Math.PI ) {
+    return a % TWO_PI - TWO_PI;
+  }
+  else if ( a < -Math.PI ) {
+    return a % TWO_PI + TWO_PI;
+  }
+  else {
+    return a;
+  }
 }
 
 function deltaAngle( a, b ) {
