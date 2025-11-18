@@ -32,85 +32,89 @@ const routes = {
   },
   East: {
     center: [ 4, -6 ],
-    radius: 10,
-    startAngle: 1,
-    endAngle: 2,
-    counterclockwise: false,
-  },
-  West: {
-    center: [ 4, -6 ],
     radius: 10 + LANE_WIDTH,
     startAngle: 2,
     endAngle: 1,
     counterclockwise: true,
   },
+  West: {
+    center: [ 4, -6 ],
+    radius: 10,
+    startAngle: 1,
+    endAngle: 2,
+    counterclockwise: false,
+  },
 };
 
-const paths = {
-  North_East: {
-    from: 'North',
-    to: 'East',
-    radius: 2,
-  },
-  West_South: {
-    from: 'West',
-    to: 'South',
-    radius: 1,
-  },
-  
-  North_West: {
-    from: 'North',
-    to: 'West',
-    radius: 1,
-  },
-  East_South: {
-    from: 'East',
-    to: 'South',
-    radius: 2,
-  },
-  
-  South_West: {
-    from: 'South',
-    to: 'West',
-    radius: 2,
-  },
-  East_North: {
-    from: 'East',
-    to: 'North',
-    radius: 1,
-  },
+// The ratio of radii seems necessary so that cars are properly parallel to each other
+// The absolute radii ideally should seem "balanced" so left turns and right turns start at the same point
+//  - how to calculate this? Set up an equation for the start tangent points to make them equal?
 
-  South_East: {
-    from: 'South',
-    to: 'East',
-    radius: 1,
-  },  
-  West_North: {
-    from: 'West',
-    to: 'North',
-    radius: 2,
-  },
-  
+const Radii = {
+  R1: 1,
+  R2: 1,
+  R3: 1,
+  R4: 1,
 };
-  
-Object.values( paths ).forEach( path => {
-  Arc.getArcsBetweenArcs( routes[ path.from ], routes[ path.to ], path.radius ).forEach( ( arc, index ) => {
-    routes[ `${ path.from }_TO_${ path.to }_ARC` ] = arc;
+
+function updateJoins() {
+  const paths = {
+    South_West: {
+      from: 'South',
+      to: 'West',
+      radius: Radii.R1,
+    },
+    East_North: {
+      from: 'East',
+      to: 'North',
+      radius: Radii.R1 + LANE_WIDTH,
+    },
+
+    South_East: {
+      from: 'South',
+      to: 'East',
+      radius: Radii.R2 + LANE_WIDTH,
+    },  
+    West_North: {
+      from: 'West',
+      to: 'North',
+      radius: Radii.R2,
+    },
+
+    North_West: {
+      from: 'North',
+      to: 'West',
+      radius: Radii.R3 + LANE_WIDTH,
+    },
+    East_South: {
+      from: 'East',
+      to: 'South',
+      radius: Radii.R3,
+    },
+    
+    North_East: {
+      from: 'North',
+      to: 'East',
+      radius: Radii.R4,
+    },
+    West_South: {
+      from: 'West',
+      to: 'South',
+      radius: Radii.R4 + LANE_WIDTH,
+    },
+  };
+
+  Object.values( paths ).forEach( path => {
+    Arc.getArcsBetweenArcs( routes[ path.from ], routes[ path.to ], path.radius ).forEach( ( arc, index ) => {
+      routes[ `${ path.from }_TO_${ path.to }_ARC` ] = arc;
+    } );
+    
+    // TODO: _BEFORE and _AFTER can be arcs in this case, the remaining pieces of from and to inside the intersection
+    //       In line-arc-line case, these are also pieces of from and to inside intersection
   } );
-
-  // TODO: _BEFORE and _AFTER can be arcs in this case, the remaining pieces of from and to inside the intersection
-  //       In line-arc-line case, these are also pieces of from and to inside intersection
-} );
-
-
-// Arc.getArcsBetweenArcs( routes.loop2_W, routes.loop1_S, 0.4 ).forEach( ( arc, index ) => {
-//   routes[ `join1_${ index }` ] = arc;
-// } );
-
-// Arc.getArcsBetweenArcs( routes.loop1, routes.loop2, 0.4 ).forEach( ( arc, index ) => {
-//   routes[ `join2_${ index }` ] = arc;
-// } );
-
+}
+updateJoins();
+  
 //
 // Routes list
 //
@@ -144,6 +148,59 @@ Object.assign( nameDiv.style, {
   fontSize: '12px'
 } );
 
+//
+// Radius sliders
+//
+
+const MIN_POS = '15%', MAX_POS = '70%';
+
+const sliderInfo = {
+  R1: {
+    left: MIN_POS,
+    top: MIN_POS,
+  },
+  R2: {
+    left: MAX_POS,
+    top: MIN_POS,
+  },
+  R3: {
+    left: MIN_POS,
+    top: MAX_POS,
+  },
+  R4: {
+    left: MAX_POS,
+    top: MAX_POS,
+  },
+};
+
+Object.entries( sliderInfo ).forEach( ( [ item, info ] ) => {
+  const slider = document.createElement( 'input' );
+
+  Object.assign( slider.style, {
+    position: 'absolute',
+    left: info.left,
+    top: info.top,
+    width: '20%',
+  } );
+
+  Object.assign( slider, {
+    type: 'range',
+    min: 0,
+    max: 4,
+    step: 0.01,
+    value: Radii[ item ],
+  } );
+
+  document.body.appendChild( slider );
+
+  slider.addEventListener( 'input', _ => {
+    Radii[ item ] = +slider.value;
+
+    updateJoins();
+
+    canvas.redraw();
+  } );
+} );
 
 //
 // Drawing
