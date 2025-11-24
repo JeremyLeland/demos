@@ -84,6 +84,7 @@ const Radii = {
 
 const fromEndAngles = new Map(), toStartAngles = new Map();
 
+
 function updateJoins() {
   const paths = {
     South_West: {
@@ -160,9 +161,6 @@ function updateJoins() {
         toStartAngles.set( path.to, toStartAngle );
       }
     } );
-    
-    // TODO: _BEFORE and _AFTER can be arcs in this case, the remaining pieces of from and to inside the intersection
-    //       In line-arc-line case, these are also pieces of from and to inside intersection
   } );
 
   console.log( fromEndAngles );
@@ -206,6 +204,54 @@ function updateJoins() {
       path.path.push( afterName );
     }
   } );
+
+  // Split arcs at intersection
+  let counter = 1;
+
+  [ 'North', 'South', 'East', 'West' ].forEach( beforeRouteName => {
+    const beforeRoute = routes[ beforeRouteName ];
+
+    const fromEnd = fromEndAngles.get( beforeRouteName );
+    const toStart = toStartAngles.get( beforeRouteName );
+
+    if ( fromEnd && toStart ) {
+      const fromName = `${ beforeRouteName }-${ counter++ }`;
+      const toName   = `${ beforeRouteName }-${ counter++ }`;
+
+      const betweenName = `${ fromName }_TO_${ toName }_ARC`;
+
+      routes[ fromName ] = {
+        center: beforeRoute.center,
+        radius: beforeRoute.radius,
+        startAngle: beforeRoute.startAngle,
+        endAngle: fromEnd,
+        counterclockwise: beforeRoute.counterclockwise,
+      };
+
+      routes[ toName ] = {
+        center: beforeRoute.center,
+        radius: beforeRoute.radius,
+        startAngle: toStart,
+        endAngle: beforeRoute.endAngle,
+        counterclockwise: beforeRoute.counterclockwise,
+      };
+
+      routes[ betweenName ] = {
+        center: beforeRoute.center,
+        radius: beforeRoute.radius,
+        startAngle: fromEnd,
+        endAngle: toStart,
+        counterclockwise: beforeRoute.counterclockwise,
+      };
+
+      // TODO: Update references to beforeRouteName
+
+      delete routes[ beforeRouteName ];
+    }
+  } );
+
+
+  // TODO: Link everything up to 'next'
 
   console.log( paths );
 }
