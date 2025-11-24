@@ -89,6 +89,7 @@ export function getArcLineIntersections(
   return results; // May be 0, 1, or 2 points
 }
 
+// Should this include =='s or not?
 export function isBetweenAngles( testAngle, startAngle, endAngle, counterclockwise = false ) {
   // Normalize angles
   const test = normalizeAngle( testAngle );
@@ -97,10 +98,12 @@ export function isBetweenAngles( testAngle, startAngle, endAngle, counterclockwi
 
   // Handle wrap-around
   if ( start < end ) {
-    return test >= start && test <= end;
+    // return test >= start && test <= end;
+    return test > start && test < end;
   }
   else {
-    return test >= start || test <= end;
+    // return test >= start || test <= end;
+    return test > start || test < end;
   }
 }
 

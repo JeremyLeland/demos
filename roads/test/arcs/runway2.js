@@ -56,6 +56,25 @@ const routes = {
 // Probably easier to just use 1 for everything, find the furthest back point for the split, 
 // and add in the extra arc before and after as part of path
 
+// Radius of 1 looks good, but can create situations where turns run into each other
+// Ideally, intersection would be crafted so turn lanes don't overlap
+// Not sure if this is something we should try to figure out automatically, or if it should be specified
+// when creating the intersection in an editor or whatever
+
+// We could determine the center of the intersection and say that turns need to be off to the side of the center
+// Does that make sense as a rule? I think so
+// This might need to happen at the "street" level. That's certainly the easiest intersection to calculate.
+
+// Need to handle unequal numbers of lanes, e.g. 3 right and 2 left. In that case, the "center" used for radius
+// calculations would be different
+
+// So goal of next test should probably be:
+//  - define two arc streets that have 2 left and 3 right lanes
+//  - calculate radii based on this goal so the turning lanes don't overlap each other
+//  - should probably get this working with simple 2-lane case first before we tack on more lanes
+
+// Find angles at intersection, get bisector of this, figure out radius somehow from that?
+
 const Radii = {
   R1: 1,
   R2: 1,
@@ -117,9 +136,12 @@ function updateJoins() {
 
   Object.values( paths ).forEach( path => {
     Arc.getArcsBetweenArcs( routes[ path.from ], routes[ path.to ], path.radius ).forEach( ( arc, index ) => {
-      routes[ `${ path.from }_TO_${ path.to }_ARC` ] = arc;
+      // Create arc
+      const arcName = `${ path.from }_TO_${ path.to }_ARC`;
+      routes[ arcName ] = arc;
+      path.path = [ arcName ];
 
-      // TODO: Use arc.start and arc.end to see where path starts and ends on original arcs
+      // Update end and start angles
       const fromRoute = routes[ path.from ];
       const toRoute = routes[ path.to ];
 
@@ -145,6 +167,47 @@ function updateJoins() {
 
   console.log( fromEndAngles );
   console.log( toStartAngles );
+
+  // Fill in _BEFORE and _AFTER arcs as needed
+  Object.values( paths ).forEach( path => {
+    const arc = routes[ path.path[ 0 ] ];
+
+    const fromRoute = routes[ path.from ];
+    const toRoute = routes[ path.to ];
+
+    const fromEndAngle = Math.atan2( arc.start[ 1 ] - fromRoute.center[ 1 ], arc.start[ 0 ] - fromRoute.center[ 0 ] );
+    const toStartAngle = Math.atan2( arc.end[ 1 ] - toRoute.center[ 1 ], arc.end[ 0 ] - toRoute.center[ 0 ] );
+
+    // console.log( `${ path.from }_TO_${ path.to }: checking ${ fromEndAngle } between ${ fromEndAngles.get( path.from ) } and ${ fromRoute.endAngle }` );
+
+    if ( isBetweenAngles( fromEndAngle, fromEndAngles.get( path.from ), fromRoute.endAngle, fromRoute.counterclockwise ) ) {
+      const beforeName = `${ path.from }_TO_${ path.to }_BEFORE`;
+      routes[ beforeName ] = {
+        center: fromRoute.center,
+        radius: fromRoute.radius,
+        startAngle: fromEndAngles.get( path.from ),
+        endAngle: fromEndAngle,
+        counterclockwise: fromRoute.counterclockwise,
+      };
+      path.path.unshift( beforeName );
+    }
+
+    // console.log( `${ path.from }_TO_${ path.to }: checking ${ toStartAngle } between ${ toRoute.startAngle } and ${ toStartAngles.get( path.to ) }` );
+
+    if ( isBetweenAngles( toStartAngle, toRoute.startAngle, toStartAngles.get( path.to ), toRoute.counterclockwise ) ) {
+      const afterName = `${ path.from }_TO_${ path.to }_AFTER`;
+      routes[ afterName ] = {
+        center: toRoute.center,
+        radius: toRoute.radius,
+        startAngle: toStartAngle,
+        endAngle: toStartAngles.get( path.to ),
+        counterclockwise: toRoute.counterclockwise,
+      };
+      path.path.push( afterName );
+    }
+  } );
+
+  console.log( paths );
 }
 updateJoins();
   
@@ -219,7 +282,7 @@ Object.entries( sliderInfo ).forEach( ( [ item, info ] ) => {
   Object.assign( slider, {
     type: 'range',
     min: 0,
-    max: 4,
+    max: 8,
     step: 0.01,
     value: Radii[ item ],
   } );
