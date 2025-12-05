@@ -25,7 +25,7 @@ import * as Intersections from '../../src/common/Intersections.js';
 
 import { vec2 } from '../../lib/gl-matrix.js'
 
-const grid = new Grid( 0, 0, 10, 10 );
+const grid = new Grid( 0, 0, 30, 30 );
 
 const canvas = new Canvas();
 canvas.backgroundColor = '#123';
@@ -37,8 +37,8 @@ const streets = {
   Vertical: {
     center: [ -25, 4 ],
     radius: 30,
-    startAngle: 0.5,
-    endAngle: -0.5,
+    startAngle: 0.3,
+    endAngle: -0.3,
     counterclockwise: true,
     
     lanes: {
@@ -49,9 +49,84 @@ const streets = {
   Horizontal: {
     center: [ 4, -20 ],
     radius: 25,
-    startAngle: 2.2,
-    endAngle: 0.7,
+    startAngle: 1.8,
+    endAngle: 1.2,
     counterclockwise: true,
+
+    lanes: {
+      left: 2,
+      right: 3,
+    },
+  },
+
+  Vertical2: {
+    center: [ -6, 4 ],
+    radius: 30,
+    startAngle: -0.3,
+    endAngle: 0.3,
+    counterclockwise: false,
+    
+    lanes: {
+      left: 2,
+      right: 3,
+    },
+  },
+  Horizontal2: {
+    center: [ 21, -20 ],
+    radius: 25,
+    startAngle: 1.8,
+    endAngle: 1.2,
+    counterclockwise: true,
+
+    lanes: {
+      left: 2,
+      right: 3,
+    },
+  },
+
+  Vertical3: {
+    center: [ -23, 24 ],
+    radius: 30,
+    startAngle: 0.3,
+    endAngle: -0.3,
+    counterclockwise: true,
+    
+    lanes: {
+      left: 2,
+      right: 3,
+    },
+  },
+  Horizontal3: {
+    center: [ 4, -1 ],
+    radius: 25,
+    startAngle: 1.2,
+    endAngle: 1.8,
+    counterclockwise: false,
+
+    lanes: {
+      left: 2,
+      right: 3,
+    },
+  },
+
+  Vertical4: {
+    center: [ -8, 24 ],
+    radius: 30,
+    startAngle: -0.3,
+    endAngle: 0.3,
+    counterclockwise: false,
+    
+    lanes: {
+      left: 2,
+      right: 3,
+    },
+  },
+  Horizontal4: {
+    center: [ 21, -1 ],
+    radius: 25,
+    startAngle: 1.2,
+    endAngle: 1.8,
+    counterclockwise: false,
 
     lanes: {
       left: 2,
@@ -106,118 +181,88 @@ Object.entries( streets ).forEach( ( [ name, street ] ) => {
 // Intersection
 //
 
-const A = streets.Horizontal;
-const B = streets.Vertical;
+doStuff( streets.Horizontal, streets.Vertical );
+doStuff( streets.Horizontal2, streets.Vertical2 );
+doStuff( streets.Horizontal3, streets.Vertical3 );
+doStuff( streets.Horizontal4, streets.Vertical4 );
 
-const intersections = Intersections.getArcArcIntersections(
-  ...A.center, A.radius, A.startAngle, A.endAngle, A.counterclockwise,
-  ...B.center, B.radius, B.startAngle, B.endAngle, B.counterclockwise,
-);
+function doStuff( A, B ) {
 
-const intersection = intersections[ 0 ];
+  const intersections = Intersections.getArcArcIntersections(
+    ...A.center, A.radius, A.startAngle, A.endAngle, A.counterclockwise,
+    ...B.center, B.radius, B.startAngle, B.endAngle, B.counterclockwise,
+  );
 
-// With A = Horizontal and B = Vertical...
-const pairs = [
-  // East_North - R1
-  // {
-  //   from: A.routes.left[ 0 ],
-  //   to: B.routes.right[ 0 ],
-  // },
-  // {
-  //   from: B.routes.left[ 0 ],
-  //   to: A.routes.right[ 0 ],
-  // }
+  const intersection = intersections[ 0 ];
 
-  // South_East - R2
-  // {
-  //   from: B.routes.left[ 0 ],
-  //   to: A.routes.left[ 0 ],
-  // },
-  // {
-  //   from: A.routes.right[ 0 ],
-  //   to: B.routes.right[ 0 ],
-  // },
+  const pairs = [];
 
-  // North_West - R3
-  // {
-  //   from: B.routes.right[ 0 ],
-  //   to: A.routes.right[ 0 ],
-  // },
-  // {
-  //   from: A.routes.left[ 0 ],
-  //   to: B.routes.left[ 0 ],
-  // },
+  const fromStreet = A.counterclockwise == B.counterclockwise ? B : A;
+  const toStreet   = A.counterclockwise == B.counterclockwise ? A : B;
 
-  // West_South - R4
-  // {
-  //   from: A.routes.right[ 0 ],
-  //   to: B.routes.left[ 0 ],
-  // },
-  // {
-  //   from: B.routes.right[ 0 ],
-  //   to: A.routes.left[ 0 ],
-  // },
-];
+  // TODO: Is this line affected by counterclockwise-ness?
+  const fromLeftToRightLanes = Math.min( fromStreet.lanes.left, toStreet.lanes.right );
 
-const fromStreet = A.counterclockwise == B.counterclockwise ? B : A;
-const toStreet   = A.counterclockwise == B.counterclockwise ? A : B;
+  // Outermost left turns
+  pairs.push( {
+    from: fromStreet.routes.left[ fromLeftToRightLanes - 1 ],
+    to: toStreet.routes.right[ fromLeftToRightLanes - 1 ],
+  } );
 
-// TODO: Is this line affected by counterclockwise-ness?
-const fromLeftToRightLanes = Math.min( fromStreet.lanes.left, toStreet.lanes.right );
-
-// Outermost left turns
-pairs.push( {
-  from: fromStreet.routes.left[ fromLeftToRightLanes - 1 ],
-  to: toStreet.routes.right[ fromLeftToRightLanes - 1 ],
-} );
-
-const fromRightToLeftLanes = Math.min( fromStreet.lanes.right, toStreet.lanes.left );
-
-pairs.push( {
-  from: fromStreet.routes.right[ fromRightToLeftLanes - 1 ],
-  to: toStreet.routes.left[ fromRightToLeftLanes - 1 ],
-} );
-
-const radius = getRadiusForPairs( pairs[ 0 ], pairs[ 1 ] );
-
-pairs[ 0 ].radius = pairs[ 1 ].radius = radius;
-
-// Rest of left turns
-pairs.push( {
-  from: fromStreet.routes.left[ fromLeftToRightLanes - 2 ],
-  to: toStreet.routes.right[ fromLeftToRightLanes - 2 ],
-  radius: radius - LANE_WIDTH,
-} );
-
-pairs.push( {
-  from: fromStreet.routes.right[ fromRightToLeftLanes - 2 ],
-  to: toStreet.routes.left[ fromRightToLeftLanes - 2 ],
-  radius: radius - LANE_WIDTH,
-} );
-
-// Inner right turns
-for ( let i = 0; i < fromRightToLeftLanes; i ++ ) {
-
-  const toIndex = i + fromStreet.lanes.right - toStreet.lanes.left;
+  const fromRightToLeftLanes = Math.min( fromStreet.lanes.right, toStreet.lanes.left );
 
   pairs.push( {
-    from: toStreet.routes.left[ i ],
-    to: fromStreet.routes.right[ toIndex ],
-    radius: radius - LANE_WIDTH * ( fromLeftToRightLanes + toIndex ),
+    from: fromStreet.routes.right[ fromRightToLeftLanes - 1 ],
+    to: toStreet.routes.left[ fromRightToLeftLanes - 1 ],
   } );
-}
 
-for ( let i = 0; i < fromLeftToRightLanes; i ++ ) {
-  const fromIndex = i + toStreet.lanes.right - fromStreet.lanes.left;
+  const radius = getRadiusForPairs( pairs[ 0 ], pairs[ 1 ] );
+
+  pairs[ 0 ].radius = pairs[ 1 ].radius = radius;
+
+  // Rest of left turns
+  pairs.push( {
+    from: fromStreet.routes.left[ fromLeftToRightLanes - 2 ],
+    to: toStreet.routes.right[ fromLeftToRightLanes - 2 ],
+    radius: radius - LANE_WIDTH,
+  } );
 
   pairs.push( {
-    from: toStreet.routes.right[ fromIndex ],
-    to: fromStreet.routes.left[ i ],
-    radius: radius - LANE_WIDTH * ( fromRightToLeftLanes + fromIndex ),
+    from: fromStreet.routes.right[ fromRightToLeftLanes - 2 ],
+    to: toStreet.routes.left[ fromRightToLeftLanes - 2 ],
+    radius: radius - LANE_WIDTH,
+  } );
+
+  // Inner right turns
+  for ( let i = 0; i < fromRightToLeftLanes; i ++ ) {
+
+    const toIndex = i + fromStreet.lanes.right - toStreet.lanes.left;
+
+    pairs.push( {
+      from: toStreet.routes.left[ i ],
+      to: fromStreet.routes.right[ toIndex ],
+      radius: radius - LANE_WIDTH * ( fromLeftToRightLanes + toIndex ),
+    } );
+  }
+
+  for ( let i = 0; i < fromLeftToRightLanes; i ++ ) {
+    const fromIndex = i + toStreet.lanes.right - fromStreet.lanes.left;
+
+    pairs.push( {
+      from: toStreet.routes.right[ fromIndex ],
+      to: fromStreet.routes.left[ i ],
+      radius: radius - LANE_WIDTH * ( fromRightToLeftLanes + fromIndex ),
+    } );
+  }
+
+  pairs.forEach( pair => {
+    const arcs = Arc.getArcsBetweenArcs( routes[ pair.from ], routes[ pair.to ], pair.radius ?? 1 );
+    const arc = arcs[ 0 ];
+
+    const arcName = `${ pair.from }_TO_${ pair.to }_ARC`;
+    routes[ arcName ] = arc;
   } );
 }
-
-
 
 // NOTE: This runs into issues when the arc between needs to be outside the original arcs due to large radius
 //       If the original road is truly that short, then maybe it needs to constrain the radius somehow?
@@ -260,13 +305,6 @@ function getRadiusForPairs( A, B ) {
   return ( left + right ) / 2;
 }
 
-pairs.forEach( pair => {
-  const arcs = Arc.getArcsBetweenArcs( routes[ pair.from ], routes[ pair.to ], pair.radius ?? 1 );
-  const arc = arcs[ 0 ];
-
-  const arcName = `${ pair.from }_TO_${ pair.to }_ARC`;
-  routes[ arcName ] = arc;
-} );
 
   
 //
@@ -307,7 +345,8 @@ Object.assign( nameDiv.style, {
 // Drawing
 //
 
-const DEBUG_ARROW_WIDTH = 0.05, DEBUG_ARROW_LENGTH = 0.1;
+const DEBUG_ARROW_LENGTH = 0.2;
+const DEBUG_ARROW_WIDTH = DEBUG_ARROW_LENGTH / 2; 
 
 canvas.draw = ( ctx ) => {
   ctx.lineWidth = 0.02;
