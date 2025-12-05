@@ -75,6 +75,11 @@ export function getArcsBetweenArcs( from, to, radius ) {
       ...to.center, to.radius + signs[ 1 ] * radius, to.startAngle, to.endAngle, to.counterclockwise,
     );
 
+    if ( offsetIntersections.length == 0 ) {
+      console.error( 'No intersections found!' );
+      return;
+    }
+
     // Handle multiple intersections here (take the closest)
     let closest, closestDist = Infinity;
 
