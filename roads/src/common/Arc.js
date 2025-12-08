@@ -63,10 +63,12 @@ export function getArcsBetweenArcs( from, to, radius ) {
 
   return intersections.map( intersection => {
     const angles = [ from, to ].map( a =>
-      Math.atan2( intersection[ 1 ] - a.center[ 1 ], intersection[ 0 ] - a.center[ 0 ] ) + ( a.counterclockwise ? -1 : 1 ) * Math.PI / 2
+      fixAngle( Math.atan2( intersection[ 1 ] - a.center[ 1 ], intersection[ 0 ] - a.center[ 0 ] ) + ( a.counterclockwise ? -1 : 1 ) * Math.PI / 2 )
     );
 
     const turn = deltaAngle( ...angles );
+
+    // console.log( 'turn = ' + turn );
 
     const signs = [ from, to ].map( a => turn < 0 == !a.counterclockwise ? 1 : -1 ); 
 
@@ -131,5 +133,8 @@ function fixAngle( a ) {
 }
 
 function deltaAngle( a, b ) {
+
+  // console.log( 'deltaAngle( ' + a + ', ' + b + ')' );
+
   return fixAngle( b - a );
 }
