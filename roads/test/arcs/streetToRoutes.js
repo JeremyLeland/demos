@@ -42,8 +42,8 @@ const streets = {
     counterclockwise: true,
     
     lanes: {
-      left: 2,
-      right: 3,
+      left: 3,
+      right: 2,
     },
   },
   Horizontal: {
@@ -60,15 +60,15 @@ const streets = {
   },
 
   Vertical2: {
-    center: [ -6, 4 ],
+    center: [ -5, 4 ],
     radius: 30,
     startAngle: -0.3,
     endAngle: 0.3,
     counterclockwise: false,
     
     lanes: {
-      left: 2,
-      right: 3,
+      left: 3,
+      right: 2,
     },
   },
   Horizontal2: {
@@ -87,20 +87,20 @@ const streets = {
   Vertical3: {
     center: [ -23, 24 ],
     radius: 30,
-    startAngle: 0.3,
-    endAngle: -0.3,
+    startAngle: 0.4,
+    endAngle: -0.4,
     counterclockwise: true,
     
     lanes: {
-      left: 2,
-      right: 3,
+      left: 3,
+      right: 2,
     },
   },
   Horizontal3: {
     center: [ 4, -1 ],
     radius: 25,
-    startAngle: 1.2,
-    endAngle: 1.8,
+    startAngle: 1,
+    endAngle: 2,
     counterclockwise: false,
 
     lanes: {
@@ -112,20 +112,20 @@ const streets = {
   Vertical4: {
     center: [ -8, 24 ],
     radius: 30,
-    startAngle: -0.3,
-    endAngle: 0.3,
+    startAngle: -0.4,
+    endAngle: 0.4,
     counterclockwise: false,
     
     lanes: {
-      left: 2,
-      right: 3,
+      left: 3,
+      right: 2,
     },
   },
   Horizontal4: {
     center: [ 21, -1 ],
     radius: 25,
-    startAngle: 1.2,
-    endAngle: 1.8,
+    startAngle: 1,
+    endAngle: 2,
     counterclockwise: false,
 
     lanes: {
@@ -204,34 +204,44 @@ function doStuff( A, B ) {
   const fromLeftToRightLanes = Math.min( fromStreet.lanes.left, toStreet.lanes.right );
 
   // Outermost left turns
-  pairs.push( {
+  const outerLeftToRight = {
     from: fromStreet.routes.left[ fromLeftToRightLanes - 1 ],
     to: toStreet.routes.right[ fromLeftToRightLanes - 1 ],
-  } );
+  };
 
   const fromRightToLeftLanes = Math.min( fromStreet.lanes.right, toStreet.lanes.left );
 
-  pairs.push( {
+  const outerRightToLeft = {
     from: fromStreet.routes.right[ fromRightToLeftLanes - 1 ],
     to: toStreet.routes.left[ fromRightToLeftLanes - 1 ],
-  } );
+  };
 
-  const radius = getRadiusForPairs( pairs[ 0 ], pairs[ 1 ] );
+  const radius1 = getRadiusForPairs( outerLeftToRight, outerRightToLeft );
+  outerLeftToRight.radius = outerRightToLeft.radius = radius1;
 
-  pairs[ 0 ].radius = pairs[ 1 ].radius = radius;
+  pairs.push( outerLeftToRight );
+  pairs.push( outerRightToLeft );
 
   // Rest of left turns
-  pairs.push( {
-    from: fromStreet.routes.left[ fromLeftToRightLanes - 2 ],
-    to: toStreet.routes.right[ fromLeftToRightLanes - 2 ],
-    radius: radius - LANE_WIDTH,
-  } );
+  for ( let i = 1; i < fromLeftToRightLanes; i ++ ) {
+    const index = fromLeftToRightLanes - 1 - i;
 
-  pairs.push( {
-    from: fromStreet.routes.right[ fromRightToLeftLanes - 2 ],
-    to: toStreet.routes.left[ fromRightToLeftLanes - 2 ],
-    radius: radius - LANE_WIDTH,
-  } );
+    pairs.push( {
+      from: fromStreet.routes.left[ index ],
+      to: toStreet.routes.right[ index ],
+      radius: radius1 - LANE_WIDTH * i,
+    } );
+  }
+
+  for ( let i = 1; i < fromRightToLeftLanes; i ++ ) {
+    const index = fromRightToLeftLanes - 1 - i;
+  
+    pairs.push( {
+      from: fromStreet.routes.right[ index ],
+      to: toStreet.routes.left[ index ],
+      radius: radius1 - LANE_WIDTH * i,
+    } );
+  }
 
   // Inner right turns
   for ( let i = 0; i < fromRightToLeftLanes; i ++ ) {
@@ -241,7 +251,7 @@ function doStuff( A, B ) {
     pairs.push( {
       from: toStreet.routes.left[ i ],
       to: fromStreet.routes.right[ toIndex ],
-      radius: radius - LANE_WIDTH * ( fromLeftToRightLanes + toIndex ),
+      radius: radius1 - LANE_WIDTH * ( fromLeftToRightLanes + toIndex ),
     } );
   }
 
@@ -251,7 +261,7 @@ function doStuff( A, B ) {
     pairs.push( {
       from: toStreet.routes.right[ fromIndex ],
       to: fromStreet.routes.left[ i ],
-      radius: radius - LANE_WIDTH * ( fromRightToLeftLanes + fromIndex ),
+      radius: radius1 - LANE_WIDTH * ( fromRightToLeftLanes + fromIndex ),
     } );
   }
 
