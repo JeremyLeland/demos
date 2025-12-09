@@ -47,7 +47,7 @@ const streets = {
     // counterclockwise: true,
 
     lanes: {
-      left: 2,
+      left: 1,
       right: 2,
     },
 
@@ -66,7 +66,7 @@ const streets = {
     // counterclockwise: true,
 
     lanes: {
-      left: 2,
+      left: 1,
       right: 2,
     },
 
@@ -179,14 +179,16 @@ function doStuff( A, B ) {
       const outerLeft = [];
       const localPairs = [];
 
+      const baseRadius = 4;
+
       // Can create all the radii without radius, then add this at the end?
       
-      // Left
       e.lanePairs.forEach( lanes => {
-        const fromLanes = e.from.lanes[ lanes.from ];
-        const toLanes = e.to.lanes[ lanes.to ];
+        // Left
+        const leftFromLanes = e.from.lanes[ lanes.from ];
+        const leftToLanes = e.to.lanes[ lanes.to ];
 
-        const leftLanes = Math.min( fromLanes, toLanes );
+        const leftLanes = Math.min( leftFromLanes, leftToLanes );
 
         // Left-most lane should always be able to turn left, so work left-to-right
         // For simplicity, each from-lane can only go to one to-lane
@@ -195,7 +197,7 @@ function doStuff( A, B ) {
           const route = {
             from: e.from.routes[ lanes.from ][ i ],
             to:     e.to.routes[ lanes.to   ][ i ],
-            radius: /*radius*/ - LANE_WIDTH * ( leftLanes - i - 1 ),
+            radius: baseRadius - LANE_WIDTH * ( leftLanes - i - 1 ),
           };
 
           if ( i == leftLanes - 1 ) {
@@ -205,22 +207,35 @@ function doStuff( A, B ) {
           localPairs.push( route );
         }
 
-        const rightLanes = Math.min( toLanes, fromLanes );
+        // Right
+        // This needs to be the opposite values of above, not just switched order
+        const rightFromLanes = e.to.lanes[ lanes.to == 'right' ? 'left' : 'right' ];
+        const rightToLanes = e.from.lanes[ lanes.from == 'right' ? 'left' : 'right' ];
+
+        const rightLanes = Math.min( rightFromLanes, rightToLanes );
 
         // Right-most lane should always be able to turn right, so work right-to-left
 
         for ( let i = 0; i < rightLanes; i ++ ) {
           localPairs.push( {
-            from:   e.to.routes[ lanes.to   ][ toLanes - i - 1 ],
-            to:   e.from.routes[ lanes.from ][ fromLanes - i - 1 ],
-            radius: /*radius*/ - LANE_WIDTH * ( rightLanes - i + 1 ),
+            from:   e.to.routes[ lanes.to == 'right' ? 'left' : 'right' ][ rightFromLanes - i - 1 ],
+            to:   e.from.routes[ lanes.from == 'right' ? 'left' : 'right' ][ rightToLanes - i - 1 ],
+            radius: baseRadius - LANE_WIDTH * ( leftLanes + rightLanes - i - 1 + Math.abs( rightFromLanes - rightToLanes ) ),
+            // radius: baseRadius - LANE_WIDTH * ( rightLanes - i ),
             // TODO: Is there a way to modify this radius to be better in asymetrical cases? e.g. left 1, right 2
+            // This helps somewhat. At least its symmetrical now.
           } );
         }
       } );
 
-      const radius = getRadiusForPairs( ...outerLeft, intersection );
-      localPairs.forEach( pair => pair.radius += radius );
+      // let minRadius = Infinity;
+      // localPairs.forEach( pair => minRadius = Math.min( minRadius, pair.radius ) );
+
+      // console.log( `minRadius = ${ minRadius }` );
+
+      // const radius = Math.max( -minRadius + 1, getRadiusForPairs( ...outerLeft, intersection ) );
+      // const radius = getRadiusForPairs( ...outerLeft, intersection );
+      // localPairs.forEach( pair => pair.radius += radius );
 
       pairs.push( ...localPairs );
     } );
@@ -323,7 +338,7 @@ function doStuff( A, B ) {
       routes[ arcName ] = arc;
     } );
 
-    // console.log( pairs );
+    console.log( pairs );
   } );
 }
 
