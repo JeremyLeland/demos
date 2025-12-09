@@ -38,3 +38,23 @@ What if I did more like a train set, predefined acceptable intersections and pie
   - Longer, but I think it's the clearest way to save this info
 
 Someday might want to just do lots of short lines (e.g. from bezier curve), but I like the simplicity of lines and arcs for now
+
+
+Instead of spliting routes up, what if we had "next" include distance at which it branches off?
+e.g.
+  route: {
+    start: [ 0,  0 ],
+    end:   [ 0, 10 ],
+    next: [
+      { name: 'moo', distance: 5 },
+      { name: 'quack', distance: 7 },
+    ],
+  }
+
+Then I could have fewer routes for intersections and lane changes.
+  - Instead of checking for next route once I've reached end of current route,
+    see when we've passed next route's distance. (I think I already know next route anyway nowadays)
+  - Does this make pathfinding weirder?
+
+Counter to this: for enforcing paths on intersections, we want a clear point at which intersection begins/ends
+  - We'll probably want this for drawing, too

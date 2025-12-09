@@ -35,8 +35,8 @@ const LANE_WIDTH = 1;
 
 const streets = {
   Orange: {
-    center: [ -10, -10 ],
-    radius: 20,
+    center: [ -20, -20 ],
+    radius: 35,
 
     startAngle: -1,
     endAngle: 2,
@@ -48,14 +48,14 @@ const streets = {
 
     lanes: {
       left: 1,
-      right: 1,
+      right: 2,
     },
 
     color: 'orange',
   },
   Teal: {
-    center: [ 10, 10 ],
-    radius: 20,
+    center: [ 20, 20 ],
+    radius: 35,
 
     startAngle: 1,
     endAngle: -1,
@@ -67,7 +67,7 @@ const streets = {
 
     lanes: {
       left: 1,
-      right: 1,
+      right: 2,
     },
 
     color: 'teal',
@@ -177,12 +177,15 @@ function doStuff( A, B ) {
       { from: B, to: A, lanePairs: turn > 0 ? Same : Opposite },
     ].forEach( e => {
       // Left
-      const outer = e.lanePairs.map( lanes => (
-        {
-          from: e.from.routes[ lanes.from ][ 0 ],
-          to:   e.to.routes[ lanes.to ][ 0 ],
+      const outer = e.lanePairs.map( lanes => {
+        const fromLanes = e.from.lanes[ lanes.from ];
+        const toLanes = e.to.lanes[ lanes.to ];
+
+        return {
+          from: e.from.routes[ lanes.from ][ fromLanes - 1 ],
+          to:     e.to.routes[ lanes.to   ][ toLanes   - 1 ],
         }
-      ) );
+      } );
 
       const radius = getRadiusForPairs( ...outer, intersection );
       outer.forEach( pair => pair.radius = radius );
@@ -190,11 +193,18 @@ function doStuff( A, B ) {
 
       // Right
       e.lanePairs.forEach( lanes => {
-        pairs.push( {
-          from: e.to.routes[ lanes.to ][ 0 ],
-          to: e.from.routes[ lanes.from ][ 0 ],
-          radius: radius - 1,
-        } );
+        const toLanes = e.to.lanes[ lanes.to ];
+        const fromLanes = e.from.lanes[ lanes.from ];
+
+        const rightLanes = Math.min( toLanes, fromLanes );
+
+        for ( let i = 0; i < rightLanes; i ++ ) {
+          pairs.push( {
+            from:   e.to.routes[ lanes.to   ][ toLanes - i - 1 ],
+            to:   e.from.routes[ lanes.from ][ fromLanes - i - 1 ],
+            radius: radius - LANE_WIDTH * ( rightLanes - i ),
+          } );
+        }
       } );
     } );
 
