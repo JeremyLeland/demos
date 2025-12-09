@@ -38,9 +38,13 @@ const streets = {
     center: [ -10, -10 ],
     radius: 20,
 
-    startAngle: 1,
+    startAngle: -1,
     endAngle: 2,
     counterclockwise: false,
+
+    // startAngle: 2,
+    // endAngle: -1,
+    // counterclockwise: true,
 
     lanes: {
       left: 1,
@@ -137,7 +141,7 @@ function doStuff( A, B ) {
   // To handle multiple intersections, need a way of generating arcs that won't be confused by multiple intersections
   // That is, use the getArcArcIntersections to find all intersections, but do get Arc some other way?
 
-  intersections.forEach( intersection => {
+  intersections.forEach( ( intersection, intersection_index ) => {
 
     const pairs = [];
 
@@ -282,13 +286,13 @@ function doStuff( A, B ) {
     // }
 
     pairs.forEach( pair => {
-      const arcs = Arc.getArcsBetweenArcs( routes[ pair.from ], routes[ pair.to ], pair.radius ?? 1 );
+      const arc = Arc.getArcsBetweenArcs( routes[ pair.from ], routes[ pair.to ], pair.radius ?? 1, intersection );
 
       // console.log( arcs );
 
-      const arc = arcs[ 0 ];
+      // const arc = arcs[ 0 ];
 
-      const arcName = `${ pair.from }_TO_${ pair.to }_ARC`;
+      const arcName = `${ pair.from }_TO_${ pair.to }_#${ intersection_index }_ARC`;
       routes[ arcName ] = arc;
     } );
 
