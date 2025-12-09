@@ -55,13 +55,13 @@ export function getArcBetweenLines( from, to ) {
   }
 }
 
-export function getArcsBetweenArcs( from, to, radius ) {
+export function getArcsBetweenArcs( from, to, radius, closestToPoint ) {
   const intersections = Intersections.getArcArcIntersections(
     ...from.center, from.radius, from.startAngle, from.endAngle, from.counterclockwise,
     ...to.center, to.radius, to.startAngle, to.endAngle, to.counterclockwise,
   );
 
-  return intersections.map( intersection => {
+  const arcs = intersections.map( intersection => {
     const angles = [ from, to ].map( a =>
       fixAngle( Math.atan2( intersection[ 1 ] - a.center[ 1 ], intersection[ 0 ] - a.center[ 0 ] ) + ( a.counterclockwise ? -1 : 1 ) * Math.PI / 2 )
     );
@@ -115,6 +115,24 @@ export function getArcsBetweenArcs( from, to, radius ) {
       end: tangents[ 1 ],
     }
   } );
+
+  if ( closestToPoint ) {
+    let closest, closestDist = Infinity;
+
+    arcs.forEach( arc => {
+      const dist = Math.hypot( arc.center[ 0 ] - closestToPoint[ 0 ], arc.center[ 1 ] - closestToPoint[ 1 ] );
+      if ( dist < closestDist ) {
+        closest = arc;
+        closestDist = dist;
+      }
+    } );
+
+    // TODO: Should return types match? (array for both?)
+    return closest;
+  }
+  else {
+    return arcs;
+  }
 }
 
 
