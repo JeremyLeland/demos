@@ -47,7 +47,7 @@ const streets = {
     // counterclockwise: true,
 
     lanes: {
-      left: 1,
+      left: 2,
       right: 2,
     },
 
@@ -66,7 +66,7 @@ const streets = {
     // counterclockwise: true,
 
     lanes: {
-      left: 1,
+      left: 2,
       right: 2,
     },
 
@@ -204,13 +204,6 @@ function doStuff( A, B ) {
 
           localPairs.push( route );
         }
-      } );
-
-
-      // Right
-      e.lanePairs.forEach( lanes => {
-        const toLanes = e.to.lanes[ lanes.to ];
-        const fromLanes = e.from.lanes[ lanes.from ];
 
         const rightLanes = Math.min( toLanes, fromLanes );
 
@@ -220,7 +213,8 @@ function doStuff( A, B ) {
           localPairs.push( {
             from:   e.to.routes[ lanes.to   ][ toLanes - i - 1 ],
             to:   e.from.routes[ lanes.from ][ fromLanes - i - 1 ],
-            radius: /*radius*/ - LANE_WIDTH * ( rightLanes - i ),
+            radius: /*radius*/ - LANE_WIDTH * ( rightLanes - i + 1 ),
+            // TODO: Is there a way to modify this radius to be better in asymetrical cases? e.g. left 1, right 2
           } );
         }
       } );
