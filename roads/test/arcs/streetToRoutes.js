@@ -176,20 +176,36 @@ function doStuff( A, B ) {
       { from: A, to: B, lanePairs: turn < 0 ? Same : Opposite },
       { from: B, to: A, lanePairs: turn > 0 ? Same : Opposite },
     ].forEach( e => {
+      const outerLeft = [];
+      const localPairs = [];
+
+      // Can create all the radii without radius, then add this at the end?
+      
       // Left
-      const outer = e.lanePairs.map( lanes => {
+      e.lanePairs.forEach( lanes => {
         const fromLanes = e.from.lanes[ lanes.from ];
         const toLanes = e.to.lanes[ lanes.to ];
 
-        return {
-          from: e.from.routes[ lanes.from ][ fromLanes - 1 ],
-          to:     e.to.routes[ lanes.to   ][ toLanes   - 1 ],
+        const leftLanes = Math.min( fromLanes, toLanes );
+
+        // Left-most lane should always be able to turn left, so work left-to-right
+        // For simplicity, each from-lane can only go to one to-lane
+
+        for ( let i = 0; i < leftLanes; i ++ ) {
+          const route = {
+            from: e.from.routes[ lanes.from ][ i ],
+            to:     e.to.routes[ lanes.to   ][ i ],
+            radius: /*radius*/ - LANE_WIDTH * ( leftLanes - i - 1 ),
+          };
+
+          if ( i == leftLanes - 1 ) {
+            outerLeft.push( route );
+          }
+
+          localPairs.push( route );
         }
       } );
 
-      const radius = getRadiusForPairs( ...outer, intersection );
-      outer.forEach( pair => pair.radius = radius );
-      pairs.push( ...outer );
 
       // Right
       e.lanePairs.forEach( lanes => {
@@ -198,14 +214,21 @@ function doStuff( A, B ) {
 
         const rightLanes = Math.min( toLanes, fromLanes );
 
+        // Right-most lane should always be able to turn right, so work right-to-left
+
         for ( let i = 0; i < rightLanes; i ++ ) {
-          pairs.push( {
+          localPairs.push( {
             from:   e.to.routes[ lanes.to   ][ toLanes - i - 1 ],
             to:   e.from.routes[ lanes.from ][ fromLanes - i - 1 ],
-            radius: radius - LANE_WIDTH * ( rightLanes - i ),
+            radius: /*radius*/ - LANE_WIDTH * ( rightLanes - i ),
           } );
         }
       } );
+
+      const radius = getRadiusForPairs( ...outerLeft, intersection );
+      localPairs.forEach( pair => pair.radius += radius );
+
+      pairs.push( ...localPairs );
     } );
 
 
