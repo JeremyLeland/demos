@@ -66,8 +66,8 @@ const streets = {
     // counterclockwise: true,
 
     lanes: {
-      left: 1,
-      right: 2,
+      left: 2,
+      right: 1,
     },
 
     color: 'teal',
@@ -179,7 +179,7 @@ function doStuff( A, B ) {
       const outerLeft = [];
       const localPairs = [];
 
-      const baseRadius = 4;
+      const baseRadius = 0;
 
       // Can create all the radii without radius, then add this at the end?
       
@@ -228,14 +228,14 @@ function doStuff( A, B ) {
         }
       } );
 
-      // let minRadius = Infinity;
-      // localPairs.forEach( pair => minRadius = Math.min( minRadius, pair.radius ) );
+      let minRadius = Infinity;
+      localPairs.forEach( pair => minRadius = Math.min( minRadius, pair.radius ) );
 
-      // console.log( `minRadius = ${ minRadius }` );
+      console.log( `minRadius = ${ minRadius }` );
 
-      // const radius = Math.max( -minRadius + 1, getRadiusForPairs( ...outerLeft, intersection ) );
       // const radius = getRadiusForPairs( ...outerLeft, intersection );
-      // localPairs.forEach( pair => pair.radius += radius );
+      const radius = Math.max( -minRadius + 1, getRadiusForPairs( ...outerLeft, intersection ) );
+      localPairs.forEach( pair => pair.radius += radius );
 
       pairs.push( ...localPairs );
     } );
