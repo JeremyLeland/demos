@@ -211,6 +211,16 @@ export class Canvas {
   getPointerY( e ) {
     return ( ( e.clientY - this.#offsetY ) / this.#scale ) + this.bounds[ 1 ];
   }
+
+  translate( dx, dy ) {
+    this.bounds[ 0 ] += dx;
+    this.bounds[ 1 ] += dy;
+    this.bounds[ 2 ] += dx;
+    this.bounds[ 3 ] += dy;
+
+    this.#mouse.x += dx;
+    this.#mouse.y += dy;
+  }
 }
 
 //
