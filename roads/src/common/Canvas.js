@@ -6,6 +6,9 @@ export class Canvas {
   backgroundColor = 'black';
   lineWidth = 0.1;
 
+  #inlineSize;
+  #blockSize;
+
   #scale = 1;
   #offsetX = 0;
   #offsetY = 0;
@@ -50,29 +53,10 @@ export class Canvas {
         this.canvas.height = height;
 
         // this still needs to be based on content box
-        const inlineSize = entry.contentBoxSize[ 0 ].inlineSize;
-        const blockSize = entry.contentBoxSize[ 0 ].blockSize;
+        this.#inlineSize = entry.contentBoxSize[ 0 ].inlineSize;
+        this.#blockSize = entry.contentBoxSize[ 0 ].blockSize;
 
-        // console.log('--- Resize ---' );
-        // console.log( 'inlineSize = ' + inlineSize + ', blockSize = ' + blockSize );
-
-        const goalWidth = this.bounds[ 2 ] - this.bounds[ 0 ];
-        const goalHeight = this.bounds[ 3 ] - this.bounds[ 1 ];
-
-        // console.log( 'goalWidth = ' + goalWidth + ', goalHeight = ' + goalHeight );
-
-        const widthRatio = inlineSize / goalWidth;
-        const heightRatio = blockSize / goalHeight;
-
-        // console.log( 'widthRatio = ' + widthRatio + ', heightRatio = ' + heightRatio );
-
-        this.#scale = Math.min( widthRatio, heightRatio );
-
-        // this might get messed up if writing mode is vertical
-        this.#offsetX = 0.5 * this.#scale * ( ( inlineSize / this.#scale ) - goalWidth );
-        this.#offsetY = 0.5 * this.#scale * ( ( blockSize / this.#scale ) - goalHeight );
-
-        // console.log( 'inlineSize = ' + inlineSize + ', blockSize = ' + blockSize + ', scale = ' + this.#scale + ', offsetX = ' + this.#offsetX + ', offsetY = ' + this.#offsetY );
+        this.#updateScaleAndOffset();
       } );
       
       this.redraw();
@@ -130,6 +114,26 @@ export class Canvas {
       e.preventDefault();
     } );
   }
+
+  // This needs to get called anytime inlineSize/blockSize or bounds change
+  #updateScaleAndOffset() {
+    const goalWidth = this.bounds[ 2 ] - this.bounds[ 0 ];
+    const goalHeight = this.bounds[ 3 ] - this.bounds[ 1 ];
+
+    // console.log( 'goalWidth = ' + goalWidth + ', goalHeight = ' + goalHeight );
+
+    const widthRatio = this.#inlineSize / goalWidth;
+    const heightRatio = this.#blockSize / goalHeight;
+
+    // console.log( 'widthRatio = ' + widthRatio + ', heightRatio = ' + heightRatio );
+
+    this.#scale = Math.min( widthRatio, heightRatio );
+
+    // this might get messed up if writing mode is vertical
+    this.#offsetX = 0.5 * this.#scale * ( ( this.#inlineSize / this.#scale ) - goalWidth );
+    this.#offsetY = 0.5 * this.#scale * ( ( this.#blockSize / this.#scale ) - goalHeight );
+  }
+
 
   #doDraw() {
     this.ctx.fillStyle = this.backgroundColor;
@@ -220,6 +224,25 @@ export class Canvas {
 
     this.#mouse.x += dx;
     this.#mouse.y += dy;
+
+    // Doesn't seem to need this, since bounds width and height do not change
+    // this.#updateScaleAndOffset();
+  }
+
+  zoom( x, y, dScale ) {
+    const newScale = 1 - dScale;    // this makes positive numbers zoom in and negative numbers zoom out
+
+    const beforeX = ( x - this.bounds[ 0 ] ) * newScale;
+    const beforeY = ( y - this.bounds[ 1 ] ) * newScale;
+    const afterX  = ( this.bounds[ 2 ] - x ) * newScale;
+    const afterY  = ( this.bounds[ 3 ] - y ) * newScale;
+
+    this.bounds[ 0 ] = x - beforeX;
+    this.bounds[ 1 ] = y - beforeY;
+    this.bounds[ 2 ] = x + afterX;
+    this.bounds[ 3 ] = y + afterY;
+
+    this.#updateScaleAndOffset();
   }
 }
 
