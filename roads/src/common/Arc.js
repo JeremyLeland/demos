@@ -110,9 +110,9 @@ export function getArcsBetweenArcs( from, to, radius, closestToPoint ) {
       endAngle: tangles[ 1 ],
       counterclockwise: turn < 0,
 
-      // TODO: Do we want to save this as well? Useful or redundant?
-      start: tangents[ 0 ],
-      end: tangents[ 1 ],
+      // Do we want to save this as well? Useful or redundant?
+      // start: tangents[ 0 ],
+      // end: tangents[ 1 ],
     }
   } );
 

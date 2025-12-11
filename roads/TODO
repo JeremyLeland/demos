@@ -1,3 +1,14 @@
+NOW:
+  - Make olympic rings-style connection of circles
+  - Run circles CW and CCW, have different numbers of lanes
+  - Make it a nice comprehensive test of intersections
+
+NEXT:
+  - Try to navigate paths with nexts that account for distance (instead of all being at end)
+  - This is a little weird, but could avoid lots of awkward splitting
+    - See if it's easiser to work with!
+
+
 - Intersections of non-perpendicular lines
   - Can we still get nice arcs for these? Or will they be all screwed up?
   - Don't trim intersections as much if they aren't right angle
@@ -58,3 +69,4 @@ Then I could have fewer routes for intersections and lane changes.
 
 Counter to this: for enforcing paths on intersections, we want a clear point at which intersection begins/ends
   - We'll probably want this for drawing, too
+  - We could save this information as bounds for the intersection object, doesn't necessarily need to be baked into splits

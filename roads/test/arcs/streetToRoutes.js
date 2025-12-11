@@ -142,16 +142,11 @@ function doStuff( A, B ) {
     ...B.center, B.radius, B.startAngle, B.endAngle, B.counterclockwise,
   );
 
-  // To handle multiple intersections, need a way of generating arcs that won't be confused by multiple intersections
-  // That is, use the getArcArcIntersections to find all intersections, but do get Arc some other way?
+  // TODO: Should we split routes at intersections before doing anything else?
 
   intersections.forEach( ( intersection, intersection_index ) => {
 
     const pairs = [];
-
-    // For sanity sake, make from and to match what we are called with (A and B)
-    // TODO: Figure out fromLaneDir and toLaneDir from turn, counterclockwiseness, etc?
-
 
     const angles = [ A, B ].map( a =>
       fixAngle( 
@@ -250,16 +245,60 @@ function doStuff( A, B ) {
       pairs.push( ...localPairs );
     } );
 
-    pairs.forEach( pair => {
-      const arc = Arc.getArcsBetweenArcs( routes[ pair.from ], routes[ pair.to ], pair.radius ?? 1, intersection );
+    // TODO: Should we make these higher up as we go? Would it make anything easier? 
+    // Guess we can just save more information in the pair if we need it
 
+    // TODO: Should we try to do this at street level instead of route level?
+    //       They won't all line up nicely if there are uneven numbers of lanes
+    
+    const fromEndAngles = new Map(), toStartAngles = new Map();
+    
+    pairs.forEach( pair => {
+      const fromRoute = routes[ pair.from ];
+      const toRoute = routes[ pair.to ];
+
+      const arc = Arc.getArcsBetweenArcs( fromRoute, toRoute, pair.radius ?? 1, intersection );
+
+      // Find min and max start and end angles for each route as we process pairs
+      const startPos = [
+        arc.center[ 0 ] + Math.cos( arc.startAngle ) * arc.radius,
+        arc.center[ 1 ] + Math.sin( arc.startAngle ) * arc.radius,
+      ];
+
+      const endPos = [
+        arc.center[ 0 ] + Math.cos( arc.endAngle ) * arc.radius,
+        arc.center[ 1 ] + Math.sin( arc.endAngle ) * arc.radius,
+      ];
+      
+      const fromEndAngle = Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] );
+      const toStartAngle = Math.atan2(   endPos[ 1 ] -   toRoute.center[ 1 ],   endPos[ 0 ] -   toRoute.center[ 0 ] );
+
+      if ( !fromEndAngles.has( pair.from ) ||
+            Intersections.isBetweenAngles( fromEndAngle, fromRoute.startAngle, fromEndAngles.get( pair.from ), fromRoute.counterclockwise ) ) {
+        fromEndAngles.set( pair.from, fromEndAngle );
+      }
+
+      if ( !toStartAngles.has( pair.to ) ||
+            Intersections.isBetweenAngles( toStartAngle, toStartAngles.get( pair.to ), toRoute.endAngle, toRoute.counterclockwise ) ) {
+        toStartAngles.set( pair.to, toStartAngle );
+      }
+
+      // Create route
       arc.arrowColor = pair.arrowColor;
 
       const arcName = `${ pair.from }_TO_${ pair.to }_#${ intersection_index }_ARC`;
       routes[ arcName ] = arc;
     } );
 
-    console.log( pairs );
+    console.log( fromEndAngles );
+    console.log( toStartAngles );
+
+    // Across routes
+    // fromEndAngles.keys().forEach( key => {
+    //   console.log( `${ key } from ${ fromEndAngles.get( key ) } to ${ toStartAngles.get( key ) }` );
+    // } );
+    
+    // Extend pairs with _BEFORE and _AFTER to match min/max values
   } );
 }
 
@@ -269,24 +308,6 @@ function doStuff( A, B ) {
 
 function getRadiusForPairs( A, B, intersection ) {
   let left = 0, right = 10;   // TODO: How to determine appropriate max?
-
-
-  // TODO: Instead of generating arc, can I use my bisector code here?
-
-
-      // const v1 = vec2.subtract( [], intersection, circles[ 0 ].center );
-      // const v2 = vec2.subtract( [], intersection, circles[ 1 ].center );
-      // vec2.normalize( v1, v1 );
-      // vec2.normalize( v2, v2 );
-
-      // const bisector = vec2.add( [], v1, v2 );
-      // vec2.normalize( bisector, bisector );
-
-      // const center = vec2.scaleAndAdd( [], intersection, bisector, offset );
-      // const radius = vec2.distance( center, circles[ 0 ].center ) - circles[ 0 ].radius;
-      // const gap = offset - radius;
-
-
 
   for ( let i = 0; i < 10; i ++ ) {
     const mid = ( left + right ) / 2;
@@ -439,4 +460,21 @@ function fixAngle( a ) {
 
 function deltaAngle( a, b ) {
   return fixAngle( b - a );
+}
+
+//
+// Input
+//
+
+canvas.pointerMove = ( m ) => {
+  if ( m.buttons == 1 ) {
+    canvas.translate( -m.dx, -m.dy );
+
+    canvas.redraw();
+  }
+}
+
+canvas.wheelInput = ( m ) => {
+  canvas.zoom( m.x, m.y, 0.1 * Math.sign( m.wheel ) );
+  canvas.redraw();
 }
