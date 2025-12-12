@@ -2,6 +2,8 @@
 // (lets us confirm CW and CCW, different lane numbers)
 // Also maybe try the different next stuff here
 
+// TODO: Add cars that follow routes
+
 import { Canvas } from '../../src/common/Canvas.js';
 import { Grid } from '../../src/common/Grid.js';
 
@@ -61,6 +63,21 @@ const streets = {
     },
 
     color: 'teal',
+  },
+  Blue: {
+    center: [ BigRadius * 0.75, -BigRadius / 2 ],
+    radius: BigRadius,
+
+    startAngle: Math.PI * 2,
+    endAngle: 0,
+    counterclockwise: true,
+
+    lanes: {
+      left: 2,
+      right: 3,
+    },
+
+    color: 'blue',
   },
 };
 
@@ -134,6 +151,8 @@ function linkToSelf( street ) {
 
 
 doStuff( streets.Orange, streets.Teal );
+doStuff( streets.Orange, streets.Blue );
+doStuff( streets.Teal, streets.Blue );
 
 function doStuff( A, B ) {
 
@@ -156,7 +175,7 @@ function doStuff( A, B ) {
     );
 
     const turn = deltaAngle( ...angles );
-    console.log( 'turn = ' + turn );
+    // console.log( 'turn = ' + turn );
 
 
     const Same = [
@@ -234,7 +253,7 @@ function doStuff( A, B ) {
       let minRadius = Infinity;
       localPairs.forEach( pair => minRadius = Math.min( minRadius, pair.radius ) );
 
-      console.log( `minRadius = ${ minRadius }` );
+      // console.log( `minRadius = ${ minRadius }` );
 
       // const radius = getRadiusForPairs( ...outerLeft, intersection );
       const radius = Math.max( -minRadius + 1, getRadiusForPairs( ...outerLeft, intersection ) );
@@ -301,8 +320,8 @@ function doStuff( A, B ) {
       } );
     } );
 
-    console.log( fromEndAngles );
-    console.log( toStartAngles );
+    // console.log( fromEndAngles );
+    // console.log( toStartAngles );
 
   } );
 }
@@ -384,6 +403,69 @@ Object.assign( nameDiv.style, {
 
 
 //
+// Players (cars)
+//
+
+const NUM_PLAYERS = 10;
+const CAR_SIZE = 0.25;
+
+const PLAYER_SPEED = 0.005;
+
+const players = Array.from( Array( NUM_PLAYERS ), ( _, index ) => { 
+  const routeName = randomFrom( Object.keys( routes ) );
+
+  return {
+    color: randomColor(),
+    speed: 0,
+    routeName: routeName,
+    routeDistance: Math.random() * Route.getLength( routes[ routeName ] ),
+    
+    index: index, // for debug
+
+    path: null,
+    goal: null,
+  };
+} );
+
+
+// Make sure every player has a route first
+players.forEach( player => {
+  // TEMP: routing -- pick (and save) a random next route for now
+  if ( !player.path || player.path.length < 2 ) {
+    player.path = getRandomPath( routes, player.routeName, 2 );
+
+    // This is kind of backwards. Eventually we'll pick the goal, then find path from that
+    player.goal ??= {}
+    player.goal.routeName = player.path[ player.path.length - 1 ];
+    player.goal.routeDistance = Math.random() * Route.getLength( routes[ player.goal.routeName ] );
+  }
+} );
+
+function getRandomPath( routes, start, steps ) {
+
+  // TODO: Does path need to include start? Not sure how that fits into the logic, but it seems
+  //       like I would just need the list of next paths
+  //       It makes some logic cleaner (can always get first item of route without checking different place)
+
+  // TODO: Do I need to save distance as part of this?
+
+
+  const path = [ start ];
+
+  for ( let i = 0; i < steps; i ++ ) {
+    const route = routes[ path[ i ] ];
+    const link = randomFrom( route.links );
+
+    path.push( link.name );
+  }
+
+  return path;
+}
+
+console.log( players );
+
+
+//
 // Drawing
 //
 
@@ -401,11 +483,48 @@ canvas.draw = ( ctx ) => {
   if ( hoverRouteName ) {
     drawRoute( ctx, routes[ hoverRouteName ], true );
   }
+
+  players.forEach( player => {
+    ctx.fillStyle = player.color;
+    Route.drawAtDistance( ctx, routes[ player.routeName ], player.routeDistance, drawArrow );
+
+    // Path (draw in reverse so we can use dotted line)
+    ctx.strokeStyle = player.color;
+    ctx.beginPath();
+    
+    for ( let i = player.path.length - 1; i >= 0; i -- ) {
+      const nextName = player.path[ i + 1 ];
+      const thisName = player.path[ i ];
+      const prevName = player.path[ i - 1 ];
+
+      const arc = routes[ thisName ];
+
+      const endDistance = nextName == null ? player.goal.routeDistance : 
+        arc.links.find( link => link.name == nextName ).fromDistance;
+      const startDistance = prevName == null ? player.routeDistance : 
+        routes[ prevName ].links.find( link => link.name == thisName ).toDistance;
+
+
+      // TODO: Make sure we are handling cases that cross 0/Math.PI*2 or Math.PI
+      //       (something is causing a partially cut off circle)
+
+      ctx.arc(
+        ...arc.center, 
+        arc.radius, 
+        Route.getAngleAtDistance( arc, endDistance ), 
+        Route.getAngleAtDistance( arc, startDistance ),
+        !arc.counterclockwise 
+      );
+    }
+
+    ctx.stroke();
+
+  } );
 }
 
 function drawRoute( ctx, route, debugDrawSolid = false ) {
 
-  ctx.globalAlpha = debugDrawSolid ? 1.0 : 0.5;
+  ctx.globalAlpha = debugDrawSolid ? 1.0 : 0.25;
 
   // Debug route
   ctx.lineWidth = LANE_WIDTH - 0.1; // -0.1 so there's a gap between them for now
@@ -507,4 +626,17 @@ canvas.pointerMove = ( m ) => {
 canvas.wheelInput = ( m ) => {
   canvas.zoom( m.x, m.y, 0.1 * Math.sign( m.wheel ) );
   canvas.redraw();
+}
+
+
+//
+// Utility - randomness
+//
+
+function randomFrom( array ) {
+  return array[ Math.floor( Math.random() * array.length ) ];
+}
+
+function randomColor() {
+  return `hsl( ${ Math.random() * 360 }deg, ${ Math.random() * 75 + 25 }%, ${ Math.random() * 40 + 40 }% )`;
 }

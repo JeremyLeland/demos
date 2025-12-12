@@ -70,3 +70,5 @@ Then I could have fewer routes for intersections and lane changes.
 Counter to this: for enforcing paths on intersections, we want a clear point at which intersection begins/ends
   - We'll probably want this for drawing, too
   - We could save this information as bounds for the intersection object, doesn't necessarily need to be baked into splits
+
+Instead of paths, intersections will be a set of routes with optional start and end distances
