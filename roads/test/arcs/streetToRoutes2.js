@@ -28,8 +28,8 @@ const streets = {
     center: [ -BigRadius / 2, -BigRadius / 2 ],
     radius: BigRadius,
 
-    startAngle: -1,
-    endAngle: 2,
+    startAngle: -Math.PI,
+    endAngle: Math.PI,
     counterclockwise: false,
 
     // startAngle: 2,
@@ -47,8 +47,8 @@ const streets = {
     center: [ BigRadius / 2, BigRadius / 2 ],
     radius: BigRadius,
 
-    startAngle: 1,
-    endAngle: -1,
+    startAngle: 0,
+    endAngle: Math.PI * 2,
     counterclockwise: false,
 
     // startAngle: -1,
@@ -108,9 +108,29 @@ Object.entries( streets ).forEach( ( [ name, street ] ) => {
   }
 } );
 
+linkToSelf( streets.Orange );
+linkToSelf( streets.Teal );
+
+// Link a loop street to itself
+function linkToSelf( street ) {
+  Object.values( street.routes ).forEach( lanes => 
+    lanes.forEach( name => {
+      const route = routes[ name ];
+
+      route.links ??= [];
+      route.links.push( {
+        name: name,
+        fromDistance: Route.getLength( route ),
+        toDistance: 0,
+      } );
+    } )
+  );
+}
+
 //
 // Intersection
 //
+
 
 
 doStuff( streets.Orange, streets.Teal );
