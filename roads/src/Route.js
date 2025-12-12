@@ -623,6 +623,14 @@ export function drawRoute( ctx, route, debugDrawSolid = true ) {
   }
 }
 
+export function getAngleAtDistance( route, distance ) {
+  return route.startAngle + ( distance / route.radius ) * ( route.counterclockwise ? -1 : 1 );
+}
+
+export function getDistanceAtAngle( route, angle ) {
+  return ( angle - route.startAngle ) * route.radius * ( route.counterclockwise ? -1 : 1 );
+}
+
 export function getLength( route ) {
   if ( route.center ) {
     let sweepAngle = route.endAngle - route.startAngle;
@@ -645,8 +653,7 @@ export function drawAtDistance( ctx, route, distance, drawFunc ) {
   let pos, angle;
  
   if ( route.center ) {
-    const angleOffset = ( distance / route.radius ) * ( route.counterclockwise ? -1 : 1 );
-    const angleAtD = route.startAngle + angleOffset;
+    const angleAtD = getAngleAtDistance( route, distance );
 
     pos = vec2.scaleAndAdd( [], route.center, [ Math.cos( angleAtD ), Math.sin( angleAtD ) ], route.radius );
     angle = angleAtD + ( route.counterclockwise ? -1 : 1 ) * Math.PI / 2;
