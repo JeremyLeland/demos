@@ -432,7 +432,7 @@ const players = Array.from( Array( NUM_PLAYERS ), ( _, index ) => {
 players.forEach( player => {
   // TEMP: routing -- pick (and save) a random next route for now
   if ( !player.path || player.path.length < 2 ) {
-    player.path = getRandomPath( routes, player.routeName, 2 );
+    player.path = getRandomPath( routes, player.routeName, 4 );
 
     // This is kind of backwards. Eventually we'll pick the goal, then find path from that
     player.goal ??= {}
@@ -464,6 +464,64 @@ function getRandomPath( routes, start, steps ) {
 
 console.log( players );
 
+//
+// Update
+//
+
+canvas.update = ( dt ) => {
+  
+  players.forEach( player => {
+
+    // TEMP: for now, manually set speed
+    player.speed = 0.005;
+    
+    let moveRemaining = player.speed * dt;
+
+    let tempRouteName = player.routeName;
+    let tempRouteDistance = player.routeDistance;
+
+    for ( let tries = 0; tries < 10; tries ++ ) {
+      const route = routes[ tempRouteName ];
+
+      if ( player.path.length > 1 ) {
+        const nextRouteName = player.path[ 1 ];
+        const nextLink = route.links.find( link => link.name == nextRouteName );
+
+        const nextDist = nextLink.fromDistance;
+        const moveUntilNext = nextDist - tempRouteDistance;
+
+        if ( moveRemaining > moveUntilNext ) {
+          moveRemaining -= moveUntilNext;
+
+          player.path.shift();
+
+          tempRouteName = nextRouteName;
+          tempRouteDistance = nextLink.toDistance;
+        }
+        else {
+          player.routeName = tempRouteName;
+          player.routeDistance = tempRouteDistance + moveRemaining;
+          break;
+        }
+      }
+      else {
+        const nextDist = player.goal.routeDistance;
+        const moveUntilNext = nextDist - tempRouteDistance;
+
+        if ( moveRemaining > moveUntilNext ) {
+          player.path.shift();
+        }
+
+        player.routeName = tempRouteName;
+        player.routeDistance = tempRouteDistance + Math.min( moveRemaining, moveUntilNext );
+        break;
+      }
+    }
+  } );
+
+}
+
+canvas.start();
 
 //
 // Drawing
@@ -488,8 +546,7 @@ canvas.draw = ( ctx ) => {
     ctx.fillStyle = player.color;
     Route.drawAtDistance( ctx, routes[ player.routeName ], player.routeDistance, drawArrow );
 
-    // Path (draw in reverse so we can use dotted line)
-    ctx.strokeStyle = player.color;
+    // Path (draw in reverse so we can use dotted line)    
     ctx.beginPath();
     
     for ( let i = player.path.length - 1; i >= 0; i -- ) {
@@ -508,6 +565,9 @@ canvas.draw = ( ctx ) => {
       // TODO: Make sure we are handling cases that cross 0/Math.PI*2 or Math.PI
       //       (something is causing a partially cut off circle)
 
+      // Might be easier to see what's going on with smaller circles for now
+      // And maybe more intersections
+
       ctx.arc(
         ...arc.center, 
         arc.radius, 
@@ -517,7 +577,10 @@ canvas.draw = ( ctx ) => {
       );
     }
 
+    ctx.strokeStyle = player.color;
+    ctx.setLineDash( [ 0.1, 0.1 ] );
     ctx.stroke();
+    ctx.setLineDash( [ ] );
 
   } );
 }
