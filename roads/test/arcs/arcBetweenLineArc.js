@@ -1,10 +1,10 @@
-const line = [ 3, -3, -1, 0 ];
+const line = [ 0, -4, 0, 4 ];
 const arc = {
-  center: [ 2, -2 ],
+  center: [ 0, 0 ],
   radius: 3,
-  startAngle: -1,
-  endAngle: 1,
-  counterclockwise: true,
+  startAngle: 1,
+  endAngle: -1,
+  counterclockwise: false,
 };
 
 
@@ -37,7 +37,7 @@ canvas.draw = ( ctx ) => {
   const v1 = vec2.subtract( [], lineEnd, lineStart );
   vec2.normalize( v1, v1 );
 
-  console.log( `v1 = ${ v1 }` );
+  // console.log( `v1 = ${ v1 }` );
 
 
   ctx.fillStyle = 'lime';
@@ -76,12 +76,10 @@ canvas.draw = ( ctx ) => {
     );
 
     const turn = deltaAngle( lineAngle, arcAngle );
+    const dot = vec2.dot( v1, vec2.subtract( [], arc.center, intersection ) );
 
-    
     const s0 = turn < 0 ? 1 : -1;   // left turn uses positive normal
-    const s1 = vec2.distance( lineStart, arc.center ) > vec2.distance( lineEnd, arc.center ) ? 1 : -1;
-    // TODO: Not sure about this, make it easier to move lines around so I can test it out
-    //       Do we want to support fillet circles between line and circle that don't intersect?
+    const s1 = dot > 0 ? 1 : -1;    // see if we are moving toward or away from center
     
     const offsetLine = [
       line[ 0 ] + v1[ 1 ] * s0 * r3,
@@ -100,11 +98,30 @@ canvas.draw = ( ctx ) => {
     const offsetIntersections = Intersections.getArcLineIntersections(
       ...arc.center, arc.radius + s1 * r3, arc.startAngle, arc.endAngle, arc.counterclockwise,
       ...offsetLine,
-    );
+    ).filter( p => {
+      let closest, closestDist = Infinity;
+
+      intersections.forEach( testIntersection => {
+        const dist = vec2.distance( p, testIntersection );
+        if ( dist < closestDist ) {
+          closest = testIntersection;
+          closestDist = dist;
+        }
+      } );
+
+      return closest == intersection;
+    } );
 
     ctx.fillStyle = ctx.strokeStyle = 'orange';
 
+    // TODO: Handle case where there is only intersection, but it is too far away
+
     offsetIntersections.forEach( offsetIntersection => {
+
+      const distFromIntersection = 
+
+
+
       drawPoint( ctx, ...offsetIntersection );
       drawCircle( ctx, ...offsetIntersection, r3 );
 
@@ -122,7 +139,6 @@ canvas.draw = ( ctx ) => {
       drawPoint( ctx, ...lineTangent );
       drawPoint( ctx, ...arcTangent );
     } );
-
   } );
 }
 
@@ -178,18 +194,25 @@ function deltaAngle( a, b ) {
 // Input
 //
 
-// canvas.pointerMove = ( m ) => {
-//   if ( m.buttons == 1 ) {
-//     const closest = closestCircle( m );
+canvas.pointerMove = ( m ) => {
+  if ( m.buttons == 1 ) {
+    const lineStartDist = vec2.distance( line.slice( 0, 2 ), [ m.x, m.y ] );
+    const lineEndDist   = vec2.distance( line.slice( 2, 4 ), [ m.x, m.y ] );
 
-//     if ( closest ) {
-//       closest.pos[ 0 ] += m.dx;
-//       closest.pos[ 1 ] += m.dy;
+    const DIST = 0.5;
 
-//       canvas.redraw();
-//     }
-//   }
-// }
+    if ( lineStartDist < DIST ) {
+      line[ 0 ] += m.dx;
+      line[ 1 ] += m.dy;
+    }
+    else if ( lineEndDist < DIST ) {
+      line[ 2 ] += m.dx;
+      line[ 3 ] += m.dy;
+    }
+
+    canvas.redraw();
+  }
+}
 
 // canvas.wheelInput = ( m ) => {
 //   const closest = closestCircle( m );

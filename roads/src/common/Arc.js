@@ -116,6 +116,7 @@ export function getArcsBetweenArcs( from, to, radius, closestToPoint ) {
     }
   } );
 
+  // TODO: Move this check further up so we avoid unnecessary work
   if ( closestToPoint ) {
     let closest, closestDist = Infinity;
 
