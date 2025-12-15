@@ -1,18 +1,26 @@
-NOW:
-  - Make olympic rings-style connection of circles
-  - Run circles CW and CCW, have different numbers of lanes
-  - Make it a nice comprehensive test of intersections
-
 NEXT:
-  - Try to navigate paths with nexts that account for distance (instead of all being at end)
-  - This is a little weird, but could avoid lots of awkward splitting
-    - See if it's easiser to work with!
+- Arc vs Line intersections (and then Line vs Line again, maybe more general and similar to Arc code?)
+- Redo intersections as list of affected routes and start/stop distances (instead of paths of tiny routes)
 
 
-- Intersections of non-perpendicular lines
-  - Can we still get nice arcs for these? Or will they be all screwed up?
-  - Don't trim intersections as much if they aren't right angle
-    - Make dependent on angle somehow
+Demos:
+  +-------+
+  |   |   |
+  |-------|
+  |   |   |
+  +-------+
+
+  - 2 way, 3 way, and 4 way intersections with lines
+    - If it can't find intersections, then gracefully cancel creation. Maybe that will do it?
+  
+    ---------
+   /   / \   \
+  |---|---|---|
+   \   \ /   / 
+    ---------
+
+  - Two circles "venn diagram" style with a horizontal line between them
+    - 3-way and 4-way intersections with line and arc
 
 - 4-way stop
   - Simulate by quickly rotating short windows for each direction and specify yield?

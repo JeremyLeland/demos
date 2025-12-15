@@ -148,11 +148,17 @@ function linkToSelf( street ) {
 // Intersection
 //
 
+const streetList = Object.values( streets );
 
+for ( let i = 0; i < streetList.length - 1; i ++ ) {
+  for ( let j = i + 1; j < streetList.length; j ++ ) {
+    doStuff( streetList[ i ], streetList[ j ] );
+  }
+}
 
-doStuff( streets.Orange, streets.Teal );
-doStuff( streets.Orange, streets.Blue );
-doStuff( streets.Teal, streets.Blue );
+// doStuff( streets.Orange, streets.Teal );
+// doStuff( streets.Orange, streets.Blue );
+// doStuff( streets.Teal, streets.Blue );
 
 function doStuff( A, B ) {
 
@@ -690,6 +696,16 @@ canvas.wheelInput = ( m ) => {
   canvas.zoom( m.x, m.y, 0.1 * Math.sign( m.wheel ) );
   canvas.redraw();
 }
+
+document.addEventListener( 'keydown', e => {
+  if ( e.key == ' ' ) {
+    canvas.toggle();
+  }
+  else {
+    canvas.update( 100 );
+    canvas.redraw();
+  }
+} );
 
 
 //

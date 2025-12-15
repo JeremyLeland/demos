@@ -78,7 +78,9 @@ export function getArcLineIntersections(
       const iy = y1 + t * dy;
 
       // Angle from center to point
-      let angle = Math.atan2(iy - cy, ix - cx);
+      let angle = Math.atan2( iy - cy, ix - cx );
+
+      // TODO: Do we also need to make sure it's between x1,y1 and x2,y2?
 
       if ( isBetweenAngles( angle, startAngle, endAngle, counterclockwise ) ) {
         results.push( [ ix, iy ] );
