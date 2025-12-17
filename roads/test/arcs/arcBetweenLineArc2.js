@@ -1,4 +1,4 @@
-const line = [ 0, 0, 0, 4 ];
+const line = [ 0, -4, 0, 4 ];
 const arc = {
   center: [ 0, 0 ],
   radius: 3,
@@ -13,7 +13,8 @@ let r3 = 0.5;
 import { Canvas } from '../../src/common/Canvas.js';
 import { Grid } from '../../src/common/Grid.js';
 import * as Intersections from '../../src/common/Intersections.js';
-import { vec2 } from '../../lib/gl-matrix.js'
+import * as Arc from '../../src/common/Arc.js';
+import { vec2 } from '../../lib/gl-matrix.js';
 
 const grid = new Grid( -5, -5, 5, 5 );
 
@@ -68,121 +69,24 @@ canvas.draw = ( ctx ) => {
 
   intersections.forEach( ( intersection, index ) => {
 
-    console.log();
+    const between = Arc.getArcBetweenLineArc( line, arc, r3, intersection );
 
-    // if ( index != 0 ) {
-    //   return;
-    // }
+    console.log( between );
 
-    const lineAngle = Math.atan2( v1[ 1 ], v1[ 0 ] );
-  
-    const arcAngle = fixAngle( 
-      Math.atan2( 
-        intersection[ 1 ] - arc.center[ 1 ], 
-        intersection[ 0 ] - arc.center[ 0 ],
-      ) + ( arc.counterclockwise ? -1 : 1 ) * Math.PI / 2 
+    ctx.strokeStyle = colors[ index ];
+
+    drawArc( ctx, ...between.center, between.radius, between.startAngle, between.endAngle, between.counterclockwise );
+    ctx.fillStyle = 'lime';
+    drawPoint( ctx, 
+      between.center[ 0 ] + Math.cos( between.startAngle ) * between.radius, 
+      between.center[ 1 ] + Math.sin( between.startAngle ) * between.radius 
     );
 
-    const turn = deltaAngle( lineAngle, arcAngle );
-    const dot = vec2.dot( v1, vec2.subtract( [], arc.center, intersection ) );
-
-    // If we are closer to the intersection than the desired radius, we want the opposite signs
-
-    // Doesn't work if there's no collision between offsets. 
-    // Maybe we should be finding both and using whichever is closest to line start
-
-
-    const s0 = turn < 0 ? 1 : -1;   // left turn uses positive normal
-    const s1 =  dot > 0 ? 1 : -1;   // see if we are moving toward or away from center
-
-    let closestPoint, closestSign, closestIntersectionDist = Infinity, closestLineStartDist = Infinity;
-
-    // TODO: Instead of closest to line, could I prefer sign?
-
-    const lineStart = line.slice( 0, 2 );
-
-    const closestToLine = {
-      point: null,
-      sign: null,
-      dist: Infinity,
-    };
-
-    [ -1, 1 ].forEach( sign => {
-      const offsetLine = [
-        line[ 0 ] + v1[ 1 ] * sign * s0 * r3,
-        line[ 1 ] - v1[ 0 ] * sign * s0 * r3,
-        line[ 2 ] + v1[ 1 ] * sign * s0 * r3,
-        line[ 3 ] - v1[ 0 ] * sign * s0 * r3,
-      ];
-
-      ctx.lineWidth = 0.02;
-      ctx.strokeStyle = 'tan';
-      drawLine( ctx, ...offsetLine );
-
-      ctx.strokeStyle = 'brown';
-      drawArc( ctx, ...arc.center, arc.radius + sign * s1 * r3, arc.startAngle, arc.endAngle, arc.counterclockwise );
-
-      const offsetIntersections = Intersections.getArcLineIntersections(
-        ...arc.center, arc.radius + sign * s1 * r3, arc.startAngle, arc.endAngle, arc.counterclockwise,
-        ...offsetLine,
-      );
-
-      console.log( `lineStart = ${ lineStart }` );
-
-      const closestToIntersection = {
-        point: null,
-        sign: null,
-        dist: Infinity,
-      };
-
-      offsetIntersections.forEach( testIntersection => {
-        const intersectionDist = vec2.distance( testIntersection, intersection );
-
-        // console.log( `intersectionDist = ${ intersectionDist }` );
-
-        if ( intersectionDist < closestToIntersection.dist ) {
-          closestToIntersection.point = testIntersection;
-          closestToIntersection.sign = sign;
-          closestToIntersection.dist = intersectionDist;
-        }
-      } );
-
-      if ( closestToIntersection.point ) {
-        const lineStartDist = vec2.distance( closestToIntersection.point, lineStart );
-        
-        // console.log( `lineStartDist = ${ lineStartDist }` );
-        
-        if ( lineStartDist < closestToLine.dist ) {
-          closestToLine.point = closestToIntersection.point;
-          closestToLine.sign = closestToIntersection.sign;
-          closestToLine.dist = lineStartDist;
-        }
-      }
-    } );
-
-    ctx.fillStyle = ctx.strokeStyle = colors[ index ];
-
-    if ( closestToLine.point ) {
-
-      drawPoint( ctx, ...closestToLine.point );
-      drawCircle( ctx, ...closestToLine.point, r3 );
-      
-      const lineTangent = [
-        closestToLine.point[ 0 ] - v1[ 1 ] * closestToLine.sign * s0 * r3,
-        closestToLine.point[ 1 ] + v1[ 0 ] * closestToLine.sign * s0 * r3,
-      ];
-      
-      const arcTangent = vec2.scaleAndAdd( [], 
-        arc.center, 
-        vec2.subtract( [], closestToLine.point, arc.center ), 
-        arc.radius / ( arc.radius + closestToLine.sign * s1 * r3 )
-      );
-      
-      ctx.fillStyle = 'lime';
-      drawPoint( ctx, ...lineTangent );
-      ctx.fillStyle = 'red';
-      drawPoint( ctx, ...arcTangent );
-    }
+    ctx.fillStyle = 'red';
+    drawPoint( ctx, 
+      between.center[ 0 ] + Math.cos( between.endAngle ) * between.radius, 
+      between.center[ 1 ] + Math.sin( between.endAngle ) * between.radius 
+    );
   } );
 }
 

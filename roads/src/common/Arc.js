@@ -55,6 +55,105 @@ export function getArcBetweenLines( from, to ) {
   }
 }
 
+// TODO: NOW: Trying to extract code into helper function, then test in 2nd harness
+
+export function getArcBetweenLineArc( line, arc, radius, intersection ) {
+  const lineStart = line.slice( 0, 2 );
+  const lineEnd = line.slice( 2, 4 );
+
+  const v1 = vec2.subtract( [], lineEnd, lineStart );
+  vec2.normalize( v1, v1 );
+
+  const lineAngle = Math.atan2( v1[ 1 ], v1[ 0 ] );
+
+  
+  const arcAngle = fixAngle( 
+    Math.atan2( 
+      intersection[ 1 ] - arc.center[ 1 ], 
+      intersection[ 0 ] - arc.center[ 0 ],
+    ) + ( arc.counterclockwise ? -1 : 1 ) * Math.PI / 2 
+  );
+
+  const turn = deltaAngle( lineAngle, arcAngle );
+  const dot = vec2.dot( v1, vec2.subtract( [], arc.center, intersection ) );
+
+  const s0 = turn < 0 ? 1 : -1;   // left turn uses positive normal
+  const s1 =  dot > 0 ? 1 : -1;   // see if we are moving toward or away from center
+  
+  const closestToLine = {
+    point: null,
+    sign: null,
+    dist: Infinity,
+  };
+
+  [ -1, 1 ].forEach( sign => {
+    const offsetLine = [
+      line[ 0 ] + v1[ 1 ] * sign * s0 * radius,
+      line[ 1 ] - v1[ 0 ] * sign * s0 * radius,
+      line[ 2 ] + v1[ 1 ] * sign * s0 * radius,
+      line[ 3 ] - v1[ 0 ] * sign * s0 * radius,
+    ];
+
+    const offsetIntersections = Intersections.getArcLineIntersections(
+      ...arc.center, arc.radius + sign * s1 * radius, arc.startAngle, arc.endAngle, arc.counterclockwise,
+      ...offsetLine,
+    );
+
+    const closestToIntersection = {
+      point: null,
+      sign: null,
+      dist: Infinity,
+    };
+
+    // We want the point closest to the start of the line that is near closestToPoint
+    offsetIntersections.forEach( testIntersection => {
+      const intersectionDist = vec2.distance( testIntersection, intersection );
+
+      if ( intersectionDist < closestToIntersection.dist ) {
+        closestToIntersection.point = testIntersection;
+        closestToIntersection.sign = sign;
+        closestToIntersection.dist = intersectionDist;
+      }
+    } );
+
+    if ( closestToIntersection.point ) {
+      const lineStartDist = vec2.distance( closestToIntersection.point, lineStart );
+      
+      if ( lineStartDist < closestToLine.dist ) {
+        closestToLine.point = closestToIntersection.point;
+        closestToLine.sign = closestToIntersection.sign;
+        closestToLine.dist = lineStartDist;
+      }
+    }
+  } );
+
+  if ( closestToLine.point ) {
+    const lineTangent = [
+      closestToLine.point[ 0 ] - v1[ 1 ] * closestToLine.sign * s0 * radius,
+      closestToLine.point[ 1 ] + v1[ 0 ] * closestToLine.sign * s0 * radius,
+    ];
+    
+    const arcTangent = vec2.scaleAndAdd( [], 
+      arc.center, 
+      vec2.subtract( [], closestToLine.point, arc.center ), 
+      arc.radius / ( arc.radius + closestToLine.sign * s1 * radius )
+    );
+
+    const tangentVectors = [
+      vec2.subtract( [], lineTangent, closestToLine.point ),
+      vec2.subtract( [], arcTangent, closestToLine.point ),
+    ];
+
+    return {
+      center: closestToLine.point,
+      radius: radius,
+      startAngle: Math.atan2( tangentVectors[ 0 ][ 1 ], tangentVectors[ 0 ][ 0 ] ),
+      endAngle: Math.atan2( tangentVectors[ 1 ][ 1 ], tangentVectors[ 1 ][ 0 ] ),
+      counterclockwise: turn < 0,
+    }
+  }
+}
+
 export function getArcsBetweenArcs( from, to, radius, closestToPoint ) {
   const intersections = Intersections.getArcArcIntersections(
     ...from.center, from.radius, from.startAngle, from.endAngle, from.counterclockwise,
@@ -109,14 +208,10 @@ export function getArcsBetweenArcs( from, to, radius, closestToPoint ) {
       startAngle: tangles[ 0 ],
       endAngle: tangles[ 1 ],
       counterclockwise: turn < 0,
-
-      // Do we want to save this as well? Useful or redundant?
-      // start: tangents[ 0 ],
-      // end: tangents[ 1 ],
     }
   } );
 
-  // TODO: Move this check further up so we avoid unnecessary work
+  // TODO: Move this check further up so we avoid unnecessary work?
   if ( closestToPoint ) {
     let closest, closestDist = Infinity;
 
