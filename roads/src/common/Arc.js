@@ -149,7 +149,7 @@ export function getArcBetweenLineArc( line, arc, radius, intersection ) {
       radius: radius,
       startAngle: Math.atan2( tangentVectors[ 0 ][ 1 ], tangentVectors[ 0 ][ 0 ] ),
       endAngle: Math.atan2( tangentVectors[ 1 ][ 1 ], tangentVectors[ 1 ][ 0 ] ),
-      counterclockwise: turn < 0,
+      counterclockwise: closestToLine.sign * turn < 0,
     }
   }
 }

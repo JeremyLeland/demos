@@ -1,10 +1,10 @@
-const line = [ 0, -4, 0, 4 ];
+const line = [ 0, -3, 0, 4 ];
 const arc = {
   center: [ 0, 0 ],
   radius: 3,
-  startAngle: -1,
-  endAngle: 1,
-  counterclockwise: true,
+  startAngle: 1,
+  endAngle: -1,
+  counterclockwise: false,
 };
 
 
