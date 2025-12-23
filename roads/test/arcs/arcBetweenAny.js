@@ -60,11 +60,31 @@ canvas.draw = ( ctx ) => {
   ctx.lineWidth = 0.02;
   grid.draw( ctx );
 
+  const streetList = Object.values( streets );
 
-  Object.values( streets ).forEach( street => drawStreet( ctx, street ) );
+  streetList.forEach( street => drawStreet( ctx, street ) );
 
   drawControlPoints( ctx );
   
+  streetList.forEach( A => {
+    streetList.forEach( B => {
+      if ( A != B ) {
+        const intersections = getIntersections( A, B );
+
+        const colors = [ 'orange', 'pink' ];
+
+        intersections.forEach( ( intersection, index ) => {
+          ctx.fillStyle = colors[ index ];
+          drawPoint( ctx, intersection );
+        } );
+      }
+    } );
+  } );
+  
+  
+
+  // TODO: Agnostic getArcBetween
+
 
   // const intersections = Intersections.getArcLineIntersections(
   //   ...arc.center, arc.radius, arc.startAngle, arc.endAngle, arc.counterclockwise,
@@ -95,6 +115,33 @@ canvas.draw = ( ctx ) => {
   //     between.center[ 1 ] + Math.sin( between.endAngle ) * between.radius 
   //   );
   // } );
+}
+
+function getIntersections( A, B ) {
+  if ( A.center && B.center ) {
+    return Intersections.getArcArcIntersections(
+      A.center[ 0 ], A.center[ 1 ], A.radius, A.startAngle, A.endAngle, A.counterclockwise,
+      B.center[ 0 ], B.center[ 1 ], B.radius, B.startAngle, B.endAngle, B.counterclockwise,
+    );
+  }
+  else if ( A.center ) {
+    return Intersections.getArcLineIntersections(
+      A.center[ 0 ], A.center[ 1 ], A.radius, A.startAngle, A.endAngle, A.counterclockwise,
+      B.start[ 0 ], B.start[ 1 ], B.end[ 0 ], B.end[ 1 ],
+    );
+  }
+  else if ( B.center ) {
+    return Intersections.getArcLineIntersections(
+      B.center[ 0 ], B.center[ 1 ], B.radius, B.startAngle, B.endAngle, B.counterclockwise,
+      A.start[ 0 ], A.start[ 1 ], A.end[ 0 ], A.end[ 1 ],
+    );
+  }
+  else {
+    return Intersections.getLineLineIntersections(
+      A.start[ 0 ], A.start[ 1 ], A.end[ 0 ], A.end[ 1 ],
+      B.start[ 0 ], B.start[ 1 ], B.end[ 0 ], B.end[ 1 ],
+    );
+  }
 }
 
 //
