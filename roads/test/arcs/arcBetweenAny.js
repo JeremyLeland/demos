@@ -252,45 +252,29 @@ canvas.pointerMove = ( m ) => {
     point[ 0 ] += m.dx;
     point[ 1 ] += m.dy;
 
-    switch( selected.type ) {
-      case 'center': {
-        streetPoints.startAngle[ 0 ] += m.dx;
-        streetPoints.startAngle[ 1 ] += m.dy;
-        streetPoints.endAngle[ 0 ] += m.dx;
-        streetPoints.endAngle[ 1 ] += m.dy;
-        
-        break;
-      }
-      
-      case 'startAngle': {
-        const street = streets[ selected.name ];
+    if ( selected.type == 'center' ) {
+      streetPoints.startAngle[ 0 ] += m.dx;
+      streetPoints.startAngle[ 1 ] += m.dy;
+      streetPoints.endAngle[ 0 ] += m.dx;
+      streetPoints.endAngle[ 1 ] += m.dy;
+    }
+    else if ( selected.type.endsWith( 'Angle' ) ) {
+      const street = streets[ selected.name ];
 
-        const cx = point[ 0 ] - street.center[ 0 ];
-        const cy = point[ 1 ] - street.center[ 1 ];
+      const cx = point[ 0 ] - street.center[ 0 ];
+      const cy = point[ 1 ] - street.center[ 1 ];
 
-        street.radius = Math.hypot( cx, cy );
-        street.startAngle = Math.atan2( cy, cx );
+      street.radius = Math.hypot( cx, cy );
+      street[ selected.type ] = Math.atan2( cy, cx );
 
+      if ( selected.type == 'startAngle' ) {
         streetPoints.endAngle = getEndPoint( street );
-        
-        break;
       }
-      
-      case 'endAngle': {
-        const street = streets[ selected.name ];
-
-        const cx = point[ 0 ] - street.center[ 0 ];
-        const cy = point[ 1 ] - street.center[ 1 ];
-
-        street.radius = Math.hypot( cx, cy );
-        street.endAngle = Math.atan2( cy, cx );
-
+      else if ( selected.type == 'endAngle' ) {
         streetPoints.startAngle = getStartPoint( street );
-        
-        break;
       }
     }
-
+    
     canvas.redraw();
   }
 }
