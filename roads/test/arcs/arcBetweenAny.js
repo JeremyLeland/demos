@@ -105,26 +105,39 @@ function drawStreet( ctx, street ) {
   ctx.lineWidth = 0.05;
   ctx.strokeStyle = 'white';
 
-  const StartColor = 'lime';
-  const EndColor = 'red';
-
   if ( street.center ) {
+    
+    const TWO_PI = Math.PI * 2;
+    // clamp angle to [ 0, 2*PI ]
+    // const fixAngle = ( angle ) => ( ( angle % TWO_PI ) + TWO_PI ) % TWO_PI;
+
+    // Conic gradients are always clockwise from 0 to 1, so need to map our start/endAngles to this 
+    if ( street.counterclockwise ) {
+      const gradient = ctx.createConicGradient( street.endAngle, street.center[ 0 ], street.center[ 1 ] );
+      gradient.addColorStop( 0, 'darkred' );
+
+      const dist = deltaAngle( street.endAngle, street.startAngle ) / TWO_PI;
+      gradient.addColorStop( dist < 0 ? 1 + dist : dist, 'green' );
+      ctx.strokeStyle = gradient;
+    }
+    else {
+      const gradient = ctx.createConicGradient( street.startAngle, street.center[ 0 ], street.center[ 1 ] );
+      gradient.addColorStop( 0, 'green' );
+
+      const dist = deltaAngle( street.startAngle, street.endAngle ) / TWO_PI;
+      gradient.addColorStop( dist < 0 ? 1 + dist : dist, 'darkred' );
+      ctx.strokeStyle = gradient;
+    }
+
     drawArc( ctx, street );
-
-    // ctx.fillStyle = StartColor;
-    // drawPoint( ctx, getStartPoint( street ) );
-
-    // ctx.fillStyle = EndColor;
-    // drawPoint( ctx, getEndPoint( street ) );
   }
   else {
+    const gradient = ctx.createLinearGradient( ...street.start, ...street.end );
+    gradient.addColorStop( 0, 'green' );
+    gradient.addColorStop( 1, 'darkred' );
+    ctx.strokeStyle = gradient;
+
     drawLine( ctx, street );
-
-    // ctx.fillStyle = StartColor;
-    // drawPoint( ctx, street.start );
-
-    // ctx.fillStyle = EndColor;
-    // drawPoint( ctx, street.end );
   }
 }
 
