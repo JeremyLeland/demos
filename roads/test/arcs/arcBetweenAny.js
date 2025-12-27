@@ -1,12 +1,12 @@
 const streets = {
-  // line1: {
-  //   start: [ -4, -3 ],
-  //   end: [ -3, 0 ],
-  // },
-  // line2: {
-  //   start: [ -1, -4 ],
-  //   end: [ -4, -2 ],
-  // },
+  line1: {
+    start: [ -4, -3 ],  // [ 0, 4 ], 
+    end: [ -1, 2 ],     // [ 0, -3.4 ],
+  },
+  line2: {
+    start: [ -1, -4 ],
+    end: [ -4, -2 ],
+  },
   arc1: {
     center: [ 0, 0 ],
     radius: 3,
@@ -66,12 +66,12 @@ canvas.draw = ( ctx ) => {
 
   drawControlPoints( ctx );
   
-  const A = streets.arc1;
-  const B = streets.arc2;
+  // const A = streets.line1;
+  // const B = streets.line2;
 
-  // streetList.forEach( A => {
-  //   streetList.forEach( B => {
-  //     if ( A != B ) {
+  streetList.forEach( A => {
+    streetList.forEach( B => {
+      if ( A != B ) {
         const intersections = getIntersections( A, B );
 
         const colors = [ 'orange', 'pink' ];
@@ -86,52 +86,15 @@ canvas.draw = ( ctx ) => {
             drawStreet( ctx, arc );
           }
         } );
-      // }
-    // } );
-  // } );
-  
-  
-
-  // TODO: Agnostic getArcBetween
-  //       ...or not? If I can get 4 separate functions to work for now, maybe stick with that
-  //       Don't want to bend in knots trying to generalize it...
-  //       That's a lot of similar code, though.
-  //       The general getIntersections will need to be used by Arc, maybe just put it in there?
-
-
-  // const intersections = Intersections.getArcLineIntersections(
-  //   ...arc.center, arc.radius, arc.startAngle, arc.endAngle, arc.counterclockwise,
-  //   ...line,
-  // );
-
-  // const colors = [ 'orange', 'pink' ];
-
-  // intersections.forEach( ( intersection, index ) => {
-
-  //   // const between = Arc.getArcBetweenLineArc( line, arc, r3, intersection );
-  //   const between = Arc.getArcBetweenArcLine( arc, line, r3, intersection );
-
-  //   // console.log( between );
-
-  //   ctx.strokeStyle = colors[ index ];
-
-  //   drawArc( ctx, ...between.center, between.radius, between.startAngle, between.endAngle, between.counterclockwise );
-  //   ctx.fillStyle = 'lime';
-  //   drawPoint( ctx, 
-  //     between.center[ 0 ] + Math.cos( between.startAngle ) * between.radius, 
-  //     between.center[ 1 ] + Math.sin( between.startAngle ) * between.radius 
-  //   );
-
-  //   ctx.fillStyle = 'red';
-  //   drawPoint( ctx, 
-  //     between.center[ 0 ] + Math.cos( between.endAngle ) * between.radius, 
-  //     between.center[ 1 ] + Math.sin( between.endAngle ) * between.radius 
-  //   );
-  // } );
+      }
+    } );
+  } );
 }
 
 function getArcBetween( A, B, radius, intersection ) {
   
+  console.log();
+
   const angleA = getAngle( A, intersection );
   const angleB = getAngle( B, intersection );
   
@@ -159,16 +122,7 @@ function getArcBetween( A, B, radius, intersection ) {
   // If turn is right and we're clockwise, then must be coming from inside
   // ...right?
 
-  // const s1 =  dot > 0 ? 1 : -1;   // see if we are moving toward or away from center
-  // const s1 = turn < 0 ? ( B.counterclockwise ? -1 : 1 ) : ( B.counterclockwise ? 1 : -1 );
-
   const s1 = ( turn > 0 ? 1 : -1 ) * ( B.counterclockwise ? 1 : -1 );
-
-  // v1 is always used with s0 and radius...
-  // const lineStart = line.slice( 0, 2 );
-  // const lineEnd = line.slice( 2, 4 );
-  // const v1 = vec2.subtract( [], lineEnd, lineStart );
-  // vec2.normalize( v1, v1 );
 
   
   const closestToLine = {
@@ -182,18 +136,6 @@ function getArcBetween( A, B, radius, intersection ) {
     const offsetA = getOffset( A, sign * s0 * radius );
     const offsetB = getOffset( B, sign * s1 * radius );
 
-    // const offsetLine = [
-    //   line[ 0 ] + v1[ 1 ] * sign * s0 * radius,
-    //   line[ 1 ] - v1[ 0 ] * sign * s0 * radius,
-    //   line[ 2 ] + v1[ 1 ] * sign * s0 * radius,
-    //   line[ 3 ] - v1[ 0 ] * sign * s0 * radius,
-    // ];
-
-    // const offsetIntersections = Intersections.getArcLineIntersections(
-    //   ...arc.center, arc.radius + sign * s1 * radius, arc.startAngle, arc.endAngle, arc.counterclockwise,
-    //   ...offsetLine,
-    // );
-
     const offsetIntersections = getIntersections( offsetA, offsetB );
 
     const closestToIntersection = {
@@ -201,6 +143,12 @@ function getArcBetween( A, B, radius, intersection ) {
       sign: null,
       dist: Infinity,
     };
+
+    // TODO: Having problems when end of line is less than RADIUS past the arc
+    //       I think we are getting only one intersection for one of the tests,
+    //       and that intersection is closer to start.
+    // Need to detect this case somehow and ignore all resulting arcs.
+    // Detect when line is less than RADIUS away from arc and return nothing?
 
     // We want the point closest to the start of the line that is near closestToPoint
     offsetIntersections.forEach( testIntersection => {
@@ -299,12 +247,12 @@ function getOffset( A, offsetDist ) {
     
     return {
       start: [
-        line[ 0 ] + v1[ 1 ] * offsetDist,
-        line[ 1 ] - v1[ 0 ] * offsetDist,
+        A.start[ 0 ] + v1[ 1 ] * offsetDist,
+        A.start[ 1 ] - v1[ 0 ] * offsetDist,
       ],
       end: [
-        line[ 2 ] + v1[ 1 ] * offsetDist,
-        line[ 3 ] - v1[ 0 ] * offsetDist,
+        A.end[ 0 ] + v1[ 1 ] * offsetDist,
+        A.end[ 1 ] - v1[ 0 ] * offsetDist,
       ],
     };
   }
