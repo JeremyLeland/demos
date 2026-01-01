@@ -3,14 +3,14 @@
 // look at the direction of intersection in regards to circle?
 
 const streets = {
-  // line1: {
-  //   start: [ -4, -3 ],
-  //   end: [ -1, 2 ],
-  // },
-  // line2: {
-  //   start: [ -1, -4 ],
-  //   end: [ -4, -2 ],
-  // },
+  line1: {
+    start: [ -4, -3 ],
+    end: [ -1, 2 ],
+  },
+  line2: {
+    start: [ -1, -4 ],
+    end: [ -4, -2 ],
+  },
   line3: {
     start: [ 0, 4 ], 
     end: [ 0, -3.4 ],
@@ -22,13 +22,13 @@ const streets = {
     endAngle: 1,
     counterclockwise: true,
   },
-  // arc2: {
-  //   center: [ -2, 2 ],
-  //   radius: 2,
-  //   startAngle: 2,
-  //   endAngle: 0,
-  //   counterclockwise: false,
-  // },
+  arc2: {
+    center: [ -2, 2 ],
+    radius: 2,
+    startAngle: 2,
+    endAngle: 0,
+    counterclockwise: false,
+  },
 };
 
 const controlPoints = {};
@@ -74,12 +74,12 @@ canvas.draw = ( ctx ) => {
 
   drawControlPoints( ctx );
   
-  const A = streets.line3;
-  const B = streets.arc1;
+  // const A = streets.line3;
+  // const B = streets.arc1;
 
-  // streetList.forEach( A => {
-  //   streetList.forEach( B => {
-  //     if ( A != B ) {
+  streetList.forEach( A => {
+    streetList.forEach( B => {
+      if ( A != B ) {
         const intersections = getIntersections( A, B );
 
         const colors = [ 'orange', 'pink' ];
@@ -94,9 +94,9 @@ canvas.draw = ( ctx ) => {
             drawStreet( ctx, arc );
           }
         } );
-  //     }
-  //   } );
-  // } );
+      }
+    } );
+  } );
 }
 
 function getArcBetween( A, B, radius, intersection, ctx ) {
