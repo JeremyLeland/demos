@@ -1,9 +1,24 @@
 // TODO: Start with dragging a line from start to end, then click anywhere in line to add a middle and drag that?
 
+// TODO: If I want to join several arcs so they have tangent continuity, then C1, P, and C2 must be in straight line
+//       Centers + join point must be collinear
+//       For no curvature jump, radii must also match (which is extra limiting)
+// Maybe drag next center along line, then change endAngle by dragging second endpoint?
+//    Either drag without changing radius, or attempt to increase radius while keeping 
+//    start point the same and moving center along line?
+// Not sure how this ends up looking and feeling. Probably should be a separate test entirely from this for now.
+
 const controlPoints = {
-  start: [ -2, 1 ],
-  middle: [ 0, -2 ],
-  end: [ 2, 1 ],
+  A: {
+    start: [ -3, 1 ],
+    middle: [ 0, -2 ],
+    end: [ 3, 1 ],
+  },
+  B: {
+    start: [ 1, -3 ],
+    middle: [ -1, 0 ],
+    end: [ 1, 3 ],
+  },
 };
 
 function arcFromThreePoints( p1, p2, p3 ) {
@@ -74,12 +89,12 @@ canvas.draw = ( ctx ) => {
   ctx.lineWidth = 0.02;
   grid.draw( ctx );
 
-  const arc = arcFromThreePoints( controlPoints.start, controlPoints.middle, controlPoints.end );
+  Object.values( controlPoints ).forEach( points => {
+    const arc = arcFromThreePoints( points.start, points.middle, points.end );
 
-  ctx.strokeStyle = 'white';
-  ctx.beginPath();
-  ctx.arc( arc.center[ 0 ], arc.center[ 1 ], arc.radius, arc.startAngle, arc.endAngle, arc.counterclockwise );
-  ctx.stroke();
+    ctx.strokeStyle = 'white';
+    drawArc( ctx, arc );
+  } );
 
   const controlColors = {
     start: 'lime',
@@ -88,15 +103,23 @@ canvas.draw = ( ctx ) => {
   };
 
   // Control points
-  [ 'start', 'middle', 'end' ].forEach( e => {
-    ctx.fillStyle = controlColors[ e ];
-    drawPoint( ctx, controlPoints[ e ] );
+  Object.values( controlPoints ).forEach( points => {
+    Object.entries( points ).forEach( ( [ name, point ] ) => {
+      ctx.fillStyle = controlColors[ name ];
+      drawPoint( ctx, point );
+    } );
   } );
 }
 
 //
 // Draw utils
 //
+
+function drawArc( ctx, arc ) {
+  ctx.beginPath();
+  ctx.arc( arc.center[ 0 ], arc.center[ 1 ], arc.radius, arc.startAngle, arc.endAngle, arc.counterclockwise );
+  ctx.stroke();
+}
 
 function drawLine( ctx, start, end ) {
   ctx.beginPath();
@@ -175,13 +198,15 @@ canvas.pointerMove = ( m ) => {
 function closestPoint( x, y ) {
   let closest, closestDist = Infinity;
 
-  Object.values( controlPoints ).forEach( p => {
-    const dist = Math.hypot( x - p[ 0 ], y - p[ 1 ] );
+  Object.values( controlPoints ).forEach( points => {
+    Object.values( points ).forEach( p => {
+      const dist = Math.hypot( x - p[ 0 ], y - p[ 1 ] );
 
-    if ( dist < 1 && dist < closestDist ) {
-      closest = p;
-      closestDist = dist;
-    }
+      if ( dist < 1 && dist < closestDist ) {
+        closest = p;
+        closestDist = dist;
+      }
+    } );
   } );
 
   return closest;
