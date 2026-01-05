@@ -49,8 +49,8 @@ canvas.draw = ( ctx ) => {
     streets[ name ].lanes = { left: 2, right: 2 };
   } );
 
-  console.log( 'Streets:' );
-  console.log( streets );
+  // console.log( 'Streets:' );
+  // console.log( streets );
 
   ctx.lineWidth = 0.5;
   ctx.strokeStyle = 'gray';
@@ -235,7 +235,7 @@ canvas.draw = ( ctx ) => {
             const radius = Math.max( -minRadius + 1, getRadiusForPairs( ...outerLeft, intersection, routes ) );
             // const radius = 1;
 
-            console.log( 'Radius for pairs: ' + radius );
+            // console.log( 'Radius for pairs: ' + radius );
 
             localPairs.forEach( pair => pair.radius += radius );
       
@@ -312,8 +312,8 @@ canvas.draw = ( ctx ) => {
     } );
   } );
 
-  console.log( 'Routes:' );
-  console.log( routes );
+  // console.log( 'Routes:' );
+  // console.log( routes );
 
   Object.values( routes ).forEach( route => {
     const routeLength = getLength( route );
@@ -368,7 +368,7 @@ function getRadiusForPairs( A, B, intersection, routes ) {
     const Aarc = getArcBetween( routes[ A.from ], routes[ A.to ], mid, intersection );
     
     if ( !Aarc ) {
-      console.log( 'Could not find arc for A pair!' );
+      // console.log( 'Could not find arc for A pair!' );
       right = mid;
       continue;
     }
@@ -376,7 +376,7 @@ function getRadiusForPairs( A, B, intersection, routes ) {
     const Barc = getArcBetween( routes[ B.from ], routes[ B.to ], mid, intersection );
     
     if ( !Barc ) {
-      console.log( 'Could not find arc for B pair!' );
+      // console.log( 'Could not find arc for B pair!' );
       right = mid;
       continue;
     }
@@ -724,21 +724,29 @@ function drawAtDistance( ctx, route, distance, drawFunc ) {
 // Input
 //
 
+// TODO:
+//  - Hover streets
+//    - Delete streets (right click)
+//    - Move streets (w/left click? vs insert)
+//  - Key to snap to grid/whole numbers (maybe shift?)
+
 let selected;
 let nameIndex = 0;
 
 canvas.pointerDown = ( m ) => {
-  selected = closestPoint( m.x, m.y );
-
-  if ( !selected ) {
-    const newStreet = {
-      start: [ m.x, m.y ],
-      end: [ m.x, m.y ],
-    };
-
-    selected = newStreet.end;
-
-    controlPoints[ `street_${ nameIndex ++ }` ] = newStreet;
+  if ( m.buttons == 1 ) {
+    selected = closestPoint( m.x, m.y );
+    
+    if ( !selected ) {
+      const newStreet = {
+        start: [ m.x, m.y ],
+        end: [ m.x, m.y ],
+      };
+      
+      selected = newStreet.end;
+      
+      controlPoints[ `street_${ nameIndex ++ }` ] = newStreet;
+    }
   }
 }
 
@@ -747,13 +755,25 @@ canvas.pointerUp = ( m ) => {
 }
 
 canvas.pointerMove = ( m ) => {
-  if ( selected ) {
-    selected[ 0 ] += m.dx;
-    selected[ 1 ] += m.dy;
-    
+  if ( m.buttons == 1 ) {
+    if ( selected ) {
+      selected[ 0 ] += m.dx;
+      selected[ 1 ] += m.dy;
+      
+      canvas.redraw();
+    }
+  }
+  else if ( m.buttons == 4 ) {
+    canvas.translate( -m.dx, -m.dy );
     canvas.redraw();
   }
 }
+
+canvas.wheelInput = ( m ) => {
+  canvas.zoom( m.x, m.y, 0.1 * Math.sign( m.wheel ) );
+  canvas.redraw();
+}
+
 
 function closestPoint( x, y ) {
   let closest, closestDist = Infinity;
