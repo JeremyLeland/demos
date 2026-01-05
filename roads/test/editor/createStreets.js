@@ -1,6 +1,8 @@
 // Goal: Click and drag to create streets. 
 // Make routes, then make appropriate turning lanes between intersecting streets.
 
+// NOW: Trying to support lines as well as arcs, so I can insert lines (and make them arcs after insertion)
+
 const LANE_WIDTH = 0.25;
 
 const DEBUG_ARROW_LENGTH = 0.1;
@@ -9,7 +11,7 @@ const DEBUG_ARROW_WIDTH = DEBUG_ARROW_LENGTH / 2;
 const controlPoints = {
   A: {
     start: [ -4, 1 ],
-    middle: [ 0, 0.9 ],
+    // middle: [ 0, 0.9 ],
     end: [ 4, 1 ],
   },
   B: {
@@ -41,7 +43,7 @@ canvas.draw = ( ctx ) => {
   const streets = {};
 
   Object.entries( controlPoints ).forEach( ( [ name, points ] ) => {
-    streets[ name ] = arcFromThreePoints( points.start, points.middle, points.end );
+    streets[ name ] = points.middle ? arcFromThreePoints( points.start, points.middle, points.end ) : structuredClone( points );
 
     // TODO: Get this from controlPoints (which should be called something else)
     streets[ name ].lanes = { left: 2, right: 2 };
@@ -53,7 +55,12 @@ canvas.draw = ( ctx ) => {
   ctx.lineWidth = 0.5;
   ctx.strokeStyle = 'gray';
   Object.values( streets ).forEach( street => {
-    drawArc( ctx, street );
+    if ( street.center ) {
+      drawArc( ctx, street );
+    }
+    else {
+      drawLine( ctx, street.start, street.end );
+    }
   } );
 
   // Routes
@@ -69,17 +76,21 @@ canvas.draw = ( ctx ) => {
     // Create lanes from the center out so that the left-most lane in direction of travel is at index 0
     const ccDir = street.counterclockwise ? 1 : -1;
 
-    if ( street.center ) {
-      Object.keys( street.lanes ).forEach( laneDir => {
+    Object.keys( street.lanes ).forEach( laneDir => {
 
-        const laneDirDir = laneDir == 'right' ? 1 : -1;    // needs a better name...
+      const laneDirDir = laneDir == 'right' ? 1 : -1;    // needs a better name...
 
-        for ( let i = 0; i < street.lanes[ laneDir ]; i ++ ) {
+      for ( let i = 0; i < street.lanes[ laneDir ]; i ++ ) {
 
+        const laneOffset = ccDir * laneDirDir * LANE_WIDTH * ( 0.5 + i );
+
+        // TODO: Less duplication below
+
+        if ( street.center ) {
           // Left lanes are backwards
           const route = {
             center: street.center,
-            radius: street.radius + ccDir * laneDirDir * LANE_WIDTH * ( 0.5 + i ),
+            radius: street.radius + laneOffset,
             startAngle: laneDir == 'left' ? street.endAngle   : street.startAngle,
             endAngle:   laneDir == 'left' ? street.startAngle : street.endAngle,
             counterclockwise: laneDir == 'left' ? !street.counterclockwise : !!street.counterclockwise,
@@ -93,8 +104,32 @@ canvas.draw = ( ctx ) => {
           routes[ routeName ] = route;
           street.routes[ laneDir ].push( routeName );
         }
-      } );
-    }
+        else {
+
+          // TODO: Don't recalculate this every loop?
+          const v1 = vec2.subtract( [], street.end, street.start );
+          vec2.normalize( v1, v1 );
+
+          const normal = [ v1[ 1 ], -v1[ 0 ] ];
+
+          // Left lanes are backwards
+          const A = vec2.scaleAndAdd( [], street.start, normal, laneOffset );
+          const B = vec2.scaleAndAdd( [], street.end,   normal, laneOffset );
+          const route = {
+            start: laneDir == 'left' ? B : A,
+            end:   laneDir == 'left' ? A : B,
+
+            streetColor: street.color,
+            arrowColor: laneDir == 'left' ? 'green' : 'darkred',
+            // parent: name,
+          };
+
+          const routeName = `${ name }_lane_${ laneDir }_${ i }`;
+          routes[ routeName ] = route;
+          street.routes[ laneDir ].push( routeName );
+        }
+      }
+    } );
   } );
 
   // TODO: Turns at intersections
@@ -113,14 +148,7 @@ canvas.draw = ( ctx ) => {
         //   }
           const pairs = [];
           
-          const angles = [ A, B ].map( a =>
-            fixAngle( 
-              Math.atan2( 
-                intersection[ 1 ] - a.center[ 1 ], 
-                intersection[ 0 ] - a.center[ 0 ],
-              ) + ( a.counterclockwise ? -1 : 1 ) * Math.PI / 2 
-            )
-          );
+          const angles = [ A, B ].map( a => getAngle( a, intersection ) );
       
           const turn = deltaAngle( ...angles );
           // console.log( 'turn = ' + turn );
@@ -215,10 +243,10 @@ canvas.draw = ( ctx ) => {
           } );
       
       
-          // TODO: Should we try to do this at street level instead of route level?
-          //       They won't all line up nicely if there are uneven numbers of lanes
-          
-          const fromEndAngles = new Map(), toStartAngles = new Map();
+          // TODO: Eventually use this for figuring out intersection bounds
+          // TODO: This should be saved as distances, not angles, so it can work with lines too
+          //       Arcs can convert distance to angles later as needed
+          // const fromEndAngles = new Map(), toStartAngles = new Map();
           
           pairs.forEach( pair => {
             const fromRoute = routes[ pair.from ];
@@ -238,18 +266,24 @@ canvas.draw = ( ctx ) => {
                 arc.center[ 1 ] + Math.sin( arc.endAngle ) * arc.radius,
               ];
               
-              const fromEndAngle = Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] );
-              const toStartAngle = Math.atan2(   endPos[ 1 ] -   toRoute.center[ 1 ],   endPos[ 0 ] -   toRoute.center[ 0 ] );
+              const fromDistance = fromRoute.center ? getDistanceAtAngle(
+                Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] )
+              ) : vec2.distance( fromRoute.start, startPos );
+
+              const toDistance = toRoute.center ? getDistanceAtAngle(
+                Math.atan2( endPos[ 1 ] - toRoute.center[ 1 ], endPos[ 0 ] - toRoute.center[ 0 ] )
+              ) : vec2.distance( toRoute.start, endPos );
+
         
-              if ( !fromEndAngles.has( pair.from ) ||
-                    isBetweenAngles( fromEndAngle, fromRoute.startAngle, fromEndAngles.get( pair.from ), fromRoute.counterclockwise ) ) {
-                fromEndAngles.set( pair.from, fromEndAngle );
-              }
+              // if ( !fromEndAngles.has( pair.from ) ||
+              //       isBetweenAngles( fromEndAngle, fromRoute.startAngle, fromEndAngles.get( pair.from ), fromRoute.counterclockwise ) ) {
+              //   fromEndAngles.set( pair.from, fromEndAngle );
+              // }
         
-              if ( !toStartAngles.has( pair.to ) ||
-                    isBetweenAngles( toStartAngle, toStartAngles.get( pair.to ), toRoute.endAngle, toRoute.counterclockwise ) ) {
-                toStartAngles.set( pair.to, toStartAngle );
-              }
+              // if ( !toStartAngles.has( pair.to ) ||
+              //       isBetweenAngles( toStartAngle, toStartAngles.get( pair.to ), toRoute.endAngle, toRoute.counterclockwise ) ) {
+              //   toStartAngles.set( pair.to, toStartAngle );
+              // }
         
               // Create route
               arc.arrowColor = pair.arrowColor;
@@ -261,7 +295,7 @@ canvas.draw = ( ctx ) => {
               fromRoute.links ??= [];
               fromRoute.links.push( {
                 name: arcName,
-                fromDistance: getDistanceAtAngle( fromRoute, fromEndAngle ),
+                fromDistance: fromDistance,
                 toDistance: 0,
               } );
         
@@ -269,7 +303,7 @@ canvas.draw = ( ctx ) => {
               routes[ arcName ].links.push( {
                 name: pair.to,
                 fromDistance: getLength( routes[ arcName ] ),
-                toDistance: getDistanceAtAngle( toRoute, toStartAngle ),
+                toDistance: toDistance,
               } );
             }
           } );
@@ -319,14 +353,9 @@ function drawArrow( ctx, pos, angle, width = DEBUG_ARROW_WIDTH, length = DEBUG_A
   // ctx.stroke();
 }
 
-// NOTE: This runs into issues when the arc between needs to be outside the original arcs due to large radius
-//       If the original road is truly that short, then maybe it needs to constrain the radius somehow?
 
-
-// TODO: I think what's happening is because 5 rad is too big, something else wonky is being returned.
-//       Should try to troubleshoot that more -- what are we getting back? Can we draw it? Should we be 
-//       returning null from getArcBetween instead? (may be easier to debug this in arcBetweenAny2)
-// Actually, it's saying it can't find an arc for A pair -- this is appropriate, we should be handling by going smaller
+// TODO: Can we find different radiuses for each pair member? 
+// (depending on angles involved, radius can put some curves much further away than needed)
 
 function getRadiusForPairs( A, B, intersection, routes ) {
   let left = 0, right = 10;   // TODO: How to determine appropriate max?
@@ -335,16 +364,6 @@ function getRadiusForPairs( A, B, intersection, routes ) {
     const mid = ( left + right ) / 2;
 
     // console.log( 'trying radius ' + mid );
-
-    // NOW: Is getArcBetween failing if arc is out of bounds of segments?
-    //      Why are NE and SW quadrants fine, but NW quadrant is huge and SE doesn't seem to exist?
-    //      Looks like SE is generating the long way around...
-    
-    // TODO: Test if this works better with longer roads
-    // TODO: Seems like we shouldn't get the further off join if we miss the first 
-    //       one...maybe we should just fail in that case?
-    //    -  How do we detect this case? Seems like getArcBetween should 
-    //       recognize this is not keeping in sprit with the given intersection
 
     const Aarc = getArcBetween( routes[ A.from ], routes[ A.to ], mid, intersection );
     
@@ -706,9 +725,21 @@ function drawAtDistance( ctx, route, distance, drawFunc ) {
 //
 
 let selected;
+let nameIndex = 0;
 
 canvas.pointerDown = ( m ) => {
   selected = closestPoint( m.x, m.y );
+
+  if ( !selected ) {
+    const newStreet = {
+      start: [ m.x, m.y ],
+      end: [ m.x, m.y ],
+    };
+
+    selected = newStreet.end;
+
+    controlPoints[ `street_${ nameIndex ++ }` ] = newStreet;
+  }
 }
 
 canvas.pointerUp = ( m ) => {
