@@ -73,10 +73,12 @@ export function getArcBetweenLineArc( line, arc, radius, intersection ) {
   );
 
   const turn = deltaAngle( lineAngle, arcAngle );
-  const dot = vec2.dot( v1, vec2.subtract( [], arc.center, intersection ) );
+  // const dot = vec2.dot( v1, vec2.subtract( [], arc.center, intersection ) );
 
   const s0 = turn < 0 ? 1 : -1;   // left turn uses positive normal
-  const s1 =  dot > 0 ? 1 : -1;   // see if we are moving toward or away from center
+  // const s1 =  dot > 0 ? 1 : -1;   // see if we are moving toward or away from center
+
+  const s1 = ( turn > 0 ? 1 : -1 ) * ( arc.counterclockwise ? 1 : -1 );
   
   const closestToLine = {
     point: null,
@@ -154,6 +156,8 @@ export function getArcBetweenLineArc( line, arc, radius, intersection ) {
 
 // TODO: Get this working as a copy, then see if there's a way to make the function
 //       more generic so I don't have to duplicate code
+// TODO: Can we make this work for line vs line and arc vs arc as well? Hell, can we 
+//       get everything with one function?
 
 export function getArcBetweenArcLine( arc, line, radius, intersection ) {
   const lineStart = line.slice( 0, 2 );
@@ -333,6 +337,33 @@ export function getArcsBetweenArcs( from, to, radius, closestToPoint ) {
   }
   else {
     return arcs;
+  }
+}
+
+export function getIntersections( A, B ) {
+  if ( A.center && B.center ) {
+    return Intersections.getArcArcIntersections(
+      A.center[ 0 ], A.center[ 1 ], A.radius, A.startAngle, A.endAngle, A.counterclockwise,
+      B.center[ 0 ], B.center[ 1 ], B.radius, B.startAngle, B.endAngle, B.counterclockwise,
+    );
+  }
+  else if ( A.center ) {
+    return Intersections.getArcLineIntersections(
+      A.center[ 0 ], A.center[ 1 ], A.radius, A.startAngle, A.endAngle, A.counterclockwise,
+      B.start[ 0 ], B.start[ 1 ], B.end[ 0 ], B.end[ 1 ],
+    );
+  }
+  else if ( B.center ) {
+    return Intersections.getArcLineIntersections(
+      B.center[ 0 ], B.center[ 1 ], B.radius, B.startAngle, B.endAngle, B.counterclockwise,
+      A.start[ 0 ], A.start[ 1 ], A.end[ 0 ], A.end[ 1 ],
+    );
+  }
+  else {
+    return Intersections.getLineLineIntersections(
+      A.start[ 0 ], A.start[ 1 ], A.end[ 0 ], A.end[ 1 ],
+      B.start[ 0 ], B.start[ 1 ], B.end[ 0 ], B.end[ 1 ],
+    );
   }
 }
 
