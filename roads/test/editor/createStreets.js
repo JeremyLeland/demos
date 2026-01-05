@@ -225,53 +225,54 @@ canvas.draw = ( ctx ) => {
             const toRoute = routes[ pair.to ];
       
             const arc = getArcBetween( fromRoute, toRoute, pair.radius ?? 1, intersection );
-      
-            // Find min and max start and end angles for each route as we process pairs
-            const startPos = [
-              arc.center[ 0 ] + Math.cos( arc.startAngle ) * arc.radius,
-              arc.center[ 1 ] + Math.sin( arc.startAngle ) * arc.radius,
-            ];
-      
-            const endPos = [
-              arc.center[ 0 ] + Math.cos( arc.endAngle ) * arc.radius,
-              arc.center[ 1 ] + Math.sin( arc.endAngle ) * arc.radius,
-            ];
-            
-            const fromEndAngle = Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] );
-            const toStartAngle = Math.atan2(   endPos[ 1 ] -   toRoute.center[ 1 ],   endPos[ 0 ] -   toRoute.center[ 0 ] );
-      
-            if ( !fromEndAngles.has( pair.from ) ||
-                  isBetweenAngles( fromEndAngle, fromRoute.startAngle, fromEndAngles.get( pair.from ), fromRoute.counterclockwise ) ) {
-              fromEndAngles.set( pair.from, fromEndAngle );
-            }
-      
-            if ( !toStartAngles.has( pair.to ) ||
-                  isBetweenAngles( toStartAngle, toStartAngles.get( pair.to ), toRoute.endAngle, toRoute.counterclockwise ) ) {
-              toStartAngles.set( pair.to, toStartAngle );
-            }
-      
-            // Create route
-            arc.arrowColor = pair.arrowColor;
-      
-            const arcName = `${ pair.from }_TO_${ pair.to }_#${ index }_ARC`;
-            routes[ arcName ] = arc;
-      
-            // Keep track of our connections, and where they connect distance-wise
-            fromRoute.links ??= [];
-            fromRoute.links.push( {
-              name: arcName,
-              fromDistance: getDistanceAtAngle( fromRoute, fromEndAngle ),
-              toDistance: 0,
-            } );
-      
-            routes[ arcName ].links ??= [];
-            routes[ arcName ].links.push( {
-              name: pair.to,
-              fromDistance: getLength( routes[ arcName ] ),
-              toDistance: getDistanceAtAngle( toRoute, toStartAngle ),
-            } );
-          } );
 
+            if ( arc ) {
+              // Find min and max start and end angles for each route as we process pairs
+              const startPos = [
+                arc.center[ 0 ] + Math.cos( arc.startAngle ) * arc.radius,
+                arc.center[ 1 ] + Math.sin( arc.startAngle ) * arc.radius,
+              ];
+        
+              const endPos = [
+                arc.center[ 0 ] + Math.cos( arc.endAngle ) * arc.radius,
+                arc.center[ 1 ] + Math.sin( arc.endAngle ) * arc.radius,
+              ];
+              
+              const fromEndAngle = Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] );
+              const toStartAngle = Math.atan2(   endPos[ 1 ] -   toRoute.center[ 1 ],   endPos[ 0 ] -   toRoute.center[ 0 ] );
+        
+              if ( !fromEndAngles.has( pair.from ) ||
+                    isBetweenAngles( fromEndAngle, fromRoute.startAngle, fromEndAngles.get( pair.from ), fromRoute.counterclockwise ) ) {
+                fromEndAngles.set( pair.from, fromEndAngle );
+              }
+        
+              if ( !toStartAngles.has( pair.to ) ||
+                    isBetweenAngles( toStartAngle, toStartAngles.get( pair.to ), toRoute.endAngle, toRoute.counterclockwise ) ) {
+                toStartAngles.set( pair.to, toStartAngle );
+              }
+        
+              // Create route
+              arc.arrowColor = pair.arrowColor;
+        
+              const arcName = `${ pair.from }_TO_${ pair.to }_#${ index }_ARC`;
+              routes[ arcName ] = arc;
+        
+              // Keep track of our connections, and where they connect distance-wise
+              fromRoute.links ??= [];
+              fromRoute.links.push( {
+                name: arcName,
+                fromDistance: getDistanceAtAngle( fromRoute, fromEndAngle ),
+                toDistance: 0,
+              } );
+        
+              routes[ arcName ].links ??= [];
+              routes[ arcName ].links.push( {
+                name: pair.to,
+                fromDistance: getLength( routes[ arcName ] ),
+                toDistance: getDistanceAtAngle( toRoute, toStartAngle ),
+              } );
+            }
+          } );
         } );
       }
     } );
