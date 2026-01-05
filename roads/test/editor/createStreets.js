@@ -21,6 +21,8 @@ const controlPoints = {
   },
 };
 
+let streets = {};
+let routes = {};
 
 
 import { Canvas } from '../../src/common/Canvas.js';
@@ -40,7 +42,8 @@ canvas.draw = ( ctx ) => {
   grid.draw( ctx );
 
   // Streets
-  const streets = {};
+  // const streets = {};
+  streets = {};
 
   Object.entries( controlPoints ).forEach( ( [ name, points ] ) => {
     streets[ name ] = points.middle ? arcFromThreePoints( points.start, points.middle, points.end ) : structuredClone( points );
@@ -64,7 +67,8 @@ canvas.draw = ( ctx ) => {
   } );
 
   // Routes
-  const routes = {};
+  // const routes = {};
+  routes = {};
 
   Object.entries( streets ).forEach( ( [ name, street ] ) => {
     const numLanes = street.lanes.left + street.lanes.right;
@@ -324,6 +328,9 @@ canvas.draw = ( ctx ) => {
       drawAtDistance( ctx, route, length, drawArrow );
     }
   } );
+
+  // TODO: Draw outline of streets based on the routes (and connections between them)
+  // TODO: Ignore parts of street with no more connections? (this might make joins nicer)
 
   // Control points
   const controlColors = {
@@ -755,7 +762,15 @@ canvas.pointerUp = ( m ) => {
 }
 
 canvas.pointerMove = ( m ) => {
-  if ( m.buttons == 1 ) {
+  // Hover if no buttons pressed
+  if ( m.buttons == 0 ) {
+    console.log( streetNameUnderCursor( m.x, m.y ) );
+  }
+
+  // Drag selected point if left button pressed
+  else if ( m.buttons == 1 ) {
+    // console.log( streetUnderCursor( m.x, m.y ) );
+
     if ( selected ) {
       selected[ 0 ] += m.dx;
       selected[ 1 ] += m.dy;
@@ -763,6 +778,8 @@ canvas.pointerMove = ( m ) => {
       canvas.redraw();
     }
   }
+
+  // Pan if middle button pressed
   else if ( m.buttons == 4 ) {
     canvas.translate( -m.dx, -m.dy );
     canvas.redraw();
@@ -790,4 +807,39 @@ function closestPoint( x, y ) {
   } );
 
   return closest;
+}
+
+function streetNameUnderCursor( x, y ) {
+  // TODO: what if multiple streets overlap here?
+
+  return Object.entries( streets ).find( ( [ name, street ] ) => {
+
+    // TODO: Here's a trade-off of defining lanes as being to one side or other of center point
+    //       Since the point defining the street may not be the actual center, determining whether we are overlapping is harder
+    // Should we look at routes instead of streets? Each route could say which street it is part of...
+
+    const HOVER_DIST = LANE_WIDTH * ( street.lanes.left + street.lanes.right ) / 2;   // wrong, but close-ish for now
+
+    if ( street.center ) {
+      const dist = vec2.distance( [ x, y ], street.center );
+      const angle = Math.atan2( y - street.center[ 1 ], x - street.center[ 0 ] );
+
+      if ( ( Math.abs( dist - street.radius ) < HOVER_DIST ) && isBetweenAngles( angle, street.startAngle, street.endAngle, street.counterclockwise ) ) {
+        return name;
+      }
+    }
+    else {
+      const AB = vec2.subtract( [], street.end, street.start );
+      const AP = vec2.subtract( [], [ x, y ], street.start );
+      const u = vec2.dot( AP, AB ) / vec2.sqrLen( AB );
+      const t = Math.max( 0, Math.min( 1, u ) );
+
+      const closest = vec2.scaleAndAdd( [], street.start, AB, t );
+      const dist = vec2.distance( [ x, y ], closest );
+
+      if ( dist < HOVER_DIST ) {
+        return name;
+      }
+    }
+  } )?.[ 0 ];
 }
