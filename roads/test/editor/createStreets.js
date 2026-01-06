@@ -8,6 +8,11 @@ const LANE_WIDTH = 0.25;
 const DEBUG_ARROW_LENGTH = 0.1;
 const DEBUG_ARROW_WIDTH = DEBUG_ARROW_LENGTH / 2;
 
+// TODO: We might not need to persist this. 
+// Since we are already detecting when we are hovering over streets,
+// we can see when we are near u = 0 or u = 1 and treat drags as moving end points
+// If not near end points, treat drag as moving a control point (or the whole street, depending on modifer keys?)
+// May just call circleFromThreePoints as part of these drags, rather than saving this?
 const controlPoints = {
   A: {
     start: [ -4, 1 ],
@@ -21,54 +26,30 @@ const controlPoints = {
   },
 };
 
+// TODO: Make these part of some sort of level object separate from controlPoints?
+//       Combine streetsFrom and routesFrom function to one function that returns level from control points?
 let streets = {};
 let routes = {};
 
-
-import { Canvas } from '../../src/common/Canvas.js';
-import { Grid } from '../../src/common/Grid.js';
-import * as Intersections from '../../src/common/Intersections.js';
-
-import { vec2 } from '../../lib/gl-matrix.js'
-
-const grid = new Grid( -5, -5, 5, 5 );
-
-const canvas = new Canvas();
-canvas.backgroundColor = '#123';
-canvas.bounds = [ grid.minX - 0.5, grid.minY - 0.5, grid.maxX + 0.5, grid.maxY + 0.5 ];
-
-canvas.draw = ( ctx ) => {
-  ctx.lineWidth = 0.02;
-  grid.draw( ctx );
-
-  // Streets
-  // const streets = {};
-  streets = {};
-
+function streetsFromControlPoints( controlPoints ) {
+  const streets = {};
+  
   Object.entries( controlPoints ).forEach( ( [ name, points ] ) => {
     streets[ name ] = points.middle ? arcFromThreePoints( points.start, points.middle, points.end ) : structuredClone( points );
 
-    // TODO: Get this from controlPoints (which should be called something else)
+    // TODO: Get this from controlPoints (which should maybe be called something else)
     streets[ name ].lanes = { left: 2, right: 2 };
   } );
 
   // console.log( 'Streets:' );
   // console.log( streets );
 
-  ctx.lineWidth = 0.5;
-  ctx.strokeStyle = 'gray';
-  Object.values( streets ).forEach( street => {
-    if ( street.center ) {
-      drawArc( ctx, street );
-    }
-    else {
-      drawLine( ctx, street.start, street.end );
-    }
-  } );
+  return streets;
+}
 
-  // Routes
-  // const routes = {};
-  routes = {};
+// NOTE: This modifies streets -- eventually combine with above to return level
+function routesFromStreets( streets ) {
+  const routes = {};
 
   Object.entries( streets ).forEach( ( [ name, street ] ) => {
     const numLanes = street.lanes.left + street.lanes.right;
@@ -99,9 +80,10 @@ canvas.draw = ( ctx ) => {
             endAngle:   laneDir == 'left' ? street.startAngle : street.endAngle,
             counterclockwise: laneDir == 'left' ? !street.counterclockwise : !!street.counterclockwise,
 
+            parent: name,
+
             streetColor: street.color,
             arrowColor: laneDir == 'left' ? 'green' : 'darkred',
-            // parent: name,
           };
 
           const routeName = `${ name }_lane_${ laneDir }_${ i }`;
@@ -318,6 +300,44 @@ canvas.draw = ( ctx ) => {
 
   // console.log( 'Routes:' );
   // console.log( routes );
+
+  return routes;
+}
+
+
+import { Canvas } from '../../src/common/Canvas.js';
+import { Grid } from '../../src/common/Grid.js';
+import * as Intersections from '../../src/common/Intersections.js';
+
+import { vec2 } from '../../lib/gl-matrix.js'
+
+const grid = new Grid( -5, -5, 5, 5 );
+
+const canvas = new Canvas();
+canvas.backgroundColor = '#123';
+canvas.bounds = [ grid.minX - 0.5, grid.minY - 0.5, grid.maxX + 0.5, grid.maxY + 0.5 ];
+
+canvas.draw = ( ctx ) => {
+  ctx.lineWidth = 0.02;
+  grid.draw( ctx );
+
+  // Streets
+  streets = streetsFromControlPoints( controlPoints );
+  
+  Object.entries( streets ).forEach( ( [ name, street ] ) => {
+    ctx.lineWidth = 0.5;
+    ctx.strokeStyle = name == hoverName ? 'darkgray' : 'gray';
+
+    if ( street.center ) {
+      drawArc( ctx, street );
+    }
+    else {
+      drawLine( ctx, street.start, street.end );
+    }
+  } );
+
+  // Routes
+  routes = routesFromStreets( streets );
 
   Object.values( routes ).forEach( route => {
     const routeLength = getLength( route );
@@ -737,6 +757,7 @@ function drawAtDistance( ctx, route, distance, drawFunc ) {
 //    - Move streets (w/left click? vs insert)
 //  - Key to snap to grid/whole numbers (maybe shift?)
 
+let hoverName;
 let selected;
 let nameIndex = 0;
 
@@ -755,6 +776,11 @@ canvas.pointerDown = ( m ) => {
       controlPoints[ `street_${ nameIndex ++ }` ] = newStreet;
     }
   }
+  else if ( m.buttons == 2 ) {
+    delete controlPoints[ hoverName ];
+  }
+
+  canvas.redraw();
 }
 
 canvas.pointerUp = ( m ) => {
@@ -764,13 +790,13 @@ canvas.pointerUp = ( m ) => {
 canvas.pointerMove = ( m ) => {
   // Hover if no buttons pressed
   if ( m.buttons == 0 ) {
-    console.log( streetNameUnderCursor( m.x, m.y ) );
+    hoverName = streetNameUnderCursor( m.x, m.y );
+
+    canvas.redraw();
   }
 
   // Drag selected point if left button pressed
   else if ( m.buttons == 1 ) {
-    // console.log( streetUnderCursor( m.x, m.y ) );
-
     if ( selected ) {
       selected[ 0 ] += m.dx;
       selected[ 1 ] += m.dy;
