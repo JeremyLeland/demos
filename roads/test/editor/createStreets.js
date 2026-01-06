@@ -1,7 +1,13 @@
 // Goal: Click and drag to create streets. 
 // Make routes, then make appropriate turning lanes between intersecting streets.
 
-// NOW: Trying to support lines as well as arcs, so I can insert lines (and make them arcs after insertion)
+// TODO:
+// - Get rid of control points, just resize based on hover and figure out new arc on fly
+// - Don't alter streets -- these are what we will load, routes will be result. 
+//   - Routes can reference street name to get that static info
+// - Drawing
+//   - outline of streets by following right-most routes!
+//   - lanes between routes!
 
 const LANE_WIDTH = 0.25;
 
@@ -13,41 +19,36 @@ const DEBUG_ARROW_WIDTH = DEBUG_ARROW_LENGTH / 2;
 // we can see when we are near u = 0 or u = 1 and treat drags as moving end points
 // If not near end points, treat drag as moving a control point (or the whole street, depending on modifer keys?)
 // May just call circleFromThreePoints as part of these drags, rather than saving this?
-const controlPoints = {
-  A: {
-    start: [ -4, 1 ],
-    // middle: [ 0, 0.9 ],
-    end: [ 4, 1 ],
-  },
-  B: {
-    start: [ 1, -4 ],
-    middle: [ 0.9, 0 ],
-    end: [ 1, 4 ],
+const streets = {
+  A: Object.assign( {
+    lanes: {
+      left: 2,
+      right: 2,
+    },
+  }, arcFromThreePoints( [ -4, 1 ], [ 0, 0 ], [ 4, 1 ] ) ),
+  B: Object.assign( {
+    lanes: {
+      left: 2,
+      right: 2,
+    },
+  }, arcFromThreePoints( [ 1, -4 ], [ 0, 0 ], [ 1, 4 ] ) ),
+  C: {
+    start: [ -4, 4 ],
+    end: [ -1, 4 ],
+    lanes: {
+      left: 1,
+      right: 1,
+    },
   },
 };
 
 // TODO: Make these part of some sort of level object separate from controlPoints?
 //       Combine streetsFrom and routesFrom function to one function that returns level from control points?
-let streets = {};
 let routes = {};
 
-function streetsFromControlPoints( controlPoints ) {
-  const streets = {};
-  
-  Object.entries( controlPoints ).forEach( ( [ name, points ] ) => {
-    streets[ name ] = points.middle ? arcFromThreePoints( points.start, points.middle, points.end ) : structuredClone( points );
-
-    // TODO: Get this from controlPoints (which should maybe be called something else)
-    streets[ name ].lanes = { left: 2, right: 2 };
-  } );
-
-  // console.log( 'Streets:' );
-  // console.log( streets );
-
-  return streets;
-}
-
 // NOTE: This modifies streets -- eventually combine with above to return level
+// TODO: Why does this need to modify streets? Can routes just keep reference to parent? Why does street need to know routes?
+//       Seems like we could search all routes with parent == 'name' if we need to find them...
 function routesFromStreets( streets ) {
   const routes = {};
 
@@ -80,6 +81,7 @@ function routesFromStreets( streets ) {
             endAngle:   laneDir == 'left' ? street.startAngle : street.endAngle,
             counterclockwise: laneDir == 'left' ? !street.counterclockwise : !!street.counterclockwise,
 
+            // TODO: Can we save parent name and lane index here, rather than altering original street?
             parent: name,
 
             streetColor: street.color,
@@ -322,11 +324,9 @@ canvas.draw = ( ctx ) => {
   grid.draw( ctx );
 
   // Streets
-  streets = streetsFromControlPoints( controlPoints );
-  
   Object.entries( streets ).forEach( ( [ name, street ] ) => {
     ctx.lineWidth = 0.5;
-    ctx.strokeStyle = name == hoverName ? 'darkgray' : 'gray';
+    ctx.strokeStyle = name == hover?.name ? 'darkgray' : 'gray';
 
     if ( street.center ) {
       drawArc( ctx, street );
@@ -359,12 +359,17 @@ canvas.draw = ( ctx ) => {
     end: 'red',
   };
 
-  Object.values( controlPoints ).forEach( points => {
-    Object.entries( points ).forEach( ( [ name, point ] ) => {
-      ctx.fillStyle = controlColors[ name ];
-      drawPoint( ctx, point );
-    } );
-  } );
+  if ( hover ) {
+    ctx.fillStyle = controlColors[ hover.action ];
+    drawPoint( ctx, hover.point, 0.1 );
+  }
+}
+
+function getPointAtAngle( arc, angle ) {
+  return [
+    arc.center[ 0 ] + Math.cos( angle ) * arc.radius, 
+    arc.center[ 1 ] + Math.sin( angle ) * arc.radius,
+  ];
 }
 
 function drawArrow( ctx, pos, angle, width = DEBUG_ARROW_WIDTH, length = DEBUG_ARROW_LENGTH ) {
@@ -662,9 +667,9 @@ function drawLine( ctx, start, end ) {
   ctx.stroke();
 }
 
-function drawPoint( ctx, p ) {
+function drawPoint( ctx, p, radius = 0.05 ) {
   ctx.beginPath();
-  ctx.arc( p[ 0 ], p[ 1 ], 0.05, 0, Math.PI * 2 );
+  ctx.arc( p[ 0 ], p[ 1 ], radius, 0, Math.PI * 2 );
   ctx.fill();
 }
 
@@ -757,49 +762,78 @@ function drawAtDistance( ctx, route, distance, drawFunc ) {
 //    - Move streets (w/left click? vs insert)
 //  - Key to snap to grid/whole numbers (maybe shift?)
 
-let hoverName;
-let selected;
+let hover;
 let nameIndex = 0;
 
 canvas.pointerDown = ( m ) => {
   if ( m.buttons == 1 ) {
-    selected = closestPoint( m.x, m.y );
+    // if ( hover ) {
+
+    // }
     
-    if ( !selected ) {
-      const newStreet = {
-        start: [ m.x, m.y ],
-        end: [ m.x, m.y ],
-      };
+    // if ( !selected ) {
+    //   const newStreet = {
+    //     start: [ m.x, m.y ],
+    //     end: [ m.x, m.y ],
+    //   };
       
-      selected = newStreet.end;
+    //   selected = newStreet.end;
       
-      controlPoints[ `street_${ nameIndex ++ }` ] = newStreet;
-    }
+    //   controlPoints[ `street_${ nameIndex ++ }` ] = newStreet;
+    // }
   }
   else if ( m.buttons == 2 ) {
-    delete controlPoints[ hoverName ];
+    if ( hover ) {
+      delete streets[ hover.name ];
+    }
   }
 
   canvas.redraw();
 }
 
 canvas.pointerUp = ( m ) => {
-  selected = null;
+  // selected = null;
 }
 
 canvas.pointerMove = ( m ) => {
   // Hover if no buttons pressed
   if ( m.buttons == 0 ) {
-    hoverName = streetNameUnderCursor( m.x, m.y );
+    hover = hoverUnderCursor( m.x, m.y );
 
     canvas.redraw();
   }
 
   // Drag selected point if left button pressed
   else if ( m.buttons == 1 ) {
-    if ( selected ) {
-      selected[ 0 ] += m.dx;
-      selected[ 1 ] += m.dy;
+    if ( hover ) {
+      const street = streets[ hover.name ];
+      const moveVector = [ m.dx, m.dy ];
+
+      if ( street.center ) {
+        const points = {
+          start:  hover.action == 'start'  ? hover.point : getPointAtAngle( street, street.startAngle ),
+          middle: hover.action == 'middle' ? hover.point : getPointAtAngle( street, street.startAngle + deltaAngle( street.startAngle, street.endAngle ) / 2 ),
+          end:    hover.action == 'end'    ? hover.point : getPointAtAngle( street, street.endAngle ),
+        };
+
+        // NOTE: Via side effect, this is also moving the hover point
+        vec2.add( points[ hover.action ], points[ hover.action ], moveVector );
+
+        Object.assign( street, arcFromThreePoints( points.start, points.middle, points.end ) );
+      }
+      else {
+        vec2.add( hover.point, hover.point, moveVector );
+
+        // If dragging a middle point, turn street into arc
+        if ( hover.action == 'middle' ) {
+          Object.assign( street, arcFromThreePoints( street.start, hover.point, street.end ) );
+          delete street.start;
+          delete street.end;
+        }
+        else {
+          vec2.add( street[ hover.action ], street[ hover.action ], moveVector );
+        }
+      }
       
       canvas.redraw();
     }
@@ -818,40 +852,33 @@ canvas.wheelInput = ( m ) => {
 }
 
 
-function closestPoint( x, y ) {
-  let closest, closestDist = Infinity;
+function hoverUnderCursor( x, y ) {
+  // TODO: what if multiple streets overlap here? This isn't actually closest at moment, it's just latest.
 
-  Object.values( controlPoints ).forEach( points => {
-    Object.values( points ).forEach( p => {
-      const dist = Math.hypot( x - p[ 0 ], y - p[ 1 ] );
+  let closestHover;
 
-      if ( dist < 1 && dist < closestDist ) {
-        closest = p;
-        closestDist = dist;
-      }
-    } );
-  } );
-
-  return closest;
-}
-
-function streetNameUnderCursor( x, y ) {
-  // TODO: what if multiple streets overlap here?
-
-  return Object.entries( streets ).find( ( [ name, street ] ) => {
+  Object.entries( streets ).forEach( ( [ name, street ] ) => {
 
     // TODO: Here's a trade-off of defining lanes as being to one side or other of center point
     //       Since the point defining the street may not be the actual center, determining whether we are overlapping is harder
     // Should we look at routes instead of streets? Each route could say which street it is part of...
 
     const HOVER_DIST = LANE_WIDTH * ( street.lanes.left + street.lanes.right ) / 2;   // wrong, but close-ish for now
+    const ENDPOINT_DIST = 0.4;
 
     if ( street.center ) {
       const dist = vec2.distance( [ x, y ], street.center );
       const angle = Math.atan2( y - street.center[ 1 ], x - street.center[ 0 ] );
 
       if ( ( Math.abs( dist - street.radius ) < HOVER_DIST ) && isBetweenAngles( angle, street.startAngle, street.endAngle, street.counterclockwise ) ) {
-        return name;
+        const nearStart = Math.abs( deltaAngle( angle, street.startAngle ) * street.radius ) < ENDPOINT_DIST;
+        const nearEnd   = Math.abs( deltaAngle( angle, street.endAngle   ) * street.radius ) < ENDPOINT_DIST;
+
+        closestHover = {
+          name: name,
+          action: nearStart ? 'start' : nearEnd ? 'end' : 'middle',
+          point: getPointAtAngle( street, angle ),
+        };
       }
     }
     else {
@@ -864,8 +891,17 @@ function streetNameUnderCursor( x, y ) {
       const dist = vec2.distance( [ x, y ], closest );
 
       if ( dist < HOVER_DIST ) {
-        return name;
+        const nearStart = vec2.distance( street.start, [ x, y ] ) < ENDPOINT_DIST;
+        const nearEnd   = vec2.distance( street.end,   [ x, y ] ) < ENDPOINT_DIST;
+
+        closestHover = {
+          name: name,
+          action: nearStart ? 'start' : nearEnd ? 'end' : 'middle',
+          point: closest,
+        };
       }
     }
-  } )?.[ 0 ];
+  } );
+
+  return closestHover;
 }
