@@ -1,5 +1,7 @@
 NEXT:
-- Arc vs Line intersections (and then Line vs Line again, maybe more general and similar to Arc code?)
+- Reworking deltaAngle and isBetweenAngles to better account for counterclockwise
+  - Make tests so I can truly understand what these are doing
+  - Thread-pulling from trying to pick proper middle point when moving start/end points past Math.PI distance from each other
 - Redo intersections as list of affected routes and start/stop distances (instead of paths of tiny routes)
 
 
