@@ -1,6 +1,6 @@
-import { Canvas } from '../src/common/Canvas.js';
-import { Grid } from '../src/common/Grid.js';
-import * as Curve from '../src/common/Curve.js';
+import { Canvas } from '../../src/common/Canvas.js';
+import { Grid } from '../../src/common/Grid.js';
+import * as Curve from './Curve.js';
 
 let distance = 0;
 

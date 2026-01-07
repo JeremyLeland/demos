@@ -1,5 +1,5 @@
-import { Canvas } from '../src/common/Canvas.js';
-import { Grid } from '../src/common/Grid.js';
+import { Canvas } from '../../src/common/Canvas.js';
+import { Grid } from '../../src/common/Grid.js';
 
 let distance = 0;
 
