@@ -96,7 +96,8 @@ canvas.draw = ( ctx ) => {
       drawPoint( ctx, point );
     } );
 
-    console.log( Angle.deltaAngle( arc.startAngle, arc.endAngle, arc.counterclockwise ) );
+    console.log( 'delta = ' + Angle.deltaAngle( arc.startAngle, arc.endAngle ) );
+    console.log( 'sweep = ' + Angle.sweepAngle( arc.startAngle, arc.endAngle, arc.counterclockwise ) );
   } );
 
   

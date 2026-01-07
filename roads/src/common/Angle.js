@@ -1,34 +1,22 @@
 const TWO_PI = Math.PI * 2;
 
-// Clamp to [ -Math.PI, Math.PI ]
-export function fixAngle( a ) {  
-  if ( a > Math.PI ) {
-    return a % TWO_PI - TWO_PI;
-  }
-  else if ( a < -Math.PI ) {
-    return a % TWO_PI + TWO_PI;
-  }
-  else {
-    return a;
-  }
+export function deltaAngle( a, b ) {
+  return ( ( b - a + Math.PI ) % ( 2 * Math.PI ) ) - Math.PI;
 }
 
-export function deltaAngle( a, b, counterclockwise = false ) {
+// Normalize to [ 0, 2π )
+function fixAngle( a ) {
+  return ( a % TWO_PI + TWO_PI ) % TWO_PI;
+}
 
-  // console.log( `deltaAngle( ${ a }, ${ b }, ${ counterclockwise } )` );
+export function sweepAngle( a, b, counterclockwise ) { 
+  const diff = fixAngle( b - a );
 
-  const delta = fixAngle( b ) - fixAngle( a );
-
-  // console.log( `  delta = ${ delta }` );
-
-  if ( delta < 0 && !counterclockwise ) {
-    return TWO_PI + delta;
-  }
-  else if ( delta > 0 && counterclockwise ) {
-    return delta - TWO_PI;
+  if ( counterclockwise && diff !== 0 ) {
+    return diff - TWO_PI;
   }
   else {
-    return delta;
+    return diff;
   }
 }
 
