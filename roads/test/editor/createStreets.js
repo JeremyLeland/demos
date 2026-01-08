@@ -39,16 +39,16 @@ const streets = {
     start: [ -3, -3 ],
     end: [ 3, 3 ],
     lanes: {
-      left: 1,
-      right: 1,
+      left: 2,
+      right: 2,
     },
   },
   D: {
     start: [ 3, -3 ],
     end: [ -3, 3 ],
     lanes: {
-      left: 1,
-      right: 1,
+      left: 2,
+      right: 2,
     },
   },
 };
@@ -153,19 +153,61 @@ function routesFromStreets( streets ) {
           const A = turn < 0 ? two : one;
           const B = turn < 0 ? one : two;
 
-          const pairs = [
-            { from: B.routes.right[ 0 ], to: A.routes.right[ 0 ], radius: 1, arrowColor: 'red' },
-            { from: A.routes.left[ 0 ], to: B.routes.left[ 0 ], radius: 1 - LANE_WIDTH, arrowColor: 'orange' },
+          // TODO: Unequal numbers of lanes
 
-            { from: B.routes.left[ 0 ], to: A.routes.left[ 0 ], radius: 1, arrowColor: 'blue' },
-            { from: A.routes.right[ 0 ], to: B.routes.right[ 0 ], radius: 1 - LANE_WIDTH, arrowColor: 'cyan' },
+          const pairs = [];
 
-            { from: A.routes.left[ 0 ], to: B.routes.right[ 0 ], radius: 1, arrowColor: 'yellow' },
-            { from: B.routes.left[ 0 ], to: A.routes.right[ 0 ], radius: 1 - LANE_WIDTH, arrowColor: 'lime' },
-            
-            { from: A.routes.right[ 0 ], to: B.routes.left[ 0 ], radius: 1, arrowColor: 'purple' },
-            { from: B.routes.right[ 0 ], to: A.routes.left[ 0 ], radius: 1 - LANE_WIDTH, arrowColor: 'violet' },
-          ];
+          {
+            let radius = 2;
+            for ( let i = 0; i < 2; i ++ ) {
+              pairs.push( { from: B.routes.right[ 1 - i ], to: A.routes.right[ 1 - i ], radius: radius, arrowColor: 'red' } );
+              radius -= LANE_WIDTH;
+            }
+
+            for ( let i = 0; i < 2; i ++ ) {
+              pairs.push( { from: A.routes.left[ i ], to: B.routes.left[ i ], radius: radius, arrowColor: 'orange' } );
+              radius -= LANE_WIDTH;
+            }
+          }
+
+          {
+            let radius = 2;
+            for ( let i = 0; i < 2; i ++ ) {
+              pairs.push( { from: B.routes.left[ 1 - i ], to: A.routes.left[ 1 - i ], radius: radius, arrowColor: 'blue' } );
+              radius -= LANE_WIDTH;
+            }
+
+            for ( let i = 0; i < 2; i ++ ) {
+              pairs.push( { from: A.routes.right[ i ], to: B.routes.right[ i ], radius: radius, arrowColor: 'cyan' } );
+              radius -= LANE_WIDTH;
+            }
+          }
+
+          {
+            let radius = 2;
+            for ( let i = 0; i < 2; i ++ ) {
+              pairs.push( { from: A.routes.left[ 1 - i ], to: B.routes.right[ 1 - i ], radius: radius, arrowColor: 'yellow' } );
+              radius -= LANE_WIDTH;
+            }
+
+            for ( let i = 0; i < 2; i ++ ) {
+              pairs.push( { from: B.routes.left[ i ], to: A.routes.right[ i ], radius: radius, arrowColor: 'lime' } );
+              radius -= LANE_WIDTH;
+            }
+          }
+          
+          {
+            let radius = 2;
+            for ( let i = 0; i < 2; i ++ ) {
+              pairs.push( { from: A.routes.right[ 1 - i ], to: B.routes.left[ 1 - i ], radius: radius, arrowColor: 'purple' } );
+              radius -= LANE_WIDTH;
+            }
+
+            for ( let i = 0; i < 2; i ++ ) {
+              pairs.push( { from: B.routes.right[ i ], to: A.routes.left[ i ], radius: radius, arrowColor: 'violet' } );
+              radius -= LANE_WIDTH;
+            }
+          }
 
           pairs.forEach( pair => {
             const arc = Arc.getArcBetween( routes[ pair.from ], routes[ pair.to ], pair.radius, intersection );
