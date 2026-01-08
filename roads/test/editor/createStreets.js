@@ -593,24 +593,28 @@ let nameIndex = 0;
 
 canvas.pointerDown = ( m ) => {
   if ( m.buttons == 1 ) {
-    // if ( hover ) {
+    if ( !hover ) {
+      const newStreet = {
+        start: [ m.x, m.y ],
+        end: [ m.x, m.y ],
+        lanes: { left: 1, right: 1 },
+      };
 
-    // }
-    
-    // if ( !selected ) {
-    //   const newStreet = {
-    //     start: [ m.x, m.y ],
-    //     end: [ m.x, m.y ],
-    //   };
-      
-    //   selected = newStreet.end;
-      
-    //   controlPoints[ `street_${ nameIndex ++ }` ] = newStreet;
-    // }
+      const newName = `street_${ nameIndex ++ }`;
+
+      streets[ newName ] = newStreet;
+
+      hover = {
+        name: newName,
+        action: 'end',
+        point: [ m.x, m.y ],
+      };
+    }
   }
   else if ( m.buttons == 2 ) {
     if ( hover ) {
       delete streets[ hover.name ];
+      hover = null;
     }
   }
 
@@ -625,8 +629,6 @@ canvas.pointerMove = ( m ) => {
   // Hover if no buttons pressed
   if ( m.buttons == 0 ) {
     hover = hoverUnderCursor( m.x, m.y );
-
-    canvas.redraw();
   }
 
   // Drag selected point if left button pressed
@@ -659,17 +661,16 @@ canvas.pointerMove = ( m ) => {
         else {
           vec2.add( street[ hover.action ], street[ hover.action ], moveVector );
         }
-      }
-      
-      canvas.redraw();
+      } 
     }
   }
 
   // Pan if middle button pressed
   else if ( m.buttons == 4 ) {
     canvas.translate( -m.dx, -m.dy );
-    canvas.redraw();
   }
+
+  canvas.redraw();
 }
 
 canvas.wheelInput = ( m ) => {
