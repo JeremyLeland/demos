@@ -1,5 +1,5 @@
-import * as Arc from './common/Arc.js';
-import * as Intersections from './common/Intersections.js';
+import * as Arc from '../src/common/Arc.js';
+import * as Intersections from '../src/common/Intersections.js';
 
 import { vec2 } from '../lib/gl-matrix.js'
 

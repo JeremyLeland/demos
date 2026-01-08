@@ -2,12 +2,15 @@
 // Make routes, then make appropriate turning lanes between intersecting streets.
 
 // TODO:
-// - Get rid of control points, just resize based on hover and figure out new arc on fly
+// - Need to be able to create arcs > Math.PI -- why does it keep flipping?
 // - Don't alter streets -- these are what we will load, routes will be result. 
 //   - Routes can reference street name to get that static info
 // - Drawing
 //   - outline of streets by following right-most routes!
 //   - lanes between routes!
+
+import * as Angle from '../../src/common/Angle.js';
+import * as Arc from '../../src/common/Arc.js';
 
 const LANE_WIDTH = 0.25;
 
@@ -20,21 +23,29 @@ const DEBUG_ARROW_WIDTH = DEBUG_ARROW_LENGTH / 2;
 // If not near end points, treat drag as moving a control point (or the whole street, depending on modifer keys?)
 // May just call circleFromThreePoints as part of these drags, rather than saving this?
 const streets = {
-  A: Object.assign( {
-    lanes: {
-      left: 2,
-      right: 2,
-    },
-  }, arcFromThreePoints( [ -4, 1 ], [ 0, 0 ], [ 4, 1 ] ) ),
-  B: Object.assign( {
-    lanes: {
-      left: 2,
-      right: 2,
-    },
-  }, arcFromThreePoints( [ 1, -4 ], [ 0, 0 ], [ 1, 4 ] ) ),
+  // A: Object.assign( {
+  //   lanes: {
+  //     left: 1,
+  //     right: 1,
+  //   },
+  // }, Arc.arcFromThreePoints( [ -4, 1 ], [ 0, 0 ], [ 4, 1 ] ) ),
+  // B: Object.assign( {
+  //   lanes: {
+  //     left: 1,
+  //     right: 1,
+  //   },
+  // }, Arc.arcFromThreePoints( [ 1, -4 ], [ 0, 0 ], [ 1, 4 ] ) ),
   C: {
-    start: [ -4, 4 ],
-    end: [ -1, 4 ],
+    start: [ -3, -3 ],
+    end: [ 3, 3 ],
+    lanes: {
+      left: 1,
+      right: 1,
+    },
+  },
+  D: {
+    start: [ 3, -3 ],
+    end: [ -3, 3 ],
     lanes: {
       left: 1,
       right: 1,
@@ -90,6 +101,8 @@ function routesFromStreets( streets ) {
 
           const routeName = `${ name }_lane_${ laneDir }_${ i }`;
           routes[ routeName ] = route;
+
+          // TODO: Save this in a different intermediate structure (so we aren't altering streets)
           street.routes[ laneDir ].push( routeName );
         }
         else {
@@ -123,188 +136,239 @@ function routesFromStreets( streets ) {
   // TODO: Turns at intersections
   const streetList = Object.values( streets );
 
-  streetList.forEach( A => {
-    streetList.forEach( B => {
-      if ( A != B ) {
-        const intersections = getIntersections( A, B );
+  const one = streets.C;
+  const two = streets.D;
+
+  // streetList.forEach( A => {
+  //   streetList.forEach( B => {
+      if ( one != two ) {
+        const intersections = Intersections.getIntersections( one, two );
 
         intersections.forEach( ( intersection, index ) => {
-        //   const arc = getArcBetween( A, B, 1, intersection, ctx );
 
-        //   if ( arc ) {
-        //     drawStreet( ctx, arc );
-        //   }
-          const pairs = [];
-          
-          const angles = [ A, B ].map( a => getAngle( a, intersection ) );
-      
-          const turn = deltaAngle( ...angles );
-          // console.log( 'turn = ' + turn );
-      
-      
-          const Same = [
-            { from: 'left', to: 'left' },
-            { from: 'right', to: 'right' },
-          ];
-      
-          const Opposite = [
-            { from: 'left', to: 'right' },
-            { from: 'right', to: 'left' },
-          ];
-      
-          [
-            { from: A, to: B, lanePairs: turn < 0 ? Same : Opposite },
-            { from: B, to: A, lanePairs: turn > 0 ? Same : Opposite },
-          ].forEach( e => {
-            const outerLeft = [];
-            const localPairs = [];
-      
-            const baseRadius = 0;
-      
-            // Can create all the radii without radius, then add this at the end
+          const angles = [ one, two ].map( e => getHeadingAtPoint( e, intersection ) );
+
+          const turn = Angle.deltaAngle( ...angles );
+
+          const A = turn < 0 ? two : one;
+          const B = turn < 0 ? one : two;
+
+          const pairs = [
+            { from: B.routes.right[ 0 ], to: A.routes.right[ 0 ], radius: 1, arrowColor: 'red' },
+            { from: A.routes.left[ 0 ], to: B.routes.left[ 0 ], radius: 1 - LANE_WIDTH, arrowColor: 'orange' },
+
+            { from: B.routes.left[ 0 ], to: A.routes.left[ 0 ], radius: 1, arrowColor: 'blue' },
+            { from: A.routes.right[ 0 ], to: B.routes.right[ 0 ], radius: 1 - LANE_WIDTH, arrowColor: 'cyan' },
+
+            { from: A.routes.left[ 0 ], to: B.routes.right[ 0 ], radius: 1, arrowColor: 'yellow' },
+            { from: B.routes.left[ 0 ], to: A.routes.right[ 0 ], radius: 1 - LANE_WIDTH, arrowColor: 'lime' },
             
-            e.lanePairs.forEach( lanes => {
-              // Left
-              const leftFromLanes = e.from.lanes[ lanes.from ];
-              const leftToLanes = e.to.lanes[ lanes.to ];
-      
-              const leftLanes = Math.min( leftFromLanes, leftToLanes );
-      
-              // Left-most lane should always be able to turn left, so work left-to-right
-              // For simplicity, each from-lane can only go to one to-lane
-      
-              for ( let i = 0; i < leftLanes; i ++ ) {
-                const pair = {
-                  from: e.from.routes[ lanes.from ][ i ],
-                  to:     e.to.routes[ lanes.to   ][ i ],
-                  radius: baseRadius - LANE_WIDTH * ( leftLanes - i - 1 ),
-      
-                  // debug
-                  arrowColor: 'lime',
-                };
-      
-                if ( i == leftLanes - 1 ) {
-                  outerLeft.push( pair );
-                }
-      
-                localPairs.push( pair );
-              }
-      
-              // Right
-              // This needs to be the opposite values of above, not just switched order
-              const rightFromLanes = e.to.lanes[ lanes.to == 'right' ? 'left' : 'right' ];
-              const rightToLanes = e.from.lanes[ lanes.from == 'right' ? 'left' : 'right' ];
-      
-              const rightLanes = Math.min( rightFromLanes, rightToLanes );
-      
-              // Right-most lane should always be able to turn right, so work right-to-left
-      
-              for ( let i = 0; i < rightLanes; i ++ ) {
-                localPairs.push( {
-                  from:   e.to.routes[ lanes.to == 'right' ? 'left' : 'right' ][ rightFromLanes - i - 1 ],
-                  to:   e.from.routes[ lanes.from == 'right' ? 'left' : 'right' ][ rightToLanes - i - 1 ],
-                  radius: baseRadius - LANE_WIDTH * ( leftLanes + rightLanes - i - 1 + Math.abs( rightFromLanes - rightToLanes ) ),
-                  // radius: baseRadius - LANE_WIDTH * ( rightLanes - i ),
-                  // TODO: Is there a way to modify this radius to be better in asymetrical cases? e.g. left 1, right 2
-                  // This helps somewhat. At least its symmetrical now.
-      
-                  // debug
-                  arrowColor: 'red',
-                } );
-              }
-            } );
-      
-            let minRadius = Infinity;
-            localPairs.forEach( pair => minRadius = Math.min( minRadius, pair.radius ) );
-      
-            // console.log( `minRadius = ${ minRadius }` );
-      
-            // const radius = getRadiusForPairs( ...outerLeft, intersection );
-            const radius = Math.max( -minRadius + 1, getRadiusForPairs( ...outerLeft, intersection, routes ) );
-            // const radius = 1;
+            { from: A.routes.right[ 0 ], to: B.routes.left[ 0 ], radius: 1, arrowColor: 'purple' },
+            { from: B.routes.right[ 0 ], to: A.routes.left[ 0 ], radius: 1 - LANE_WIDTH, arrowColor: 'violet' },
+          ];
 
-            // console.log( 'Radius for pairs: ' + radius );
-
-            localPairs.forEach( pair => pair.radius += radius );
-      
-            pairs.push( ...localPairs );
-          } );
-      
-      
-          // TODO: Eventually use this for figuring out intersection bounds
-          // TODO: This should be saved as distances, not angles, so it can work with lines too
-          //       Arcs can convert distance to angles later as needed
-          // const fromEndAngles = new Map(), toStartAngles = new Map();
-          
           pairs.forEach( pair => {
-            const fromRoute = routes[ pair.from ];
-            const toRoute = routes[ pair.to ];
-      
-            const arc = getArcBetween( fromRoute, toRoute, pair.radius ?? 1, intersection );
+            const arc = Arc.getArcBetween( routes[ pair.from ], routes[ pair.to ], pair.radius, intersection );
 
             if ( arc ) {
-              // Find min and max start and end angles for each route as we process pairs
-              const startPos = [
-                arc.center[ 0 ] + Math.cos( arc.startAngle ) * arc.radius,
-                arc.center[ 1 ] + Math.sin( arc.startAngle ) * arc.radius,
-              ];
-        
-              const endPos = [
-                arc.center[ 0 ] + Math.cos( arc.endAngle ) * arc.radius,
-                arc.center[ 1 ] + Math.sin( arc.endAngle ) * arc.radius,
-              ];
-              
-              const fromDistance = fromRoute.center ? getDistanceAtAngle(
-                Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] )
-              ) : vec2.distance( fromRoute.start, startPos );
-
-              const toDistance = toRoute.center ? getDistanceAtAngle(
-                Math.atan2( endPos[ 1 ] - toRoute.center[ 1 ], endPos[ 0 ] - toRoute.center[ 0 ] )
-              ) : vec2.distance( toRoute.start, endPos );
-
-        
-              // if ( !fromEndAngles.has( pair.from ) ||
-              //       isBetweenAngles( fromEndAngle, fromRoute.startAngle, fromEndAngles.get( pair.from ), fromRoute.counterclockwise ) ) {
-              //   fromEndAngles.set( pair.from, fromEndAngle );
-              // }
-        
-              // if ( !toStartAngles.has( pair.to ) ||
-              //       isBetweenAngles( toStartAngle, toStartAngles.get( pair.to ), toRoute.endAngle, toRoute.counterclockwise ) ) {
-              //   toStartAngles.set( pair.to, toStartAngle );
-              // }
-        
-              // Create route
               arc.arrowColor = pair.arrowColor;
-        
+              
               const arcName = `${ pair.from }_TO_${ pair.to }_#${ index }_ARC`;
               routes[ arcName ] = arc;
-        
-              // Keep track of our connections, and where they connect distance-wise
-              fromRoute.links ??= [];
-              fromRoute.links.push( {
-                name: arcName,
-                fromDistance: fromDistance,
-                toDistance: 0,
-              } );
-        
-              routes[ arcName ].links ??= [];
-              routes[ arcName ].links.push( {
-                name: pair.to,
-                fromDistance: getLength( routes[ arcName ] ),
-                toDistance: toDistance,
-              } );
             }
           } );
+          
+
+          // const pairs = [];
+          
+          // const angles = [ A, B ].map( a => Angle.getAngle( a, intersection ) );
+      
+          // const turn = Angle.sweepAngle( angles[ 0 ], angles[ 1 ], false );
+          // // console.log( 'turn = ' + turn );
+      
+      
+          // const Same = [
+          //   { from: 'left', to: 'left' },
+          //   { from: 'right', to: 'right' },
+          // ];
+      
+          // const Opposite = [
+          //   { from: 'left', to: 'right' },
+          //   { from: 'right', to: 'left' },
+          // ];
+      
+          // [
+          //   { from: A, to: B, lanePairs: turn < 0 ? Same : Opposite },
+          //   { from: B, to: A, lanePairs: turn > 0 ? Same : Opposite },
+          // ].forEach( e => {
+          //   const outerLeft = [];
+          //   const localPairs = [];
+      
+          //   const baseRadius = 0;
+      
+          //   // Can create all the radii without radius, then add this at the end
+            
+          //   e.lanePairs.forEach( lanes => {
+          //     // Left
+          //     const leftFromLanes = e.from.lanes[ lanes.from ];
+          //     const leftToLanes = e.to.lanes[ lanes.to ];
+      
+          //     const leftLanes = Math.min( leftFromLanes, leftToLanes );
+      
+          //     // Left-most lane should always be able to turn left, so work left-to-right
+          //     // For simplicity, each from-lane can only go to one to-lane
+      
+          //     for ( let i = 0; i < leftLanes; i ++ ) {
+          //       const pair = {
+          //         from: e.from.routes[ lanes.from ][ i ],
+          //         to:     e.to.routes[ lanes.to   ][ i ],
+          //         radius: baseRadius - LANE_WIDTH * ( leftLanes - i - 1 ),
+      
+          //         // debug
+          //         arrowColor: 'lime',
+          //       };
+      
+          //       if ( i == leftLanes - 1 ) {
+          //         outerLeft.push( pair );
+          //       }
+      
+          //       localPairs.push( pair );
+          //     }
+      
+          //     // Right
+          //     // This needs to be the opposite values of above, not just switched order
+          //     const rightFromLanes = e.to.lanes[ lanes.to == 'right' ? 'left' : 'right' ];
+          //     const rightToLanes = e.from.lanes[ lanes.from == 'right' ? 'left' : 'right' ];
+      
+          //     const rightLanes = Math.min( rightFromLanes, rightToLanes );
+      
+          //     // Right-most lane should always be able to turn right, so work right-to-left
+      
+          //     for ( let i = 0; i < rightLanes; i ++ ) {
+          //       localPairs.push( {
+          //         from:   e.to.routes[ lanes.to == 'right' ? 'left' : 'right' ][ rightFromLanes - i - 1 ],
+          //         to:   e.from.routes[ lanes.from == 'right' ? 'left' : 'right' ][ rightToLanes - i - 1 ],
+          //         radius: baseRadius - LANE_WIDTH * ( leftLanes + rightLanes - i - 1 + Math.abs( rightFromLanes - rightToLanes ) ),
+          //         // radius: baseRadius - LANE_WIDTH * ( rightLanes - i ),
+          //         // TODO: Is there a way to modify this radius to be better in asymetrical cases? e.g. left 1, right 2
+          //         // This helps somewhat. At least its symmetrical now.
+      
+          //         // debug
+          //         arrowColor: 'red',
+          //       } );
+          //     }
+          //   } );
+      
+          //   let minRadius = Infinity;
+          //   localPairs.forEach( pair => minRadius = Math.min( minRadius, pair.radius ) );
+      
+          //   // console.log( `minRadius = ${ minRadius }` );
+      
+          //   // const radius = getRadiusForPairs( ...outerLeft, intersection );
+          //   const radius = Math.max( -minRadius + 1, getRadiusForPairs( ...outerLeft, intersection, routes ) );
+          //   // const radius = 1;
+
+          //   // console.log( 'Radius for pairs: ' + radius );
+
+          //   localPairs.forEach( pair => pair.radius += radius );
+      
+          //   pairs.push( ...localPairs );
+          // } );
+      
+      
+          // // TODO: Eventually use this for figuring out intersection bounds
+          // // TODO: This should be saved as distances, not angles, so it can work with lines too
+          // //       Arcs can convert distance to angles later as needed
+          // // const fromEndAngles = new Map(), toStartAngles = new Map();
+          
+          // pairs.forEach( pair => {
+          //   const fromRoute = routes[ pair.from ];
+          //   const toRoute = routes[ pair.to ];
+      
+          //   const arc = getArcBetween( fromRoute, toRoute, pair.radius ?? 1, intersection );
+
+          //   if ( arc ) {
+          //     // Find min and max start and end angles for each route as we process pairs
+          //     const startPos = [
+          //       arc.center[ 0 ] + Math.cos( arc.startAngle ) * arc.radius,
+          //       arc.center[ 1 ] + Math.sin( arc.startAngle ) * arc.radius,
+          //     ];
+        
+          //     const endPos = [
+          //       arc.center[ 0 ] + Math.cos( arc.endAngle ) * arc.radius,
+          //       arc.center[ 1 ] + Math.sin( arc.endAngle ) * arc.radius,
+          //     ];
+              
+          //     const fromDistance = fromRoute.center ? getDistanceAtAngle(
+          //       Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] )
+          //     ) : vec2.distance( fromRoute.start, startPos );
+
+          //     const toDistance = toRoute.center ? getDistanceAtAngle(
+          //       Math.atan2( endPos[ 1 ] - toRoute.center[ 1 ], endPos[ 0 ] - toRoute.center[ 0 ] )
+          //     ) : vec2.distance( toRoute.start, endPos );
+
+        
+          //     // if ( !fromEndAngles.has( pair.from ) ||
+          //     //       isBetweenAngles( fromEndAngle, fromRoute.startAngle, fromEndAngles.get( pair.from ), fromRoute.counterclockwise ) ) {
+          //     //   fromEndAngles.set( pair.from, fromEndAngle );
+          //     // }
+        
+          //     // if ( !toStartAngles.has( pair.to ) ||
+          //     //       isBetweenAngles( toStartAngle, toStartAngles.get( pair.to ), toRoute.endAngle, toRoute.counterclockwise ) ) {
+          //     //   toStartAngles.set( pair.to, toStartAngle );
+          //     // }
+        
+          //     // Create route
+          //     arc.arrowColor = pair.arrowColor;
+        
+          //     const arcName = `${ pair.from }_TO_${ pair.to }_#${ index }_ARC`;
+          //     routes[ arcName ] = arc;
+        
+          //     // Keep track of our connections, and where they connect distance-wise
+          //     fromRoute.links ??= [];
+          //     fromRoute.links.push( {
+          //       name: arcName,
+          //       fromDistance: fromDistance,
+          //       toDistance: 0,
+          //     } );
+        
+          //     routes[ arcName ].links ??= [];
+          //     routes[ arcName ].links.push( {
+          //       name: pair.to,
+          //       fromDistance: getLength( routes[ arcName ] ),
+          //       toDistance: toDistance,
+          //     } );
+          //   }
+          // } );
         } );
       }
-    } );
-  } );
+  //   } );
+  // } );
 
   // console.log( 'Routes:' );
   // console.log( routes );
 
   return routes;
 }
+
+// NOTE: This is copied from Arc's helper functions, where's a better place for this to live?
+function getHeadingAtPoint( A, point ) {
+  if ( A.center ) {
+    return Angle.fixAngle( 
+      Math.atan2( 
+        point[ 1 ] - A.center[ 1 ], 
+        point[ 0 ] - A.center[ 0 ],
+      ) + ( A.counterclockwise ? -1 : 1 ) * Math.PI / 2 
+    );
+  }
+  else {
+    return Math.atan2( 
+      A.end[ 1 ] - A.start[ 1 ], 
+      A.end[ 0 ] - A.start[ 0 ],
+    );
+  }
+}
+
 
 
 import { Canvas } from '../../src/common/Canvas.js';
@@ -363,13 +427,6 @@ canvas.draw = ( ctx ) => {
     ctx.fillStyle = controlColors[ hover.action ];
     drawPoint( ctx, hover.point, 0.1 );
   }
-}
-
-function getPointAtAngle( arc, angle ) {
-  return [
-    arc.center[ 0 ] + Math.cos( angle ) * arc.radius, 
-    arc.center[ 1 ] + Math.sin( angle ) * arc.radius,
-  ];
 }
 
 function drawArrow( ctx, pos, angle, width = DEBUG_ARROW_WIDTH, length = DEBUG_ARROW_LENGTH ) {
@@ -431,224 +488,7 @@ function getRadiusForPairs( A, B, intersection, routes ) {
 // Getting arc between routes
 //
 
-function getArcBetween( A, B, radius, intersection, ctx ) {
-  const angleA = getAngle( A, intersection );
-  const angleB = getAngle( B, intersection );
-  
-  // TODO: Should we pass some combination of A/B.counterclockwise into deltaAngle to simplify this?
-  const turn = deltaAngle( angleA, angleB );
 
-  const s0 = ( turn < 0 ? 1 : -1 ) * ( A.counterclockwise ? -1 : 1 );
-
-  // If turn is left and we're counter clockwise, then must be coming from inside
-  // If turn is left and we're clockwise, then must be coming from outside
-  // If turn is right and we're counter clockwise, then must be coming from outside
-  // If turn is right and we're clockwise, then must be coming from inside
-
-  const s1 = ( turn > 0 ? 1 : -1 ) * ( B.counterclockwise ? 1 : -1 );
-  
-  const closestToLine = {
-    point: null,
-    dist: Infinity,
-  };
-
-  const offsetA = getOffset( A, s0 * radius );
-  const offsetB = getOffset( B, s1 * radius );
-
-  const offsetIntersections = getIntersections( offsetA, offsetB );
-
-  offsetIntersections.forEach( testIntersection => {
-    const angleOffsetA = getAngle( offsetA, testIntersection );
-    const angleOffsetB = getAngle( offsetB, testIntersection );
-    const turnOffset = deltaAngle( angleOffsetA, angleOffsetB );
-
-    if ( Math.sign( turn ) == Math.sign( turnOffset ) ) {
-      const startDist = A.center ?
-        deltaAngle( 
-          A.startAngle,
-          Math.atan2( 
-            testIntersection[ 1 ] - A.center[ 1 ],
-            testIntersection[ 0 ] - A.center[ 0 ], 
-          ),
-          A.counterclockwise,
-        ) :
-        vec2.distance( testIntersection, A.start );
-              
-      if ( startDist < closestToLine.dist ) {
-        closestToLine.point = testIntersection;
-        closestToLine.dist = startDist;
-      }
-    }
-  } );
-
-  if ( closestToLine.point ) {
-    const tangentA = getTangent( A, closestToLine.point, s0 * radius );
-    const tangentB = getTangent( B, closestToLine.point, s1 * radius );
-
-    const tangentVectorA = vec2.subtract( [], tangentA, closestToLine.point );
-    const tangentVectorB = vec2.subtract( [], tangentB, closestToLine.point );
-
-    return {
-      center: closestToLine.point,
-      radius: radius,
-      startAngle: Math.atan2( tangentVectorA[ 1 ], tangentVectorA[ 0 ] ),
-      endAngle: Math.atan2( tangentVectorB[ 1 ], tangentVectorB[ 0 ] ),
-      counterclockwise: turn < 0,
-    }
-  }
-}
-
-function getAngle( A, intersection ) {
-  if ( A.center ) {
-    return fixAngle( 
-      Math.atan2( 
-        intersection[ 1 ] - A.center[ 1 ], 
-        intersection[ 0 ] - A.center[ 0 ],
-      ) + ( A.counterclockwise ? -1 : 1 ) * Math.PI / 2 
-    );
-  }
-  else {
-    return Math.atan2( 
-      A.end[ 1 ] - A.start[ 1 ], 
-      A.end[ 0 ] - A.start[ 0 ],
-    );
-  }
-}
-
-function getOffset( A, offsetDist ) {
-  if ( A.center ) {
-    const offset = structuredClone( A );
-    offset.radius += offsetDist;
-    return offset;
-  }
-  else {
-    const v1 = vec2.subtract( [], A.end, A.start );
-    vec2.normalize( v1, v1 );
-    
-    return {
-      start: [
-        A.start[ 0 ] + v1[ 1 ] * offsetDist,
-        A.start[ 1 ] - v1[ 0 ] * offsetDist,
-      ],
-      end: [
-        A.end[ 0 ] + v1[ 1 ] * offsetDist,
-        A.end[ 1 ] - v1[ 0 ] * offsetDist,
-      ],
-    };
-  }
-}
-
-function getTangent( A, point, radius ) {
-  if ( A.center ) {
-    return vec2.scaleAndAdd( [],
-      A.center, 
-      vec2.subtract( [], point, A.center ),
-      A.radius / ( A.radius + radius )
-    );
-  }
-  else {
-    const v1 = vec2.subtract( [], A.end, A.start );
-    vec2.normalize( v1, v1 );
-
-    return [
-      point[ 0 ] - v1[ 1 ] * radius,
-      point[ 1 ] + v1[ 0 ] * radius,
-    ];
-  }    
-}
-
-function getIntersections( A, B ) {
-  if ( A.center && B.center ) {
-    return Intersections.getArcArcIntersections(
-      A.center[ 0 ], A.center[ 1 ], A.radius, A.startAngle, A.endAngle, A.counterclockwise,
-      B.center[ 0 ], B.center[ 1 ], B.radius, B.startAngle, B.endAngle, B.counterclockwise,
-    );
-  }
-  else if ( A.center ) {
-    return Intersections.getArcLineIntersections(
-      A.center[ 0 ], A.center[ 1 ], A.radius, A.startAngle, A.endAngle, A.counterclockwise,
-      B.start[ 0 ], B.start[ 1 ], B.end[ 0 ], B.end[ 1 ],
-    );
-  }
-  else if ( B.center ) {
-    return Intersections.getArcLineIntersections(
-      B.center[ 0 ], B.center[ 1 ], B.radius, B.startAngle, B.endAngle, B.counterclockwise,
-      A.start[ 0 ], A.start[ 1 ], A.end[ 0 ], A.end[ 1 ],
-    );
-  }
-  else {
-    return Intersections.getLineLineIntersections(
-      A.start[ 0 ], A.start[ 1 ], A.end[ 0 ], A.end[ 1 ],
-      B.start[ 0 ], B.start[ 1 ], B.end[ 0 ], B.end[ 1 ],
-    );
-  }
-}
-
-//
-// Arc utils
-//
-
-function arcFromThreePoints( p1, p2, p3 ) {
-  const [ x1, y1 ] = p1;
-  const [ x2, y2 ] = p2;
-  const [ x3, y3 ] = p3;
-
-  // Check for duplicate points
-  if ( ( x1 === x2 && y1 === y2 ) ||
-       ( x2 === x3 && y2 === y3 ) ||
-       ( x3 === x1 && y3 === y1 ) ) {
-    throw new Error( "Duplicate points" );
-  }
-
-  const D = 2 * (
-    x1 * ( y2 - y3 ) +
-    x2 * ( y3 - y1 ) +
-    x3 * ( y1 - y2 )
-  );
-
-  // Collinear (or nearly collinear)
-  if ( Math.abs(D) < 1e-12 ) {
-    throw new Error( "Points are collinear" );
-  }
-
-  const x1sq = x1 * x1 + y1 * y1;
-  const x2sq = x2 * x2 + y2 * y2;
-  const x3sq = x3 * x3 + y3 * y3;
-
-  const cx = (
-      x1sq * ( y2 - y3 ) +
-      x2sq * ( y3 - y1 ) +
-      x3sq * ( y1 - y2 )
-  ) / D;
-
-  const cy = (
-      x1sq * ( x3 - x2 ) +
-      x2sq * ( x1 - x3 ) +
-      x3sq * ( x2 - x1 )
-  ) / D;
-
-  const r = Math.hypot( cx - x1, cy - y1 );
-
-  const startAngle  = Math.atan2( y1 - cy, x1 - cx );
-  const middleAngle = Math.atan2( y2 - cy, x2 - cx );
-  const endAngle    = Math.atan2( y3 - cy, x3 - cx );
-
-  return { 
-    center: [ cx, cy ], 
-    radius: r,
-    startAngle: startAngle,
-    endAngle: endAngle,
-    counterclockwise: !isBetweenAngles( middleAngle, startAngle, endAngle ),
-  };
-}
-
-function getAngleAtDistance( arc, distance ) {
-  return arc.startAngle + ( distance / arc.radius ) * ( arc.counterclockwise ? -1 : 1 );
-}
-
-function getDistanceAtAngle( arc, angle ) {
-  return ( angle - arc.startAngle ) * arc.radius * ( arc.counterclockwise ? -1 : 1 );
-}
 
 //
 // Draw utils
@@ -673,49 +513,13 @@ function drawPoint( ctx, p, radius = 0.05 ) {
   ctx.fill();
 }
 
-//
-// Angle utils
-//
-function fixAngle( a ) {
-  const TWO_PI = Math.PI * 2;
-  
-  if ( a > Math.PI ) {
-    return a % TWO_PI - TWO_PI;
-  }
-  else if ( a < -Math.PI ) {
-    return a % TWO_PI + TWO_PI;
-  }
-  else {
-    return a;
-  }
-}
-
-function deltaAngle( a, b, counterclockwise = false ) {
-  return counterclockwise ? fixAngle( a - b ) : fixAngle( b - a );
-}
-
-function isBetweenAngles( testAngle, startAngle, endAngle, counterclockwise = false ) {
-  // Normalize angles
-  const test = fixAngle( testAngle );
-  const start = fixAngle( counterclockwise ? endAngle : startAngle );
-  const end = fixAngle( counterclockwise ? startAngle : endAngle );
-
-  // Handle wrap-around
-  if ( start < end ) {
-    // return test >= start && test <= end;
-    return test > start && test < end;
-  }
-  else {
-    // return test >= start || test <= end;
-    return test > start || test < end;
-  }
-}
 
 //
 // Route utils
 //
 function getLength( route ) {
   if ( route.center ) {
+    // TODO: Looks like this could be replaced by Angle.sweepAngle
     let sweepAngle = route.endAngle - route.startAngle;
 
     if ( !route.counterclockwise && sweepAngle < 0 ) {
@@ -736,7 +540,7 @@ function drawAtDistance( ctx, route, distance, drawFunc ) {
   let pos, angle;
  
   if ( route.center ) {
-    const angleAtD = getAngleAtDistance( route, distance );
+    const angleAtD = Arc.getAngleAtDistance( route, distance );
 
     pos = vec2.scaleAndAdd( [], route.center, [ Math.cos( angleAtD ), Math.sin( angleAtD ) ], route.radius );
     angle = angleAtD + ( route.counterclockwise ? -1 : 1 ) * Math.PI / 2;
@@ -811,22 +615,22 @@ canvas.pointerMove = ( m ) => {
 
       if ( street.center ) {
         const points = {
-          start:  hover.action == 'start'  ? hover.point : getPointAtAngle( street, street.startAngle ),
-          middle: hover.action == 'middle' ? hover.point : getPointAtAngle( street, street.startAngle + deltaAngle( street.startAngle, street.endAngle ) / 2 ),
-          end:    hover.action == 'end'    ? hover.point : getPointAtAngle( street, street.endAngle ),
+          start:  hover.action == 'start'  ? hover.point : Arc.getPointAtAngle( street, street.startAngle ),
+          middle: hover.action == 'middle' ? hover.point : Arc.getPointAtAngle( street, street.startAngle + Angle.sweepAngle( street.startAngle, street.endAngle, street.counterclockwise ) / 2 ),
+          end:    hover.action == 'end'    ? hover.point : Arc.getPointAtAngle( street, street.endAngle ),
         };
 
         // NOTE: Via side effect, this is also moving the hover point
         vec2.add( points[ hover.action ], points[ hover.action ], moveVector );
 
-        Object.assign( street, arcFromThreePoints( points.start, points.middle, points.end ) );
+        Object.assign( street, Arc.arcFromThreePoints( points.start, points.middle, points.end ) );
       }
       else {
         vec2.add( hover.point, hover.point, moveVector );
 
         // If dragging a middle point, turn street into arc
         if ( hover.action == 'middle' ) {
-          Object.assign( street, arcFromThreePoints( street.start, hover.point, street.end ) );
+          Object.assign( street, Arc.arcFromThreePoints( street.start, hover.point, street.end ) );
           delete street.start;
           delete street.end;
         }
@@ -870,14 +674,14 @@ function hoverUnderCursor( x, y ) {
       const dist = vec2.distance( [ x, y ], street.center );
       const angle = Math.atan2( y - street.center[ 1 ], x - street.center[ 0 ] );
 
-      if ( ( Math.abs( dist - street.radius ) < HOVER_DIST ) && isBetweenAngles( angle, street.startAngle, street.endAngle, street.counterclockwise ) ) {
-        const nearStart = Math.abs( deltaAngle( angle, street.startAngle ) * street.radius ) < ENDPOINT_DIST;
-        const nearEnd   = Math.abs( deltaAngle( angle, street.endAngle   ) * street.radius ) < ENDPOINT_DIST;
+      if ( ( Math.abs( dist - street.radius ) < HOVER_DIST ) && Angle.isBetweenAngles( angle, street.startAngle, street.endAngle, street.counterclockwise ) ) {
+        const nearStart = Math.abs( Angle.deltaAngle( angle, street.startAngle ) * street.radius ) < ENDPOINT_DIST;
+        const nearEnd   = Math.abs( Angle.deltaAngle( angle, street.endAngle   ) * street.radius ) < ENDPOINT_DIST;
 
         closestHover = {
           name: name,
           action: nearStart ? 'start' : nearEnd ? 'end' : 'middle',
-          point: getPointAtAngle( street, angle ),
+          point: Arc.getPointAtAngle( street, angle ),
         };
       }
     }

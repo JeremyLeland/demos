@@ -64,6 +64,9 @@ export function arcFromThreePoints( p1, p2, p3 ) {
 // Get arc between any two line/arc's
 //
 
+// NOTE: Since this requires knowing about Lines and Arcs, it potentially brings in more dependencies
+//       Should this live somewhere else?
+
 export function getArcBetween( A, B, radius, intersection ) {
   const angleA = getAngle( A, intersection );
   const angleB = getAngle( B, intersection );
@@ -74,8 +77,6 @@ export function getArcBetween( A, B, radius, intersection ) {
 
   // TODO: Should we pass some combination of A/B.counterclockwise into deltaAngle to simplify below?
   const turn = Angle.deltaAngle( angleA, angleB );
-
-  console.log( 'turn = ' + turn );
 
   const s0 = ( turn < 0 ? 1 : -1 ) * ( A.counterclockwise ? -1 : 1 );
 
@@ -100,8 +101,6 @@ export function getArcBetween( A, B, radius, intersection ) {
     const angleOffsetA = getAngle( offsetA, testIntersection );
     const angleOffsetB = getAngle( offsetB, testIntersection );
     const turnOffset = Angle.deltaAngle( angleOffsetA, angleOffsetB );
-
-    console.log( 'turnOffset = ' + turnOffset );
 
     if ( Math.sign( turn ) == Math.sign( turnOffset ) ) {
       const startDist = A.center ?
@@ -202,6 +201,7 @@ function getTangent( A, point, radius ) {
 // Helpers
 //
 
+// Angular position
 export function getAngleAtDistance( arc, distance ) {
   return arc.startAngle + ( distance / arc.radius ) * ( arc.counterclockwise ? -1 : 1 );
 }
@@ -215,4 +215,13 @@ export function getPointAtAngle( arc, angle ) {
     arc.center[ 0 ] + Math.cos( angle ) * arc.radius,
     arc.center[ 1 ] + Math.sin( angle ) * arc.radius,
   ];
+}
+
+export function getHeadingAtPoint( arc, point ) {
+  return Angle.fixAngle( 
+    Math.atan2( 
+      point[ 1 ] - arc.center[ 1 ], 
+      point[ 0 ] - arc.center[ 0 ],
+    ) + ( arc.counterclockwise ? -1 : 1 ) * Math.PI / 2 
+  );
 }
