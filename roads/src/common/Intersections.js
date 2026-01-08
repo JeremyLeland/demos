@@ -1,3 +1,5 @@
+import * as Angle from './Angle.js';
+
 export function getCircleCircleIntersections( cx1, cy1, radius1, cx2, cy2, radius2 ) {
   // Find circle intersections
   const dx = cx2 - cx1;
@@ -37,8 +39,8 @@ export function getArcArcIntersections(
     const angle1 = Math.atan2( pt[ 1 ] - cy1, pt[ 0 ] - cx1 );
     const angle2 = Math.atan2( pt[ 1 ] - cy2, pt[ 0 ] - cx2 );
     if (
-      isBetweenAngles( angle1, startAngle1, endAngle1, counterclockwise1 ) &&
-      isBetweenAngles( angle2, startAngle2, endAngle2, counterclockwise2 )
+      Angle.isBetweenAngles( angle1, startAngle1, endAngle1, counterclockwise1 ) &&
+      Angle.isBetweenAngles( angle2, startAngle2, endAngle2, counterclockwise2 )
     ) {
       results.push( pt );
     }
@@ -82,41 +84,13 @@ export function getArcLineIntersections(
 
       // TODO: Do we also need to make sure it's between x1,y1 and x2,y2?
 
-      if ( isBetweenAngles( angle, startAngle, endAngle, counterclockwise ) ) {
+      if ( Angle.isBetweenAngles( angle, startAngle, endAngle, counterclockwise ) ) {
         results.push( [ ix, iy ] );
       }
     }
   } );
 
   return results; // May be 0, 1, or 2 points
-}
-
-// Should this include =='s or not?
-export function isBetweenAngles( testAngle, startAngle, endAngle, counterclockwise = false ) {
-  // Normalize angles
-  const test = normalizeAngle( testAngle );
-  const start = normalizeAngle( counterclockwise ? endAngle : startAngle );
-  const end = normalizeAngle( counterclockwise ? startAngle : endAngle );
-
-  // Handle wrap-around
-  if ( start < end ) {
-    // return test >= start && test <= end;
-    return test > start && test < end;
-  }
-  else {
-    // return test >= start || test <= end;
-    return test > start || test < end;
-  }
-}
-
-function normalizeAngle( angle ) {
-  angle %= 2 * Math.PI;
-  
-  if ( angle < 0 ) {
-    angle += 2 * Math.PI;
-  }
-
-  return angle;
 }
 
 export function getLineLineIntersections( x1, y1, x2, y2, x3, y3, x4, y4 ) {
@@ -141,4 +115,31 @@ export function getLineLineIntersections( x1, y1, x2, y2, x3, y3, x4, y4 ) {
   }
 
   return [];
+}
+
+export function getIntersections( A, B ) {
+  if ( A.center && B.center ) {
+    return getArcArcIntersections(
+      A.center[ 0 ], A.center[ 1 ], A.radius, A.startAngle, A.endAngle, A.counterclockwise,
+      B.center[ 0 ], B.center[ 1 ], B.radius, B.startAngle, B.endAngle, B.counterclockwise,
+    );
+  }
+  else if ( A.center ) {
+    return getArcLineIntersections(
+      A.center[ 0 ], A.center[ 1 ], A.radius, A.startAngle, A.endAngle, A.counterclockwise,
+      B.start[ 0 ], B.start[ 1 ], B.end[ 0 ], B.end[ 1 ],
+    );
+  }
+  else if ( B.center ) {
+    return getArcLineIntersections(
+      B.center[ 0 ], B.center[ 1 ], B.radius, B.startAngle, B.endAngle, B.counterclockwise,
+      A.start[ 0 ], A.start[ 1 ], A.end[ 0 ], A.end[ 1 ],
+    );
+  }
+  else {
+    return getLineLineIntersections(
+      A.start[ 0 ], A.start[ 1 ], A.end[ 0 ], A.end[ 1 ],
+      B.start[ 0 ], B.start[ 1 ], B.end[ 0 ], B.end[ 1 ],
+    );
+  }
 }
