@@ -39,7 +39,7 @@ const streets = {
     start: [ -3, -3 ],
     end: [ 3, 3 ],
     lanes: {
-      left: 2,
+      left: 1,
       right: 2,
     },
   },
@@ -47,8 +47,8 @@ const streets = {
     start: [ 3, -3 ],
     end: [ -3, 3 ],
     lanes: {
-      left: 2,
-      right: 2,
+      left: 3,
+      right: 4,
     },
   },
 };
@@ -153,61 +153,41 @@ function routesFromStreets( streets ) {
           const A = turn < 0 ? two : one;
           const B = turn < 0 ? one : two;
 
-          // TODO: Unequal numbers of lanes
-
           const pairs = [];
 
-          {
+          function addPairs( streets, laneDirs ) {
             let radius = 2;
-            for ( let i = 0; i < 2; i ++ ) {
-              pairs.push( { from: B.routes.right[ 1 - i ], to: A.routes.right[ 1 - i ], radius: radius, arrowColor: 'red' } );
-              radius -= LANE_WIDTH;
+
+            {
+              const fromLanes = streets[ 0 ].routes[ laneDirs[ 0 ][ 0 ] ];
+              const toLanes = streets[ 1 ].routes[ laneDirs[ 0 ][ 1 ] ];
+
+              const numLanes = Math.min( fromLanes.length, toLanes.length );
+
+              for ( let i = 0; i < numLanes; i ++ ) {
+                pairs.push( { from: fromLanes[ numLanes - 1 - i ], to: toLanes[ numLanes - 1 - i ], radius: radius, arrowColor: 'lime' } );
+                radius -= LANE_WIDTH;
+              }
             }
 
-            for ( let i = 0; i < 2; i ++ ) {
-              pairs.push( { from: A.routes.left[ i ], to: B.routes.left[ i ], radius: radius, arrowColor: 'orange' } );
-              radius -= LANE_WIDTH;
+            {
+              const fromLanes = streets[ 1 ].routes[ laneDirs[ 1 ][ 0 ] ];
+              const toLanes = streets[ 0 ].routes[ laneDirs[ 1 ][ 1 ] ];
+
+              const numLanes = Math.min( fromLanes.length, toLanes.length );
+
+              for ( let i = 0; i < numLanes; i ++ ) {
+                pairs.push( { from: fromLanes[ i + fromLanes.length - numLanes ], to: toLanes[ i + toLanes.length - numLanes ], radius: radius, arrowColor: 'red' } );
+                radius -= LANE_WIDTH;
+              }
             }
           }
 
-          {
-            let radius = 2;
-            for ( let i = 0; i < 2; i ++ ) {
-              pairs.push( { from: B.routes.left[ 1 - i ], to: A.routes.left[ 1 - i ], radius: radius, arrowColor: 'blue' } );
-              radius -= LANE_WIDTH;
-            }
+          addPairs( [ B, A ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] );
+          addPairs( [ B, A ], [ [ 'left', 'left' ], [ 'right', 'right' ] ] );
+          addPairs( [ A, B ], [ [ 'left', 'right' ], [ 'left', 'right' ] ] );
+          addPairs( [ A, B ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
 
-            for ( let i = 0; i < 2; i ++ ) {
-              pairs.push( { from: A.routes.right[ i ], to: B.routes.right[ i ], radius: radius, arrowColor: 'cyan' } );
-              radius -= LANE_WIDTH;
-            }
-          }
-
-          {
-            let radius = 2;
-            for ( let i = 0; i < 2; i ++ ) {
-              pairs.push( { from: A.routes.left[ 1 - i ], to: B.routes.right[ 1 - i ], radius: radius, arrowColor: 'yellow' } );
-              radius -= LANE_WIDTH;
-            }
-
-            for ( let i = 0; i < 2; i ++ ) {
-              pairs.push( { from: B.routes.left[ i ], to: A.routes.right[ i ], radius: radius, arrowColor: 'lime' } );
-              radius -= LANE_WIDTH;
-            }
-          }
-          
-          {
-            let radius = 2;
-            for ( let i = 0; i < 2; i ++ ) {
-              pairs.push( { from: A.routes.right[ 1 - i ], to: B.routes.left[ 1 - i ], radius: radius, arrowColor: 'purple' } );
-              radius -= LANE_WIDTH;
-            }
-
-            for ( let i = 0; i < 2; i ++ ) {
-              pairs.push( { from: B.routes.right[ i ], to: A.routes.left[ i ], radius: radius, arrowColor: 'violet' } );
-              radius -= LANE_WIDTH;
-            }
-          }
 
           pairs.forEach( pair => {
             const arc = Arc.getArcBetween( routes[ pair.from ], routes[ pair.to ], pair.radius, intersection );
