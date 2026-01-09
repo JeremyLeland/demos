@@ -81,8 +81,6 @@ function routesFromStreets( streets ) {
 
         const laneOffset = ccDir * laneDirDir * LANE_WIDTH * ( 0.5 + i );
 
-        // TODO: Less duplication below
-
         if ( street.center ) {
           // Left lanes are backwards
           const route = {
@@ -133,153 +131,78 @@ function routesFromStreets( streets ) {
     } );
   } );
 
-  // TODO: Turns at intersections
+  // Turns at intersections
   const streetList = Object.values( streets );
 
-  const one = streets.C;
-  const two = streets.D;
+  for ( let i = 0; i < streetList.length - 1; i ++ ) {
+    for ( let j = i + 1; j < streetList.length; j ++ ) {
+      const one = streetList[ i ];
+      const two = streetList[ j ];
 
-  // streetList.forEach( A => {
-  //   streetList.forEach( B => {
-      if ( one != two ) {
-        const intersections = Intersections.getIntersections( one, two );
+      const intersections = Intersections.getIntersections( one, two );
 
-        intersections.forEach( ( intersection, index ) => {
+      intersections.forEach( ( intersection, index ) => {
 
-          const angles = [ one, two ].map( e => getHeadingAtPoint( e, intersection ) );
+        const angles = [ one, two ].map( e => getHeadingAtPoint( e, intersection ) );
 
-          const turn = Angle.deltaAngle( ...angles );
+        const turn = Angle.deltaAngle( ...angles );
 
-          const A = turn < 0 ? two : one;
-          const B = turn < 0 ? one : two;
+        const A = turn < 0 ? two : one;
+        const B = turn < 0 ? one : two;
 
-          const pairs = [];
+        const pairs = [];
 
-          function addPairs( streets, laneDirs ) {
-            let radius = 2;
+        function addPairs( streets, laneDirs ) {
+          let radius = 2;
 
-            {
-              const fromLanes = streets[ 0 ].routes[ laneDirs[ 0 ][ 0 ] ];
-              const toLanes = streets[ 1 ].routes[ laneDirs[ 0 ][ 1 ] ];
+          {
+            const fromLanes = streets[ 0 ].routes[ laneDirs[ 0 ][ 0 ] ];
+            const toLanes   = streets[ 1 ].routes[ laneDirs[ 0 ][ 1 ] ];
 
-              const numLanes = Math.min( fromLanes.length, toLanes.length );
+            const numLanes = Math.min( fromLanes.length, toLanes.length );
 
-              for ( let i = 0; i < numLanes; i ++ ) {
-                pairs.push( { from: fromLanes[ numLanes - 1 - i ], to: toLanes[ numLanes - 1 - i ], radius: radius, arrowColor: 'lime' } );
-                radius -= LANE_WIDTH;
-              }
-            }
-
-            {
-              const fromLanes = streets[ 1 ].routes[ laneDirs[ 1 ][ 0 ] ];
-              const toLanes = streets[ 0 ].routes[ laneDirs[ 1 ][ 1 ] ];
-
-              const numLanes = Math.min( fromLanes.length, toLanes.length );
-
-              for ( let i = 0; i < numLanes; i ++ ) {
-                pairs.push( { from: fromLanes[ i + fromLanes.length - numLanes ], to: toLanes[ i + toLanes.length - numLanes ], radius: radius, arrowColor: 'red' } );
-                radius -= LANE_WIDTH;
-              }
+            for ( let k = 0; k < numLanes; k ++ ) {
+              pairs.push( { from: fromLanes[ numLanes - 1 - k ], to: toLanes[ numLanes - 1 - k ], radius: radius, arrowColor: 'lime' } );
+              radius -= LANE_WIDTH;
             }
           }
 
-          addPairs( [ B, A ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] );
-          addPairs( [ B, A ], [ [ 'left', 'left' ], [ 'right', 'right' ] ] );
-          addPairs( [ A, B ], [ [ 'left', 'right' ], [ 'left', 'right' ] ] );
-          addPairs( [ A, B ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
+          {
+            const fromLanes = streets[ 1 ].routes[ laneDirs[ 1 ][ 0 ] ];
+            const toLanes   = streets[ 0 ].routes[ laneDirs[ 1 ][ 1 ] ];
 
+            const numLanes = Math.min( fromLanes.length, toLanes.length );
 
-          pairs.forEach( pair => {
-            const arc = Arc.getArcBetween( routes[ pair.from ], routes[ pair.to ], pair.radius, intersection );
-
-            if ( arc ) {
-              arc.arrowColor = pair.arrowColor;
-              
-              const arcName = `${ pair.from }_TO_${ pair.to }_#${ index }_ARC`;
-              routes[ arcName ] = arc;
+            for ( let k = 0; k < numLanes; k ++ ) {
+              pairs.push( { from: fromLanes[ k + fromLanes.length - numLanes ], to: toLanes[ k + toLanes.length - numLanes ], radius: radius, arrowColor: 'red' } );
+              radius -= LANE_WIDTH;
             }
-          } );
-          
+          }
+        }
 
-          // const pairs = [];
-          
-          // const angles = [ A, B ].map( a => Angle.getAngle( a, intersection ) );
-      
-          // const turn = Angle.sweepAngle( angles[ 0 ], angles[ 1 ], false );
-          // // console.log( 'turn = ' + turn );
-      
-      
-          // const Same = [
-          //   { from: 'left', to: 'left' },
-          //   { from: 'right', to: 'right' },
-          // ];
-      
-          // const Opposite = [
-          //   { from: 'left', to: 'right' },
-          //   { from: 'right', to: 'left' },
-          // ];
-      
-          // [
-          //   { from: A, to: B, lanePairs: turn < 0 ? Same : Opposite },
-          //   { from: B, to: A, lanePairs: turn > 0 ? Same : Opposite },
-          // ].forEach( e => {
-          //   const outerLeft = [];
-          //   const localPairs = [];
-      
-          //   const baseRadius = 0;
-      
-          //   // Can create all the radii without radius, then add this at the end
+        addPairs( [ B, A ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] );
+        addPairs( [ B, A ], [ [ 'left', 'left' ], [ 'right', 'right' ] ] );
+        addPairs( [ A, B ], [ [ 'left', 'right' ], [ 'left', 'right' ] ] );
+        addPairs( [ A, B ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
+
+        // TODO: Somewhere in here, figure out a good radius
+        // Instead of doing this with pairs, can we keep increasing radius until edge of arc is at intersection
+        // That is, distance( center, intersection ) > radius
+
+        pairs.forEach( pair => {
+          const arc = Arc.getArcBetween( routes[ pair.from ], routes[ pair.to ], pair.radius, intersection );
+
+          if ( arc ) {
+            arc.arrowColor = pair.arrowColor;
             
-          //   e.lanePairs.forEach( lanes => {
-          //     // Left
-          //     const leftFromLanes = e.from.lanes[ lanes.from ];
-          //     const leftToLanes = e.to.lanes[ lanes.to ];
-      
-          //     const leftLanes = Math.min( leftFromLanes, leftToLanes );
-      
-          //     // Left-most lane should always be able to turn left, so work left-to-right
-          //     // For simplicity, each from-lane can only go to one to-lane
-      
-          //     for ( let i = 0; i < leftLanes; i ++ ) {
-          //       const pair = {
-          //         from: e.from.routes[ lanes.from ][ i ],
-          //         to:     e.to.routes[ lanes.to   ][ i ],
-          //         radius: baseRadius - LANE_WIDTH * ( leftLanes - i - 1 ),
-      
-          //         // debug
-          //         arrowColor: 'lime',
-          //       };
-      
-          //       if ( i == leftLanes - 1 ) {
-          //         outerLeft.push( pair );
-          //       }
-      
-          //       localPairs.push( pair );
-          //     }
-      
-          //     // Right
-          //     // This needs to be the opposite values of above, not just switched order
-          //     const rightFromLanes = e.to.lanes[ lanes.to == 'right' ? 'left' : 'right' ];
-          //     const rightToLanes = e.from.lanes[ lanes.from == 'right' ? 'left' : 'right' ];
-      
-          //     const rightLanes = Math.min( rightFromLanes, rightToLanes );
-      
-          //     // Right-most lane should always be able to turn right, so work right-to-left
-      
-          //     for ( let i = 0; i < rightLanes; i ++ ) {
-          //       localPairs.push( {
-          //         from:   e.to.routes[ lanes.to == 'right' ? 'left' : 'right' ][ rightFromLanes - i - 1 ],
-          //         to:   e.from.routes[ lanes.from == 'right' ? 'left' : 'right' ][ rightToLanes - i - 1 ],
-          //         radius: baseRadius - LANE_WIDTH * ( leftLanes + rightLanes - i - 1 + Math.abs( rightFromLanes - rightToLanes ) ),
-          //         // radius: baseRadius - LANE_WIDTH * ( rightLanes - i ),
-          //         // TODO: Is there a way to modify this radius to be better in asymetrical cases? e.g. left 1, right 2
-          //         // This helps somewhat. At least its symmetrical now.
-      
-          //         // debug
-          //         arrowColor: 'red',
-          //       } );
-          //     }
-          //   } );
+            const arcName = `${ pair.from }_TO_${ pair.to }_#${ index }_ARC`;
+            routes[ arcName ] = arc;
+          }
+        } );
+      } );
+    }
+  }
+  
       
           //   let minRadius = Infinity;
           //   localPairs.forEach( pair => minRadius = Math.min( minRadius, pair.radius ) );
@@ -362,10 +285,7 @@ function routesFromStreets( streets ) {
           //     } );
           //   }
           // } );
-        } );
-      }
-  //   } );
-  // } );
+        
 
   // console.log( 'Routes:' );
   // console.log( routes );
