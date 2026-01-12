@@ -216,34 +216,12 @@ canvas.backgroundColor = '#123';
 canvas.bounds = [ grid.minX - 0.5, grid.minY - 0.5, grid.maxX + 0.5, grid.maxY + 0.5 ];
 
 canvas.draw = ( ctx ) => {
+  routes = routesFromStreets( streets );
+
+
   ctx.lineWidth = 0.02;
   grid.draw( ctx );
 
-  // Streets
-  // Object.entries( streets ).forEach( ( [ name, street ] ) => {
-  //   ctx.lineWidth = 0.5;
-  //   ctx.strokeStyle = 'gray';
-
-  //   if ( street.center ) {
-  //     drawArc( ctx, street );
-  //   }
-  //   else {
-  //     drawLine( ctx, street.start, street.end );
-  //   }
-  // } );
-
-  // Routes
-  routes = routesFromStreets( streets );
-
-  Object.values( routes ).forEach( route => {
-    const routeLength = getLength( route );
-    
-    ctx.fillStyle = route.arrowColor;
-
-    for ( let length = 0; length < routeLength; length += DEBUG_ARROW_LENGTH ) {
-      drawAtDistance( ctx, route, length, drawArrow );
-    }
-  } );
 
   // TODO: Draw outline of streets based on the routes (and connections between them)
   
@@ -254,10 +232,10 @@ canvas.draw = ( ctx ) => {
   addRouteToPath( routes[ streets.line.routes.left[ streets.line.routes.left.length - 1 ] ], outline, 1 );
   outline.closePath();
 
-  ctx.strokeStyle = 'gray';
+  ctx.fillStyle = 'gray';
   ctx.lineWidth = 0.02;
   ctx.setLineDash( [] );
-  ctx.stroke( outline );
+  ctx.fill( outline );
 
   const betweenRightLanes = new Path2D();
 
@@ -279,15 +257,25 @@ canvas.draw = ( ctx ) => {
   ctx.setLineDash( [ 0.1, 0.1 ] );
   ctx.stroke( betweenRightLanes2 );
   
-  const centerLine = new Path2D();
+  const CENTER_LINE_OFFSET = -0.8;
+
+  const rightCenterLine = new Path2D();
   
-  addRouteToPath( routes[ streets.line.routes.right[ 0 ] ], centerLine, -1 );
-  addRouteToPath( routes[ streets.arc.routes.right[ 0 ] ], centerLine, -1 );
+  addRouteToPath( routes[ streets.line.routes.right[ 0 ] ], rightCenterLine, CENTER_LINE_OFFSET  );
+  addRouteToPath( routes[ streets.arc.routes.right[ 0 ] ], rightCenterLine, CENTER_LINE_OFFSET );
+  
+
+  const leftCenterLine = new Path2D();
+  
+  addRouteToPath( routes[ streets.arc.routes.left[ 0 ] ], leftCenterLine, CENTER_LINE_OFFSET );
+  addRouteToPath( routes[ streets.line.routes.left[ 0 ] ], leftCenterLine, CENTER_LINE_OFFSET );
+
   
   ctx.strokeStyle = 'yellow';
   ctx.lineWidth = 0.02;
   ctx.setLineDash( [] );
-  ctx.stroke( centerLine );
+  ctx.stroke( rightCenterLine );
+  ctx.stroke( leftCenterLine );
 
   const betweenLeftLanes = new Path2D();
 
@@ -302,6 +290,18 @@ canvas.draw = ( ctx ) => {
   // NOTE: Doted lanes don't line up due to starting at different places
   // Not sure if its noticeable enough to try to do the left lane in reverse
   // Do dotted lanes line up in real life?
+
+  ctx.globalAlpha = 0.5;
+  Object.values( routes ).forEach( route => {
+    const routeLength = getLength( route );
+    
+    ctx.fillStyle = route.arrowColor;
+
+    for ( let length = 0; length < routeLength; length += DEBUG_ARROW_LENGTH ) {
+      drawAtDistance( ctx, route, length, drawArrow );
+    }
+  } );
+  ctx.globalAlpha = 1;
 }
 
 function addRouteToPath( route, path, offsetDir ) {
