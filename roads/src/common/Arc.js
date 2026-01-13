@@ -217,6 +217,10 @@ export function getPointAtAngle( arc, angle ) {
   ];
 }
 
+export function getLength( arc ) {
+  return arc.radius * Math.abs( Angle.sweepAngle( arc.startAngle, arc.endAngle, arc.counterclockwise ) );
+}
+
 export function getHeadingAtPoint( arc, point ) {
   return Angle.fixAngle( 
     Math.atan2( 

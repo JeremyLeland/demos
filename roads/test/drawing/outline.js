@@ -1,7 +1,10 @@
 // Goal: Draw outline of simple street layouts
 
+// NEXT: Add links to routes so we can eventually find the next link we hit that's turning right
+
 import * as Angle from '../../src/common/Angle.js';
 import * as Arc from '../../src/common/Arc.js';
+import * as Route from '../../src/Route.js';
 
 const LANE_WIDTH = 0.25;
 
@@ -14,18 +17,26 @@ const streets = {
     end: [ 3, 0 ],
     lanes: {
       left: 2,
-      right: 3,
+      right: 2,
     },
   },
-  arc: {
-    center: [ 3, -1 ],
-    radius: 1,
-    startAngle: Math.PI / 2,
-    endAngle: 0,
-    counterclockwise: true,
+  // arc: {
+  //   center: [ 3, -1 ],
+  //   radius: 1,
+  //   startAngle: Math.PI / 2,
+  //   endAngle: 0,
+  //   counterclockwise: true,
+  //   lanes: {
+  //     left: 2,
+  //     right: 3,
+  //   },
+  // },
+  line2: {
+    start: [ 0, -3 ],
+    end: [ 0, 3 ],
     lanes: {
       left: 2,
-      right: 3,
+      right: 2,
     },
   },
 };
@@ -120,7 +131,7 @@ function routesFromStreets( streets ) {
 
       intersections.forEach( ( intersection, index ) => {
 
-        const angles = [ one, two ].map( e => getHeadingAtPoint( e, intersection ) );
+        const angles = [ one, two ].map( route => Route.getHeadingAtPoint( route, intersection ) );
 
         const turn = Angle.deltaAngle( ...angles );
 
@@ -174,33 +185,45 @@ function routesFromStreets( streets ) {
             
             const arcName = `${ pair.from }_TO_${ pair.to }_#${ index }_ARC`;
             routes[ arcName ] = arc;
+
+            // Keep track of our connections, and where they connect distance-wise
+            const fromRoute = routes[ pair.from ];
+            const toRoute = routes[ pair.to ];
+
+            const startPos = Arc.getPointAtAngle( arc, arc.startAngle );
+            const endPos = Arc.getPointAtAngle( arc, arc.endAngle );
+
+            const fromDistance = fromRoute.center ? getDistanceAtAngle(
+              Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] )
+            ) : vec2.distance( fromRoute.start, startPos );
+
+            const toDistance = toRoute.center ? getDistanceAtAngle(
+              Math.atan2( endPos[ 1 ] - toRoute.center[ 1 ], endPos[ 0 ] - toRoute.center[ 0 ] )
+            ) : vec2.distance( toRoute.start, endPos );
+            
+            fromRoute.links ??= [];
+            fromRoute.links.push( {
+              name: arcName,
+              fromDistance: fromDistance,
+              toDistance: 0,
+            } );
+            
+            arc.links ??= [];
+            arc.links.push( {
+              name: pair.to,
+              fromDistance: Arc.getLength( arc ),
+              toDistance: toDistance,
+            } );
           }
         } );
       } );
     }
   }
 
+  console.log( routes );
+
   return routes;
 }
-
-// NOTE: This is copied from Arc's helper functions, where's a better place for this to live?
-function getHeadingAtPoint( A, point ) {
-  if ( A.center ) {
-    return Angle.fixAngle( 
-      Math.atan2( 
-        point[ 1 ] - A.center[ 1 ], 
-        point[ 0 ] - A.center[ 0 ],
-      ) + ( A.counterclockwise ? -1 : 1 ) * Math.PI / 2 
-    );
-  }
-  else {
-    return Math.atan2( 
-      A.end[ 1 ] - A.start[ 1 ], 
-      A.end[ 0 ] - A.start[ 0 ],
-    );
-  }
-}
-
 
 
 import { Canvas } from '../../src/common/Canvas.js';
@@ -223,73 +246,118 @@ canvas.draw = ( ctx ) => {
   grid.draw( ctx );
 
 
-  // TODO: Draw outline of streets based on the routes (and connections between them)
-  
-  const outline = new Path2D();
-  addRouteToPath( routes[ streets.line.routes.right[ streets.line.routes.right.length - 1 ] ], outline, 1 );
-  addRouteToPath( routes[ streets.arc.routes.right[ streets.arc.routes.right.length - 1 ] ], outline, 1 );
-  addRouteToPath( routes[ streets.arc.routes.left[ streets.arc.routes.left.length - 1 ] ], outline, 1 );
-  addRouteToPath( routes[ streets.line.routes.left[ streets.line.routes.left.length - 1 ] ], outline, 1 );
-  outline.closePath();
+  function getNextLink( route, distance ) {
+    let closest, closestDist = Infinity;
 
-  ctx.fillStyle = 'gray';
-  ctx.lineWidth = 0.02;
-  ctx.setLineDash( [] );
+    route.links.forEach( link => {
+
+      // TODO: Only use links that go right? (only applies to border, maybe make an option for function)
+      //   Not quite this...if there's a link at the end that goes left, then we'd want to take that
+      //   If it's before the end, though, we always want right
+
+      // TODO: Need point, not just distance. Get point from distance if arc
+      
+      // const fromRoute = route;
+      const toRoute = routes[ link.name ];
+
+      // const fromPoint = Route.getPositionAtDistance( fromRoute, link.fromDistance );
+      // const fromHeading = Route.getHeadingAtPoint( fromRoute, fromPoint );
+
+      // Aren't fromPoint and toPoint the same? Only need to calculate one of these
+      // Actually, won't heading be the same too?
+      // Is counterclockwise a better indicator?
+      // const toPoint = Route.getPositionAtDistance(toRoute, link.toDistance );
+      // const toHeading = Route.getHeadingAtPoint( toRoute, toPoint );
+
+      // if ( Angle.deltaAngle( fromHeading, toHeading ) > 0 ) { 
+      if ( toRoute.counterclockwise != true ) {
+        const dist = link.fromDistance - distance;
+        
+        if ( 0 <= dist && dist < closestDist ) {
+          closest = link;
+          closestDist = dist;
+        }
+      }
+    } );
+
+    return closest;
+  }
+
+  function makePath( path, startRoute, offset ) {
+    let lastLink;
+    let route = startRoute;
+    let nextLink = getNextLink( route, 0 );
+    
+    addRouteToPath( path, route, lastLink?.toDistance, nextLink?.fromDistance, offset );
+    
+    for ( let tries = 0; tries < 10; tries ++ ) {
+      lastLink = nextLink;
+      route = routes[ lastLink.name ];
+      nextLink = getNextLink( route, lastLink.toDistance );
+
+      addRouteToPath( path, route, lastLink?.toDistance, nextLink?.fromDistance, offset );
+
+      if ( !nextLink ) {
+        break;
+      }
+    }
+
+    return path;
+  }
+
+  const outline = new Path2D();
+
+  makePath( outline, routes[ streets.line.routes.right[ streets.line.routes.right.length - 1 ] ], 1 );
+  makePath( outline, routes[ streets.line2.routes.left[ streets.line2.routes.left.length - 1 ] ], 1 );
+  makePath( outline, routes[ streets.line.routes.left[ streets.line.routes.left.length - 1 ] ], 1 );
+  makePath( outline, routes[ streets.line2.routes.right[ streets.line.routes.right.length - 1 ] ], 1 );
+
+  ctx.fillStyle = '#555';
   ctx.fill( outline );
 
-  const betweenRightLanes = new Path2D();
 
-  addRouteToPath( routes[ streets.line.routes.right[ 0 ] ], betweenRightLanes, 1 );
-  addRouteToPath( routes[ streets.arc.routes.right[ 0 ] ], betweenRightLanes, 1 );
-
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 0.02;
-  ctx.setLineDash( [ 0.1, 0.1 ] );
-  ctx.stroke( betweenRightLanes );
-
-  const betweenRightLanes2 = new Path2D();
-
-  addRouteToPath( routes[ streets.line.routes.right[ 1 ] ], betweenRightLanes2, 1 );
-  addRouteToPath( routes[ streets.arc.routes.right[ 1 ] ], betweenRightLanes2, 1 );
-
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 0.02;
-  ctx.setLineDash( [ 0.1, 0.1 ] );
-  ctx.stroke( betweenRightLanes2 );
-  
   const CENTER_LINE_OFFSET = -0.8;
 
-  const rightCenterLine = new Path2D();
-  
-  addRouteToPath( routes[ streets.line.routes.right[ 0 ] ], rightCenterLine, CENTER_LINE_OFFSET  );
-  addRouteToPath( routes[ streets.arc.routes.right[ 0 ] ], rightCenterLine, CENTER_LINE_OFFSET );
-  
+  const rightCenterLine1 = makePath( new Path2D(), routes[ streets.line.routes.right[ 0 ] ], CENTER_LINE_OFFSET );
+  const rightCenterLine2 = makePath( new Path2D(), routes[ streets.line2.routes.right[ 0 ] ], CENTER_LINE_OFFSET );
 
-  const leftCenterLine = new Path2D();
-  
-  addRouteToPath( routes[ streets.arc.routes.left[ 0 ] ], leftCenterLine, CENTER_LINE_OFFSET );
-  addRouteToPath( routes[ streets.line.routes.left[ 0 ] ], leftCenterLine, CENTER_LINE_OFFSET );
-
-  
+  const leftCenterLine1 = makePath( new Path2D(), routes[ streets.line.routes.left[ 0 ] ], CENTER_LINE_OFFSET );
+  const leftCenterLine2 = makePath( new Path2D(), routes[ streets.line2.routes.left[ 0 ] ], CENTER_LINE_OFFSET );
+ 
   ctx.strokeStyle = 'yellow';
   ctx.lineWidth = 0.02;
   ctx.setLineDash( [] );
-  ctx.stroke( rightCenterLine );
-  ctx.stroke( leftCenterLine );
+  ctx.stroke( rightCenterLine1 );
+  ctx.stroke( rightCenterLine2 );
+  ctx.stroke( leftCenterLine1 );
+  ctx.stroke( leftCenterLine2 );
 
-  const betweenLeftLanes = new Path2D();
 
-  addRouteToPath( routes[ streets.arc.routes.left[ 0 ] ], betweenLeftLanes, 1 );
-  addRouteToPath( routes[ streets.line.routes.left[ 0 ] ], betweenLeftLanes, 1 );
+  const rightBetweenLine = makePath( new Path2D(), routes[ streets.line.routes.right[ 0 ] ], 1 );
+  const rightBetweenLine2 = makePath( new Path2D(), routes[ streets.line2.routes.right[ 0 ] ], 1 );
+  const leftBetweenLine = makePath( new Path2D(), routes[ streets.line.routes.left[ 0 ] ], 1 );
+  const leftBetweenLine2 = makePath( new Path2D(), routes[ streets.line2.routes.left[ 0 ] ], 1 );
 
   ctx.strokeStyle = 'white';
   ctx.lineWidth = 0.02;
   ctx.setLineDash( [ 0.1, 0.1 ] );
-  ctx.stroke( betweenLeftLanes );
+  ctx.stroke( rightBetweenLine );
+  ctx.stroke( rightBetweenLine2 );
+  ctx.stroke( leftBetweenLine );
+  ctx.stroke( leftBetweenLine2 );
 
-  // NOTE: Doted lanes don't line up due to starting at different places
-  // Not sure if its noticeable enough to try to do the left lane in reverse
-  // Do dotted lanes line up in real life?
+  // NOTES: This may be really two distinct tasks. 
+  //  - One, make a big path with gaps in it for the street (which will be filled)
+  //  - Two, figure out all the individual paths of dotted lines and lane markers between the routes
+  // Each route should have some lane marker related to it, I think
+  // Most of the routes won't be used to calculate the street boundry
+
+
+  // Maybe:
+  //  - Pick pair of intersections
+  //  - Find path between them
+  //  - Draw dotted lines with all offsets along this path 
+  //    (for both lane directions, but start from same intersection and end at same intersection for all of them)
 
   ctx.globalAlpha = 0.5;
   Object.values( routes ).forEach( route => {
@@ -304,24 +372,30 @@ canvas.draw = ( ctx ) => {
   ctx.globalAlpha = 1;
 }
 
-function addRouteToPath( route, path, offsetDir ) {
+function addRouteToPath( path, route, startDist, endDist, offsetDir ) {
   if ( route.center ) {
     path.arc( 
       route.center[ 0 ], 
       route.center[ 1 ], 
       route.radius + offsetDir * ( route.counterclockwise ? 1 : -1 ) * LANE_WIDTH / 2,
-      route.startAngle, 
-      route.endAngle, 
+      Arc.getAngleAtDistance( route, startDist ?? route.startAngle ),
+      Arc.getAngleAtDistance( route, endDist ?? route.endAngle ),
       route.counterclockwise );
   }
   else {
     const v1 = vec2.subtract( [], route.end, route.start );
-    vec2.normalize( v1, v1 );
+    
+    const tangent = vec2.normalize( [], v1 );
+    const normal = [ -tangent[ 1 ], tangent[ 0 ] ];
 
-    const normal = [ -v1[ 1 ], v1[ 0 ] ];
+    const start = vec2.scaleAndAdd( [], route.start, tangent, startDist ?? 0 );
+    vec2.scaleAndAdd( start, start, normal, offsetDir * LANE_WIDTH / 2 );
 
-    path.lineTo( ...vec2.scaleAndAdd( [], route.start, normal, offsetDir * LANE_WIDTH / 2 ) );
-    path.lineTo( ...vec2.scaleAndAdd( [], route.end,   normal, offsetDir * LANE_WIDTH / 2 ) );
+    const end = vec2.scaleAndAdd( [], route.start, tangent, endDist ?? vec2.length( v1 ) );
+    vec2.scaleAndAdd( end, end, normal, offsetDir * LANE_WIDTH / 2 );
+
+    path.lineTo( ...start );
+    path.lineTo( ...end );
   }
 }
 
