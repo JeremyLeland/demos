@@ -39,6 +39,17 @@ const streets = {
       right: 2,
     },
   },
+  arc2: {
+    center: [ -3, -3 ],
+    radius: 3,
+    startAngle: Math.PI / 2,
+    endAngle: 0,
+    counterclockwise: false,
+    lanes: {
+      left: 2,
+      right: 2,
+    },
+  },
 };
 
 // TODO: Make these part of some sort of level object separate from controlPoints?
@@ -133,6 +144,8 @@ function routesFromStreets( streets ) {
         const angles = [ one, two ].map( route => Route.getHeadingAtPoint( route, intersection ) );
         const turn = Angle.deltaAngle( ...angles );
 
+        console.log( `Turn ${ Object.keys( streets )[ i ] } vs ${ Object.keys( streets )[ j ] } = ${ turn }` );
+
         // TODO: NOW: If no turn, then no arc needed -- link them directly
         function connectStreets( streets, laneDirs ) {
           {
@@ -176,16 +189,24 @@ function routesFromStreets( streets ) {
           }
         }
 
+        const atBeginning = vec2.distance( intersection, Route.getPositionAtDistance( one, 0 ) ) < 1e-6;
+
         if ( turn == 0 ) {
-          connectStreets( [ one, two ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] );
+          if ( atBeginning ) {
+            connectStreets( [ one, two ], [ [ 'left', 'left' ], [ 'right', 'right' ] ] );
+          }
+          else {
+            connectStreets( [ one, two ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] );
+          }
           return;
         }
-        else if ( turn == Math.PI ) {
-          connectStreets( [ one, two ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
-          return;
-        }
-        else if ( turn == -Math.PI ) {
-          connectStreets( [ two, one ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
+        else if ( turn == -Math.PI /*|| turn == Math.PI*/ /* seems like it's never +PI... */ ) {
+          if ( atBeginning ) {
+            connectStreets( [ one, two ], [ [ 'left', 'right' ], [ 'left', 'right' ] ] );
+          }
+          else {
+            connectStreets( [ one, two ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
+          }
           return;
         }
 
