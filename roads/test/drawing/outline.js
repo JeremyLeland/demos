@@ -20,20 +20,20 @@ const streets = {
       right: 2,
     },
   },
-  // arc: {
-  //   center: [ 3, -1 ],
-  //   radius: 1,
-  //   startAngle: Math.PI / 2,
-  //   endAngle: 0,
-  //   counterclockwise: true,
-  //   lanes: {
-  //     left: 2,
-  //     right: 3,
-  //   },
-  // },
   line2: {
     start: [ 0, -3 ],
     end: [ 0, 3 ],
+    lanes: {
+      left: 2,
+      right: 2,
+    },
+  },
+  arc: {
+    center: [ 3, 3 ],
+    radius: 3,
+    startAngle: -Math.PI / 2,
+    endAngle: Math.PI,
+    counterclockwise: false,
     lanes: {
       left: 2,
       right: 2,
@@ -130,10 +130,64 @@ function routesFromStreets( streets ) {
       const intersections = Intersections.getIntersections( one, two );
 
       intersections.forEach( ( intersection, index ) => {
-
         const angles = [ one, two ].map( route => Route.getHeadingAtPoint( route, intersection ) );
-
         const turn = Angle.deltaAngle( ...angles );
+
+        // TODO: NOW: If no turn, then no arc needed -- link them directly
+        function connectStreets( streets, laneDirs ) {
+          {
+            const fromLanes = streets[ 0 ].routes[ laneDirs[ 0 ][ 0 ] ];
+            const toLanes   = streets[ 1 ].routes[ laneDirs[ 0 ][ 1 ] ];
+
+            const numLanes = fromLanes.length;
+
+            for ( let k = 0; k < numLanes; k ++ ) {
+              const fromRoute = routes[ fromLanes[ k ] ];
+
+              fromRoute.links ??= [];
+              fromRoute.links.push( {
+                name: toLanes[ k ],
+                fromDistance: Route.getLength( fromRoute ),
+                toDistance: 0,
+              } );
+
+              console.log( `Connecting ${ fromLanes[ k ] } to ${ toLanes[ k ] } from ${ Route.getLength( fromRoute ) } to 0` );
+            }
+          }
+
+          {
+            const fromLanes = streets[ 1 ].routes[ laneDirs[ 1 ][ 0 ] ];
+            const toLanes   = streets[ 0 ].routes[ laneDirs[ 1 ][ 1 ] ];
+
+            const numLanes = fromLanes.length;
+
+            for ( let k = 0; k < numLanes; k ++ ) {
+              const fromRoute = routes[ fromLanes[ k ] ];
+
+              fromRoute.links ??= [];
+              fromRoute.links.push( {
+                name: toLanes[ k ],
+                fromDistance: Route.getLength( fromRoute ),
+                toDistance: 0,
+              } );
+
+              console.log( `Connecting ${ fromLanes[ k ] } to ${ toLanes[ k ] } from ${ Route.getLength( fromRoute ) } to 0` );
+            }
+          }
+        }
+
+        if ( turn == 0 ) {
+          connectStreets( [ one, two ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] );
+          return;
+        }
+        else if ( turn == Math.PI ) {
+          connectStreets( [ one, two ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
+          return;
+        }
+        else if ( turn == -Math.PI ) {
+          connectStreets( [ two, one ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
+          return;
+        }
 
         const A = turn < 0 ? two : one;
         const B = turn < 0 ? one : two;
@@ -232,7 +286,7 @@ import * as Intersections from '../../src/common/Intersections.js';
 
 import { vec2 } from '../../lib/gl-matrix.js'
 
-const grid = new Grid( -5, -5, 5, 5 );
+const grid = new Grid( -6, -6, 6, 6 );
 
 const canvas = new Canvas();
 canvas.backgroundColor = '#123';
@@ -248,12 +302,16 @@ canvas.draw = ( ctx ) => {
 
   function getNextLink( route, distance ) {
     let closest, closestDist = Infinity;
+    let furthest, furthestDist = 0;
 
-    route.links.forEach( link => {
+    route.links?.forEach( link => {
 
       // TODO: Only use links that go right? (only applies to border, maybe make an option for function)
       //   Not quite this...if there's a link at the end that goes left, then we'd want to take that
       //   If it's before the end, though, we always want right
+
+      // How do we handle routes past all the links? They're basically dead since they can't go anywhere, right?
+      // If we truly want that to be the end of the road, should it link to its own lanes on the other side? (e.g. a U turn?)
 
       // TODO: Need point, not just distance. Get point from distance if arc
       
@@ -270,30 +328,31 @@ canvas.draw = ( ctx ) => {
       // const toHeading = Route.getHeadingAtPoint( toRoute, toPoint );
 
       // if ( Angle.deltaAngle( fromHeading, toHeading ) > 0 ) { 
-      if ( toRoute.counterclockwise != true ) {
-        const dist = link.fromDistance - distance;
-        
-        if ( 0 <= dist && dist < closestDist ) {
-          closest = link;
-          closestDist = dist;
-        }
+      const dist = link.fromDistance - distance;
+
+      if ( toRoute.counterclockwise != true && 0 <= dist && dist < closestDist ) {
+        closest = link;
+        closestDist = dist;
+      }
+      
+      if ( dist > furthestDist ) {
+        furthest = link;
+        furthestDist = dist;
       }
     } );
 
-    return closest;
+    return closest ?? furthest;
   }
 
   function makePath( path, startRoute, offset ) {
-    let lastLink;
-    let route = startRoute;
-    let nextLink = getNextLink( route, 0 );
-    
-    addRouteToPath( path, route, lastLink?.toDistance, nextLink?.fromDistance, offset );
-    
+    let lastLink, route, nextLink;
+    // let route = startRoute;
+    // let nextLink = getNextLink( route, 0 );
+        
     for ( let tries = 0; tries < 10; tries ++ ) {
       lastLink = nextLink;
-      route = routes[ lastLink.name ];
-      nextLink = getNextLink( route, lastLink.toDistance );
+      route = lastLink ? routes[ lastLink.name ] : startRoute;
+      nextLink = getNextLink( route, lastLink?.toDistance ?? 0 );
 
       addRouteToPath( path, route, lastLink?.toDistance, nextLink?.fromDistance, offset );
 
@@ -308,12 +367,15 @@ canvas.draw = ( ctx ) => {
   const outline = new Path2D();
 
   makePath( outline, routes[ streets.line.routes.right[ streets.line.routes.right.length - 1 ] ], 1 );
-  makePath( outline, routes[ streets.line2.routes.left[ streets.line2.routes.left.length - 1 ] ], 1 );
-  makePath( outline, routes[ streets.line.routes.left[ streets.line.routes.left.length - 1 ] ], 1 );
-  makePath( outline, routes[ streets.line2.routes.right[ streets.line.routes.right.length - 1 ] ], 1 );
+  // makePath( outline, routes[ streets.line2.routes.left[ streets.line2.routes.left.length - 1 ] ], 1 );
+  // makePath( outline, routes[ streets.line.routes.left[ streets.line.routes.left.length - 1 ] ], 1 );
+  // makePath( outline, routes[ streets.line2.routes.right[ streets.line.routes.right.length - 1 ] ], 1 );
 
-  ctx.fillStyle = '#555';
-  ctx.fill( outline );
+  ctx.strokeStyle = 'cyan';
+  ctx.stroke( outline );
+
+  // ctx.fillStyle = '#555';
+  // ctx.fill( outline, 'evenodd' );
 
 
   const CENTER_LINE_OFFSET = -0.8;

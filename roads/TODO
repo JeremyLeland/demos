@@ -60,25 +60,10 @@ What if I did more like a train set, predefined acceptable intersections and pie
 
 Someday might want to just do lots of short lines (e.g. from bezier curve), but I like the simplicity of lines and arcs for now
 
-
-Instead of spliting routes up, what if we had "next" include distance at which it branches off?
-e.g.
-  route: {
-    start: [ 0,  0 ],
-    end:   [ 0, 10 ],
-    next: [
-      { name: 'moo', distance: 5 },
-      { name: 'quack', distance: 7 },
-    ],
-  }
-
-Then I could have fewer routes for intersections and lane changes.
-  - Instead of checking for next route once I've reached end of current route,
-    see when we've passed next route's distance. (I think I already know next route anyway nowadays)
-  - Does this make pathfinding weirder?
-
-Counter to this: for enforcing paths on intersections, we want a clear point at which intersection begins/ends
-  - We'll probably want this for drawing, too
-  - We could save this information as bounds for the intersection object, doesn't necessarily need to be baked into splits
+- Automatically link streets that share endpoints
+  - Would need to check generated start/end points against other streets and figure out if they are in line
+  - Maybe this is part of the intersection work...
+    - cases where streets need arcs to join, but there is no intersection
+    - cases where streets can directly link (inline)
 
 Instead of paths, intersections will be a set of routes with optional start and end distances

@@ -64,27 +64,33 @@ export function getArcLineIntersections(
   const c = fx * fx + fy * fy - radius * radius;
 
   const discriminant = b * b - 4 * a * c;
-  const results = [];
+  const ts = [];
 
   if ( discriminant < 0 ) {
-    return results; // No intersection
+    // No intersection
+  }
+  else if ( discriminant == 0 ) {
+    ts.push( -b / ( 2 * a ) );
+  }
+  else {
+    const sqrtD = Math.sqrt( discriminant );
+    ts.push( ( -b - sqrtD ) / ( 2 * a ) );
+    ts.push( ( -b + sqrtD ) / ( 2 * a ) );
   }
 
-  const sqrtD = Math.sqrt( discriminant );
-  const t1 = ( -b - sqrtD ) / ( 2 * a );
-  const t2 = ( -b + sqrtD ) / ( 2 * a );
+  const results = [];
 
-  [ t1, t2 ].forEach( t => {
+  ts.forEach( t => {
     if ( 0 <= t && t <= 1 ) {
       const ix = x1 + t * dx;
       const iy = y1 + t * dy;
 
       // Angle from center to point
-      let angle = Math.atan2( iy - cy, ix - cx );
+      const angle = Math.atan2( iy - cy, ix - cx );
 
       // TODO: Do we also need to make sure it's between x1,y1 and x2,y2?
 
-      if ( Angle.isBetweenAngles( angle, startAngle, endAngle, counterclockwise ) ) {
+      if ( angle == startAngle || angle == endAngle || Angle.isBetweenAngles( angle, startAngle, endAngle, counterclockwise ) ) {
         results.push( [ ix, iy ] );
       }
     }
