@@ -146,7 +146,7 @@ function routesFromStreets( streets ) {
 
         console.log( `Turn ${ Object.keys( streets )[ i ] } vs ${ Object.keys( streets )[ j ] } = ${ turn }` );
 
-        // TODO: NOW: If no turn, then no arc needed -- link them directly
+        // If no turn, then no arc needed -- link them directly
         function connectStreets( streets, laneDirs ) {
           {
             const fromLanes = streets[ 0 ].routes[ laneDirs[ 0 ][ 0 ] ];
@@ -372,12 +372,12 @@ canvas.draw = ( ctx ) => {
         
     for ( let tries = 0; tries < 10; tries ++ ) {
       lastLink = nextLink;
-      route = lastLink ? routes[ lastLink.name ] : startRoute;
+      route = lastLink ? routes[ lastLink.name ] : routes[ startRoute ];
       nextLink = getNextLink( route, lastLink?.toDistance ?? 0 );
 
       addRouteToPath( path, route, lastLink?.toDistance, nextLink?.fromDistance, offset );
 
-      if ( !nextLink ) {
+      if ( !nextLink || nextLink.name == startRoute ) {
         break;
       }
     }
@@ -387,47 +387,60 @@ canvas.draw = ( ctx ) => {
 
   const outline = new Path2D();
 
-  makePath( outline, routes[ streets.line.routes.right[ streets.line.routes.right.length - 1 ] ], 1 );
+  makePath( outline, streets.line.routes.right[ streets.line.routes.right.length - 1 ], 1 );
+  
+  const inner1 = new Path2D();
+  makePath( inner1, streets.arc.routes.right[ streets.arc.routes.right.length - 1 ], 1 );
+  
+  const inner2 = new Path2D();
+  makePath( inner2, streets.arc2.routes.right[ streets.arc2.routes.right.length - 1 ], 1 );
+  
+  
   // makePath( outline, routes[ streets.line2.routes.left[ streets.line2.routes.left.length - 1 ] ], 1 );
   // makePath( outline, routes[ streets.line.routes.left[ streets.line.routes.left.length - 1 ] ], 1 );
   // makePath( outline, routes[ streets.line2.routes.right[ streets.line.routes.right.length - 1 ] ], 1 );
 
   ctx.strokeStyle = 'cyan';
   ctx.stroke( outline );
+  ctx.stroke( inner1 );
+  ctx.stroke( inner2 );
 
-  // ctx.fillStyle = '#555';
-  // ctx.fill( outline, 'evenodd' );
+  outline.addPath( inner1 );
+  outline.addPath( inner2 );
+
+  ctx.fillStyle = '#555';
+  ctx.fill( outline );
 
 
-  const CENTER_LINE_OFFSET = -0.8;
+  // const CENTER_LINE_OFFSET = -0.8;
 
-  const rightCenterLine1 = makePath( new Path2D(), routes[ streets.line.routes.right[ 0 ] ], CENTER_LINE_OFFSET );
-  const rightCenterLine2 = makePath( new Path2D(), routes[ streets.line2.routes.right[ 0 ] ], CENTER_LINE_OFFSET );
+  // const rightCenterLine1 = makePath( new Path2D(), routes[ streets.line.routes.right[ 0 ] ], CENTER_LINE_OFFSET );
+  // const rightCenterLine2 = makePath( new Path2D(), routes[ streets.line2.routes.right[ 0 ] ], CENTER_LINE_OFFSET );
 
-  const leftCenterLine1 = makePath( new Path2D(), routes[ streets.line.routes.left[ 0 ] ], CENTER_LINE_OFFSET );
-  const leftCenterLine2 = makePath( new Path2D(), routes[ streets.line2.routes.left[ 0 ] ], CENTER_LINE_OFFSET );
+  // const leftCenterLine1 = makePath( new Path2D(), routes[ streets.line.routes.left[ 0 ] ], CENTER_LINE_OFFSET );
+  // const leftCenterLine2 = makePath( new Path2D(), routes[ streets.line2.routes.left[ 0 ] ], CENTER_LINE_OFFSET );
  
-  ctx.strokeStyle = 'yellow';
-  ctx.lineWidth = 0.02;
-  ctx.setLineDash( [] );
-  ctx.stroke( rightCenterLine1 );
-  ctx.stroke( rightCenterLine2 );
-  ctx.stroke( leftCenterLine1 );
-  ctx.stroke( leftCenterLine2 );
+  // ctx.strokeStyle = 'yellow';
+  // ctx.lineWidth = 0.02;
+  // ctx.setLineDash( [] );
+  // ctx.stroke( rightCenterLine1 );
+  // ctx.stroke( rightCenterLine2 );
+  // ctx.stroke( leftCenterLine1 );
+  // ctx.stroke( leftCenterLine2 );
 
 
-  const rightBetweenLine = makePath( new Path2D(), routes[ streets.line.routes.right[ 0 ] ], 1 );
-  const rightBetweenLine2 = makePath( new Path2D(), routes[ streets.line2.routes.right[ 0 ] ], 1 );
-  const leftBetweenLine = makePath( new Path2D(), routes[ streets.line.routes.left[ 0 ] ], 1 );
-  const leftBetweenLine2 = makePath( new Path2D(), routes[ streets.line2.routes.left[ 0 ] ], 1 );
+  // const rightBetweenLine2 = makePath( new Path2D(), routes[ streets.line2.routes.right[ 0 ] ], 1 );
+  const outerBetweenLine = makePath( new Path2D(), streets.arc.routes.left[ 0 ], 1 );
+  const innerBetweenLine1 = makePath( new Path2D(), streets.arc.routes.right[ 0 ], 1 );
+  const innerBetweenLine2 = makePath( new Path2D(), streets.arc2.routes.right[ 0 ], 1 );
 
   ctx.strokeStyle = 'white';
   ctx.lineWidth = 0.02;
   ctx.setLineDash( [ 0.1, 0.1 ] );
-  ctx.stroke( rightBetweenLine );
-  ctx.stroke( rightBetweenLine2 );
-  ctx.stroke( leftBetweenLine );
-  ctx.stroke( leftBetweenLine2 );
+  ctx.stroke( outerBetweenLine );
+  // ctx.stroke( rightBetweenLine2 );
+  ctx.stroke( innerBetweenLine1 );
+  ctx.stroke( innerBetweenLine2 );
 
   // NOTES: This may be really two distinct tasks. 
   //  - One, make a big path with gaps in it for the street (which will be filled)
@@ -461,8 +474,8 @@ function addRouteToPath( path, route, startDist, endDist, offsetDir ) {
       route.center[ 0 ], 
       route.center[ 1 ], 
       route.radius + offsetDir * ( route.counterclockwise ? 1 : -1 ) * LANE_WIDTH / 2,
-      Arc.getAngleAtDistance( route, startDist ?? route.startAngle ),
-      Arc.getAngleAtDistance( route, endDist ?? route.endAngle ),
+      startDist ? Arc.getAngleAtDistance( route, startDist ) : route.startAngle,
+      endDist ? Arc.getAngleAtDistance( route, endDist ) : route.endAngle,
       route.counterclockwise );
   }
   else {
