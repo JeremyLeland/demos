@@ -26,38 +26,70 @@ const DEBUG_ARROW_WIDTH = DEBUG_ARROW_LENGTH / 2;
 
 const streets = {
   line: {
-    start: [ -3, 0 ],
-    end: [ 3, 0 ],
+    start: [ -5, 0 ],
+    end: [ 5, 0 ],
     lanes: {
       left: 2,
       right: 2,
     },
   },
   line2: {
-    start: [ 0, -3 ],
-    end: [ 0, 3 ],
+    start: [ 0, -5 ],
+    end: [ 0, 5 ],
     lanes: {
       left: 2,
       right: 2,
     },
   },
-  arc: {
-    center: [ 3, 3 ],
-    radius: 3,
-    startAngle: -Math.PI / 2,
-    endAngle: Math.PI,
-    counterclockwise: false,
+  // arc: {
+  //   center: [ 3, 3 ],
+  //   radius: 3,
+  //   startAngle: -Math.PI / 2,
+  //   endAngle: Math.PI,
+  //   counterclockwise: false,
+  //   lanes: {
+  //     left: 2,
+  //     right: 2,
+  //   },
+  // },
+  // arc2: {
+  //   center: [ -3, -3 ],
+  //   radius: 3,
+  //   startAngle: Math.PI / 2,
+  //   endAngle: 0,
+  //   counterclockwise: false,
+  //   lanes: {
+  //     left: 2,
+  //     right: 2,
+  //   },
+  // },
+  line3: {
+    start: [ -5, -5 ],
+    end: [ 5, -5 ],
     lanes: {
       left: 2,
       right: 2,
     },
   },
-  arc2: {
-    center: [ -3, -3 ],
-    radius: 3,
-    startAngle: Math.PI / 2,
-    endAngle: 0,
-    counterclockwise: false,
+  line4: {
+    start: [ -5, 5 ],
+    end: [ 5, 5 ],
+    lanes: {
+      left: 2,
+      right: 2,
+    },
+  },
+  line5: {
+    start: [ -5, -5 ],
+    end: [ -5, 5 ],
+    lanes: {
+      left: 2,
+      right: 2,
+    },
+  },
+  line6: {
+    start: [ 5, -5 ],
+    end: [ 5, 5 ],
     lanes: {
       left: 2,
       right: 2,
@@ -379,11 +411,20 @@ canvas.draw = ( ctx ) => {
 
   Object.entries( routes ).forEach( ( [ name, route ] ) => {
     if ( outerLanes.includes( name ) ) {
+      let furthest, furthestDist = 0;
+
       route.links?.forEach( link => {
+        if ( link.fromDistance > furthestDist ) {
+          furthest = link;
+          furthestDist = link.fromDistance;
+        }
+
         if ( routes[ link.name ].counterclockwise == false ) {
           unvisited.add( link );
         }
       } );
+
+      unvisited.add( furthest );  // set prevents duplication if this was already added
     }
     else {
       route.links?.forEach( link => {
