@@ -24,6 +24,8 @@ const LANE_WIDTH = 0.25;
 const DEBUG_ARROW_LENGTH = 0.1;
 const DEBUG_ARROW_WIDTH = DEBUG_ARROW_LENGTH / 2;
 
+let drawSteps = 40;
+
 const streets = {
   line: {
     start: [ -5, 0 ],
@@ -388,6 +390,12 @@ canvas.draw = ( ctx ) => {
       }
     } );
 
+    console.log( 'closest: ' );
+    console.log( closest );
+
+    console.log( 'furthest: ' );
+    console.log( furthest );
+
     return closest ?? furthest;
   }
 
@@ -413,6 +421,8 @@ canvas.draw = ( ctx ) => {
     if ( outerLanes.includes( name ) ) {
       let furthest, furthestDist = 0;
 
+      let addedAny = false;
+
       route.links?.forEach( link => {
         if ( link.fromDistance > furthestDist ) {
           furthest = link;
@@ -421,10 +431,14 @@ canvas.draw = ( ctx ) => {
 
         if ( routes[ link.name ].counterclockwise == false ) {
           unvisited.add( link );
+          addedAny = true;
         }
       } );
 
-      unvisited.add( furthest );  // set prevents duplication if this was already added
+      // Avoid adding left turns at end of route if we already added right turns
+      if ( !addedAny ) {
+        unvisited.add( furthest );
+      }
     }
     else {
       route.links?.forEach( link => {
@@ -446,16 +460,19 @@ canvas.draw = ( ctx ) => {
 
   let thisLink, nextLink;
 
-  for ( let tries = 0; tries < 100; tries ++ ) {
+  for ( let tries = 0; tries < drawSteps; tries ++ ) {
     thisLink = nextLink ?? unvisited.values().next().value;
     nextLink = getNextLink( routes[ thisLink.name ], thisLink.toDistance );
 
     unvisited.delete( thisLink );
     visited.add( thisLink );
 
+    console.log( `addRouteToPath( subpath, routes[ ${ thisLink.name } ], ${ thisLink.toDistance }, ${ nextLink.fromDistance }, 1 )` );
+
     addRouteToPath( subpath, routes[ thisLink.name ], thisLink.toDistance, nextLink.fromDistance, 1 );
 
     if ( visited.has( nextLink ) ) {
+      console.log( 'making new path' );
       outline.addPath( subpath );
       subpath = new Path2D();
 
@@ -467,14 +484,17 @@ canvas.draw = ( ctx ) => {
     }
   }
 
+  outline.addPath( subpath ); // TEMP: add partial path for debugging
+
   console.log( 'visited =' );
   console.log( visited );
 
-  ctx.strokeStyle = 'cyan';
-  ctx.stroke( outline );
-
+  
   ctx.fillStyle = '#555';
   ctx.fill( outline );
+
+  ctx.strokeStyle = 'cyan';
+  ctx.stroke( outline );
 
 
 
@@ -652,3 +672,31 @@ function drawAtDistance( ctx, route, distance, drawFunc ) {
   drawFunc( ctx, pos, angle );
 }
 
+
+//
+// Slider
+//
+const drawStepsSlider = document.createElement( 'input' );
+
+Object.assign( drawStepsSlider.style, {
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  width: '99%',
+} );
+
+Object.assign( drawStepsSlider, {
+  type: 'range',
+  min: 0,
+  max: 100,
+  step: 0.01,
+  value: drawSteps,
+} );
+
+document.body.appendChild( drawStepsSlider );
+
+drawStepsSlider.addEventListener( 'input', _ => {
+  drawSteps = +drawStepsSlider.value;
+
+  canvas.redraw();
+} );

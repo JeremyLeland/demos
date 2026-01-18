@@ -1,8 +1,8 @@
 NEXT:
-- Reworking deltaAngle and isBetweenAngles to better account for counterclockwise
-  - Make tests so I can truly understand what these are doing
-  - Thread-pulling from trying to pick proper middle point when moving start/end points past Math.PI distance from each other
+- Make sure paths work with arc streets
 - Redo intersections as list of affected routes and start/stop distances (instead of paths of tiny routes)
+- Figure out radii for joining curves to make each quadrent touch the middle point 
+  - (as opposed to opposite quadrants have same radii)
 
 
 Demos:
@@ -60,10 +60,5 @@ What if I did more like a train set, predefined acceptable intersections and pie
 
 Someday might want to just do lots of short lines (e.g. from bezier curve), but I like the simplicity of lines and arcs for now
 
-- Automatically link streets that share endpoints
-  - Would need to check generated start/end points against other streets and figure out if they are in line
-  - Maybe this is part of the intersection work...
-    - cases where streets need arcs to join, but there is no intersection
-    - cases where streets can directly link (inline)
 
 Instead of paths, intersections will be a set of routes with optional start and end distances
