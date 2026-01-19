@@ -33,14 +33,25 @@ const streets = {
       right: 2,
     },
   },
-  line2: {
-    start: [ 0, -5 ],
-    end: [ 0, 5 ],
+  arc: {
+    center: [ -2, 0 ],
+    radius: 4,
+    startAngle: -Math.PI / 2,
+    endAngle: Math.PI / 2,
+    counterclockwise: false,
     lanes: {
       left: 2,
       right: 2,
     },
   },
+  // line2: {
+  //   start: [ 0, -5 ],
+  //   end: [ 0, 5 ],
+  //   lanes: {
+  //     left: 2,
+  //     right: 2,
+  //   },
+  // },
   // arc: {
   //   center: [ 3, 3 ],
   //   radius: 3,
@@ -315,11 +326,11 @@ function routesFromStreets( streets ) {
             const endPos = Arc.getPointAtAngle( arc, arc.endAngle );
 
             // TODO: Need to test for arc vs arc collisions (will fail currently because function undefined)
-            const fromDistance = fromRoute.center ? getDistanceAtAngle(
+            const fromDistance = fromRoute.center ? Arc.getDistanceAtAngle( fromRoute,
               Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] )
             ) : vec2.distance( fromRoute.start, startPos );
 
-            const toDistance = toRoute.center ? getDistanceAtAngle(
+            const toDistance = toRoute.center ? Arc.getDistanceAtAngle( toRoute,
               Math.atan2( endPos[ 1 ] - toRoute.center[ 1 ], endPos[ 0 ] - toRoute.center[ 0 ] )
             ) : vec2.distance( toRoute.start, endPos );
             
@@ -415,11 +426,11 @@ function routesFromStreets( streets ) {
         const endPos = Arc.getPointAtAngle( arc, arc.endAngle );
 
         // TODO: Need to test for arc vs arc collisions (will fail currently because function undefined)
-        const fromDistance = fromRoute.center ? getDistanceAtAngle(
+        const fromDistance = fromRoute.center ? Arc.getDistanceAtAngle( fromRoute,
           Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] )
         ) : vec2.distance( fromRoute.start, startPos );
 
-        const toDistance = toRoute.center ? getDistanceAtAngle(
+        const toDistance = toRoute.center ? Arc.getDistanceAtAngle( toRoute,
           Math.atan2( endPos[ 1 ] - toRoute.center[ 1 ], endPos[ 0 ] - toRoute.center[ 0 ] )
         ) : vec2.distance( toRoute.start, endPos );
         
@@ -582,7 +593,7 @@ canvas.draw = ( ctx ) => {
     }
   }
 
-  // outline.addPath( subpath ); // TEMP: add partial path for debugging
+  outline.addPath( subpath ); // TEMP: add partial path for debugging
 
   console.log( 'visited =' );
   console.log( visited );
@@ -774,27 +785,27 @@ function drawAtDistance( ctx, route, distance, drawFunc ) {
 //
 // Slider
 //
-// const drawStepsSlider = document.createElement( 'input' );
+const drawStepsSlider = document.createElement( 'input' );
 
-// Object.assign( drawStepsSlider.style, {
-//   position: 'absolute',
-//   left: 0,
-//   top: 0,
-//   width: '99%',
-// } );
+Object.assign( drawStepsSlider.style, {
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  width: '99%',
+} );
 
-// Object.assign( drawStepsSlider, {
-//   type: 'range',
-//   min: 0,
-//   max: 100,
-//   step: 0.01,
-//   value: drawSteps,
-// } );
+Object.assign( drawStepsSlider, {
+  type: 'range',
+  min: 0,
+  max: 100,
+  step: 0.01,
+  value: drawSteps,
+} );
 
-// document.body.appendChild( drawStepsSlider );
+document.body.appendChild( drawStepsSlider );
 
-// drawStepsSlider.addEventListener( 'input', _ => {
-//   drawSteps = +drawStepsSlider.value;
+drawStepsSlider.addEventListener( 'input', _ => {
+  drawSteps = +drawStepsSlider.value;
 
-//   canvas.redraw();
-// } );
+  canvas.redraw();
+} );
