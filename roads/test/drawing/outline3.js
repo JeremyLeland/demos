@@ -310,46 +310,7 @@ function routesFromStreets( streets ) {
         // That is, distance( center, intersection ) > radius
 
         pairs.forEach( pair => {
-          const arc = Arc.getArcBetween( routes[ pair.from ], routes[ pair.to ], pair.radius, intersection );
-
-          if ( arc ) {
-            arc.arrowColor = pair.arrowColor;
-            
-            const arcName = `${ pair.from }_TO_${ pair.to }_#${ index }_ARC`;
-            routes[ arcName ] = arc;
-
-            // Keep track of our connections, and where they connect distance-wise
-            const fromRoute = routes[ pair.from ];
-            const toRoute = routes[ pair.to ];
-
-            const startPos = Arc.getPointAtAngle( arc, arc.startAngle );
-            const endPos = Arc.getPointAtAngle( arc, arc.endAngle );
-
-            // TODO: Need to test for arc vs arc collisions (will fail currently because function undefined)
-            const fromDistance = fromRoute.center ? Arc.getDistanceAtAngle( fromRoute,
-              Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] )
-            ) : vec2.distance( fromRoute.start, startPos );
-
-            const toDistance = toRoute.center ? Arc.getDistanceAtAngle( toRoute,
-              Math.atan2( endPos[ 1 ] - toRoute.center[ 1 ], endPos[ 0 ] - toRoute.center[ 0 ] )
-            ) : vec2.distance( toRoute.start, endPos );
-            
-            console.log( toDistance );
-
-            fromRoute.links ??= [];
-            fromRoute.links.push( {
-              name: arcName,
-              fromDistance: fromDistance,
-              toDistance: 0,
-            } );
-            
-            arc.links ??= [];
-            arc.links.push( {
-              name: pair.to,
-              fromDistance: Arc.getLength( arc ),
-              toDistance: toDistance,
-            } );
-          }
+          joinRoutes( routes, pair.from, pair.to, pair.radius, intersection, `#${ index }`, pair.arrowColor );
         } );
       } );
     }
@@ -396,60 +357,8 @@ function routesFromStreets( streets ) {
       }
     }
 
-    // NOW: I'm not getting an arc for these pairs. Maybe I should just build one, since I know it's a half circle?
-
     pairs.forEach( pair => {
-      // const arc = Arc.getArcBetween( routes[ pair.from ], routes[ pair.to ], pair.radius, pair.intersection );
-
-      const startPos = Route.getPositionAtDistance( routes[ pair.from ], Route.getLength( routes[ pair.from ] ) );
-      const endPos = Route.getPositionAtDistance( routes[ pair.to ], 0 );
-
-      const arc = {
-        center: pair.intersection,
-        radius: pair.radius,
-        startAngle: Math.atan2( startPos[ 1 ] - pair.intersection[ 1 ], startPos[ 0 ] - pair.intersection[ 0 ] ),
-        endAngle: Math.atan2( endPos[ 1 ] - pair.intersection[ 1 ], endPos[ 0 ] - pair.intersection[ 0 ] ),
-        counterclockwise: true,
-      };
-
-      if ( arc ) {
-        arc.arrowColor = pair.arrowColor;
-        
-        const arcName = `${ pair.from }_TO_${ pair.to }_uturn_ARC`;
-        routes[ arcName ] = arc;
-
-        // Keep track of our connections, and where they connect distance-wise
-        const fromRoute = routes[ pair.from ];
-        const toRoute = routes[ pair.to ];
-
-        const startPos = Arc.getPointAtAngle( arc, arc.startAngle );
-        const endPos = Arc.getPointAtAngle( arc, arc.endAngle );
-
-        // TODO: Need to test for arc vs arc collisions (will fail currently because function undefined)
-        const fromDistance = fromRoute.center ? Arc.getDistanceAtAngle( fromRoute,
-          Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] )
-        ) : vec2.distance( fromRoute.start, startPos );
-
-        const toDistance = toRoute.center ? Arc.getDistanceAtAngle( toRoute,
-          Math.atan2( endPos[ 1 ] - toRoute.center[ 1 ], endPos[ 0 ] - toRoute.center[ 0 ] )
-        ) : vec2.distance( toRoute.start, endPos );
-        
-        console.log( toDistance );
-
-        fromRoute.links ??= [];
-        fromRoute.links.push( {
-          name: arcName,
-          fromDistance: fromDistance,
-          toDistance: 0,
-        } );
-        
-        arc.links ??= [];
-        arc.links.push( {
-          name: pair.to,
-          fromDistance: Arc.getLength( arc ),
-          toDistance: toDistance,
-        } );
-      }
+      joinRoutes( routes, pair.from, pair.to, pair.radius, pair.intersection, 'uturn', pair.arrowColor );
     } );
   } );
 
@@ -458,6 +367,47 @@ function routesFromStreets( streets ) {
   console.log( routes );
 
   return routes;
+}
+
+
+function joinRoutes( routes, fromName, toName, radius, intersection, intersectionName, debugColor ) {
+  const arc = Route.getArcBetween( routes[ fromName ], routes[ toName ], radius, intersection );
+
+  if ( arc ) {
+    const arcName = `${ fromName }_TO_${ toName }_${ intersectionName }_ARC`;
+    routes[ arcName ] = arc;
+
+    // Keep track of our connections, and where they connect distance-wise
+    const fromRoute = routes[ fromName ];
+    const toRoute = routes[ toName ];
+
+    const startPos = Arc.getPointAtAngle( arc, arc.startAngle );
+    const endPos = Arc.getPointAtAngle( arc, arc.endAngle );
+
+    const fromDistance = fromRoute.center ? Arc.getDistanceAtAngle( fromRoute,
+      Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] )
+    ) : vec2.distance( fromRoute.start, startPos );
+
+    const toDistance = toRoute.center ? Arc.getDistanceAtAngle( toRoute,
+      Math.atan2( endPos[ 1 ] - toRoute.center[ 1 ], endPos[ 0 ] - toRoute.center[ 0 ] )
+    ) : vec2.distance( toRoute.start, endPos );
+    
+    fromRoute.links ??= [];
+    fromRoute.links.push( {
+      name: arcName,
+      fromDistance: fromDistance,
+      toDistance: 0,
+    } );
+    
+    arc.links ??= [];
+    arc.links.push( {
+      name: toName,
+      fromDistance: Arc.getLength( arc ),
+      toDistance: toDistance,
+    } );
+
+    arc.arrowColor = debugColor;
+  }
 }
 
 
@@ -499,11 +449,11 @@ canvas.draw = ( ctx ) => {
       }
     } );
 
-    console.log( 'closest: ' );
-    console.log( closest );
+    // console.log( 'closest: ' );
+    // console.log( closest );
 
-    console.log( 'furthest: ' );
-    console.log( furthest );
+    // console.log( 'furthest: ' );
+    // console.log( furthest );
 
     return closest ?? furthest;
   }
@@ -576,9 +526,9 @@ canvas.draw = ( ctx ) => {
     unvisited.delete( thisLink );
     visited.add( thisLink );
 
-    console.log( `addRouteToPath( subpath, routes[ ${ thisLink.name } ], ${ thisLink?.toDistance }, ${ nextLink?.fromDistance }, 1 )` );
+    // console.log( `addRouteToPath( subpath, routes[ ${ thisLink.name } ], ${ thisLink?.toDistance }, ${ nextLink?.fromDistance }, 1 )` );
 
-    addRouteToPath( subpath, routes[ thisLink.name ], thisLink?.toDistance, nextLink?.fromDistance, 1 );
+    Route.addRouteToPath( subpath, routes[ thisLink.name ], thisLink?.toDistance, nextLink?.fromDistance, 1 * LANE_WIDTH / 2 );
 
     if ( visited.has( nextLink ) ) {
       console.log( 'making new path' );
@@ -673,32 +623,6 @@ function drawLinks( ctx, routes ) {
   ctx.globalAlpha = 1;
 }
 
-function addRouteToPath( path, route, startDist, endDist, offsetDir ) {
-  if ( route.center ) {
-    path.arc( 
-      route.center[ 0 ], 
-      route.center[ 1 ], 
-      route.radius + offsetDir * ( route.counterclockwise ? 1 : -1 ) * LANE_WIDTH / 2,
-      startDist ? Arc.getAngleAtDistance( route, startDist ) : route.startAngle,
-      endDist ? Arc.getAngleAtDistance( route, endDist ) : route.endAngle,
-      route.counterclockwise );
-  }
-  else {
-    const v1 = vec2.subtract( [], route.end, route.start );
-    
-    const tangent = vec2.normalize( [], v1 );
-    const normal = [ -tangent[ 1 ], tangent[ 0 ] ];
-
-    const start = vec2.scaleAndAdd( [], route.start, tangent, startDist ?? 0 );
-    vec2.scaleAndAdd( start, start, normal, offsetDir * LANE_WIDTH / 2 );
-
-    const end = vec2.scaleAndAdd( [], route.start, tangent, endDist ?? vec2.length( v1 ) );
-    vec2.scaleAndAdd( end, end, normal, offsetDir * LANE_WIDTH / 2 );
-
-    path.lineTo( ...start );
-    path.lineTo( ...end );
-  }
-}
 
 function drawArrow( ctx, pos, angle, width = DEBUG_ARROW_WIDTH, length = DEBUG_ARROW_LENGTH ) {
   const cos = Math.cos( angle );
