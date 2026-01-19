@@ -33,25 +33,25 @@ const streets = {
       right: 2,
     },
   },
-  arc: {
-    center: [ -2, 0 ],
-    radius: 4,
-    startAngle: -Math.PI / 2,
-    endAngle: Math.PI / 2,
-    counterclockwise: false,
-    lanes: {
-      left: 2,
-      right: 2,
-    },
-  },
-  // line2: {
-  //   start: [ 0, -5 ],
-  //   end: [ 0, 5 ],
+  // arc: {
+  //   center: [ -2, 0 ],
+  //   radius: 4,
+  //   startAngle: -Math.PI / 2,
+  //   endAngle: Math.PI / 2,
+  //   counterclockwise: false,
   //   lanes: {
   //     left: 2,
   //     right: 2,
   //   },
   // },
+  line2: {
+    start: [ 0, -5 ],
+    end: [ 0, 5 ],
+    lanes: {
+      left: 2,
+      right: 2,
+    },
+  },
   // arc: {
   //   center: [ 3, 3 ],
   //   radius: 3,
@@ -74,38 +74,38 @@ const streets = {
   //     right: 2,
   //   },
   // },
-  // line3: {
-  //   start: [ -5, -5 ],
-  //   end: [ 5, -5 ],
-  //   lanes: {
-  //     left: 2,
-  //     right: 2,
-  //   },
-  // },
-  // line4: {
-  //   start: [ -5, 5 ],
-  //   end: [ 5, 5 ],
-  //   lanes: {
-  //     left: 2,
-  //     right: 2,
-  //   },
-  // },
-  // line5: {
-  //   start: [ -5, -5 ],
-  //   end: [ -5, 5 ],
-  //   lanes: {
-  //     left: 2,
-  //     right: 2,
-  //   },
-  // },
-  // line6: {
-  //   start: [ 5, -5 ],
-  //   end: [ 5, 5 ],
-  //   lanes: {
-  //     left: 2,
-  //     right: 2,
-  //   },
-  // },
+  line3: {
+    start: [ -5, -5 ],
+    end: [ 5, -5 ],
+    lanes: {
+      left: 2,
+      right: 2,
+    },
+  },
+  line4: {
+    start: [ -5, 5 ],
+    end: [ 5, 5 ],
+    lanes: {
+      left: 2,
+      right: 2,
+    },
+  },
+  line5: {
+    start: [ -5, -5 ],
+    end: [ -5, 5 ],
+    lanes: {
+      left: 2,
+      right: 2,
+    },
+  },
+  line6: {
+    start: [ 5, -5 ],
+    end: [ 5, 5 ],
+    lanes: {
+      left: 2,
+      right: 2,
+    },
+  },
 };
 
 // TODO: Make these part of some sort of level object separate from controlPoints?
@@ -316,8 +316,13 @@ function routesFromStreets( streets ) {
     }
   }
 
-  // TODO: Turns at end of road (so we can have ones not connected to anything)
-  // TODO: Unless there's an intersection (how to detect??)
+  // TODO: NEXT: Unless there's an intersection (how to detect??)
+  // How are we defining this? If the street goes well past the intersection, it should have a uturn
+  // Guess we just define this. See how far the last link is from the end. If it's more than X (maybe LANE_RADIUS?),
+  // then add the uturn
+  // Actually, won't it get screwed up if it doesn't have a right turn to get it onto the next bit of road?
+  // Maybe the deciding factor should be if it has a right turn on the opposite site
+  // ...how do I figure that out, though? And what if there are no turns because it's just one street?
 
   streetList.forEach( street => {
     const pairs = [];
@@ -327,8 +332,19 @@ function routesFromStreets( streets ) {
       const fromLanes = street.routes.right;
       const toLanes   = street.routes.left;
 
-      const numLanes = Math.min( fromLanes.length, toLanes.length );
+      // First attempt -- only add if goes out more than 2 from last link
+      // TODO: Don't hardcode this, should depend on radius of the biggest link? 
+      //    - That link may not be the last link, if left and right links are close...
+      const firstFromRoute = routes[ fromLanes[ 0 ] ];
+      const lastLink = getLastLink( firstFromRoute );
 
+      console.log( lastLink );
+
+      if ( lastLink && Route.getLength( firstFromRoute ) - lastLink.fromDistance < 2 ) {
+        return;
+      }
+
+      const numLanes = Math.min( fromLanes.length, toLanes.length );
       for ( let k = 0; k < numLanes; k ++ ) {
         pairs.push( { 
           from: fromLanes[ k ], 
@@ -344,8 +360,17 @@ function routesFromStreets( streets ) {
       const fromLanes = street.routes.left;
       const toLanes   = street.routes.right;
 
-      const numLanes = Math.min( fromLanes.length, toLanes.length );
+      // First attempt -- only add if goes out more than 2 from last link
+      const firstFromRoute = routes[ fromLanes[ 0 ] ];
+      const lastLink = getLastLink( firstFromRoute );
 
+      console.log( lastLink );
+
+      if ( lastLink && Route.getLength( firstFromRoute ) - lastLink.fromDistance < 2 ) {
+        return;
+      }
+
+      const numLanes = Math.min( fromLanes.length, toLanes.length );
       for ( let k = 0; k < numLanes; k ++ ) {
         pairs.push( { 
           from: fromLanes[ k ], 
@@ -571,7 +596,7 @@ canvas.draw = ( ctx ) => {
 function drawLinks( ctx, routes ) {
   ctx.globalAlpha = 0.25;
   Object.values( routes ).forEach( route => {
-    const routeLength = getLength( route );
+    const routeLength = Route.getLength( route );
     
     ctx.fillStyle = route.arrowColor;
 
@@ -666,23 +691,20 @@ function drawPoint( ctx, p, radius = 0.05 ) {
 //
 // Route utils
 //
-function getLength( route ) {
-  if ( route.center ) {
-    // TODO: Looks like this could be replaced by Angle.sweepAngle
-    let sweepAngle = route.endAngle - route.startAngle;
 
-    if ( !route.counterclockwise && sweepAngle < 0 ) {
-      sweepAngle += 2 * Math.PI;
-    }
-    else if ( route.counterclockwise && sweepAngle > 0 ) {
-      sweepAngle -= 2 * Math.PI;
-    }
+function getLastLink( route ) {
+  let furthest, furthestDist = 0;
 
-    return Math.abs( sweepAngle * route.radius );
-  }
-  else {
-    return vec2.distance( route.start, route.end );
-  }
+  route.links?.forEach( link => {
+    const dist = link.fromDistance;
+      
+    if ( dist > furthestDist ) {
+      furthest = link;
+      furthestDist = dist;
+    }
+  } );
+
+  return furthest;
 }
 
 function drawAtDistance( ctx, route, distance, drawFunc ) {
