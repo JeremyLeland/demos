@@ -1,5 +1,5 @@
 NEXT:
-- Make sure paths work with arc streets
+- Update editor to draw outlines (and use newer shared code)
 - Redo intersections as list of affected routes and start/stop distances (instead of paths of tiny routes)
 - Figure out radii for joining curves to make each quadrent touch the middle point 
   - (as opposed to opposite quadrants have same radii)
