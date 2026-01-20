@@ -237,7 +237,7 @@ export function routesFromStreets( streets ) {
       const firstFromRoute = routes[ fromLanes[ 0 ] ];
       const lastLink = getLastLink( firstFromRoute );
 
-      console.log( lastLink );
+      // console.log( lastLink );
 
       if ( lastLink && Route.getLength( firstFromRoute ) - lastLink.fromDistance < 2 ) {
         return;
@@ -263,7 +263,7 @@ export function routesFromStreets( streets ) {
       const firstFromRoute = routes[ fromLanes[ 0 ] ];
       const lastLink = getLastLink( firstFromRoute );
 
-      console.log( lastLink );
+      // console.log( lastLink );
 
       if ( lastLink && Route.getLength( firstFromRoute ) - lastLink.fromDistance < 2 ) {
         return;
@@ -287,8 +287,8 @@ export function routesFromStreets( streets ) {
   } );
 
 
-  console.log( 'routes = ' );
-  console.log( routes );
+  // console.log( 'routes = ' );
+  // console.log( routes );
 
   return routes;
 }

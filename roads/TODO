@@ -3,6 +3,7 @@ NEXT:
 - Redo intersections as list of affected routes and start/stop distances (instead of paths of tiny routes)
 - Figure out radii for joining curves to make each quadrent touch the middle point 
   - (as opposed to opposite quadrants have same radii)
+- Lane-changing routes, merges (blocks unequal lanes!)
 
 
 Demos:
@@ -29,13 +30,7 @@ Demos:
     - Yield should keep them from crashing
     - Quickly rotating windows should prevent the same lane from going multiple times if someone else is waiting
 
-- Intersections involving arcs
-  - Arc vs Line
-  - Arc vs Arc
 
-
-Automatic intersections between arbitrary lines is hard. 
-What if I did more like a train set, predefined acceptable intersections and pieces and linked them together?
 
 - Splitting and merging lanes
   - e.g. splitting to add a left turn lane
@@ -62,3 +57,13 @@ Someday might want to just do lots of short lines (e.g. from bezier curve), but 
 
 
 Instead of paths, intersections will be a set of routes with optional start and end distances
+
+How should streets with unequal numbers of lanes end?
+  - They can't all u-turn into themselves
+  - If I'm going to have a rule that all lanes need to connect to something and can't just "end",
+    then it'll need to merge into a previous lane
+    - This breaks the idea that all streets and can exist on their own
+      - Which is weird in real life, but common in an editor
+  - At some point, we need the ability to change lanes, so every street is going to have at least one
+    lane-changing join between lanes. Maybe this becomes the end of the route if it doesn't like to anything else?
+    - Seems like lane changes and merging need to be a higher priority, as they are blocking unequal lanes
