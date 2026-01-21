@@ -40,17 +40,26 @@ export function getArcBetween( A, B, radius, intersection ) {
   const angleB = getHeadingAtPoint( B, intersection );
   const turn = Angle.deltaAngle( angleA, angleB );
   
-  // Special case for parallel lines
-  if ( turn == -Math.PI || turn == Math.PI ) {
+  
+  // Special case for parallel lines 
+  // (should +PI be any different than -PI? assuming same for now)
+  if ( Angle.deltaAngle( Math.abs( turn ), Math.PI ) < 1e-6 ) {
     const startPos = getPositionAtDistance( A, getLength( A ) );
     const endPos = getPositionAtDistance( B, 0 );
+
+    // In case the deltaAngle above confused between -PI/PI, figure out where we actually turned
+    // TODO: Should we just do this above instead of the deltaAngle? Or is this only useful in parallel case?
+    const angleToB = Math.atan2( endPos[ 1 ] - startPos[ 1 ], endPos[ 0 ] - startPos[ 0 ] );
+    const turn2 = Angle.deltaAngle( angleA, angleToB );
+    
+    // console.log( `turn = ${ turn }, angleToB = ${ angleToB }, turn2 = ${ Angle.deltaAngle( angleA, angleToB ) }` );
 
     return {
       center: intersection,
       radius: radius,
       startAngle: Math.atan2( startPos[ 1 ] - intersection[ 1 ], startPos[ 0 ] - intersection[ 0 ] ),
       endAngle: Math.atan2( endPos[ 1 ] - intersection[ 1 ], endPos[ 0 ] - intersection[ 0 ] ),
-      counterclockwise: turn < 0,
+      counterclockwise: turn2 < 0,
     };
   }
 

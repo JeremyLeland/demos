@@ -173,7 +173,7 @@ canvas.draw = ( ctx ) => {
     Route.addRouteToPath( subpath, routes[ thisLink.name ], thisLink?.toDistance, nextLink?.fromDistance, 1 * Streets.LANE_WIDTH / 2 );
 
     if ( visited.has( nextLink ) ) {
-      console.log( 'making new path' );
+      // console.log( 'making new path' );
       outline.addPath( subpath );
       subpath = new Path2D();
 
