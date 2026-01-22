@@ -71,7 +71,7 @@ export function getAngleAtDistance( arc, distance ) {
 }
 
 export function getDistanceAtAngle( arc, angle ) {
-  return ( angle - arc.startAngle ) * arc.radius * ( arc.counterclockwise ? -1 : 1 );
+  return Angle.sweepAngle( arc.startAngle, angle, arc.counterclockwise ) * arc.radius * ( arc.counterclockwise ? -1 : 1 );
 }
 
 export function getPointAtAngle( arc, angle ) {
