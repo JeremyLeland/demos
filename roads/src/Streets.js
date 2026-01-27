@@ -9,6 +9,10 @@ import { vec2 } from '../lib/gl-matrix.js';
 
 export const LANE_WIDTH = 0.25;
 
+export const Constants = {
+  StartRadius: 2,
+};
+
 // NOTE: This modifies streets
 // TODO: Why does this need to modify streets? Can routes just keep reference to parent? Why does street need to know routes?
 //       Seems like we could search all routes with parent == 'name' if we need to find them...
@@ -172,7 +176,7 @@ export function routesFromStreets( streets ) {
         const pairs = [];
 
         function addPairs( streets, laneDirs ) {
-          let radius = 2;
+          let radius = Constants.StartRadius;
 
           {
             const fromLanes = streets[ 0 ].routes[ laneDirs[ 0 ][ 0 ] ];
@@ -224,8 +228,6 @@ export function routesFromStreets( streets ) {
   // ...how do I figure that out, though? And what if there are no turns because it's just one street?
 
   streetList.forEach( street => {
-    const pairs = [];
-
     // TODO: Find way to use common function with above?
     {
       const fromLanes = street.routes.right;
@@ -239,19 +241,19 @@ export function routesFromStreets( streets ) {
 
       // console.log( lastLink );
 
-      if ( lastLink && Route.getLength( firstFromRoute ) - lastLink.fromDistance < 2 ) {
-        return;
-      }
-
-      const numLanes = Math.min( fromLanes.length, toLanes.length );
-      for ( let k = 0; k < numLanes; k ++ ) {
-        pairs.push( { 
-          from: fromLanes[ k ], 
-          to: toLanes[ k ], 
-          radius: ( k + 0.5 ) * LANE_WIDTH, 
-          intersection: Route.getPositionAtDistance( street, Route.getLength( street ) ),
-          arrowColor: 'lime',
-        } );
+      if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
+        const numLanes = Math.min( fromLanes.length, toLanes.length );
+        for ( let k = 0; k < numLanes; k ++ ) {
+          joinRoutes(
+            routes,
+            fromLanes[ k ], 
+            toLanes[ k ], 
+            ( k + 0.5 ) * LANE_WIDTH, 
+            Route.getPositionAtDistance( street, Route.getLength( street ) ),
+            'uturn',
+            'lime',
+          );
+        }
       }
     }
 
@@ -265,25 +267,21 @@ export function routesFromStreets( streets ) {
 
       // console.log( lastLink );
 
-      if ( lastLink && Route.getLength( firstFromRoute ) - lastLink.fromDistance < 2 ) {
-        return;
-      }
-
-      const numLanes = Math.min( fromLanes.length, toLanes.length );
-      for ( let k = 0; k < numLanes; k ++ ) {
-        pairs.push( { 
-          from: fromLanes[ k ], 
-          to: toLanes[ k ], 
-          radius: ( k + 0.5 ) * LANE_WIDTH, 
-          intersection: Route.getPositionAtDistance( street, 0 ),
-          arrowColor: 'lime',
-        } );
+      if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
+        const numLanes = Math.min( fromLanes.length, toLanes.length );
+        for ( let k = 0; k < numLanes; k ++ ) {
+          joinRoutes(
+            routes,
+            fromLanes[ k ], 
+            toLanes[ k ], 
+            ( k + 0.5 ) * LANE_WIDTH, 
+            Route.getPositionAtDistance( street, 0 ),
+            'uturn',
+            'lime',
+          );
+        }
       }
     }
-
-    pairs.forEach( pair => {
-      joinRoutes( routes, pair.from, pair.to, pair.radius, pair.intersection, 'uturn', pair.arrowColor );
-    } );
   } );
 
 

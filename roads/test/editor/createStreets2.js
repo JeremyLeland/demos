@@ -1,13 +1,6 @@
 // Goal: Click and drag to create streets. 
 // Make routes, then make appropriate turning lanes between intersecting streets.
 
-// TODO:
-// - Need to be able to create arcs > Math.PI -- why does it keep flipping?
-// - Don't alter streets -- these are what we will load, routes will be result. 
-//   - Routes can reference street name to get that static info
-// - Drawing
-//   - outline of streets by following right-most routes!
-//   - lanes between routes!
 
 import * as Angle from '../../src/common/Angle.js';
 import * as Arc from '../../src/common/Arc.js';
@@ -22,37 +15,61 @@ import { vec2 } from '../../lib/gl-matrix.js'
 const DEBUG_ARROW_LENGTH = 0.1;
 const DEBUG_ARROW_WIDTH = DEBUG_ARROW_LENGTH / 2;
 
+let drawSteps = 100;
 
 const streets = {
-  // A: Object.assign( {
-  //   lanes: {
-  //     left: 1,
-  //     right: 1,
-  //   },
-  // }, Arc.arcFromThreePoints( [ -4, 1 ], [ 0, 0 ], [ 4, 1 ] ) ),
-  // B: Object.assign( {
-  //   lanes: {
-  //     left: 1,
-  //     right: 1,
-  //   },
-  // }, Arc.arcFromThreePoints( [ 1, -4 ], [ 0, 0 ], [ 1, 4 ] ) ),
-  C: {
-    start: [ -3, -3 ],
+  Horiz: {
+    start: [ -3, 3 ],
     end: [ 3, 3 ],
     lanes: {
-      left: 2,
-      right: 2,
+      left: 1,
+      right: 1,
     },
   },
-  D: {
-    start: [ 3, -3 ],
+  Vert: {
+    start: [ -3, -3 ],
     end: [ -3, 3 ],
     lanes: {
-      left: 3,
-      right: 3,
+      left: 1,
+      right: 1,
     },
   },
 };
+
+// LATER: Outline messed up because we have no way off of the extra road
+//   - Ideally, we would have closer turns that would allow this to work
+//      - Do this work first, since we know we want it anyway
+//        - Start with a slider for radius to help visualize the effect of different radii
+//        - Big question is how to handle 4-way cases vs 2 or 1-way cases 
+//          (should be able to use more space for 1-way, but does it really matter?)
+//   - However, we shouldn't turn onto a lane if we can't turn off it
+//      - what about one-way roads? How would that be handled?
+//   - Can we make sure each join on has a matching join off?
+
+// const streets = {
+//   "C": {
+//     "lanes": {
+//       "left": 2,
+//       "right": 2
+//     },
+//     "center": [ 6, -6 ],
+//     "radius": 9,
+//     "startAngle": 2.8428864574594708,
+//     "endAngle": 1.86950252292522,
+//     "counterclockwise": true
+//   },
+//   "D": {
+//     "lanes": {
+//       "left": 3,
+//       "right": 3
+//     },
+//     "center": [ -2, -2 ],
+//     "radius": 5,
+//     "startAngle": -0.06627702810972162,
+//     "endAngle": 1.63707335428374,
+//     "counterclockwise": false
+//   }
+// };
 
 // TODO: Make these part of some sort of level object separate from controlPoints?
 //       Combine streetsFrom and routesFrom function to one function that returns level from control points?
@@ -68,7 +85,11 @@ canvas.bounds = [ -VIEW_SIZE - 0.5, -VIEW_SIZE - 0.5, VIEW_SIZE + 0.5, VIEW_SIZE
 
 canvas.draw = ( ctx ) => {
 
+  console.log( JSON.stringify( streets ) );
+
   routes = Streets.routesFromStreets( streets );
+
+  console.log( routes );
 
   ctx.lineWidth = 0.02;
   grid.draw( ctx );
@@ -161,8 +182,14 @@ canvas.draw = ( ctx ) => {
 
   let thisLink, nextLink;
 
-  for ( let tries = 0; tries < 100; tries ++ ) {
+  for ( let tries = 0; tries < drawSteps; tries ++ ) {
     thisLink = nextLink ?? unvisited.values().next().value;
+
+    if ( thisLink == null ) {
+      console.log( 'thisLink == null' );
+      break;
+    }
+
     nextLink = getNextLink( routes[ thisLink.name ], thisLink.toDistance );
 
     unvisited.delete( thisLink );
@@ -456,3 +483,31 @@ function hoverUnderCursor( x, y ) {
 
   return closestHover;
 }
+
+//
+// Slider
+//
+const radiusSlider = document.createElement( 'input' );
+
+Object.assign( radiusSlider.style, {
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  width: '99%',
+} );
+
+Object.assign( radiusSlider, {
+  type: 'range',
+  min: 0,
+  max: 10,
+  step: 0.01,
+  value: Streets.Constants.StartRadius,
+} );
+
+document.body.appendChild( radiusSlider );
+
+radiusSlider.addEventListener( 'input', _ => {
+  Streets.Constants.StartRadius = +radiusSlider.value;
+
+  canvas.redraw();
+} );
