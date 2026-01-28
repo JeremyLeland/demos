@@ -173,48 +173,54 @@ export function routesFromStreets( streets ) {
         const A = turn < 0 ? two : one;
         const B = turn < 0 ? one : two;
 
-        const pairs = [];
-
         function addPairs( streets, laneDirs ) {
-          let radius = Constants.StartRadius;
+          const fromLanesA = streets[ 0 ].routes[ laneDirs[ 0 ][ 0 ] ];
+          const toLanesA   = streets[ 1 ].routes[ laneDirs[ 0 ][ 1 ] ];
+          const numLanesA = Math.min( fromLanesA.length, toLanesA.length );
 
-          {
-            const fromLanes = streets[ 0 ].routes[ laneDirs[ 0 ][ 0 ] ];
-            const toLanes   = streets[ 1 ].routes[ laneDirs[ 0 ][ 1 ] ];
+          const fromLanesB = streets[ 1 ].routes[ laneDirs[ 1 ][ 0 ] ];
+          const toLanesB   = streets[ 0 ].routes[ laneDirs[ 1 ][ 1 ] ];
+          const numLanesB = Math.min( fromLanesB.length, toLanesB.length );
 
-            const numLanes = Math.min( fromLanes.length, toLanes.length );
+          // TODO: Set initial radius once here, then call joinRoutes each time instead of making pairs
+          let radius = getBestJoinRadius( routes[ fromLanesA[ numLanesA - 1 ] ], routes[ toLanesA[ numLanesA - 1 ] ], intersection );
 
-            for ( let k = 0; k < numLanes; k ++ ) {
-              pairs.push( { from: fromLanes[ numLanes - 1 - k ], to: toLanes[ numLanes - 1 - k ], radius: radius, arrowColor: 'lime' } );
-              radius -= LANE_WIDTH;
-            }
+          // console.log( 'Got best radius of ' + radius );
+
+          // TODO: Is this too big? Should there be a -( LANE_WIDTH / 2 ) in there somewhere?
+          radius = Math.max( ( numLanesA + numLanesB ) * LANE_WIDTH, radius );
+
+          for ( let k = 0; k < numLanesA; k ++ ) {
+            joinRoutes( 
+              routes, 
+              fromLanesA[ numLanesA - 1 - k ], 
+              toLanesA[ numLanesA - 1 - k ], 
+              radius, 
+              intersection,
+              `#${ index }`,
+              'lime'
+            );
+            radius -= LANE_WIDTH;
           }
 
-          {
-            const fromLanes = streets[ 1 ].routes[ laneDirs[ 1 ][ 0 ] ];
-            const toLanes   = streets[ 0 ].routes[ laneDirs[ 1 ][ 1 ] ];
-
-            const numLanes = Math.min( fromLanes.length, toLanes.length );
-
-            for ( let k = 0; k < numLanes; k ++ ) {
-              pairs.push( { from: fromLanes[ k + fromLanes.length - numLanes ], to: toLanes[ k + toLanes.length - numLanes ], radius: radius, arrowColor: 'red' } );
-              radius -= LANE_WIDTH;
-            }
+          for ( let k = 0; k < numLanesB; k ++ ) {
+            joinRoutes(
+              routes,
+              fromLanesB[ k + fromLanesB.length - numLanesB ], 
+              toLanesB[ k + toLanesB.length - numLanesB ], 
+              radius,
+              intersection,
+              `#${ index }`,
+              'red'
+            );
+            radius -= LANE_WIDTH;
           }
         }
-
+        
         addPairs( [ B, A ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] );
         addPairs( [ B, A ], [ [ 'left', 'left' ], [ 'right', 'right' ] ] );
         addPairs( [ A, B ], [ [ 'left', 'right' ], [ 'left', 'right' ] ] );
         addPairs( [ A, B ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
-
-        // TODO: Somewhere in here, figure out a good radius
-        // Instead of doing this with pairs, can we keep increasing radius until edge of arc is at intersection
-        // That is, distance( center, intersection ) > radius
-
-        pairs.forEach( pair => {
-          joinRoutes( routes, pair.from, pair.to, pair.radius, intersection, `#${ index }`, pair.arrowColor );
-        } );
       } );
     }
   }
@@ -289,6 +295,34 @@ export function routesFromStreets( streets ) {
   // console.log( routes );
 
   return routes;
+}
+
+function getBestJoinRadius( fromRoute, toRoute, intersection ) {
+  let left = 0, right = 10;   // TODO: How to determine appropriate max?
+
+  for ( let i = 0; i < 10; i ++ ) {
+    const mid = ( left + right ) / 2;
+
+    // console.log( 'trying radius ' + mid );
+
+    const arc = Route.getArcBetween( fromRoute, toRoute, mid, intersection );
+    
+    if ( !arc ) {
+      right = mid;
+      continue;
+    }
+
+    const dist = vec2.distance( arc.center, intersection );
+
+    if ( dist < arc.radius + LANE_WIDTH ) {
+      left = mid;
+    }
+    else {
+      right = mid;
+    }
+  }
+
+  return ( left + right ) / 2;
 }
 
 function joinRoutes( routes, fromName, toName, radius, intersection, intersectionName, debugColor ) {
