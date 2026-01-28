@@ -1,12 +1,27 @@
 NEXT:
-- Update editor to draw outlines (and use newer shared code)
-- Redo intersections as list of affected routes and start/stop distances (instead of paths of tiny routes)
-- Figure out radii for joining curves to make each quadrent touch the middle point 
-  - (as opposed to opposite quadrants have same radii)
-- Lane-changing routes, merges (blocks unequal lanes!)
+  - U-turns are more complicated
+    - Maybe we should create them as part of the drawing? Or something drawing-like?
+    - Start at an outermost lane and traverse the links. 
+    - If we get to the edge of a street without a link, add a u-turn
+  - Redo intersections as list of affected routes and start/stop distances (instead of paths of tiny routes)
+  - Lane-changing routes, merges (blocks unequal lanes!)
+
+Editor features:
+  - Snap start and end of new roads to existing roads
+  - Move existing roads (maintaining size) (with middle click?)
+  - Distinguish between changing curve of existing road and adding a new one? (some toggle button?)
+    - Maybe better to click to select streets first before moving and resizing them?
+    - Left clicks with nothing selected create a new road
+    - Left clicks with a road selected resize that road
+    - Middle clicks with nothing selected move the view around
+    - Middle clicks with a road already selected move the road around
+  - Save current streets to localStore and load on start
+    - Also need a clear button to reset streets
 
 
-Demos:
+Intersection demos:
+  - Instead of paths, intersections will be a set of routes with optional start and end distances
+
   +-------+
   |   |   |
   |-------|
@@ -14,7 +29,8 @@ Demos:
   +-------+
 
   - 2 way, 3 way, and 4 way intersections with lines
-    - If it can't find intersections, then gracefully cancel creation. Maybe that will do it?
+    - 2 way shouldn't be an intersection, just a join
+    - 3 and 4 way should generate intersection and timings
   
     ---------
    /   / \   \
@@ -32,7 +48,7 @@ Demos:
 
 
 
-- Splitting and merging lanes
+Splitting and merging lanes:
   - e.g. splitting to add a left turn lane
   - Change streets to have lane info as part of start and end:
     street: {
@@ -53,10 +69,7 @@ Demos:
     }
   - Longer, but I think it's the clearest way to save this info
 
-Someday might want to just do lots of short lines (e.g. from bezier curve), but I like the simplicity of lines and arcs for now
 
-
-Instead of paths, intersections will be a set of routes with optional start and end distances
 
 How should streets with unequal numbers of lanes end?
   - They can't all u-turn into themselves

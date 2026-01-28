@@ -234,10 +234,14 @@ export function routesFromStreets( streets ) {
   // ...how do I figure that out, though? And what if there are no turns because it's just one street?
 
   streetList.forEach( street => {
-    // TODO: Find way to use common function with above?
+    // TODO: Way to merge these two sections? They're so similar...
     {
       const fromLanes = street.routes.right;
       const toLanes   = street.routes.left;
+
+      // TODO: Using lane 0 breaks with 4 lane roads because the 0 lane for right may be doing something different than
+      //       the 0 lane for left. Also, if we have an intersection of or 4 differet streets (e.g. to mix lines and arcs)
+      //       then the streets won't match up
 
       // First attempt -- only add if goes out more than 2 from last link
       // TODO: Don't hardcode this, should depend on radius of the biggest link? 
@@ -245,9 +249,27 @@ export function routesFromStreets( streets ) {
       const firstFromRoute = routes[ fromLanes[ 0 ] ];
       const lastLink = getLastLink( firstFromRoute );
 
-      // console.log( lastLink );
+      const firstToRoute = routes[ toLanes[ 0 ] ];
+      const firstLink = getNextLink( firstToRoute );
 
-      if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
+      console.log( 'firstFrom: '+ fromLanes[ 0 ] );
+      console.log( 'firstTo: '+ toLanes[ 0 ] );
+
+      console.log( lastLink );
+      console.log( firstLink );
+
+      const fromDest = lastLink ? getNextLink( routes[ lastLink.name ] )?.name : null;
+      const toDest = firstLink ? getNextLink( routes[ firstLink.name ] )?.name : null;
+
+      console.log( fromDest );
+      console.log( toDest );
+
+      // if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
+
+      if ( !lastLink || ( firstLink && fromDest == toDest ) ) {
+        
+        console.log( 'Making u-turn' );
+
         const numLanes = Math.min( fromLanes.length, toLanes.length );
         for ( let k = 0; k < numLanes; k ++ ) {
           joinRoutes(
@@ -261,6 +283,9 @@ export function routesFromStreets( streets ) {
           );
         }
       }
+      else {
+        console.log( 'SKIPPING!!!' );
+      }
     }
 
     {
@@ -271,9 +296,26 @@ export function routesFromStreets( streets ) {
       const firstFromRoute = routes[ fromLanes[ 0 ] ];
       const lastLink = getLastLink( firstFromRoute );
 
-      // console.log( lastLink );
+      const firstToRoute = routes[ toLanes[ 0 ] ];
+      const firstLink = getNextLink( firstToRoute );
 
-      if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
+      console.log( 'firstFrom: '+ fromLanes[ 0 ] );
+      console.log( 'firstTo: '+ toLanes[ 0 ] );
+
+      console.log( lastLink );
+      console.log( firstLink );
+
+      const fromDest = lastLink ? getNextLink( routes[ lastLink.name ] )?.name : null;
+      const toDest = firstLink ? getNextLink( routes[ firstLink.name ] )?.name : null;
+
+      console.log( fromDest );
+      console.log( toDest );
+
+      // if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
+      if ( !lastLink || ( firstLink && fromDest == toDest ) ) {
+
+        console.log( 'Making u-turn' );
+
         const numLanes = Math.min( fromLanes.length, toLanes.length );
         for ( let k = 0; k < numLanes; k ++ ) {
           joinRoutes(
@@ -286,6 +328,9 @@ export function routesFromStreets( streets ) {
             'lime',
           );
         }
+      }
+      else {
+        console.log( 'SKIPPING!!!' );
       }
     }
   } );
@@ -380,4 +425,33 @@ function getLastLink( route ) {
   } );
 
   return furthest;
+}
+
+function getNextLink( route, distance = 0 ) {
+  let closest, closestDist = Infinity;
+  // let furthest, furthestDist = 0;
+
+  route.links?.forEach( link => {
+    const dist = link.fromDistance - distance;
+    
+    // TODO: Do we care about counterclockwise here? 
+    // For now, this is only being used to tell if we should have a u-turn or not
+    if ( /*routes[ link.name ].counterclockwise != true && */ 0 <= dist && dist < closestDist ) {
+      closest = link;
+      closestDist = dist;
+    }
+    
+    // if ( dist > furthestDist ) {
+    //   furthest = link;
+    //   furthestDist = dist;
+    // }
+  } );
+
+  // console.log( 'closest: ' );
+  // console.log( closest );
+
+  // console.log( 'furthest: ' );
+  // console.log( furthest );
+
+  return closest;// ?? furthest;
 }

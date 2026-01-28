@@ -22,16 +22,16 @@ const streets = {
     start: [ -3, 3 ],
     end: [ 3, 3 ],
     lanes: {
-      left: 2,
-      right: 2,
+      left: 1,
+      right: 1,
     },
   },
   Vert: {
     start: [ -3, -3 ],
-    end: [ -3, 3 ],
+    end: [ -3, 4 ],
     lanes: {
-      left: 2,
-      right: 2,
+      left: 1,
+      right: 1,
     },
   },
 };
