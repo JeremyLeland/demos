@@ -48,10 +48,12 @@ export function routesFromStreets( streets ) {
             endAngle:   laneDir == 'left' ? street.startAngle : street.endAngle,
             counterclockwise: laneDir == 'left' ? !street.counterclockwise : !!street.counterclockwise,
 
-            // TODO: Can we save parent name and lane index here, rather than altering original street?
-            parent: name,
+            streetInfo: {
+              name: name,
+              laneDir: laneDir,
+              laneIndex: i,
+            },
 
-            streetColor: street.color,
             arrowColor: laneDir == 'left' ? 'green' : 'darkred',
           };
 
@@ -76,9 +78,13 @@ export function routesFromStreets( streets ) {
             start: laneDir == 'left' ? B : A,
             end:   laneDir == 'left' ? A : B,
 
-            streetColor: street.color,
+            streetInfo: {
+              name: name,
+              laneDir: laneDir,
+              laneIndex: i,
+            },
+            
             arrowColor: laneDir == 'left' ? 'green' : 'darkred',
-            // parent: name,
           };
 
           const routeName = `${ name }_lane_${ laneDir }_${ i }`;
@@ -225,116 +231,86 @@ export function routesFromStreets( streets ) {
     }
   }
 
-  // TODO: NEXT: Unless there's an intersection (how to detect??)
-  // How are we defining this? If the street goes well past the intersection, it should have a uturn
-  // Guess we just define this. See how far the last link is from the end. If it's more than X (maybe LANE_RADIUS?),
-  // then add the uturn
-  // Actually, won't it get screwed up if it doesn't have a right turn to get it onto the next bit of road?
-  // Maybe the deciding factor should be if it has a right turn on the opposite site
-  // ...how do I figure that out, though? And what if there are no turns because it's just one street?
 
-  streetList.forEach( street => {
-    // TODO: Way to merge these two sections? They're so similar...
-    {
-      const fromLanes = street.routes.right;
-      const toLanes   = street.routes.left;
+  // Traverse all the routes, adding u-turns if we reach a dead end
+  const unvisitedRoutes = new Set( Object.keys( routes ) );
+  const visitedLinks = new Set();
 
-      // TODO: Using lane 0 breaks with 4 lane roads because the 0 lane for right may be doing something different than
-      //       the 0 lane for left. Also, if we have an intersection of or 4 differet streets (e.g. to mix lines and arcs)
-      //       then the streets won't match up
+  let thisRouteName, nextRouteName;
+  let lastLink, nextLink;
+  
+  for ( let tries = 0; tries < 100; tries ++ ) {
+    thisRouteName = nextRouteName ?? unvisitedRoutes.values().next().value;
 
-      // First attempt -- only add if goes out more than 2 from last link
-      // TODO: Don't hardcode this, should depend on radius of the biggest link? 
-      //    - That link may not be the last link, if left and right links are close...
-      const firstFromRoute = routes[ fromLanes[ 0 ] ];
-      const lastLink = getLastLink( firstFromRoute );
-
-      const firstToRoute = routes[ toLanes[ 0 ] ];
-      const firstLink = getNextLink( firstToRoute );
-
-      console.log( 'firstFrom: '+ fromLanes[ 0 ] );
-      console.log( 'firstTo: '+ toLanes[ 0 ] );
-
-      console.log( lastLink );
-      console.log( firstLink );
-
-      const fromDest = lastLink ? getNextLink( routes[ lastLink.name ] )?.name : null;
-      const toDest = firstLink ? getNextLink( routes[ firstLink.name ] )?.name : null;
-
-      console.log( fromDest );
-      console.log( toDest );
-
-      // if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
-
-      if ( !lastLink || ( firstLink && fromDest == toDest ) ) {
-        
-        console.log( 'Making u-turn' );
-
-        const numLanes = Math.min( fromLanes.length, toLanes.length );
-        for ( let k = 0; k < numLanes; k ++ ) {
-          joinRoutes(
-            routes,
-            fromLanes[ k ], 
-            toLanes[ k ], 
-            ( k + 0.5 ) * LANE_WIDTH, 
-            Route.getPositionAtDistance( street, Route.getLength( street ) ),
-            'uturn',
-            'lime',
-          );
-        }
-      }
-      else {
-        console.log( 'SKIPPING!!!' );
-      }
+    if ( thisRouteName == null ) {
+      console.log( 'no more routes' );
+      break;
     }
 
-    {
-      const fromLanes = street.routes.left;
-      const toLanes   = street.routes.right;
+    console.log( thisRouteName );
 
-      // First attempt -- only add if goes out more than 2 from last link
-      const firstFromRoute = routes[ fromLanes[ 0 ] ];
-      const lastLink = getLastLink( firstFromRoute );
+    // TODO: This is hitting the same problem as the other traversal
+    // Since we can exit and enter one route at multiple points, 
+    // it's not enough to save the name of routes we've visited.
 
-      const firstToRoute = routes[ toLanes[ 0 ] ];
-      const firstLink = getNextLink( firstToRoute );
+    // NEXT: Maybe we can save the links we've visited instead and use those to prevent loops?
+    // Links should be unique
 
-      console.log( 'firstFrom: '+ fromLanes[ 0 ] );
-      console.log( 'firstTo: '+ toLanes[ 0 ] );
+    unvisitedRoutes.delete( thisRouteName );
+    visitedLinks.add( lastLink );
 
-      console.log( lastLink );
-      console.log( firstLink );
+    const thisRoute = routes[ thisRouteName ];
 
-      const fromDest = lastLink ? getNextLink( routes[ lastLink.name ] )?.name : null;
-      const toDest = firstLink ? getNextLink( routes[ firstLink.name ] )?.name : null;
+    lastLink = nextLink;
 
-      console.log( fromDest );
-      console.log( toDest );
+    console.log( `checking for next link from ${ thisRouteName } at ${ lastLink?.toDistance ?? 0 }` );
 
-      // if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
-      if ( !lastLink || ( firstLink && fromDest == toDest ) ) {
+    nextLink = getNextLink( thisRoute, lastLink?.toDistance ?? 0 );
 
-        console.log( 'Making u-turn' );
+    if ( nextLink == null ) {
+      console.log( 'Making u-turn...' );
 
-        const numLanes = Math.min( fromLanes.length, toLanes.length );
-        for ( let k = 0; k < numLanes; k ++ ) {
-          joinRoutes(
-            routes,
-            fromLanes[ k ], 
-            toLanes[ k ], 
-            ( k + 0.5 ) * LANE_WIDTH, 
-            Route.getPositionAtDistance( street, 0 ),
-            'uturn',
-            'lime',
-          );
-        }
-      }
-      else {
-        console.log( 'SKIPPING!!!' );
+      const streetInfo = thisRoute.streetInfo;
+      const street = streets[ streetInfo.name ];
+
+      const fromRouteName = street.routes[ streetInfo.laneDir ][ streetInfo.laneIndex ];
+      const toRouteName = street.routes[ streetInfo.laneDir == 'right' ? 'left' : 'right' ][ streetInfo.laneIndex ];
+
+      console.log( `   ...from ${ fromRouteName } to ${ toRouteName }` );
+
+      const fromRoute = routes[ fromRouteName ];
+      const toRoute = routes[ toRouteName ];
+
+      const fromPos = Route.getPositionAtDistance( fromRoute, Route.getLength( fromRoute ) );
+      const toPos = Route.getPositionAtDistance( toRoute, 0 );
+
+      joinRoutes(
+        routes,
+        fromRouteName,
+        toRouteName,
+        ( streetInfo.laneIndex + 0.5 ) * LANE_WIDTH, 
+        [ ( fromPos[ 0 ] + toPos[ 0 ] ) / 2, ( fromPos[ 1 ] + toPos[ 1 ] ) / 2 ],
+        'u-turn',
+        'lime',
+      );
+
+      nextRouteName = toRouteName;
+    }
+    else {
+      nextRouteName = nextLink.name;
+    }
+
+    if ( visitedLinks.has( nextLink ) ) {
+      // break out of a loop
+      nextRouteName = null;  // pull a new route from unvisited
+      nextLink = null;
+
+      if ( unvisitedRoutes.size == 0 ) {
+        // seems like we shouldn't need this if we have thisRouteName == null check above...
+        break;
       }
     }
-  } );
-
+  }
 
   // console.log( 'routes = ' );
   // console.log( routes );
