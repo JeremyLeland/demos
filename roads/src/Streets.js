@@ -191,7 +191,7 @@ export function routesFromStreets( streets ) {
           // TODO: Set initial radius once here, then call joinRoutes each time instead of making pairs
           let radius = getBestJoinRadius( routes[ fromLanesA[ numLanesA - 1 ] ], routes[ toLanesA[ numLanesA - 1 ] ], intersection );
 
-          // console.log( 'Got best radius of ' + radius );
+          console.log( 'Got best radius of ' + radius );
 
           // TODO: Is this too big? Should there be a -( LANE_WIDTH / 2 ) in there somewhere?
           radius = Math.max( ( numLanesA + numLanesB ) * LANE_WIDTH, radius );
@@ -223,13 +223,24 @@ export function routesFromStreets( streets ) {
           }
         }
         
+        // TODO: NEXT: I'm having intersections that can't decide if they are 3-way or 4-way
+        // A short stub of road might be able to turn right onto a street but not left onto it
+        // These cases shouldn't exist (unless the road is one-way, that's a whole other set of problems for later...)
+        // Can we see if adding pairs was successful, and not add the other pair if it wasn't?
+
         addPairs( [ B, A ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] );
         addPairs( [ B, A ], [ [ 'left', 'left' ], [ 'right', 'right' ] ] );
+
         addPairs( [ A, B ], [ [ 'left', 'right' ], [ 'left', 'right' ] ] );
         addPairs( [ A, B ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
       } );
     }
   }
+
+
+  // NEXT: We're hitting the same issue as before where we can link one way
+  //  but not both, and so end up with an invalid u-turn
+  // Should we only traverse right turns for this? (We'd never traverse a uturn then...)
 
 
   // Traverse all the routes, adding u-turns if we reach a dead end
@@ -249,13 +260,6 @@ export function routesFromStreets( streets ) {
 
     console.log( thisRouteName );
 
-    // TODO: This is hitting the same problem as the other traversal
-    // Since we can exit and enter one route at multiple points, 
-    // it's not enough to save the name of routes we've visited.
-
-    // NEXT: Maybe we can save the links we've visited instead and use those to prevent loops?
-    // Links should be unique
-
     unvisitedRoutes.delete( thisRouteName );
     visitedLinks.add( lastLink );
 
@@ -263,12 +267,14 @@ export function routesFromStreets( streets ) {
 
     lastLink = nextLink;
 
-    console.log( `checking for next link from ${ thisRouteName } at ${ lastLink?.toDistance ?? 0 }` );
+    console.log( `  checking for next link from ${ thisRouteName } at ${ lastLink?.toDistance ?? 0 }` );
 
-    nextLink = getNextLink( thisRoute, lastLink?.toDistance ?? 0 );
+    nextLink = getNextLink( routes, thisRoute, lastLink?.toDistance ?? 0 );
+
+    console.log( `  ...found: ${ JSON.stringify( nextLink ) }` );
 
     if ( nextLink == null ) {
-      console.log( 'Making u-turn...' );
+      console.log( '    Making u-turn...' );
 
       const streetInfo = thisRoute.streetInfo;
       const street = streets[ streetInfo.name ];
@@ -276,7 +282,7 @@ export function routesFromStreets( streets ) {
       const fromRouteName = street.routes[ streetInfo.laneDir ][ streetInfo.laneIndex ];
       const toRouteName = street.routes[ streetInfo.laneDir == 'right' ? 'left' : 'right' ][ streetInfo.laneIndex ];
 
-      console.log( `   ...from ${ fromRouteName } to ${ toRouteName }` );
+      console.log( `    ...from ${ fromRouteName } to ${ toRouteName }` );
 
       const fromRoute = routes[ fromRouteName ];
       const toRoute = routes[ toRouteName ];
@@ -403,24 +409,26 @@ function getLastLink( route ) {
   return furthest;
 }
 
-function getNextLink( route, distance = 0 ) {
+function getNextLink( routes, route, distance = 0 ) {
   let closest, closestDist = Infinity;
-  // let furthest, furthestDist = 0;
+  let furthest, furthestDist = 0;
 
   route.links?.forEach( link => {
     const dist = link.fromDistance - distance;
     
-    // TODO: Do we care about counterclockwise here? 
+    // TODO: Do we care about counterclockwise here?
+    // Not sure it actually makes a difference. Only using right-hand turns for traversing
+    // doesn't solve my problem.
     // For now, this is only being used to tell if we should have a u-turn or not
-    if ( /*routes[ link.name ].counterclockwise != true && */ 0 <= dist && dist < closestDist ) {
+    if ( routes[ link.name ].counterclockwise != true && 0 <= dist && dist < closestDist ) {
       closest = link;
       closestDist = dist;
     }
     
-    // if ( dist > furthestDist ) {
-    //   furthest = link;
-    //   furthestDist = dist;
-    // }
+    if ( dist > furthestDist ) {
+      furthest = link;
+      furthestDist = dist;
+    }
   } );
 
   // console.log( 'closest: ' );
@@ -429,5 +437,5 @@ function getNextLink( route, distance = 0 ) {
   // console.log( 'furthest: ' );
   // console.log( furthest );
 
-  return closest;// ?? furthest;
+  return closest ?? furthest;
 }
