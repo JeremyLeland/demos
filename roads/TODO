@@ -3,6 +3,14 @@ NEXT:
     - Maybe we should create them as part of the drawing? Or something drawing-like?
     - Start at an outermost lane and traverse the links. 
     - If we get to the edge of a street without a link, add a u-turn
+    + There's two issues here:
+      - We're creating join arcs when there isn't enough room
+        - Need extra room to make it "worth it"?
+        - Need to make sure both sets of join arcs, left and right? How do we determine this?
+          - This seems most promising, regardless of method used to determine u-turn
+          - How do we know from one missing set of pairs which others to exclude, though?
+            - exclude whichever side was shorter, I guess
+      - We're creating u-turns when the segment is too short to justify it
   - Redo intersections as list of affected routes and start/stop distances (instead of paths of tiny routes)
   - Lane-changing routes, merges (blocks unequal lanes!)
 

@@ -17,23 +17,54 @@ const DEBUG_ARROW_WIDTH = DEBUG_ARROW_LENGTH / 2;
 
 let drawSteps = 100;
 
+// const streets = {
+//   Horiz: {
+//     start: [ -3, 3 ],
+//     end: [ 3, 3 ],
+//     lanes: {
+//       left: 1,
+//       right: 1,
+//     },
+//   },
+//   Vert: {
+//     start: [ -3, -3 ],
+//     end: [ -3, 4 ],
+//     lanes: {
+//       left: 1,
+//       right: 1,
+//     },
+//   },
+// };
+
 const streets = {
-  Horiz: {
-    start: [ -3, 3 ],
-    end: [ 3, 3 ],
-    lanes: {
-      left: 1,
-      right: 1,
+  "Horiz": {
+    "lanes": {
+      "left": 1,
+      "right": 1
     },
+    "center": [
+      -4.676435679631939,
+      -4.484232402598129
+    ],
+    "radius": 7,
+    "startAngle": 1.1,
+    "endAngle": 0.21,
+    "counterclockwise": true
   },
-  Vert: {
-    start: [ -3, -3 ],
-    end: [ -3, 4 ],
-    lanes: {
-      left: 1,
-      right: 1,
+  "Vert": {
+    "lanes": {
+      "left": 1,
+      "right": 1
     },
-  },
+    "center": [
+      -55.698987454324225,
+      57.79509949013167
+    ],
+    "radius": 80,
+    "startAngle": -0.9,
+    "endAngle": -0.79,
+    "counterclockwise": false
+  }
 };
 
 // LATER: Outline messed up because we have no way off of the extra road

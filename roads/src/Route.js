@@ -12,7 +12,7 @@ export function getLength( route ) {
   }
 }
 
-export function getPositionAtDistance( route, distance ) {  
+export function getPositionAtDistance( route, distance ) {
   if ( route.center ) {
     return Arc.getPointAtAngle( route, Arc.getAngleAtDistance( route, distance ) );
   }
@@ -20,6 +20,25 @@ export function getPositionAtDistance( route, distance ) {
     const lineVec = vec2.subtract( [], route.end, route.start );
     vec2.normalize( lineVec, lineVec );
     return vec2.scaleAndAdd( [], route.start, lineVec, distance );
+  }
+}
+
+export function getDistanceAtPoint( route, point ) {
+  // We'll use this to find out how much distance is left on either side of an intersection
+  // Should always be called with a point that is on the route, not sure we need to handle when it isn't
+
+  // something atan2-y for arcs, can we just use vec2.distance for lines?
+
+  if ( route.center ) {
+    const pointAngle = Math.atan2(
+      point[ 1 ] - route.center[ 1 ],
+      point[ 0 ] - route.center[ 0 ],
+    );
+
+    return Angle.sweepAngle( route.startAngle, pointAngle, route.counterclockwise ) * route.radius;
+  }
+  else {
+    return vec2.distance( point, route.start );
   }
 }
 
@@ -88,16 +107,7 @@ export function getArcBetween( A, B, radius, intersection ) {
     const turnOffset = Angle.deltaAngle( angleOffsetA, angleOffsetB );
 
     if ( Math.sign( turn ) == Math.sign( turnOffset ) ) {
-      const startDist = A.center ?
-        Angle.sweepAngle(
-          A.startAngle,
-          Math.atan2( 
-            testIntersection[ 1 ] - A.center[ 1 ],
-            testIntersection[ 0 ] - A.center[ 0 ], 
-          ),
-          A.counterclockwise,
-        ) :
-        vec2.distance( testIntersection, A.start );
+      const startDist = getDistanceAtPoint( A, testIntersection );
               
       if ( startDist < closestToLine.dist ) {
         closestToLine.point = testIntersection;

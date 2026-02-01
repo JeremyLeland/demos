@@ -182,7 +182,6 @@ export function routesFromStreets( streets ) {
           const toLanesB   = streets[ 0 ].routes[ laneDirs[ 1 ][ 1 ] ];
           const numLanesB = Math.min( fromLanesB.length, toLanesB.length );
 
-          // TODO: Set initial radius once here, then call joinRoutes each time instead of making pairs
           let radius = getBestJoinRadius( routes[ fromLanesA[ numLanesA - 1 ] ], routes[ toLanesA[ numLanesA - 1 ] ], intersection );
 
           // console.log( 'Got best radius of ' + radius );
@@ -216,11 +215,44 @@ export function routesFromStreets( streets ) {
             radius -= LANE_WIDTH;
           }
         }
+
+        // TODO: NEXT: Find distance in all directions of intersection (before/after)
+        // Determine whether this should be elbow, 3-way, 4-way, etc and don't make links if a side is too short
         
-        addPairs( [ B, A ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] );
-        addPairs( [ B, A ], [ [ 'left', 'left' ], [ 'right', 'right' ] ] );
-        addPairs( [ A, B ], [ [ 'left', 'right' ], [ 'left', 'right' ] ] );
-        addPairs( [ A, B ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
+        const A_before = Math.abs( Route.getDistanceAtPoint( A, intersection ) );
+        const B_before = Math.abs( Route.getDistanceAtPoint( B, intersection ) );
+        const A_after = Route.getLength( A ) - A_before;
+        const B_after = Route.getLength( B ) - B_before;
+
+        console.log( `A_before = ${ A_before }` );
+        console.log( `A_after = ${ A_after }` );
+        console.log( `B_before = ${ B_before }` );
+        console.log( `B_after = ${ B_after }` );
+
+        // TODO: NOW: Find which A/B before/after goes with each line
+        
+        // What should minimum length be? Should it take into account number of lanes? Arbitrary number?
+        const MINIMUM = 2;
+
+        // B before, A after
+        if ( A_after > MINIMUM && B_before > MINIMUM ) {
+          addPairs( [ B, A ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] );
+        }
+        
+        // B after, A before
+        if ( A_before > MINIMUM && B_after > MINIMUM ) {
+          addPairs( [ B, A ], [ [ 'left', 'left' ], [ 'right', 'right' ] ] );
+        }
+
+        // B after, A after
+        if ( A_after > MINIMUM && B_after > MINIMUM ) {
+          addPairs( [ A, B ], [ [ 'left', 'right' ], [ 'left', 'right' ] ] );
+        }
+
+        // B before, A before
+        if ( A_before > MINIMUM && B_before > MINIMUM ) {
+          addPairs( [ A, B ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
+        }
       } );
     }
   }
@@ -252,21 +284,21 @@ export function routesFromStreets( streets ) {
       const firstToRoute = routes[ toLanes[ 0 ] ];
       const firstLink = getNextLink( firstToRoute );
 
-      console.log( 'firstFrom: '+ fromLanes[ 0 ] );
-      console.log( 'firstTo: '+ toLanes[ 0 ] );
+      // console.log( 'firstFrom: '+ fromLanes[ 0 ] );
+      // console.log( 'firstTo: '+ toLanes[ 0 ] );
 
-      console.log( lastLink );
-      console.log( firstLink );
+      // console.log( lastLink );
+      // console.log( firstLink );
 
-      const fromDest = lastLink ? getNextLink( routes[ lastLink.name ] )?.name : null;
-      const toDest = firstLink ? getNextLink( routes[ firstLink.name ] )?.name : null;
+      // const fromDest = lastLink ? getNextLink( routes[ lastLink.name ] )?.name : null;
+      // const toDest = firstLink ? getNextLink( routes[ firstLink.name ] )?.name : null;
 
-      console.log( fromDest );
-      console.log( toDest );
+      // console.log( fromDest );
+      // console.log( toDest );
 
-      // if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
+      if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
 
-      if ( !lastLink || ( firstLink && fromDest == toDest ) ) {
+      // if ( !lastLink || ( firstLink && fromDest == toDest ) ) {
         
         console.log( 'Making u-turn' );
 
@@ -299,20 +331,20 @@ export function routesFromStreets( streets ) {
       const firstToRoute = routes[ toLanes[ 0 ] ];
       const firstLink = getNextLink( firstToRoute );
 
-      console.log( 'firstFrom: '+ fromLanes[ 0 ] );
-      console.log( 'firstTo: '+ toLanes[ 0 ] );
+      // console.log( 'firstFrom: '+ fromLanes[ 0 ] );
+      // console.log( 'firstTo: '+ toLanes[ 0 ] );
 
-      console.log( lastLink );
-      console.log( firstLink );
+      // console.log( lastLink );
+      // console.log( firstLink );
 
-      const fromDest = lastLink ? getNextLink( routes[ lastLink.name ] )?.name : null;
-      const toDest = firstLink ? getNextLink( routes[ firstLink.name ] )?.name : null;
+      // const fromDest = lastLink ? getNextLink( routes[ lastLink.name ] )?.name : null;
+      // const toDest = firstLink ? getNextLink( routes[ firstLink.name ] )?.name : null;
 
-      console.log( fromDest );
-      console.log( toDest );
+      // console.log( fromDest );
+      // console.log( toDest );
 
-      // if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
-      if ( !lastLink || ( firstLink && fromDest == toDest ) ) {
+      if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
+      // if ( !lastLink || ( firstLink && fromDest == toDest ) ) {
 
         console.log( 'Making u-turn' );
 
