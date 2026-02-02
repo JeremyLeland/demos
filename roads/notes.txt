@@ -1,0 +1,41 @@
+2/2:
+
+Even when checking street length, I still get in the situation where arcs fit in one direction but are too big to fit in the other direction
+
+I could prevent this by requiring longer roads (and seemed to with minimum length of 2), but I don't know how long is enough minimum.
+
+It would be nice if I could just try to put arcs in every direction, and rescind the ones that aren't long enough. This gets me back to the problem of not knowing *why* a given arc failed. Is it because the startAngle was too long or the endAngle?
+  - Is there a way to return this information from the arc generating function?
+  - Can I look at which ones were successful?
+    - If all 4 worked, we're good
+    - If only 3 worked, it'll need to be a 3-way intersection. Focus on the street that has two working, and discard the rest
+    - If only 2 worked...not sure. I'm having trouble creating a situation where only two work that isn't just a valid 3 way
+    - So maybe just try to resolve the 3-worked case?
+
+Can I make getBestJoinRadius tell me if it'll work? Since I'm testing what fits there anyway. Maybe give that a minimum and have it fail if nothing fits?
+
+Seems like I should do this in two passes:
+  1) Find the best radius for each quadrant
+  1.5) Remove dangling quandrant
+  2) Actually add pairs for appropriate quadrants
+
+So would this be splitting up addPairs?
+
+ALTERNATIVE:
+  - Support hard intersections like this for drawing purposes
+  - Nothing is necessarily wrong with the routes. This is navigatable. They just can't turn left.
+  - The user will probably see this isn't what they want and change it. But we should be more robust in drawing it.
+    - Could save a lot of effort trying to figure out which arcs are valid and which aren't
+  - This is kind of like an intersection with a one-way road (we'll have the same problem there, right?)
+
+We'd need to check for an intersection between streets, or maybe routes?
+  - Everything with drawing a street deals with the outside routes, so just check those
+
+Maybe have "nonlinks" (or better name) where I add routes that we were unable to connect with?
+  - This could be used for drawing hard boundaries
+  - Not sure if it ends up being useful for anything else, maybe something with intersections
+
+NOW: Trying to create "failedLinks" that I can use for drawing
+  - These are pretty close to normal links in terms of what they store
+  - Trying to generate them in joinRoutes for now
+    - Having some issues with getting proper intersection, need to make sure it's closest!

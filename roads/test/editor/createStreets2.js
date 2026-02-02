@@ -36,36 +36,7 @@ let drawSteps = 100;
 //   },
 // };
 
-const streets = {
-  "Horiz": {
-    "lanes": {
-      "left": 1,
-      "right": 1
-    },
-    "center": [
-      -4.676435679631939,
-      -4.484232402598129
-    ],
-    "radius": 7,
-    "startAngle": 1.1,
-    "endAngle": 0.21,
-    "counterclockwise": true
-  },
-  "Vert": {
-    "lanes": {
-      "left": 1,
-      "right": 1
-    },
-    "center": [
-      -55.698987454324225,
-      57.79509949013167
-    ],
-    "radius": 80,
-    "startAngle": -0.9,
-    "endAngle": -0.79,
-    "counterclockwise": false
-  }
-};
+const streets = {"Horiz":{"lanes":{"left":1,"right":1},"center":[-4.676435679631939,-4.484232402598129],"radius":7,"startAngle":1.1,"endAngle":0.21,"counterclockwise":true,"routes":{"left":["Horiz_lane_left_0"],"right":["Horiz_lane_right_0"]}},"Vert":{"lanes":{"left":1,"right":1},"center":[0.25959926191386545,-8.46303416087431],"radius":7.191147391385579,"startAngle":2.618570689258215,"endAngle":1.1692319696616502,"counterclockwise":true,"routes":{"left":["Vert_lane_left_0"],"right":["Vert_lane_right_0"]}}};
 
 // LATER: Outline messed up because we have no way off of the extra road
 //   - Ideally, we would have closer turns that would allow this to work
@@ -282,6 +253,8 @@ canvas.draw = ( ctx ) => {
     }
   } );
 
+  drawLinks( ctx, routes );
+
   // TODO: Draw outline of streets based on the routes (and connections between them)
   // TODO: Ignore parts of street with no more connections? (this might make joins nicer)
 
@@ -309,6 +282,60 @@ function drawArrow( ctx, pos, angle, width = DEBUG_ARROW_WIDTH, length = DEBUG_A
   ctx.closePath();
   ctx.fill();
   // ctx.stroke();
+}
+
+function drawLinks( ctx, routes ) {
+  ctx.globalAlpha = 0.5;
+  Object.values( routes ).forEach( route => {
+
+    function drawLink( link ) {
+      const toRoute = routes[ link.name ];
+  
+      // Draw last piece of our route, then first piece of next route
+      ctx.beginPath();
+      if ( route.center ) {
+        ctx.arc( 
+          ...route.center, 
+          route.radius, 
+          Arc.getAngleAtDistance( route, link.fromDistance - 0.15 ),
+          Arc.getAngleAtDistance( route, link.fromDistance ),
+          route.counterclockwise,
+        );
+      }
+      else {
+        ctx.lineTo( ...Route.getPositionAtDistance( route, link.fromDistance - 0.15 ) );
+        ctx.lineTo( ...Route.getPositionAtDistance( route, link.fromDistance ) );
+      }
+
+      if ( toRoute.center ) {
+        ctx.arc(
+          ...toRoute.center,
+          toRoute.radius,
+          Arc.getAngleAtDistance( toRoute, link.toDistance ),
+          Arc.getAngleAtDistance( toRoute, link.toDistance + 0.15 ),
+          toRoute.counterclockwise,
+        );
+      }
+      else {
+        ctx.lineTo( ...Route.getPositionAtDistance( toRoute, link.toDistance ) );
+        ctx.lineTo( ...Route.getPositionAtDistance( toRoute, link.toDistance + 0.15 ) );
+      }
+      ctx.stroke();
+    }
+
+    // Linked routes
+    ctx.setLineDash( [] );
+    ctx.lineWidth = 0.1;
+    ctx.strokeStyle = 'cyan';
+  
+    route.links?.forEach( link => drawLink( link ) );
+
+    ctx.strokeStyle = 'orange';
+
+    route.failedLinks?.forEach( link => drawLink( link ) );
+
+  } );
+  ctx.globalAlpha = 1;
 }
 
 

@@ -39,52 +39,48 @@ export function routesFromStreets( streets ) {
 
         const laneOffset = ccDir * laneDirDir * LANE_WIDTH * ( 0.5 + i );
 
+        const route = {
+          streetInfo: {
+            name: name,
+            laneDir: laneDir,
+            laneIndex: i,
+          },
+
+          // debug
+          arrowColor: laneDir == 'left' ? 'green' : 'darkred',
+        }
+
         if ( street.center ) {
           // Left lanes are backwards
-          const route = {
+          Object.assign( route, {
             center: street.center,
             radius: street.radius + laneOffset,
             startAngle: laneDir == 'left' ? street.endAngle   : street.startAngle,
             endAngle:   laneDir == 'left' ? street.startAngle : street.endAngle,
-            counterclockwise: laneDir == 'left' ? !street.counterclockwise : !!street.counterclockwise,
-
-            // TODO: Can we save parent name and lane index here, rather than altering original street?
-            parent: name,
-
-            streetColor: street.color,
-            arrowColor: laneDir == 'left' ? 'green' : 'darkred',
-          };
-
-          const routeName = `${ name }_lane_${ laneDir }_${ i }`;
-          routes[ routeName ] = route;
-
-          // TODO: Save this in a different intermediate structure (so we aren't altering streets)
-          street.routes[ laneDir ].push( routeName );
+            counterclockwise: laneDir == 'left' ? !street.counterclockwise : !!street.counterclockwise,            
+          } );
         }
         else {
-
           // TODO: Don't recalculate this every loop?
           const v1 = vec2.subtract( [], street.end, street.start );
           vec2.normalize( v1, v1 );
-
           const normal = [ v1[ 1 ], -v1[ 0 ] ];
 
           // Left lanes are backwards
           const A = vec2.scaleAndAdd( [], street.start, normal, laneOffset );
           const B = vec2.scaleAndAdd( [], street.end,   normal, laneOffset );
-          const route = {
+
+          Object.assign( route, {
             start: laneDir == 'left' ? B : A,
             end:   laneDir == 'left' ? A : B,
-
-            streetColor: street.color,
-            arrowColor: laneDir == 'left' ? 'green' : 'darkred',
-            // parent: name,
-          };
-
-          const routeName = `${ name }_lane_${ laneDir }_${ i }`;
-          routes[ routeName ] = route;
-          street.routes[ laneDir ].push( routeName );
+          } );
         }
+
+        const routeName = `${ name }_lane_${ laneDir }_${ i }`;
+        routes[ routeName ] = route;
+
+        // TODO: Save this in a different intermediate structure (so we aren't altering streets)
+        street.routes[ laneDir ].push( routeName );
       }
     } );
   } );
@@ -182,12 +178,25 @@ export function routesFromStreets( streets ) {
           const toLanesB   = streets[ 0 ].routes[ laneDirs[ 1 ][ 1 ] ];
           const numLanesB = Math.min( fromLanesB.length, toLanesB.length );
 
-          let radius = getBestJoinRadius( routes[ fromLanesA[ numLanesA - 1 ] ], routes[ toLanesA[ numLanesA - 1 ] ], intersection );
-
-          // console.log( 'Got best radius of ' + radius );
-
           // TODO: Is this too big? Should there be a -( LANE_WIDTH / 2 ) in there somewhere?
-          radius = Math.max( ( numLanesA + numLanesB ) * LANE_WIDTH, radius );
+          const minRadius = ( numLanesA + numLanesB ) * LANE_WIDTH;
+
+          console.log( 'Minimum radius is: ' + minRadius );
+
+          let radius = getBestJoinRadius(
+            routes[ fromLanesA[ numLanesA - 1 ] ], 
+            routes[ toLanesA[ numLanesA - 1 ] ], 
+            intersection,
+            minRadius,
+            10    // TODO: better value for max?
+          );
+
+          console.log( 'Got best radius of ' + radius );
+
+          // if ( radius == null ) {
+          //   console.log( 'skipping pair, no acceptable radius found' );
+          //   return false;
+          // }
 
           for ( let k = 0; k < numLanesA; k ++ ) {
             joinRoutes( 
@@ -214,159 +223,131 @@ export function routesFromStreets( streets ) {
             );
             radius -= LANE_WIDTH;
           }
+
+          // return true;  // acceptable radius found and routes created
         }
 
         // TODO: NEXT: Find distance in all directions of intersection (before/after)
         // Determine whether this should be elbow, 3-way, 4-way, etc and don't make links if a side is too short
         
-        const A_before = Math.abs( Route.getDistanceAtPoint( A, intersection ) );
-        const B_before = Math.abs( Route.getDistanceAtPoint( B, intersection ) );
-        const A_after = Route.getLength( A ) - A_before;
-        const B_after = Route.getLength( B ) - B_before;
+        // const A_before = Math.abs( Route.getDistanceAtPoint( A, intersection ) );
+        // const B_before = Math.abs( Route.getDistanceAtPoint( B, intersection ) );
+        // const A_after = Route.getLength( A ) - A_before;
+        // const B_after = Route.getLength( B ) - B_before;
 
-        console.log( `A_before = ${ A_before }` );
-        console.log( `A_after = ${ A_after }` );
-        console.log( `B_before = ${ B_before }` );
-        console.log( `B_after = ${ B_after }` );
+        // console.log( `A_before = ${ A_before }` );
+        // console.log( `A_after = ${ A_after }` );
+        // console.log( `B_before = ${ B_before }` );
+        // console.log( `B_after = ${ B_after }` );
 
         // TODO: NOW: Find which A/B before/after goes with each line
         
         // What should minimum length be? Should it take into account number of lanes? Arbitrary number?
-        const MINIMUM = 2;
+        // const MINIMUM = 1.5;
 
         // B before, A after
-        if ( A_after > MINIMUM && B_before > MINIMUM ) {
+        // if ( A_after > MINIMUM && B_before > MINIMUM ) {
           addPairs( [ B, A ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] );
-        }
+        // }
         
         // B after, A before
-        if ( A_before > MINIMUM && B_after > MINIMUM ) {
+        // if ( A_before > MINIMUM && B_after > MINIMUM ) {
           addPairs( [ B, A ], [ [ 'left', 'left' ], [ 'right', 'right' ] ] );
-        }
+        // }
 
         // B after, A after
-        if ( A_after > MINIMUM && B_after > MINIMUM ) {
+        // if ( A_after > MINIMUM && B_after > MINIMUM ) {
           addPairs( [ A, B ], [ [ 'left', 'right' ], [ 'left', 'right' ] ] );
-        }
+        // }
 
         // B before, A before
-        if ( A_before > MINIMUM && B_before > MINIMUM ) {
+        // if ( A_before > MINIMUM && B_before > MINIMUM ) {
           addPairs( [ A, B ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
-        }
+        // }
       } );
     }
   }
 
-  // TODO: NEXT: Unless there's an intersection (how to detect??)
-  // How are we defining this? If the street goes well past the intersection, it should have a uturn
-  // Guess we just define this. See how far the last link is from the end. If it's more than X (maybe LANE_RADIUS?),
-  // then add the uturn
-  // Actually, won't it get screwed up if it doesn't have a right turn to get it onto the next bit of road?
-  // Maybe the deciding factor should be if it has a right turn on the opposite site
-  // ...how do I figure that out, though? And what if there are no turns because it's just one street?
 
-  streetList.forEach( street => {
-    // TODO: Way to merge these two sections? They're so similar...
-    {
-      const fromLanes = street.routes.right;
-      const toLanes   = street.routes.left;
+  // NEXT: We're hitting the same issue as before where we can link one way
+  //  but not both, and so end up with an invalid u-turn
+  // Should we only traverse right turns for this? (We'd never traverse a uturn then...)
 
-      // TODO: Using lane 0 breaks with 4 lane roads because the 0 lane for right may be doing something different than
-      //       the 0 lane for left. Also, if we have an intersection of or 4 differet streets (e.g. to mix lines and arcs)
-      //       then the streets won't match up
 
-      // First attempt -- only add if goes out more than 2 from last link
-      // TODO: Don't hardcode this, should depend on radius of the biggest link? 
-      //    - That link may not be the last link, if left and right links are close...
-      const firstFromRoute = routes[ fromLanes[ 0 ] ];
-      const lastLink = getLastLink( firstFromRoute );
+  // Traverse all the routes, adding u-turns if we reach a dead end
+  const unvisitedRoutes = new Set( Object.keys( routes ) );
+  const visitedLinks = new Set();
 
-      const firstToRoute = routes[ toLanes[ 0 ] ];
-      const firstLink = getNextLink( firstToRoute );
+  let thisRouteName, nextRouteName;
+  let lastLink, nextLink;
+  
+  for ( let tries = 0; tries < 100; tries ++ ) {
+    thisRouteName = nextRouteName ?? unvisitedRoutes.values().next().value;
 
-      // console.log( 'firstFrom: '+ fromLanes[ 0 ] );
-      // console.log( 'firstTo: '+ toLanes[ 0 ] );
-
-      // console.log( lastLink );
-      // console.log( firstLink );
-
-      // const fromDest = lastLink ? getNextLink( routes[ lastLink.name ] )?.name : null;
-      // const toDest = firstLink ? getNextLink( routes[ firstLink.name ] )?.name : null;
-
-      // console.log( fromDest );
-      // console.log( toDest );
-
-      if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
-
-      // if ( !lastLink || ( firstLink && fromDest == toDest ) ) {
-        
-        console.log( 'Making u-turn' );
-
-        const numLanes = Math.min( fromLanes.length, toLanes.length );
-        for ( let k = 0; k < numLanes; k ++ ) {
-          joinRoutes(
-            routes,
-            fromLanes[ k ], 
-            toLanes[ k ], 
-            ( k + 0.5 ) * LANE_WIDTH, 
-            Route.getPositionAtDistance( street, Route.getLength( street ) ),
-            'uturn',
-            'lime',
-          );
-        }
-      }
-      else {
-        console.log( 'SKIPPING!!!' );
-      }
+    if ( thisRouteName == null ) {
+      // console.log( 'no more routes' );
+      break;
     }
 
-    {
-      const fromLanes = street.routes.left;
-      const toLanes   = street.routes.right;
+    // console.log( thisRouteName );
 
-      // First attempt -- only add if goes out more than 2 from last link
-      const firstFromRoute = routes[ fromLanes[ 0 ] ];
-      const lastLink = getLastLink( firstFromRoute );
+    unvisitedRoutes.delete( thisRouteName );
+    visitedLinks.add( lastLink );
 
-      const firstToRoute = routes[ toLanes[ 0 ] ];
-      const firstLink = getNextLink( firstToRoute );
+    const thisRoute = routes[ thisRouteName ];
 
-      // console.log( 'firstFrom: '+ fromLanes[ 0 ] );
-      // console.log( 'firstTo: '+ toLanes[ 0 ] );
+    lastLink = nextLink;
 
-      // console.log( lastLink );
-      // console.log( firstLink );
+    // console.log( `  checking for next link from ${ thisRouteName } at ${ lastLink?.toDistance ?? 0 }` );
 
-      // const fromDest = lastLink ? getNextLink( routes[ lastLink.name ] )?.name : null;
-      // const toDest = firstLink ? getNextLink( routes[ firstLink.name ] )?.name : null;
+    nextLink = getNextLink( thisRoute, lastLink?.toDistance ?? 0 );
 
-      // console.log( fromDest );
-      // console.log( toDest );
+    // console.log( `  ...found: ${ JSON.stringify( nextLink ) }` );
 
-      if ( !lastLink || Route.getLength( firstFromRoute ) - lastLink.fromDistance > Constants.StartRadius ) {
-      // if ( !lastLink || ( firstLink && fromDest == toDest ) ) {
+    if ( nextLink == null ) {
+      // console.log( '    Making u-turn...' );
 
-        console.log( 'Making u-turn' );
+      const streetInfo = thisRoute.streetInfo;
+      const street = streets[ streetInfo.name ];
 
-        const numLanes = Math.min( fromLanes.length, toLanes.length );
-        for ( let k = 0; k < numLanes; k ++ ) {
-          joinRoutes(
-            routes,
-            fromLanes[ k ], 
-            toLanes[ k ], 
-            ( k + 0.5 ) * LANE_WIDTH, 
-            Route.getPositionAtDistance( street, 0 ),
-            'uturn',
-            'lime',
-          );
-        }
-      }
-      else {
-        console.log( 'SKIPPING!!!' );
+      const fromRouteName = street.routes[ streetInfo.laneDir ][ streetInfo.laneIndex ];
+      const toRouteName = street.routes[ streetInfo.laneDir == 'right' ? 'left' : 'right' ][ streetInfo.laneIndex ];
+
+      // console.log( `    ...from ${ fromRouteName } to ${ toRouteName }` );
+
+      const fromRoute = routes[ fromRouteName ];
+      const toRoute = routes[ toRouteName ];
+
+      const fromPos = Route.getPositionAtDistance( fromRoute, Route.getLength( fromRoute ) );
+      const toPos = Route.getPositionAtDistance( toRoute, 0 );
+
+      joinRoutes(
+        routes,
+        fromRouteName,
+        toRouteName,
+        ( streetInfo.laneIndex + 0.5 ) * LANE_WIDTH, 
+        [ ( fromPos[ 0 ] + toPos[ 0 ] ) / 2, ( fromPos[ 1 ] + toPos[ 1 ] ) / 2 ],
+        'u-turn',
+        'lime',
+      );
+
+      nextRouteName = toRouteName;
+    }
+    else {
+      nextRouteName = nextLink.name;
+    }
+
+    if ( visitedLinks.has( nextLink ) ) {
+      // break out of a loop
+      nextRouteName = null;  // pull a new route from unvisited
+      nextLink = null;
+
+      if ( unvisitedRoutes.size == 0 ) {
+        // seems like we shouldn't need this if we have thisRouteName == null check above...
+        break;
       }
     }
-  } );
-
+  }
 
   // console.log( 'routes = ' );
   // console.log( routes );
@@ -374,8 +355,11 @@ export function routesFromStreets( streets ) {
   return routes;
 }
 
-function getBestJoinRadius( fromRoute, toRoute, intersection ) {
-  let left = 0, right = 10;   // TODO: How to determine appropriate max?
+function getBestJoinRadius( fromRoute, toRoute, intersection, min, max ) {
+  let left = min, right = max;
+
+  // TODO: Check if min is valid and accept immediately
+  // TODO: Exponential check to find max? Is that valid? Are we monotonic function?
 
   for ( let i = 0; i < 10; i ++ ) {
     const mid = ( left + right ) / 2;
@@ -399,30 +383,30 @@ function getBestJoinRadius( fromRoute, toRoute, intersection ) {
     }
   }
 
-  return ( left + right ) / 2;
+  const mid = ( left + right ) / 2;
+
+  // Make sure 
+  if ( Route.getArcBetween( fromRoute, toRoute, mid, intersection ) ) {
+    return mid;
+  }
 }
 
 function joinRoutes( routes, fromName, toName, radius, intersection, intersectionName, debugColor ) {
   const arc = Route.getArcBetween( routes[ fromName ], routes[ toName ], radius, intersection );
+
+  const fromRoute = routes[ fromName ];
+  const toRoute = routes[ toName ];
 
   if ( arc ) {
     const arcName = `${ fromName }_TO_${ toName }_${ intersectionName }_ARC`;
     routes[ arcName ] = arc;
 
     // Keep track of our connections, and where they connect distance-wise
-    const fromRoute = routes[ fromName ];
-    const toRoute = routes[ toName ];
-
     const startPos = Arc.getPointAtAngle( arc, arc.startAngle );
     const endPos = Arc.getPointAtAngle( arc, arc.endAngle );
 
-    const fromDistance = fromRoute.center ? Arc.getDistanceAtAngle( fromRoute,
-      Math.atan2( startPos[ 1 ] - fromRoute.center[ 1 ], startPos[ 0 ] - fromRoute.center[ 0 ] )
-    ) : vec2.distance( fromRoute.start, startPos );
-
-    const toDistance = toRoute.center ? Arc.getDistanceAtAngle( toRoute,
-      Math.atan2( endPos[ 1 ] - toRoute.center[ 1 ], endPos[ 0 ] - toRoute.center[ 0 ] )
-    ) : vec2.distance( toRoute.start, endPos );
+    const fromDistance = Route.getDistanceAtPoint( fromRoute, startPos );
+    const toDistance = Route.getDistanceAtPoint( toRoute, endPos );
     
     fromRoute.links ??= [];
     fromRoute.links.push( {
@@ -439,6 +423,26 @@ function joinRoutes( routes, fromName, toName, radius, intersection, intersectio
     } );
 
     arc.arrowColor = debugColor;
+  }
+
+  // TODO: NOW: Make a note of the failed join, still useful for drawing
+  else {
+
+    // TODO: FIX NOW: Don't use intersection here, this is from the street
+    //       NEED TO FIND INTERSECTION BETWEEN ROUTES, use that instead
+    Intersections.getIntersections( fromRoute, toRoute )
+
+    // Make sure to use the closest one to intersection!
+
+    const fromDistance = Route.getDistanceAtPoint( fromRoute, intersection );
+    const toDistance = Route.getDistanceAtPoint( toRoute, intersection );
+
+    fromRoute.failedLinks ??= [];
+    fromRoute.failedLinks.push( {
+      name: toName,
+      fromDistance: fromDistance,
+      toDistance: toDistance,
+    } );
   }
 }
 

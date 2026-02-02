@@ -35,7 +35,7 @@ export function getDistanceAtPoint( route, point ) {
       point[ 0 ] - route.center[ 0 ],
     );
 
-    return Angle.sweepAngle( route.startAngle, pointAngle, route.counterclockwise ) * route.radius;
+    return Arc.getDistanceAtAngle( route, pointAngle );
   }
   else {
     return vec2.distance( point, route.start );
