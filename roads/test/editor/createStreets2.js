@@ -17,26 +17,24 @@ const DEBUG_ARROW_WIDTH = DEBUG_ARROW_LENGTH / 2;
 
 let drawSteps = 100;
 
-// const streets = {
-//   Horiz: {
-//     start: [ -3, 3 ],
-//     end: [ 3, 3 ],
-//     lanes: {
-//       left: 1,
-//       right: 1,
-//     },
-//   },
-//   Vert: {
-//     start: [ -3, -3 ],
-//     end: [ -3, 4 ],
-//     lanes: {
-//       left: 1,
-//       right: 1,
-//     },
-//   },
-// };
-
-const streets = {"Horiz":{"lanes":{"left":1,"right":1},"center":[-4.676435679631939,-4.484232402598129],"radius":7,"startAngle":1.1,"endAngle":0.21,"counterclockwise":true,"routes":{"left":["Horiz_lane_left_0"],"right":["Horiz_lane_right_0"]}},"Vert":{"lanes":{"left":1,"right":1},"center":[0.25959926191386545,-8.46303416087431],"radius":7.191147391385579,"startAngle":2.618570689258215,"endAngle":1.1692319696616502,"counterclockwise":true,"routes":{"left":["Vert_lane_left_0"],"right":["Vert_lane_right_0"]}}};
+const streets = {
+  NW_SE: {
+    start: [ -3, -3 ],
+    end: [ 3, 3 ],
+    lanes: {
+      left: 1,
+      right: 1,
+    },
+  },
+  SW_NE: {
+    start: [ -3, 3 ],
+    end: [ 0.3, -0.3 ],
+    lanes: {
+      left: 1,
+      right: 1,
+    },
+  },
+};
 
 // LATER: Outline messed up because we have no way off of the extra road
 //   - Ideally, we would have closer turns that would allow this to work
@@ -115,11 +113,16 @@ canvas.draw = ( ctx ) => {
     } );
 
     route.failedLinks?.forEach( failedLink => {
-      const dist = failedLink.fromDistance - distance;
 
-      if ( 0 <= dist && dist < closestDist ) {
-        closest = failedLink;
-        closestDist = dist;
+      // TODO: This can fail with too much recursion -- need a safer check
+      // Make sure this failedLink goes somewhere first
+      if ( getNextLink( routes[ failedLink.name ], failedLink.toDistance ) ) {
+        const dist = failedLink.fromDistance - distance;
+
+        if ( 0 <= dist && dist < closestDist ) {
+          closest = failedLink;
+          closestDist = dist;
+        }
       }
     } );
 

@@ -6,6 +6,15 @@ I started down this road yesterday with "failedLinks" that could be searched for
 
 Yesterday I had the wrong intersection (street intersection vs route intersection). I'll need to test when routes intersect twice and make sure I'm using the one closest to street intersection. Maybe I should build this into library code somewhere...
 
+Ok, first piece working. Simply returning the next failedLink if it's closer than working link kind of works
+  - The drawing code advances to the path we failed to link to, which is what I thought I wanted
+  - Issues:
+    - It goes until the offset of the from route, then backtracks to the offset of the other. I need it to stop where these offsets intersect. 
+      + Maybe I can calculate this and save as part of failedLink? Then we can check for it and draw a bit differently
+    - It doesn't make sure the failed route has anywhere to go.
+      + We should ignore it in these cases. 
+      + Something else to check as part of failed link?
+
 2/2:
 
 Even when checking street length, I still get in the situation where arcs fit in one direction but are too big to fit in the other direction
