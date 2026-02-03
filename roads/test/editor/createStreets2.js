@@ -94,7 +94,13 @@ canvas.draw = ( ctx ) => {
   ctx.lineWidth = 0.02;
   grid.draw( ctx );
 
-  function getNextLink( route, distance ) {
+  function getNextLink( route, distance, recursionDepth = 0 ) {
+    // Hacky way to avoid recursion errors when checking failedLinks that lead to failedLinks...
+    if ( recursionDepth > 5 ) {
+      console.warn( 'getNextLink recursion too deep, bailing!')
+      return null;
+    }
+
     let closest, closestDist = Infinity;
     let furthest, furthestDist = 0;
 
@@ -116,7 +122,7 @@ canvas.draw = ( ctx ) => {
 
       // TODO: This can fail with too much recursion -- need a safer check
       // Make sure this failedLink goes somewhere first
-      if ( getNextLink( routes[ failedLink.name ], failedLink.toDistance ) ) {
+      if ( getNextLink( routes[ failedLink.name ], failedLink.toDistance, recursionDepth + 1 ) ) {
         const dist = failedLink.fromDistance - distance;
 
         if ( 0 <= dist && dist < closestDist ) {

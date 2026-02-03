@@ -15,6 +15,15 @@ Ok, first piece working. Simply returning the next failedLink if it's closer tha
       + We should ignore it in these cases. 
       + Something else to check as part of failed link?
 
+Addressed failedLinks going nowhere, sort of.
+
+There's a tension here between the creation of links and the creation of u-turns. We currently wait before all the links are made before determining whether there should be a u-turn. But we want to know if there's a u-turn before we make a failedLink.
+
+Either at creation or later, we need to check for whether a road goes somewhere before we draw a failedLink.
+  + Maybe we can call a separate check that only looks for valid links, instead of re-calling the function with failedLinks?
+  - Not sure how common the failedLink to failedLink needing to be drawn is...
+  - If it's something we really need, then maybe we can agree to only check 2 or 3 levels deep
+
 2/2:
 
 Even when checking street length, I still get in the situation where arcs fit in one direction but are too big to fit in the other direction
