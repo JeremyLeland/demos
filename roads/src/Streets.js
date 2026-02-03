@@ -427,22 +427,31 @@ function joinRoutes( routes, fromName, toName, radius, intersection, intersectio
 
   // TODO: NOW: Make a note of the failed join, still useful for drawing
   else {
-
-    // TODO: FIX NOW: Don't use intersection here, this is from the street
-    //       NEED TO FIND INTERSECTION BETWEEN ROUTES, use that instead
-    Intersections.getIntersections( fromRoute, toRoute )
+    const routeIntersections = Intersections.getIntersections( fromRoute, toRoute );
 
     // Make sure to use the closest one to intersection!
+    let routeIntersection, closestDist = Infinity;
 
-    const fromDistance = Route.getDistanceAtPoint( fromRoute, intersection );
-    const toDistance = Route.getDistanceAtPoint( toRoute, intersection );
+    routeIntersections.forEach( ri => {
+      const dist = vec2.distance( ri, intersection );
 
-    fromRoute.failedLinks ??= [];
-    fromRoute.failedLinks.push( {
-      name: toName,
-      fromDistance: fromDistance,
-      toDistance: toDistance,
+      if ( dist < closestDist ) {
+        routeIntersection = ri;
+        closestDist = dist;
+      }
     } );
+
+    if ( routeIntersection ) {
+      const fromDistance = Route.getDistanceAtPoint( fromRoute, routeIntersection );
+      const toDistance = Route.getDistanceAtPoint( toRoute, routeIntersection );
+      
+      fromRoute.failedLinks ??= [];
+      fromRoute.failedLinks.push( {
+        name: toName,
+        fromDistance: fromDistance,
+        toDistance: toDistance,
+      } );
+    }
   }
 }
 

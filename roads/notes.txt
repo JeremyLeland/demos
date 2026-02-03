@@ -1,3 +1,11 @@
+2/3:
+
+Went down rabbit hole of trying to remove dangling joins, but there are situations where it is hard to know what should be removed. I think it's going to be better to leave the weird joins in and just draw a valid outline.
+
+I started down this road yesterday with "failedLinks" that could be searched for while determining the outline path. I need similar information to links -- know when to exit the current route, what the next route is, and where to join it. I think that's enough...
+
+Yesterday I had the wrong intersection (street intersection vs route intersection). I'll need to test when routes intersect twice and make sure I'm using the one closest to street intersection. Maybe I should build this into library code somewhere...
+
 2/2:
 
 Even when checking street length, I still get in the situation where arcs fit in one direction but are too big to fit in the other direction
@@ -39,3 +47,10 @@ NOW: Trying to create "failedLinks" that I can use for drawing
   - These are pretty close to normal links in terms of what they store
   - Trying to generate them in joinRoutes for now
     - Having some issues with getting proper intersection, need to make sure it's closest!
+
+Actually, I don't like this alternative. I haven't implemented it to the point of working, but it feels like it would be cleaner to just not allow the dangling joins. I want to try splitting up the join work to find the radii and then remove the dangling join.
+
+Trying to implement removal of dangling join. I'm worried this will be relative to my example and break if I move the lines around, though...also, it doesn't have enough info to resolve 2 opposing danglers. Might still want some sense of which streets are shortest to know what to exclude.
+
+Never mind, this is dumb. There isn't enough information to know what to throw away in the dangling 3 case sometimes, either.
+Probably best to just draw everything with the hard edge at let user adjust, since it's a monstrosity anyway.

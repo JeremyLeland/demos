@@ -114,6 +114,15 @@ canvas.draw = ( ctx ) => {
       }
     } );
 
+    route.failedLinks?.forEach( failedLink => {
+      const dist = failedLink.fromDistance - distance;
+
+      if ( 0 <= dist && dist < closestDist ) {
+        closest = failedLink;
+        closestDist = dist;
+      }
+    } );
+
     // console.log( 'closest: ' );
     // console.log( closest );
 
