@@ -449,13 +449,13 @@ canvas.pointerDown = ( m ) => {
 }
 
 canvas.pointerUp = ( m ) => {
-  // selected = null;
+  hover = null;
 }
 
 canvas.pointerMove = ( m ) => {
   // Hover if no buttons pressed
   if ( m.buttons == 0 ) {
-    hover = hoverUnderCursor( m.x, m.y );
+    // hover = hoverUnderCursor( m.x, m.y );
   }
 
   // Drag selected point if left button pressed
