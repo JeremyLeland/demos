@@ -1,3 +1,15 @@
+2/4:
+
+Now focus on making editor more usable, see what I can do with the road linking I have
+  - Clicking and dragging should create new road instead of editing existing one
+  - Clicking without dragging should select a road (with clear indicator of selection)
+  - Clicking and dragging a selected road will edit it (middle clicking should move it!)
+  - Scrolling on a selected road to increase/decrease lanes?
+
+As a bonus, check for intersections against self by looking for sweepAngle close to 2*PI
+  - If so, join against ourselves...see if this can be done easily
+    - I keep trying to make circles while testing
+
 2/3:
 
 Went down rabbit hole of trying to remove dangling joins, but there are situations where it is hard to know what should be removed. I think it's going to be better to leave the weird joins in and just draw a valid outline.
