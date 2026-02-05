@@ -411,38 +411,101 @@ function drawAtDistance( ctx, route, distance, drawFunc ) {
 
 // TODO:
 //  - Hover streets
-//    - Delete streets (right click)
 //    - Move streets (w/left click? vs insert)
 //  - Key to snap to grid/whole numbers (maybe shift?)
 
 let hover;
 let nameIndex = 0;
 
+function createStreet( x, y ) {
+  const newStreet = {
+    start: [ x, y ],
+    end: [ x, y ],
+    lanes: { left: 1, right: 1 },
+  };
+
+  const newName = `street_${ nameIndex ++ }`;
+
+  streets[ newName ] = newStreet;
+
+  hover = {
+    name: newName,
+    action: 'end',
+    point: [ x, y ],
+  };
+}
+
+function moveStreet( dx, dy ) {
+  const street = streets[ hover.name ];
+  const moveVector = [ dx, dy ];
+
+  if ( street.center ) {
+    vec2.add( street.center, street.center, moveVector );
+  }
+  else {
+    vec2.add( street.start, street.start, moveVector );
+    vec2.add( street.end, street.end, moveVector );
+  }
+
+  vec2.add( hover.point, hover.point, moveVector );
+}
+
+function reshapeStreet( dx, dy ) {
+  const street = streets[ hover.name ];
+  const moveVector = [ dx, dy ];
+
+  if ( street.center ) {
+    const points = {
+      start:  hover.action == 'start'  ? hover.point : Arc.getPointAtAngle( street, street.startAngle ),
+      middle: hover.action == 'middle' ? hover.point : Arc.getPointAtAngle( street, street.startAngle + Angle.sweepAngle( street.startAngle, street.endAngle, street.counterclockwise ) / 2 ),
+      end:    hover.action == 'end'    ? hover.point : Arc.getPointAtAngle( street, street.endAngle ),
+    };
+
+    // NOTE: Via side effect, this is also moving the hover point
+    vec2.add( points[ hover.action ], points[ hover.action ], moveVector );
+
+    Object.assign( street, Arc.arcFromThreePoints( points.start, points.middle, points.end ) );
+  }
+  else {
+    vec2.add( hover.point, hover.point, moveVector );
+
+    // If dragging a middle point, turn street into arc
+    if ( hover.action == 'middle' ) {
+      Object.assign( street, Arc.arcFromThreePoints( street.start, hover.point, street.end ) );
+      delete street.start;
+      delete street.end;
+    }
+    else {
+      vec2.add( street[ hover.action ], street[ hover.action ], moveVector );
+    }
+  } 
+}
+
+function deleteStreet() {
+  if ( hover ) {
+    delete streets[ hover.name ];
+    hover = null;
+  }
+}
+
+function changeStreetLanes( delta ) {
+  const street = streets[ hover.name ];
+
+  // TODO: handle unequal numbers of lanes 
+  // how do we know which to increase? see which route we're over, check its laneDir?
+
+  const newVal = Math.max( 1, Math.min( 4, street.lanes.left + delta ) );
+
+  street.lanes.left = newVal;
+  street.lanes.right = newVal;
+}
+
 canvas.pointerDown = ( m ) => {
   if ( m.buttons == 1 ) {
-    if ( !hover ) {
-      const newStreet = {
-        start: [ m.x, m.y ],
-        end: [ m.x, m.y ],
-        lanes: { left: 1, right: 1 },
-      };
-
-      const newName = `street_${ nameIndex ++ }`;
-
-      streets[ newName ] = newStreet;
-
-      hover = {
-        name: newName,
-        action: 'end',
-        point: [ m.x, m.y ],
-      };
-    }
+    createStreet( m.x, m.y );
   }
   else if ( m.buttons == 2 ) {
-    if ( hover ) {
-      delete streets[ hover.name ];
-      hover = null;
-    }
+    deleteStreet();
   }
 
   canvas.redraw();
@@ -455,53 +518,42 @@ canvas.pointerUp = ( m ) => {
 canvas.pointerMove = ( m ) => {
   // Hover if no buttons pressed
   if ( m.buttons == 0 ) {
-    // hover = hoverUnderCursor( m.x, m.y );
+    hover = hoverUnderCursor( m.x, m.y );
   }
 
   // Drag selected point if left button pressed
   else if ( m.buttons == 1 ) {
     if ( hover ) {
-      const street = streets[ hover.name ];
-      const moveVector = [ m.dx, m.dy ];
-
-      if ( street.center ) {
-        const points = {
-          start:  hover.action == 'start'  ? hover.point : Arc.getPointAtAngle( street, street.startAngle ),
-          middle: hover.action == 'middle' ? hover.point : Arc.getPointAtAngle( street, street.startAngle + Angle.sweepAngle( street.startAngle, street.endAngle, street.counterclockwise ) / 2 ),
-          end:    hover.action == 'end'    ? hover.point : Arc.getPointAtAngle( street, street.endAngle ),
-        };
-
-        // NOTE: Via side effect, this is also moving the hover point
-        vec2.add( points[ hover.action ], points[ hover.action ], moveVector );
-
-        Object.assign( street, Arc.arcFromThreePoints( points.start, points.middle, points.end ) );
-      }
-      else {
-        vec2.add( hover.point, hover.point, moveVector );
-
-        // If dragging a middle point, turn street into arc
-        if ( hover.action == 'middle' ) {
-          Object.assign( street, Arc.arcFromThreePoints( street.start, hover.point, street.end ) );
-          delete street.start;
-          delete street.end;
-        }
-        else {
-          vec2.add( street[ hover.action ], street[ hover.action ], moveVector );
-        }
-      } 
+      reshapeStreet( m.dx, m.dy );
     }
   }
 
   // Pan if middle button pressed
   else if ( m.buttons == 4 ) {
-    canvas.translate( -m.dx, -m.dy );
+    if ( !hover ) {
+      canvas.translate( -m.dx, -m.dy );
+    }
+    else {
+      if ( m.shiftKey ) {
+        moveStreet( m.dx, m.dy );
+      }
+      else {
+        reshapeStreet( m.dx, m.dy );
+      }
+    }
   }
 
   canvas.redraw();
 }
 
 canvas.wheelInput = ( m ) => {
-  canvas.zoom( m.x, m.y, 0.1 * Math.sign( m.wheel ) );
+  if ( hover ) {
+    changeStreetLanes( Math.sign( m.wheel ) );
+  }
+  else {
+    canvas.zoom( m.x, m.y, 0.1 * Math.sign( m.wheel ) );
+  }
+
   canvas.redraw();
 }
 

@@ -14,6 +14,12 @@ U-turns are causing so many headaches...what if I just disabled them for now?
   - Big part of why I had them initially was so we could draw outline without hard edges
   - I gave up on that and added hard edge support
   - Maybe it would be less squirrely without u-turns?
+  - Actually, I think these provide a vital connection to drawing the other side of a road
+    - We would need to figure this out somehow anyway
+  - What if we go back to making u-turns based on length of route after last intersection?
+    - I'm not trying to prevent hard edges anymore, I'm explicitly supporting them
+    - I'm just trying to avoid putting a u-turn in the middle of a street
+    - Could choose an arbitrary minimum for now, try to base on intersecting street width later
 
 I want to try being more deliberate about how I edit
   - I want to use branches focused on a specific change
@@ -26,6 +32,8 @@ I like the idea of writing things down in here.
   - I can always come back and look for them, if I really need to
   - But mostly the important stuff should keep getting persisted
   - If little things get forgotten and I never think of them again, they probably weren't important
+  - Write as much detail as I want here...
+    - ...then try to distill it into a few imporant points that get carried to next day?
 
 2/3:
 
