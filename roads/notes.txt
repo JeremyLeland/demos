@@ -1,3 +1,32 @@
+2/6:
+
+Street outline
+  - This is very similar to what I'm already doing, but maybe a different way of thinking about it
+  - What if I calculate offsets for all of the outermost lanes and links
+  - And then trace these, searching for intersections as I go
+    - This might handle the actual proper corner for routes that fail to link
+    - Maybe it's better than saving information for unrelated task in the routes
+  + First step: calculate offsets and draw them (without tracing), see what that looks like
+
+Intersections
+  - This is a big piece of what's missing
+  - I think I need intersections so I can draw dotted line lanes between them
+  - Basically this is saving the from and to distances I find while making joins
+  - Should my join function return something? Should it directly change intersection state?
+    - Do I need the join function anywhere other than the street route generator?
+    - Maybe it's only being called for these intersections anyway
+  + First step: console.log the from and to distances as we go
+  + Second step: save the lowest froms and highest tos in a map (like we do)
+    - Intersections should consist of segments of original intersecting lines (from and to's)
+    - ...and then the entire joins
+    - This ultimately gets used so we can check if a car is heading into any of the intersection territory
+    - We probably will need to group these into paths like we did before
+      - so we know which paths are "open" or "closed" to travel
+
+Add cars back in
+  - I think I have everything I need for this in previous test files
+  - Better to focus on getting intersections working properly
+
 2/4:
 
 Now focus on making editor more usable, see what I can do with the road linking I have
@@ -34,6 +63,11 @@ I like the idea of writing things down in here.
   - If little things get forgotten and I never think of them again, they probably weren't important
   - Write as much detail as I want here...
     - ...then try to distill it into a few imporant points that get carried to next day?
+
+Ended up not doing selection, just modify the hovered street
+  - Added a modifier key to let this all happen with keyboard and mouse on hovers
+  - Kept my edits focused on this, then pulled branch into main
+  - Seemed to work. Want to keep trying this more disciplined approach
 
 2/3:
 
