@@ -18,17 +18,68 @@ const DEBUG_ARROW_WIDTH = DEBUG_ARROW_LENGTH / 2;
 let drawSteps = 100;
 
 const streets = {
-  NW_SE: {
-    start: [ -3, -3 ],
-    end: [ 3, 3 ],
+  LeftTopA: {
+    start: [ -7, 2 ],
+    end: [ -4, 2 ],
     lanes: {
       left: 1,
       right: 1,
     },
   },
-  SW_NE: {
-    start: [ -3, 3 ],
-    end: [ 0.3, -0.3 ],
+  RightTopA: {
+    start: [ -4, 2 ],
+    end: [ -1, 2 ],
+    lanes: {
+      left: 1,
+      right: 1,
+    },
+  },
+
+  RightTopB: {
+    start: [ 4, 2 ],
+    end: [ 7, 2 ],
+    lanes: {
+      left: 1,
+      right: 1,
+    },
+  },
+  LeftTopB: {
+    start: [ 4, 2 ],
+    end: [ 1, 2 ],
+    lanes: {
+      left: 1,
+      right: 1,
+    },
+  },
+
+  LeftBottom: {
+    start: [ -3, 4 ],
+    end: [ 0, 4 ],
+    lanes: {
+      left: 1,
+      right: 1,
+    },
+  },
+  RightBottom: {
+    start: [ 3, 4 ],
+    end: [ 0, 4 ],
+    lanes: {
+      left: 1,
+      right: 1,
+    },
+  },
+
+  RightDiag: {
+    start: [ 2, 0 ],
+    end: [ 0, -2 ],
+    lanes: {
+      left: 1,
+      right: 1,
+    },
+  },
+  LeftDiag: {
+    start: [ -2, -4 ],
+    end: [ 0, -2 ],
     lanes: {
       left: 1,
       right: 1,
@@ -36,40 +87,7 @@ const streets = {
   },
 };
 
-// LATER: Outline messed up because we have no way off of the extra road
-//   - Ideally, we would have closer turns that would allow this to work
-//      - Do this work first, since we know we want it anyway
-//        - Start with a slider for radius to help visualize the effect of different radii
-//        - Big question is how to handle 4-way cases vs 2 or 1-way cases 
-//          (should be able to use more space for 1-way, but does it really matter?)
-//   - However, we shouldn't turn onto a lane if we can't turn off it
-//      - what about one-way roads? How would that be handled?
-//   - Can we make sure each join on has a matching join off?
 
-// const streets = {
-//   "C": {
-//     "lanes": {
-//       "left": 2,
-//       "right": 2
-//     },
-//     "center": [ 6, -6 ],
-//     "radius": 9,
-//     "startAngle": 2.8428864574594708,
-//     "endAngle": 1.86950252292522,
-//     "counterclockwise": true
-//   },
-//   "D": {
-//     "lanes": {
-//       "left": 3,
-//       "right": 3
-//     },
-//     "center": [ -2, -2 ],
-//     "radius": 5,
-//     "startAngle": -0.06627702810972162,
-//     "endAngle": 1.63707335428374,
-//     "counterclockwise": false
-//   }
-// };
 
 // TODO: Make these part of some sort of level object separate from controlPoints?
 //       Combine streetsFrom and routesFrom function to one function that returns level from control points?

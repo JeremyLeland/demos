@@ -54,33 +54,70 @@ export function getHeadingAtPoint( route, point ) {
   }
 }
 
-export function getArcBetween( A, B, radius, intersection ) {
+export function getRouteBetween( A, B, radius, intersection ) {
   const angleA = getHeadingAtPoint( A, intersection );
   const angleB = getHeadingAtPoint( B, intersection );
   const turn = Angle.deltaAngle( angleA, angleB );
   
-  
-  // Special case for parallel lines 
-  // (should +PI be any different than -PI? assuming same for now)
-  if ( Angle.deltaAngle( Math.abs( turn ), Math.PI ) < 1e-6 ) {
+  console.log( '  getRouteBetween turn = ' + turn );
+
+  // Experimenting with special case for routes that are already connected
+  // That is, they are intersecting and have same angle (so no join is needed)
+  // In this case, try returning a line of zero length (same start and end)
+  // Caller needs to check for this
+
+  if ( turn == 0 || turn == -Math.PI /*|| turn == Math.PI*/ /* seems like it's never +PI... */ ) {
     const startPos = getPositionAtDistance( A, getLength( A ) );
     const endPos = getPositionAtDistance( B, 0 );
 
-    // In case the deltaAngle above confused between -PI/PI, figure out where we actually turned
-    // TODO: Should we just do this above instead of the deltaAngle? Or is this only useful in parallel case?
-    const angleToB = Math.atan2( endPos[ 1 ] - startPos[ 1 ], endPos[ 0 ] - startPos[ 0 ] );
-    const turn2 = Angle.deltaAngle( angleA, angleToB );
-    
-    // console.log( `turn = ${ turn }, angleToB = ${ angleToB }, turn2 = ${ Angle.deltaAngle( angleA, angleToB ) }` );
+    // Collinear
+    if ( vec2.distance( startPos, endPos ) < 1e-6 ) {
+      console.log( '    collinear' );
 
-    return {
-      center: intersection,
-      radius: radius,
-      startAngle: Math.atan2( startPos[ 1 ] - intersection[ 1 ], startPos[ 0 ] - intersection[ 0 ] ),
-      endAngle: Math.atan2( endPos[ 1 ] - intersection[ 1 ], endPos[ 0 ] - intersection[ 0 ] ),
-      counterclockwise: turn2 < 0,
-    };
+      return {
+        start: intersection,
+        end: intersection,
+      };
+    }
+
+    // Parallel (but not collinear)
+    else {
+      console.log( '    parallel, not collinear' );
+
+      // In case the deltaAngle above confused between -PI/PI, figure out where we actually turned
+      // TODO: Should we just do this above instead of the deltaAngle? Or is this only useful in parallel case?
+      const angleToB = Math.atan2( endPos[ 1 ] - startPos[ 1 ], endPos[ 0 ] - startPos[ 0 ] );
+      const turn2 = Angle.deltaAngle( angleA, angleToB );
+      
+      console.log( `    turn = ${ turn }, angleToB = ${ angleToB }, turn2 = ${ Angle.deltaAngle( angleA, angleToB ) }` );
+
+      // Our u-turns turn left 180 degrees -- not sure anything else is valid
+      console.log( Angle.deltaAngle( turn2, -Math.PI / 2 ) );
+
+      if ( Math.abs( Angle.deltaAngle( turn2, -Math.PI / 2 ) ) > 1e-6 ) {
+        console.log( '    INVALID!' );
+        return;
+      }
+
+      return {
+        center: intersection,
+        radius: radius,
+        startAngle: Math.atan2( startPos[ 1 ] - intersection[ 1 ], startPos[ 0 ] - intersection[ 0 ] ),
+        endAngle: Math.atan2( endPos[ 1 ] - intersection[ 1 ], endPos[ 0 ] - intersection[ 0 ] ),
+        counterclockwise: turn2 < 0,
+      };
+    }
   }
+
+  
+  // // Special case for parallel lines 
+  // // (should +PI be any different than -PI? assuming same for now)
+  // if ( Angle.deltaAngle( Math.abs( turn ), Math.PI ) < 1e-6 ) {
+  //   const startPos = getPositionAtDistance( A, getLength( A ) );
+  //   const endPos = getPositionAtDistance( B, 0 );
+
+    
+  // }
 
   const s0 = ( turn < 0 ? 1 : -1 ) * ( A.counterclockwise ? -1 : 1 );
 

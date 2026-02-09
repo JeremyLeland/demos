@@ -1,3 +1,22 @@
+2/9:
+
+First up: intersections
+  - Print fromDistance and toDistance
+  - Save fromDistance and toDistance into object
+    - Probably need to refactor joinRoutes and whatnot to do this cleanly
+    - Seems like joinRoute and connectRoutes could be combined
+      - Can the special case checking happen in getArcBetween?
+        - In this case, there is no arc between because they directly connect
+        - As opposed to being no arc between because it can't fit
+        - Maybe this is too much in one place
+        + Or it could return a line of zero width, which I can check for
+          - Maybe I call this "getRouteBetween" instead of "getArcBetween"
+            - It could also join things that aren't touching later on?
+
+NOW: Trying to make joinRoute handle collinear routes and just use that
+  - Testing with two lines joining
+  - It seems very confused. Some links are correct, but then there's big extra loops?
+
 2/6:
 
 Street outline
