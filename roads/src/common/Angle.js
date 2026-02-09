@@ -34,11 +34,11 @@ export function isBetweenAngles( testAngle, startAngle, endAngle, counterclockwi
 
   // Handle wrap-around
   if ( start < end ) {
-    // return test >= start && test <= end;
-    return test > start && test < end;
+    return test >= start && test <= end;
+    // return test > start && test < end;
   }
   else {
-    // return test >= start || test <= end;
-    return test > start || test < end;
+    return test >= start || test <= end;
+    // return test > start || test < end;
   }
 }

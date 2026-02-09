@@ -13,9 +13,24 @@ First up: intersections
           - Maybe I call this "getRouteBetween" instead of "getArcBetween"
             - It could also join things that aren't touching later on?
 
-NOW: Trying to make joinRoute handle collinear routes and just use that
+DONE: Trying to make joinRoute handle collinear routes and just use that
   - Testing with two lines joining
   - It seems very confused. Some links are correct, but then there's big extra loops?
+  - Seem to have simple lines working, commiting to branch
+
+DONE: Make sure it still works with mix of arcs and lines (that don't need a join)
+  - The ongoing debate over whether isBetweenAngles should be inclusive
+    + Making inclusive for now to make the arc collisions easier
+    - I can't tell if I'm depending on it being exclusive elsewhere. Guess I'll find out
+  - What ends up working so far is getting rid of the special case handling for parallel lines
+    - The attempts to link up routes that are impossible just fail
+  - Where this leaves us, though: how do we do the u-turns?
+    - Pull that special code back out? Call joinRoutes with pre-figured-out radius?
+
+NEXT: Get our u-turns back? We'll need them at some point...
+  - We want that handled separately from intersection code anway, potentially
+    - Since a u-turn can never be an intersection
+
 
 2/6:
 

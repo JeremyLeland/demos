@@ -1,7 +1,6 @@
 import * as Angle from './Angle.js';
 
 export function getCircleCircleIntersections( cx1, cy1, radius1, cx2, cy2, radius2 ) {
-  // Find circle intersections
   const dx = cx2 - cx1;
   const dy = cy2 - cy1;
   const d = Math.hypot( dx, dy );
@@ -11,24 +10,33 @@ export function getCircleCircleIntersections( cx1, cy1, radius1, cx2, cy2, radiu
   }
 
   const a = ( radius1 ** 2 - radius2 ** 2 + d ** 2 ) / ( 2 * d );
-  const h = Math.sqrt( radius1 ** 2 - a ** 2 );
-
   const xm = cx1 + ( a * dx ) / d;
   const ym = cy1 + ( a * dy ) / d;
+  
+  const h = Math.sqrt( radius1 ** 2 - a ** 2 );
 
-  const rx = -( dy * h ) / d;
-  const ry =  ( dx * h ) / d;
+  if ( h == 0 ) {
+    return [ [ xm, ym ] ];    // only 1 intersection
+  }
+  else {
+    const rx = -( dy * h ) / d;
+    const ry =  ( dx * h ) / d;
 
-  return [
-    [ xm + rx, ym + ry ],
-    [ xm - rx, ym - ry ],
-  ];
+    return [
+      [ xm + rx, ym + ry ],
+      [ xm - rx, ym - ry ],
+    ];
+  }
 }
 
 export function getArcArcIntersections(
   cx1, cy1, radius1, startAngle1, endAngle1, counterclockwise1,
   cx2, cy2, radius2, startAngle2, endAngle2, counterclockwise2,
 ) {
+
+  // TODO: Do we want to handle cases where arcs are on same circle?
+  //       Not sure if this would come up, since we could just make bigger arcs...
+
   const circleIntersections = getCircleCircleIntersections( cx1, cy1, radius1, cx2, cy2, radius2 );
 
   // Check if circle intersections are between arc angles

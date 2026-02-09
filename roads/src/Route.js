@@ -70,6 +70,9 @@ export function getRouteBetween( A, B, radius, intersection ) {
     const startPos = getPositionAtDistance( A, getLength( A ) );
     const endPos = getPositionAtDistance( B, 0 );
 
+    console.log( 'startPos = ' + startPos );
+    console.log( 'endPos = ' + endPos );
+
     // Collinear
     if ( vec2.distance( startPos, endPos ) < 1e-6 ) {
       console.log( '    collinear' );
@@ -82,8 +85,16 @@ export function getRouteBetween( A, B, radius, intersection ) {
 
     // Parallel (but not collinear)
     else {
+
+      // TODO: NOW: Trying to figure out how to disqualify line trying to join arc going completely other way
+      //       The intersction is parallel, but the start is going the wrong way...
+      // something about counterclockwise here?
+      
+
+
       console.log( '    parallel, not collinear' );
 
+      
       // In case the deltaAngle above confused between -PI/PI, figure out where we actually turned
       // TODO: Should we just do this above instead of the deltaAngle? Or is this only useful in parallel case?
       const angleToB = Math.atan2( endPos[ 1 ] - startPos[ 1 ], endPos[ 0 ] - startPos[ 0 ] );
@@ -99,13 +110,18 @@ export function getRouteBetween( A, B, radius, intersection ) {
         return;
       }
 
-      return {
-        center: intersection,
-        radius: radius,
-        startAngle: Math.atan2( startPos[ 1 ] - intersection[ 1 ], startPos[ 0 ] - intersection[ 0 ] ),
-        endAngle: Math.atan2( endPos[ 1 ] - intersection[ 1 ], endPos[ 0 ] - intersection[ 0 ] ),
-        counterclockwise: turn2 < 0,
-      };
+      // TODO: Is there a way to make the below stuff work for this case?
+      // We could try to make an arc and fail because we can't get one within the bounds
+
+      // Maybe trying to get this function to work for the u-turns is part of the mistake
+
+      // return {
+      //   center: intersection,
+      //   radius: radius,
+      //   startAngle: Math.atan2( startPos[ 1 ] - intersection[ 1 ], startPos[ 0 ] - intersection[ 0 ] ),
+      //   endAngle: Math.atan2( endPos[ 1 ] - intersection[ 1 ], endPos[ 0 ] - intersection[ 0 ] ),
+      //   counterclockwise: turn2 < 0,
+      // };
     }
   }
 

@@ -295,85 +295,85 @@ export function routesFromStreets( streets ) {
 
   // TODO: Make this based on distance remaining after last link again?
 
-  // NEXT: We're hitting the same issue as before where we can link one way
-  //  but not both, and so end up with an invalid u-turn
-  // Should we only traverse right turns for this? (We'd never traverse a uturn then...)
+  // // NEXT: We're hitting the same issue as before where we can link one way
+  // //  but not both, and so end up with an invalid u-turn
+  // // Should we only traverse right turns for this? (We'd never traverse a uturn then...)
 
 
-  // Traverse all the routes, adding u-turns if we reach a dead end
-  const unvisitedRoutes = new Set( Object.keys( routes ) );
-  const visitedLinks = new Set();
+  // // Traverse all the routes, adding u-turns if we reach a dead end
+  // const unvisitedRoutes = new Set( Object.keys( routes ) );
+  // const visitedLinks = new Set();
 
-  let thisRouteName, nextRouteName;
-  let lastLink, nextLink;
+  // let thisRouteName, nextRouteName;
+  // let lastLink, nextLink;
   
-  for ( let tries = 0; tries < 100; tries ++ ) {
-    thisRouteName = nextRouteName ?? unvisitedRoutes.values().next().value;
+  // for ( let tries = 0; tries < 100; tries ++ ) {
+  //   thisRouteName = nextRouteName ?? unvisitedRoutes.values().next().value;
 
-    if ( thisRouteName == null ) {
-      // console.log( 'no more routes' );
-      break;
-    }
+  //   if ( thisRouteName == null ) {
+  //     // console.log( 'no more routes' );
+  //     break;
+  //   }
 
-    // console.log( thisRouteName );
+  //   // console.log( thisRouteName );
 
-    unvisitedRoutes.delete( thisRouteName );
-    visitedLinks.add( lastLink );
+  //   unvisitedRoutes.delete( thisRouteName );
+  //   visitedLinks.add( lastLink );
 
-    const thisRoute = routes[ thisRouteName ];
+  //   const thisRoute = routes[ thisRouteName ];
 
-    lastLink = nextLink;
+  //   lastLink = nextLink;
 
-    // console.log( `  checking for next link from ${ thisRouteName } at ${ lastLink?.toDistance ?? 0 }` );
+  //   // console.log( `  checking for next link from ${ thisRouteName } at ${ lastLink?.toDistance ?? 0 }` );
 
-    nextLink = getNextLink( thisRoute, lastLink?.toDistance ?? 0 );
+  //   nextLink = getNextLink( thisRoute, lastLink?.toDistance ?? 0 );
 
-    // console.log( `  ...found: ${ JSON.stringify( nextLink ) }` );
+  //   // console.log( `  ...found: ${ JSON.stringify( nextLink ) }` );
 
-    if ( nextLink == null ) {
-      // console.log( '    Making u-turn...' );
+  //   if ( nextLink == null ) {
+  //     // console.log( '    Making u-turn...' );
 
-      const streetInfo = thisRoute.streetInfo;
-      const street = streets[ streetInfo.name ];
+  //     const streetInfo = thisRoute.streetInfo;
+  //     const street = streets[ streetInfo.name ];
 
-      const fromRouteName = street.routes[ streetInfo.laneDir ][ streetInfo.laneIndex ];
-      const toRouteName = street.routes[ streetInfo.laneDir == 'right' ? 'left' : 'right' ][ streetInfo.laneIndex ];
+  //     const fromRouteName = street.routes[ streetInfo.laneDir ][ streetInfo.laneIndex ];
+  //     const toRouteName = street.routes[ streetInfo.laneDir == 'right' ? 'left' : 'right' ][ streetInfo.laneIndex ];
 
-      // console.log( `    ...from ${ fromRouteName } to ${ toRouteName }` );
+  //     // console.log( `    ...from ${ fromRouteName } to ${ toRouteName }` );
 
-      const fromRoute = routes[ fromRouteName ];
-      const toRoute = routes[ toRouteName ];
+  //     const fromRoute = routes[ fromRouteName ];
+  //     const toRoute = routes[ toRouteName ];
 
-      const fromPos = Route.getPositionAtDistance( fromRoute, Route.getLength( fromRoute ) );
-      const toPos = Route.getPositionAtDistance( toRoute, 0 );
+  //     const fromPos = Route.getPositionAtDistance( fromRoute, Route.getLength( fromRoute ) );
+  //     const toPos = Route.getPositionAtDistance( toRoute, 0 );
 
-      joinRoutes(
-        routes,
-        fromRouteName,
-        toRouteName,
-        ( streetInfo.laneIndex + 0.5 ) * LANE_WIDTH, 
-        [ ( fromPos[ 0 ] + toPos[ 0 ] ) / 2, ( fromPos[ 1 ] + toPos[ 1 ] ) / 2 ],
-        'u-turn',
-        'lime',
-      );
+  //     joinRoutes(
+  //       routes,
+  //       fromRouteName,
+  //       toRouteName,
+  //       ( streetInfo.laneIndex + 0.5 ) * LANE_WIDTH, 
+  //       [ ( fromPos[ 0 ] + toPos[ 0 ] ) / 2, ( fromPos[ 1 ] + toPos[ 1 ] ) / 2 ],
+  //       'u-turn',
+  //       'lime',
+  //     );
 
-      nextRouteName = toRouteName;
-    }
-    else {
-      nextRouteName = nextLink.name;
-    }
+  //     nextRouteName = toRouteName;
+  //   }
+  //   else {
+  //     nextRouteName = nextLink.name;
+  //   }
 
-    if ( visitedLinks.has( nextLink ) ) {
-      // break out of a loop
-      nextRouteName = null;  // pull a new route from unvisited
-      nextLink = null;
+  //   if ( visitedLinks.has( nextLink ) ) {
+  //     // break out of a loop
+  //     nextRouteName = null;  // pull a new route from unvisited
+  //     nextLink = null;
 
-      if ( unvisitedRoutes.size == 0 ) {
-        // seems like we shouldn't need this if we have thisRouteName == null check above...
-        break;
-      }
-    }
-  }
+  //     if ( unvisitedRoutes.size == 0 ) {
+  //       // seems like we shouldn't need this if we have thisRouteName == null check above...
+  //       break;
+  //     }
+  //   }
+  // }
 
   // console.log( 'routes = ' );
   // console.log( routes );

@@ -18,72 +18,43 @@ const DEBUG_ARROW_WIDTH = DEBUG_ARROW_LENGTH / 2;
 let drawSteps = 100;
 
 const streets = {
-  LeftTopA: {
-    start: [ -7, 2 ],
-    end: [ -4, 2 ],
-    lanes: {
-      left: 1,
-      right: 1,
-    },
+  TopLine: {
+    start: [ -3, 0 ],
+    end: [ 1, 0 ],
+    lanes: { left: 1, right: 1 },
   },
-  RightTopA: {
-    start: [ -4, 2 ],
-    end: [ -1, 2 ],
-    lanes: {
-      left: 1,
-      right: 1,
-    },
+  
+  RightArcAbove: {
+    center: [ 1, 2 ],
+    radius: 2,
+    startAngle: -Math.PI / 2,
+    endAngle: 0,
+    counterclockwise: false,
+    lanes: { left: 1, right: 1 },
   },
 
-  RightTopB: {
-    start: [ 4, 2 ],
-    end: [ 7, 2 ],
-    lanes: {
-      left: 1,
-      right: 1,
-    },
-  },
-  LeftTopB: {
-    start: [ 4, 2 ],
-    end: [ 1, 2 ],
-    lanes: {
-      left: 1,
-      right: 1,
-    },
+  RightArcBelow: {
+    center: [ 0, 2 ],
+    radius: 3,
+    startAngle: Math.PI / 2,
+    endAngle: 0,
+    counterclockwise: true,
+    lanes: { left: 1, right: 1 },
   },
 
-  LeftBottom: {
-    start: [ -3, 4 ],
-    end: [ 0, 4 ],
-    lanes: {
-      left: 1,
-      right: 1,
-    },
-  },
-  RightBottom: {
-    start: [ 3, 4 ],
-    end: [ 0, 4 ],
-    lanes: {
-      left: 1,
-      right: 1,
-    },
+  BottomLine: {
+    start: [ -3, 5 ],
+    end: [ 0, 5 ],
+    lanes: { left: 1, right: 1 },
   },
 
-  RightDiag: {
-    start: [ 2, 0 ],
-    end: [ 0, -2 ],
-    lanes: {
-      left: 1,
-      right: 1,
-    },
-  },
-  LeftDiag: {
-    start: [ -2, -4 ],
-    end: [ 0, -2 ],
-    lanes: {
-      left: 1,
-      right: 1,
-    },
+  LeftArc: {
+    center: [ -3, 2.5 ],
+    radius: 2.5,
+    startAngle: Math.PI / 2,
+    endAngle: -Math.PI / 2,
+    counterclockwise: false,
+    lanes: { left: 1, right: 1 },
   },
 };
 
