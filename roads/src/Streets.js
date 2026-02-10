@@ -20,6 +20,7 @@ export const Constants = {
 
 export function routesFromStreets( streets ) {
   const routes = {};
+  const intersections = {};
 
   Object.entries( streets ).forEach( ( [ name, street ] ) => {
     const numLanes = street.lanes.left + street.lanes.right;
@@ -96,10 +97,7 @@ export function routesFromStreets( streets ) {
       const one = streets[ nameOne ];
       const two = streets[ nameTwo ];
 
-      // TODO: Can we make getIntersections return the ends of the line/arc if its the same one?
-      const intersections = Intersections.getIntersections( one, two );
-
-      intersections.forEach( ( intersection, index ) => {
+      Intersections.getIntersections( one, two ).forEach( ( intersection, index ) => {
 
         console.log( `Intersection ${ nameOne } vs ${ nameTwo } #${ index } at ${ intersection }` );
 
@@ -226,11 +224,25 @@ export function routesFromStreets( streets ) {
           distances[ key ].toDistance = toDistance;
         } );
 
-        console.log( distances );
+        
+        if ( Object.keys( distances ).length > 0 ) {
+          // console.log( distances );
 
+          const intersectionName = `${ nameOne }_vs_${ nameTwo }_#${ index }`;
+
+          // console.log( intersectionName );
+
+          intersections[ intersectionName ] = {
+            streets: [ nameOne, nameTwo ],
+            position: intersection,
+            distances: distances,
+          };
+        }
       } );
     }
   }
+
+  console.log( intersections );
 
 
   // TODO: Make this based on distance remaining after last link again?
@@ -388,26 +400,28 @@ function joinRoutes( routes, fromName, toName, radius, intersection, intersectio
 
   const arcName = `${ fromName }_TO_${ toName }_${ intersectionName }_ARC`;
   routes[ arcName ] = joinRoute;
-
+  
   // Keep track of our connections, and where they connect distance-wise
   const startPos = Arc.getPointAtAngle( joinRoute, joinRoute.startAngle );
   const endPos = Arc.getPointAtAngle( joinRoute, joinRoute.endAngle );
-
+  
   const fromDistance = Route.getDistanceAtPoint( fromRoute, startPos );
   const toDistance = Route.getDistanceAtPoint( toRoute, endPos );
-
-  // console.log( `  from ${ fromName } at ${ fromDistance }` );
-
+  
+  // Update intersection distances
   if ( !fromDistances.has( fromName ) || fromDistance < fromDistances.get( fromName ) ) {
     fromDistances.set( fromName, fromDistance );
   }
-
-  // console.log( `    to ${ toName } at ${ toDistance }` );
-
+  
   if ( !toDistances.has( toName ) || toDistances.get( toName ) < toDistance ) {
     toDistances.set( toName, toDistance );
   }
   
+  const joinLength = Arc.getLength( joinRoute );
+  fromDistances.set( arcName, 0 );
+  toDistances.set( arcName, joinLength );
+  
+  // Update links
   fromRoute.links ??= [];
   fromRoute.links.push( {
     name: arcName,
@@ -418,7 +432,7 @@ function joinRoutes( routes, fromName, toName, radius, intersection, intersectio
   joinRoute.links ??= [];
   joinRoute.links.push( {
     name: toName,
-    fromDistance: Arc.getLength( joinRoute ),
+    fromDistance: joinLength,
     toDistance: toDistance,
   } );
 

@@ -1,3 +1,15 @@
+2/10:
+
+Intersections
+  - Outputing set of distances from/to
+  - This is currently for each pair of intersecting streets
+    - Eventually, need to figure out how to merge these
+      - Maybe check if there's a link within the toDistance?
+      - Every link between from and to (inclusive) is a path
+        - Maybe I should do it that way
+        - Since left and right turns can start from different spots, probably need paths of all parts like before
+
+
 2/9:
 
 First up: intersections
