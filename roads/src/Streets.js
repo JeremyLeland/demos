@@ -86,108 +86,30 @@ export function routesFromStreets( streets ) {
   } );
 
   // Turns at intersections
-  const streetList = Object.values( streets );
+  const streetNameList = Object.keys( streets );
 
-  for ( let i = 0; i < streetList.length - 1; i ++ ) {
-    for ( let j = i + 1; j < streetList.length; j ++ ) {
-      const one = streetList[ i ];
-      const two = streetList[ j ];
+  for ( let i = 0; i < streetNameList.length - 1; i ++ ) {
+    for ( let j = i + 1; j < streetNameList.length; j ++ ) {
+      const nameOne = streetNameList[ i ];
+      const nameTwo = streetNameList[ j ];
+
+      const one = streets[ nameOne ];
+      const two = streets[ nameTwo ];
 
       // TODO: Can we make getIntersections return the ends of the line/arc if its the same one?
       const intersections = Intersections.getIntersections( one, two );
 
       intersections.forEach( ( intersection, index ) => {
+
+        console.log( `Intersection ${ nameOne } vs ${ nameTwo } #${ index } at ${ intersection }` );
+
+        const fromDistances = new Map();
+        const toDistances = new Map();
+
         const angles = [ one, two ].map( route => Route.getHeadingAtPoint( route, intersection ) );
         const turn = Angle.deltaAngle( ...angles );
 
         // console.log( `Turn ${ Object.keys( streets )[ i ] } vs ${ Object.keys( streets )[ j ] } = ${ turn }` );
-
-        // // If no turn, then no arc needed -- link them directly
-        // function connectStreets( streets, laneDirs ) {
-        //   {
-        //     const fromLanes = streets[ 0 ].routes[ laneDirs[ 0 ][ 0 ] ];
-        //     const toLanes   = streets[ 1 ].routes[ laneDirs[ 0 ][ 1 ] ];
-
-        //     const numLanes = fromLanes.length;
-
-        //     for ( let k = 0; k < numLanes; k ++ ) {
-        //       const fromName = fromLanes[ k ];
-        //       const toName = toLanes[ k ];
-
-        //       const fromRoute = routes[ fromName ];
-        //       const toRoute = routes[ toName ];
-
-        //       const fromDistance = Route.getLength( fromRoute );
-        //       const toDistance = 0;
-
-        //       console.log( `from ${ fromName } at ${ fromDistance }` );
-        //       console.log( `  to ${ toName } at ${ toDistance }` );
-
-        //       fromRoute.links ??= [];
-        //       fromRoute.links.push( {
-        //         name: toName,
-        //         fromDistance: fromDistance,
-        //         toDistance: toDistance,
-        //       } );
-
-        //       // console.log( `Connecting ${ fromLanes[ k ] } to ${ toLanes[ k ] } from ${ Route.getLength( fromRoute ) } to 0` );
-        //     }
-        //   }
-
-        //   {
-        //     const fromLanes = streets[ 1 ].routes[ laneDirs[ 1 ][ 0 ] ];
-        //     const toLanes   = streets[ 0 ].routes[ laneDirs[ 1 ][ 1 ] ];
-
-        //     const numLanes = fromLanes.length;
-
-        //     for ( let k = 0; k < numLanes; k ++ ) {
-        //       const fromName = fromLanes[ k ];
-        //       const toName = toLanes[ k ];
-
-        //       const fromRoute = routes[ fromName ];
-        //       const toRoute = routes[ toName ];
-
-        //       const fromDistance = Route.getLength( fromRoute );
-        //       const toDistance = 0;
-
-        //       console.log( `from ${ fromName } at ${ fromDistance }` );
-        //       console.log( `  to ${ toName } at ${ toDistance }` );
-
-        //       fromRoute.links ??= [];
-        //       fromRoute.links.push( {
-        //         name: toName,
-        //         fromDistance: fromDistance,
-        //         toDistance: toDistance,
-        //       } );
-
-        //       // console.log( `Connecting ${ fromLanes[ k ] } to ${ toLanes[ k ] } from ${ Route.getLength( fromRoute ) } to 0` );
-        //     }
-        //   }
-        // }
-
-        // const atBeginning = vec2.distance( intersection, Route.getPositionAtDistance( one, 0 ) ) < 1e-6;
-
-        // console.log( `turn = ${ turn }, atBeginning = ${ atBeginning }` );
-        // console.log();
-
-        // if ( turn == 0 ) {
-        //   // if ( atBeginning ) {
-        //     connectStreets( [ one, two ], [ [ 'left', 'left' ], [ 'right', 'right' ] ] );
-        //   // }
-        //   // else {
-        //     connectStreets( [ one, two ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] );
-        //   // }
-        //   return;
-        // }
-        // else if ( turn == -Math.PI /*|| turn == Math.PI*/ /* seems like it's never +PI... */ ) {
-        //   // if ( atBeginning ) {
-        //     connectStreets( [ one, two ], [ [ 'left', 'right' ], [ 'left', 'right' ] ] );
-        //   // }
-        //   // else {
-        //     connectStreets( [ one, two ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
-        //   // }
-        //   return;
-        // }
 
         const A = turn < 0 ? two : one;
         const B = turn < 0 ? one : two;
@@ -207,13 +129,13 @@ export function routesFromStreets( streets ) {
           // console.log( 'Minimum radius is: ' + minRadius );
 
           // TODO: How to detect that no join is required?
-          let radius = 1;/*getBestJoinRadius(
+          let radius = getBestJoinRadius(
             routes[ fromLanesA[ numLanesA - 1 ] ], 
             routes[ toLanesA[ numLanesA - 1 ] ], 
             intersection,
             minRadius,
             10    // TODO: better value for max?
-          );*/
+          );
 
           // console.log( 'Got best radius of ' + radius );
 
@@ -230,7 +152,9 @@ export function routesFromStreets( streets ) {
               radius, 
               intersection,
               `#${ index }`,
-              'lime'
+              'lime',
+              fromDistances,
+              toDistances,
             );
             radius -= LANE_WIDTH;
           }
@@ -243,7 +167,9 @@ export function routesFromStreets( streets ) {
               radius,
               intersection,
               `#${ index }`,
-              'red'
+              'red',
+              fromDistances,
+              toDistances,
             );
             radius -= LANE_WIDTH;
           }
@@ -288,6 +214,10 @@ export function routesFromStreets( streets ) {
         // if ( A_before > MINIMUM && B_before > MINIMUM ) {
           addPairs( [ A, B ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
         // }
+
+
+        console.log( fromDistances );
+        console.log( toDistances );
       } );
     }
   }
@@ -399,6 +329,10 @@ function getBestJoinRadius( fromRoute, toRoute, intersection, min, max ) {
       continue;
     }
 
+    if ( !arc.center ) {
+      return null;   // Shouldn't get used, so shouldn't matter...see if it causes any problems
+    }
+
     const dist = vec2.distance( arc.center, intersection );
 
     if ( dist < arc.radius + LANE_WIDTH ) {
@@ -417,89 +351,68 @@ function getBestJoinRadius( fromRoute, toRoute, intersection, min, max ) {
   }
 }
 
-function joinRoutes( routes, fromName, toName, radius, intersection, intersectionName, debugColor ) {
+function joinRoutes( routes, fromName, toName, radius, intersection, intersectionName, debugColor, fromDistances, toDistances ) {
 
-  console.log( `\njoining route ${fromName} to ${ toName } at ${ intersection }` );
+  // console.log( `\njoining route ${fromName} to ${ toName } at ${ intersection }` );
 
-  const arc = Route.getRouteBetween( routes[ fromName ], routes[ toName ], radius, intersection );
-
+  
   const fromRoute = routes[ fromName ];
   const toRoute = routes[ toName ];
+  const joinRoute = Route.getRouteBetween( fromRoute, toRoute, radius, intersection );
 
-
-  if ( arc ) {
-
-    // Special case of already joined, just need to link them up
-    if ( arc.center == null ) {
-      fromRoute.links ??= [];
-      fromRoute.links.push( {
-        name: toName,
-        fromDistance: Route.getLength( fromRoute ),
-        toDistance: 0,
-      } );
-
-      return;
-    }
-
-
-    const arcName = `${ fromName }_TO_${ toName }_${ intersectionName }_ARC`;
-    routes[ arcName ] = arc;
-
-    // Keep track of our connections, and where they connect distance-wise
-    const startPos = Arc.getPointAtAngle( arc, arc.startAngle );
-    const endPos = Arc.getPointAtAngle( arc, arc.endAngle );
-
-    const fromDistance = Route.getDistanceAtPoint( fromRoute, startPos );
-    const toDistance = Route.getDistanceAtPoint( toRoute, endPos );
-
-    console.log( `from ${ fromName } at ${ fromDistance }` );
-    console.log( `  to ${ toName } at ${ toDistance }` );
-    
-    fromRoute.links ??= [];
-    fromRoute.links.push( {
-      name: arcName,
-      fromDistance: fromDistance,
-      toDistance: 0,
-    } );
-    
-    arc.links ??= [];
-    arc.links.push( {
-      name: toName,
-      fromDistance: Arc.getLength( arc ),
-      toDistance: toDistance,
-    } );
-
-    arc.arrowColor = debugColor;
+  if ( !joinRoute ) {
+    return;   // no valid join found
   }
 
-  // TODO: NOW: Make a note of the failed join, still useful for drawing
-  // else {
-  //   const routeIntersections = Intersections.getIntersections( fromRoute, toRoute );
+  // If not an arc, then already joined, just need to link them up
+  if ( joinRoute.center == null ) {
+    fromRoute.links ??= [];
+    fromRoute.links.push( {
+      name: toName,
+      fromDistance: Route.getLength( fromRoute ),
+      toDistance: 0,
+    } );
 
-  //   // Make sure to use the closest one to intersection!
-  //   let routeIntersection, closestDist = Infinity;
+    return;
+  }
 
-  //   routeIntersections.forEach( ri => {
-  //     const dist = vec2.distance( ri, intersection );
+  const arcName = `${ fromName }_TO_${ toName }_${ intersectionName }_ARC`;
+  routes[ arcName ] = joinRoute;
 
-  //     if ( dist < closestDist ) {
-  //       routeIntersection = ri;
-  //       closestDist = dist;
-  //     }
-  //   } );
+  // Keep track of our connections, and where they connect distance-wise
+  const startPos = Arc.getPointAtAngle( joinRoute, joinRoute.startAngle );
+  const endPos = Arc.getPointAtAngle( joinRoute, joinRoute.endAngle );
 
-  //   if ( routeIntersection ) {
-  //     const fromDistance = Route.getDistanceAtPoint( fromRoute, routeIntersection );
-  //     const toDistance = Route.getDistanceAtPoint( toRoute, routeIntersection );
-      
-  //     fromRoute.failedLinks ??= [];
-  //     fromRoute.failedLinks.push( {
-  //       name: toName,
-  //       fromDistance: fromDistance,
-  //       toDistance: toDistance,
-  //     } );
-  //   }
-  // }
+  const fromDistance = Route.getDistanceAtPoint( fromRoute, startPos );
+  const toDistance = Route.getDistanceAtPoint( toRoute, endPos );
+
+  console.log( `  from ${ fromName } at ${ fromDistance }` );
+
+  if ( !fromDistances.has( fromName ) || fromDistance < fromDistances.get( fromName ) ) {
+    fromDistances.set( fromName, fromDistance );
+  }
+
+  console.log( `    to ${ toName } at ${ toDistance }` );
+
+  if ( !toDistances.has( toName ) || toDistances.get( toName ) < toDistance ) {
+    toDistances.set( toName, toDistance );
+  }
+  
+  fromRoute.links ??= [];
+  fromRoute.links.push( {
+    name: arcName,
+    fromDistance: fromDistance,
+    toDistance: 0,
+  } );
+  
+  joinRoute.links ??= [];
+  joinRoute.links.push( {
+    name: toName,
+    fromDistance: Arc.getLength( joinRoute ),
+    toDistance: toDistance,
+  } );
+
+  joinRoute.arrowColor = debugColor;
 }
 
 

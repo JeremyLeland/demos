@@ -56,6 +56,42 @@ const streets = {
     counterclockwise: false,
     lanes: { left: 1, right: 1 },
   },
+  
+  Down: {
+    start: [ -1, 0 ],
+    end: [ -1, 5 ],
+    lanes: { left: 1, right: 1 },
+  },
+  
+  Right: {
+    start: [ -6, 2 ],
+    end: [ 3, 2 ],
+    lanes: { left: 1, right: 1 },
+  },
+  
+  A: {
+    start: [ -4, -2 ],
+    end: [ 0, -2 ],
+    lanes: { left: 1, right: 1 },
+  },
+  
+  B: {
+    start: [ 0, -2 ],
+    end: [ 4, -2 ],
+    lanes: { left: 1, right: 1 },
+  },
+
+  C: {
+    end: [ -4, -1 ],
+    start: [ 0, -1 ],
+    lanes: { left: 1, right: 1 },
+  },
+  
+  D: {
+    start: [ 0, -1 ],
+    end: [ 4, -1 ],
+    lanes: { left: 1, right: 1 },
+  },
 };
 
 

@@ -31,6 +31,20 @@ NEXT: Get our u-turns back? We'll need them at some point...
   - We want that handled separately from intersection code anway, potentially
     - Since a u-turn can never be an intersection
 
+Don't forget that the whole point of this was to simplify code so we can track intersections...
+
+Handling the parallel case:
+  - Find the offsets like we already do, then do a special case check to see if they are parallel?
+  - Should check for that before looking for intersections, since we won't find any anway
+
+What if we made all u-turns by default, then removed them if they were too close to an intersection?
+  - This is kind of the reverse of what we try now
+  + The main thing is we want to make sure the start and end of u-turn are outside the intersecting street
+    - We can check this as we add intersections and remove the last link if it is
+      - Should we remove any links that are within it? Seems like this could lead to all kinds of chaos
+      - U-turns are a special case, we should stick with them
+        - How do we know it's a u-turn, and not some different attachment?
+
 
 2/6:
 
