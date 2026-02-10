@@ -128,6 +128,8 @@ export function routesFromStreets( streets ) {
 
           // console.log( 'Minimum radius is: ' + minRadius );
 
+          // NOTE: Order is important here because radius is decreased after each join
+
           // TODO: How to detect that no join is required?
           let radius = getBestJoinRadius(
             routes[ fromLanesA[ numLanesA - 1 ] ], 
@@ -138,11 +140,6 @@ export function routesFromStreets( streets ) {
           );
 
           // console.log( 'Got best radius of ' + radius );
-
-          // if ( radius == null ) {
-          //   console.log( 'skipping pair, no acceptable radius found' );
-          //   return false;
-          // }
 
           for ( let k = 0; k < numLanesA; k ++ ) {
             joinRoutes( 
@@ -215,9 +212,20 @@ export function routesFromStreets( streets ) {
           addPairs( [ A, B ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
         // }
 
+        const distances = {};
 
-        console.log( fromDistances );
-        console.log( toDistances );
+        fromDistances.forEach( ( fromDistance, key ) => {
+          distances[ key ] ??= {};
+          distances[ key ].fromDistance = fromDistance;
+        } );
+
+        toDistances.forEach( ( toDistance, key ) => {
+          distances[ key ] ??= {};
+          distances[ key ].toDistance = toDistance;
+        } );
+
+        console.log( distances );
+
       } );
     }
   }
@@ -386,13 +394,13 @@ function joinRoutes( routes, fromName, toName, radius, intersection, intersectio
   const fromDistance = Route.getDistanceAtPoint( fromRoute, startPos );
   const toDistance = Route.getDistanceAtPoint( toRoute, endPos );
 
-  console.log( `  from ${ fromName } at ${ fromDistance }` );
+  // console.log( `  from ${ fromName } at ${ fromDistance }` );
 
   if ( !fromDistances.has( fromName ) || fromDistance < fromDistances.get( fromName ) ) {
     fromDistances.set( fromName, fromDistance );
   }
 
-  console.log( `    to ${ toName } at ${ toDistance }` );
+  // console.log( `    to ${ toName } at ${ toDistance }` );
 
   if ( !toDistances.has( toName ) || toDistances.get( toName ) < toDistance ) {
     toDistances.set( toName, toDistance );
