@@ -214,13 +214,15 @@ export function routesFromStreets( streets ) {
 
         const distances = {};
 
+        const defaultEntry = ( key ) => ( { fromDistance: 0, toDistance: Route.getLength( routes[ key ] ) } );
+
         fromDistances.forEach( ( fromDistance, key ) => {
-          distances[ key ] ??= {};
+          distances[ key ] ??= defaultEntry( key );
           distances[ key ].fromDistance = fromDistance;
         } );
 
         toDistances.forEach( ( toDistance, key ) => {
-          distances[ key ] ??= {};
+          distances[ key ] ??= defaultEntry( key );
           distances[ key ].toDistance = toDistance;
         } );
 
