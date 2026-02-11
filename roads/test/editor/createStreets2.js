@@ -290,16 +290,23 @@ canvas.draw = ( ctx ) => {
   
 
   Object.values( level.routes ).forEach( route => {
-    const routeLength = Route.getLength( route );
-    
     ctx.fillStyle = route.arrowColor;
-
-    for ( let length = 0; length < routeLength; length += DEBUG_ARROW_LENGTH ) {
-      drawAtDistance( ctx, route, length, drawArrow );
-    }
+    drawRoute( ctx, route );
   } );
 
   drawLinks( ctx, level.routes );
+
+  const colors = [ 'red', 'orange', 'yellow', 'lime', 'cyan', 'violet', 'brown', 'gray' ];
+
+  Object.entries( level.intersections ).forEach( ( [ name, intersection ], index ) => {
+    ctx.fillStyle = colors[ index % colors.length ];
+    drawPoint( ctx, intersection.position, 0.1 );
+
+    Object.entries( intersection.distances ).forEach( ( [ routeName, dists ] ) => {
+      const route = level.routes[ routeName ];
+      drawRoute( ctx, route, dists.fromDistance, dists.toDistance );
+    } );
+  } );
 
   // TODO: Draw outline of streets based on the routes (and connections between them)
   // TODO: Ignore parts of street with no more connections? (this might make joins nicer)
@@ -314,6 +321,15 @@ canvas.draw = ( ctx ) => {
   if ( hover ) {
     ctx.fillStyle = controlColors[ hover.action ];
     drawPoint( ctx, hover.point, 0.1 );
+  }
+}
+
+function drawRoute( ctx, route, fromDistance = 0, toDistance ) {
+  const from = fromDistance ?? 0;
+  const to = toDistance ?? Route.getLength( route );
+
+  for ( let dist = from; dist < to; dist += DEBUG_ARROW_LENGTH ) {
+    drawAtDistance( ctx, route, dist, drawArrow );
   }
 }
 
