@@ -144,6 +144,11 @@ export function levelFromStreets( streets ) {
 
           // console.log( 'Got best radius of ' + radius );
 
+          if ( radius == null ) {
+            console.log( 'skipping pair, no acceptable radius found' );
+            return false;
+          }
+
           for ( let k = 0; k < numLanesA; k ++ ) {
             joinRoutes( 
               level.routes, 
@@ -174,75 +179,83 @@ export function levelFromStreets( streets ) {
             radius -= LANE_WIDTH;
           }
 
-          // return true;  // acceptable radius found and routes created
+          return true;  // acceptable radius found and routes created
         }
 
-        // TODO: NEXT: Find distance in all directions of intersection (before/after)
-        // Determine whether this should be elbow, 3-way, 4-way, etc and don't make links if a side is too short
-        
-        // const A_before = Math.abs( Route.getDistanceAtPoint( A, intersection ) );
-        // const B_before = Math.abs( Route.getDistanceAtPoint( B, intersection ) );
-        // const A_after = Route.getLength( A ) - A_before;
-        // const B_after = Route.getLength( B ) - B_before;
 
-        // console.log( `A_before = ${ A_before }` );
-        // console.log( `A_after = ${ A_after }` );
-        // console.log( `B_before = ${ B_before }` );
-        // console.log( `B_after = ${ B_after }` );
+        let numPairs = 0;
 
-        // TODO: NOW: Find which A/B before/after goes with each line
-        
-        // What should minimum length be? Should it take into account number of lanes? Arbitrary number?
-        // const MINIMUM = 1.5;
-
-        // B before, A after
-        // if ( A_after > MINIMUM && B_before > MINIMUM ) {
-          addPairs( [ B, A ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] );
-        // }
-        
-        // B after, A before
-        // if ( A_before > MINIMUM && B_after > MINIMUM ) {
-          addPairs( [ B, A ], [ [ 'left', 'left' ], [ 'right', 'right' ] ] );
-        // }
-
-        // B after, A after
-        // if ( A_after > MINIMUM && B_after > MINIMUM ) {
-          addPairs( [ A, B ], [ [ 'left', 'right' ], [ 'left', 'right' ] ] );
-        // }
-
-        // B before, A before
-        // if ( A_before > MINIMUM && B_before > MINIMUM ) {
-          addPairs( [ A, B ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] );
-        // }
-
-        const distances = {};
-
-        const defaultEntry = ( key ) => ( { fromDistance: 0, toDistance: Route.getLength( level.routes[ key ] ) } );
-
-        fromDistances.forEach( ( fromDistance, key ) => {
-          distances[ key ] ??= defaultEntry( key );
-          distances[ key ].fromDistance = fromDistance;
-        } );
-
-        toDistances.forEach( ( toDistance, key ) => {
-          distances[ key ] ??= defaultEntry( key );
-          distances[ key ].toDistance = toDistance;
-        } );
-
-        
-        if ( Object.keys( distances ).length > 0 ) {
-          // console.log( distances );
-
-          const intersectionName = `${ nameOne }_vs_${ nameTwo }_#${ index }`;
-
-          // console.log( intersectionName );
-
-          level.intersections[ intersectionName ] = {
-            streets: [ nameOne, nameTwo ],
-            position: intersection,
-            distances: distances,
-          };
+        if ( addPairs( [ B, A ], [ [ 'right', 'right' ], [ 'left', 'left' ] ] ) ) {
+          numPairs ++;
         }
+
+        if ( addPairs( [ B, A ], [ [ 'left', 'left' ], [ 'right', 'right' ] ] ) ) {
+          numPairs ++;
+        }
+        
+        if ( addPairs( [ A, B ], [ [ 'left', 'right' ], [ 'left', 'right' ] ] ) ) {
+          numPairs ++;
+        }
+        
+        if ( addPairs( [ A, B ], [ [ 'right', 'left' ], [ 'right', 'left' ] ] ) ) {
+          numPairs ++;
+        }
+
+        console.log( `numPairs = ${ numPairs }` );
+
+
+        // This is prematurely filtering out intersections that should be combined
+        // Could potentially save this to use later, but going to try calculating another way for now
+        // if ( numPairs > 1 ) {
+          const distances = {};
+
+          const defaultEntry = ( key ) => ( { fromDistance: 0, toDistance: Route.getLength( level.routes[ key ] ) } );
+
+          fromDistances.forEach( ( fromDistance, key ) => {
+            distances[ key ] ??= defaultEntry( key );
+            distances[ key ].fromDistance = fromDistance;
+          } );
+
+          toDistances.forEach( ( toDistance, key ) => {
+            distances[ key ] ??= defaultEntry( key );
+            distances[ key ].toDistance = toDistance;
+          } );
+
+          // Try to build paths, starting from streets involved
+          let mostLinks = 0;
+
+          [ nameOne, nameTwo ].forEach( streetName => {
+            Object.entries( level.streetToRoutes[ streetName ] ).forEach( ( [ laneDir, routes ] ) => {
+              routes.forEach( routeName => {
+                const dists = distances[ routeName ];
+
+                if ( !dists ) {
+                  return;
+                }
+                
+                const links = level.routes[ routeName ].links?.filter( link => dists.fromDistance <= link.fromDistance && link.fromDistance <= dists.toDistance );
+
+                console.log( `  ${ routeName }: ${ JSON.stringify( links ) }` );
+
+                mostLinks = Math.max( mostLinks, links?.length ?? 0 );
+              } );
+            } );
+          } );
+          
+          console.log( `mostLinks = ${ mostLinks }` );
+
+          if ( mostLinks > 1 ) {
+            const intersectionName = `${ nameOne }_vs_${ nameTwo }_#${ index }`;
+            
+            // console.log( intersectionName );
+            
+            level.intersections[ intersectionName ] = {
+              streets: [ nameOne, nameTwo ],
+              position: intersection,
+              distances: distances,
+            };
+          }
+        // }
       } );
     }
   }
@@ -357,7 +370,7 @@ function getBestJoinRadius( fromRoute, toRoute, intersection, min, max ) {
     }
 
     if ( !arc.center ) {
-      return null;   // Shouldn't get used, so shouldn't matter...see if it causes any problems
+      return 0;   // Need a special value of some sort of distinguish from not finding a valid route below
     }
 
     const dist = vec2.distance( arc.center, intersection );

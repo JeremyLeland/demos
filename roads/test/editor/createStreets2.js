@@ -70,14 +70,14 @@ const streets = {
   },
   
   A: {
-    start: [ -4, -2 ],
-    end: [ 0, -2 ],
+    start: [ -4, -4 ],
+    end: [ 0, -4 ],
     lanes: { left: 1, right: 1 },
   },
   
   B: {
-    start: [ 0, -2 ],
-    end: [ 4, -2 ],
+    start: [ 0, -4 ],
+    end: [ 4, -4 ],
     lanes: { left: 1, right: 1 },
   },
 
@@ -89,6 +89,18 @@ const streets = {
   
   D: {
     start: [ 0, -1 ],
+    end: [ 4, -1 ],
+    lanes: { left: 1, right: 1 },
+  },
+  
+  E: {
+    start: [ -4, -4 ],
+    end: [ -4, -1 ],
+    lanes: { left: 1, right: 1 },
+  },
+  
+  F: {
+    start: [ 4, -4 ],
     end: [ 4, -1 ],
     lanes: { left: 1, right: 1 },
   },
@@ -289,13 +301,16 @@ canvas.draw = ( ctx ) => {
   // Routes
   
 
+  // Routes
   Object.values( level.routes ).forEach( route => {
     ctx.fillStyle = route.arrowColor;
     drawRoute( ctx, route );
   } );
 
+  // Links
   drawLinks( ctx, level.routes );
 
+  // Intersections
   const colors = [ 'red', 'orange', 'yellow', 'lime', 'cyan', 'violet', 'brown', 'gray' ];
 
   Object.entries( level.intersections ).forEach( ( [ name, intersection ], index ) => {

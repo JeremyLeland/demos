@@ -1,3 +1,27 @@
+2/11:
+
+How to combine intersections with more than 2 streets?
+  - Look for matching positions? (seems fragile)
+  - Make paths? (see below)
+
+How to ignore intersections that involve only 1 connection?
+  - Keep track of how many addPairs calls succeed? If only 1, then ignore?
+    - Combined intersections may only have 1 pair individually
+    - Can't make this determination until after they've been merged
+    + Maybe save the number of pairs for now as part of intersection object?
+      - Can prune the ones with too few pairs later
+  - Can we look at how many paths come from each route and see what max is?
+    - This seems to give us what we want
+    - Also feels like the beginning of make paths
+
+Make paths?
+  - These were the combinations of routes that could be open or closed
+  - Definitely need something like this for merged intersections, since parts of two main routes are involved
+  - Maybe this is part of the key to finding which intersections should be combined
+
+CHECK IN: Ignore intersections that involve only 1 connection (and possible start to building paths)
+
+
 2/10:
 
 Intersections
@@ -22,6 +46,9 @@ I got the intersections to output. A good next step would be to draw them in a w
 NOW: Return a level object containing routes, intersections, and streetToRoutes guide
   - Get createStreets2.js working with this
   - Do I still need streetInfo in route if I'm adding u-turns from street level?
+
+How to combine intersections with more than 2 streets?
+How to ignore intersections that involve only 1 connection?
 
 
 2/9:
