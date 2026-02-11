@@ -9,6 +9,20 @@ Intersections
         - Maybe I should do it that way
         - Since left and right turns can start from different spots, probably need paths of all parts like before
 
+I got the intersections to output. A good next step would be to draw them in a way that helps debug them.
+  - To do that, I need to return them
+    - Currently, routesFromStreets( streets ) returns just the routes
+    - This should probably return an object that includes 
+      - the routes
+      - the intersections
+      - perhaps a mapping of which routes go to which street (so we aren't modifying streets object)
+  - After that, iterate through intersections and draw all the routes involved between from and to dists
+    - Maybe give each intersection a different color and fill in the routes with that color?
+
+NOW: Return a level object containing routes, intersections, and streetToRoutes guide
+  - Get createStreets2.js working with this
+  - Do I still need streetInfo in route if I'm adding u-turns from street level?
+
 
 2/9:
 

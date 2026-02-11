@@ -18,15 +18,18 @@ export const Constants = {
 //       Seems like we could search all routes with parent == 'name' if we need to find them...
 // Maybe this can return an overall level object including map of routes by name and map of routes by street
 
-export function routesFromStreets( streets ) {
-  const routes = {};
-  const intersections = {};
+export function levelFromStreets( streets ) {
+  const level = {
+    routes: {},
+    intersections: {},
+    streetToRoutes: {},
+  };
 
-  Object.entries( streets ).forEach( ( [ name, street ] ) => {
+  Object.entries( streets ).forEach( ( [ streetName, street ] ) => {
     const numLanes = street.lanes.left + street.lanes.right;
 
     // TODO: don't assume here, generate as needed? (in case there's middle, turning, etc)
-    street.routes = { left: [], right: [] };     // link lanes to parent street so we can find them for connecting intersections
+    level.streetToRoutes[ streetName ] = { left: [], right: [] };
 
 
     // Create lanes from the center out so that the left-most lane in direction of travel is at index 0
@@ -41,8 +44,10 @@ export function routesFromStreets( streets ) {
         const laneOffset = ccDir * laneDirDir * LANE_WIDTH * ( 0.5 + i );
 
         const route = {
+
+          // TODO: Do I still need streetInfo if I'm making u-turns per street (instead of per route)?
           streetInfo: {
-            name: name,
+            name: streetName,
             laneDir: laneDir,
             laneIndex: i,
           },
@@ -77,11 +82,11 @@ export function routesFromStreets( streets ) {
           } );
         }
 
-        const routeName = `${ name }_lane_${ laneDir }_${ i }`;
-        routes[ routeName ] = route;
+        const routeName = `${ streetName }_lane_${ laneDir }_${ i }`;
+        level.routes[ routeName ] = route;
 
         // TODO: Save this in a different intermediate structure (so we aren't altering streets)
-        street.routes[ laneDir ].push( routeName );
+        level.streetToRoutes[ streetName ][ laneDir ].push( routeName );
       }
     } );
   } );
@@ -109,16 +114,16 @@ export function routesFromStreets( streets ) {
 
         // console.log( `Turn ${ Object.keys( streets )[ i ] } vs ${ Object.keys( streets )[ j ] } = ${ turn }` );
 
-        const A = turn < 0 ? two : one;
-        const B = turn < 0 ? one : two;
+        const A = turn < 0 ? nameTwo : nameOne;
+        const B = turn < 0 ? nameOne : nameTwo;
 
-        function addPairs( streets, laneDirs ) {
-          const fromLanesA = streets[ 0 ].routes[ laneDirs[ 0 ][ 0 ] ];
-          const toLanesA   = streets[ 1 ].routes[ laneDirs[ 0 ][ 1 ] ];
+        function addPairs( streetNames, laneDirs ) {
+          const fromLanesA = level.streetToRoutes[ streetNames[ 0 ] ][ laneDirs[ 0 ][ 0 ] ];
+          const toLanesA   = level.streetToRoutes[ streetNames[ 1 ] ][ laneDirs[ 0 ][ 1 ] ];
           const numLanesA = Math.min( fromLanesA.length, toLanesA.length );
 
-          const fromLanesB = streets[ 1 ].routes[ laneDirs[ 1 ][ 0 ] ];
-          const toLanesB   = streets[ 0 ].routes[ laneDirs[ 1 ][ 1 ] ];
+          const fromLanesB = level.streetToRoutes[ streetNames[ 1 ] ][ laneDirs[ 1 ][ 0 ] ];
+          const toLanesB   = level.streetToRoutes[ streetNames[ 0 ] ][ laneDirs[ 1 ][ 1 ] ];
           const numLanesB = Math.min( fromLanesB.length, toLanesB.length );
 
           // TODO: Is this too big? Should there be a -( LANE_WIDTH / 2 ) in there somewhere?
@@ -130,8 +135,8 @@ export function routesFromStreets( streets ) {
 
           // TODO: How to detect that no join is required?
           let radius = getBestJoinRadius(
-            routes[ fromLanesA[ numLanesA - 1 ] ], 
-            routes[ toLanesA[ numLanesA - 1 ] ], 
+            level.routes[ fromLanesA[ numLanesA - 1 ] ], 
+            level.routes[ toLanesA[ numLanesA - 1 ] ], 
             intersection,
             minRadius,
             10    // TODO: better value for max?
@@ -141,7 +146,7 @@ export function routesFromStreets( streets ) {
 
           for ( let k = 0; k < numLanesA; k ++ ) {
             joinRoutes( 
-              routes, 
+              level.routes, 
               fromLanesA[ numLanesA - 1 - k ], 
               toLanesA[ numLanesA - 1 - k ], 
               radius, 
@@ -156,7 +161,7 @@ export function routesFromStreets( streets ) {
 
           for ( let k = 0; k < numLanesB; k ++ ) {
             joinRoutes(
-              routes,
+              level.routes,
               fromLanesB[ k + fromLanesB.length - numLanesB ], 
               toLanesB[ k + toLanesB.length - numLanesB ], 
               radius,
@@ -212,7 +217,7 @@ export function routesFromStreets( streets ) {
 
         const distances = {};
 
-        const defaultEntry = ( key ) => ( { fromDistance: 0, toDistance: Route.getLength( routes[ key ] ) } );
+        const defaultEntry = ( key ) => ( { fromDistance: 0, toDistance: Route.getLength( level.routes[ key ] ) } );
 
         fromDistances.forEach( ( fromDistance, key ) => {
           distances[ key ] ??= defaultEntry( key );
@@ -232,7 +237,7 @@ export function routesFromStreets( streets ) {
 
           // console.log( intersectionName );
 
-          intersections[ intersectionName ] = {
+          level.intersections[ intersectionName ] = {
             streets: [ nameOne, nameTwo ],
             position: intersection,
             distances: distances,
@@ -242,7 +247,7 @@ export function routesFromStreets( streets ) {
     }
   }
 
-  console.log( intersections );
+  console.log( level.intersections );
 
 
   // TODO: Make this based on distance remaining after last link again?
@@ -330,7 +335,7 @@ export function routesFromStreets( streets ) {
   // console.log( 'routes = ' );
   // console.log( routes );
 
-  return routes;
+  return level;
 }
 
 function getBestJoinRadius( fromRoute, toRoute, intersection, min, max ) {

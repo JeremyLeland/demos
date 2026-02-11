@@ -98,7 +98,7 @@ const streets = {
 
 // TODO: Make these part of some sort of level object separate from controlPoints?
 //       Combine streetsFrom and routesFrom function to one function that returns level from control points?
-let routes = {};
+let level = {};
 
 const GRID_SIZE = 20;
 const VIEW_SIZE = 5;
@@ -112,9 +112,9 @@ canvas.draw = ( ctx ) => {
 
   console.log( JSON.stringify( streets ) );
 
-  routes = Streets.routesFromStreets( streets );
+  level = Streets.levelFromStreets( streets );
 
-  console.log( routes );
+  console.log( level.routes );
 
   ctx.lineWidth = 0.02;
   grid.draw( ctx );
@@ -132,7 +132,7 @@ canvas.draw = ( ctx ) => {
     route.links?.forEach( link => {
       const dist = link.fromDistance - distance;
       
-      if ( routes[ link.name ].counterclockwise != true && 0 <= dist && dist < closestDist ) {
+      if ( level.routes[ link.name ].counterclockwise != true && 0 <= dist && dist < closestDist ) {
         closest = link;
         closestDist = dist;
       }
@@ -147,7 +147,7 @@ canvas.draw = ( ctx ) => {
 
       // TODO: This can fail with too much recursion -- need a safer check
       // Make sure this failedLink goes somewhere first
-      if ( getNextLink( routes[ failedLink.name ], failedLink.toDistance, recursionDepth + 1 ) ) {
+      if ( getNextLink( level.routes[ failedLink.name ], failedLink.toDistance, recursionDepth + 1 ) ) {
         const dist = failedLink.fromDistance - distance;
 
         if ( 0 <= dist && dist < closestDist ) {
@@ -174,17 +174,20 @@ canvas.draw = ( ctx ) => {
 
   const outerLanes = [];
 
-  Object.values( streets ).forEach( street => {
+  Object.entries( streets ).forEach( ( [ streetName, street ] ) => {
+
+    const routeInfo = level.streetToRoutes[ streetName ];
+
     outerLanes.push(
-      street.routes.left[ street.routes.left.length - 1 ],
-      street.routes.right[ street.routes.right.length - 1 ],
+      routeInfo.left[ routeInfo.left.length - 1 ],
+      routeInfo.right[ routeInfo.right.length - 1 ],
     );
   } );
 
   // console.log( 'outerLanes = ' );
   // console.log( outerLanes );
 
-  Object.entries( routes ).forEach( ( [ name, route ] ) => {
+  Object.entries( level.routes ).forEach( ( [ name, route ] ) => {
     if ( outerLanes.includes( name ) ) {
       let furthest, furthestDist = 0;
 
@@ -196,7 +199,7 @@ canvas.draw = ( ctx ) => {
           furthestDist = link.fromDistance;
         }
 
-        if ( routes[ link.name ].counterclockwise == false ) {
+        if ( level.routes[ link.name ].counterclockwise == false ) {
           unvisited.add( link );
           addedAny = true;
         }
@@ -235,14 +238,14 @@ canvas.draw = ( ctx ) => {
       break;
     }
 
-    nextLink = getNextLink( routes[ thisLink.name ], thisLink.toDistance );
+    nextLink = getNextLink( level.routes[ thisLink.name ], thisLink.toDistance );
 
     unvisited.delete( thisLink );
     visited.add( thisLink );
 
-    // console.log( `addRouteToPath( subpath, routes[ ${ thisLink.name } ], ${ thisLink?.toDistance }, ${ nextLink?.fromDistance }, 1 )` );
+    // console.log( `addRouteToPath( subpath, level.routes[ ${ thisLink.name } ], ${ thisLink?.toDistance }, ${ nextLink?.fromDistance }, 1 )` );
 
-    Route.addRouteToPath( subpath, routes[ thisLink.name ], thisLink?.toDistance, nextLink?.fromDistance, 1 * Streets.LANE_WIDTH / 2 );
+    Route.addRouteToPath( subpath, level.routes[ thisLink.name ], thisLink?.toDistance, nextLink?.fromDistance, 1 * Streets.LANE_WIDTH / 2 );
 
     if ( visited.has( nextLink ) ) {
       // console.log( 'making new path' );
@@ -286,7 +289,7 @@ canvas.draw = ( ctx ) => {
   // Routes
   
 
-  Object.values( routes ).forEach( route => {
+  Object.values( level.routes ).forEach( route => {
     const routeLength = Route.getLength( route );
     
     ctx.fillStyle = route.arrowColor;
@@ -296,7 +299,7 @@ canvas.draw = ( ctx ) => {
     }
   } );
 
-  drawLinks( ctx, routes );
+  drawLinks( ctx, level.routes );
 
   // TODO: Draw outline of streets based on the routes (and connections between them)
   // TODO: Ignore parts of street with no more connections? (this might make joins nicer)
