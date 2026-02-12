@@ -1,3 +1,19 @@
+2/12:
+
+Explore paths some more
+  - Make the code that checks how many links something has follow those links
+    - Recursively?
+    - Output the paths hit along the way (do we just need names, or from/to as well?)
+      - How do we know when we've reached end of path?
+        - When we reach another route that's part of the other street?
+
+CHECK IN: Create paths recursively
+
+Still need to merge intersections
+  - Easiest way to do this may be shared position, at least for now
+  - Combine intersection streets and distances when they have the same position
+  - ...then see what my path generating code does. Does output make sense?
+
 2/11:
 
 How to combine intersections with more than 2 streets?

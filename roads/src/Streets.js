@@ -221,26 +221,56 @@ export function levelFromStreets( streets ) {
             distances[ key ].toDistance = toDistance;
           } );
 
+          const paths = [];
+
+          function mooQuack( routeName, fromDistance, pathArray = [] ) {
+
+            if ( pathArray.length > 10 ) {
+              console.warn( 'too much recursion!' );
+              return;
+            }
+
+            const newArray = pathArray.concat( routeName );
+
+            const dists = distances[ routeName ];
+
+            // No dists means simple straight links (not even a curve between)
+            if ( !dists ) {
+              return;
+            }
+            
+            const links = level.routes[ routeName ].links?.filter( link => 
+              ( fromDistance ?? dists.fromDistance ) <= link.fromDistance && link.fromDistance <= dists.toDistance 
+            );
+
+            if ( links?.length > 0 ) {
+              mostLinks = Math.max( mostLinks, links?.length ?? 0 );
+
+              links.forEach( link => {
+                mooQuack( link.name, link.toDistance, newArray );
+              } );
+            }
+            else {
+              // console.log( 'No links, Saving path:' );
+              // console.log( newArray );
+              paths.push( newArray );
+              return;
+            }
+          }
+
           // Try to build paths, starting from streets involved
           let mostLinks = 0;
 
           [ nameOne, nameTwo ].forEach( streetName => {
             Object.entries( level.streetToRoutes[ streetName ] ).forEach( ( [ laneDir, routes ] ) => {
               routes.forEach( routeName => {
-                const dists = distances[ routeName ];
-
-                if ( !dists ) {
-                  return;
-                }
-                
-                const links = level.routes[ routeName ].links?.filter( link => dists.fromDistance <= link.fromDistance && link.fromDistance <= dists.toDistance );
-
-                console.log( `  ${ routeName }: ${ JSON.stringify( links ) }` );
-
-                mostLinks = Math.max( mostLinks, links?.length ?? 0 );
+                mooQuack( routeName );
               } );
             } );
           } );
+
+          console.log( `paths:` );
+          console.log( paths );
           
           console.log( `mostLinks = ${ mostLinks }` );
 
