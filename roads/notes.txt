@@ -1,3 +1,40 @@
+2/24:
+
+Intersection Paths
+  - Try generating these as we create the pairs
+
+Merge Intersections
+  - Do this before we trim anything out as "not a proper intersection"
+  - This should help us capture all paths for my 3-way intersection on the right
+
+Trim out "intersections" that are simple joins after this
+  - Count number of paths that start with each name? True intersection if any name starts 2 or more paths?
+
+2/17:
+
+Intersection thoughts:
+  - What we actually need to know
+    - earliest fromDistance for the straight routes of the intersection 
+      - (so we know where to stop to keep intersection clear)
+      - don't think we actually need to know the farthest toDistance on the other end
+    - paths
+      - can probably make this a list of name,from,to (like links)
+      - (will eventually want to know what paths to yield to, but worry about this later)
+      - should be able to build this as we go linking routes anyway
+  - Building routes
+    - Don't think we need recursion
+    - There's only 3 options
+      - 1 route (straight ahead)
+      - 2 routes (linked straight routes)
+      - 3 routes (straight, join, straight)
+    - I think we can make these when we link the routes, don't see how a separate step helps
+      - How do we handle the 2-route (linked straights)?
+        - Just add it to whatever intersection we are on now, it'll get merged later
+
+Merge intersections based on position
+  - Part of above
+  - Can potentially work on without changing paths yet, but may as well do paths first
+
 2/12:
 
 Explore paths some more
@@ -13,6 +50,24 @@ Still need to merge intersections
   - Easiest way to do this may be shared position, at least for now
   - Combine intersection streets and distances when they have the same position
   - ...then see what my path generating code does. Does output make sense?
+
+Do I need that separate recursion at all?
+  - Can I just build these paths while I'm making the joins? 
+  - Seems like I already have all the info I need when I'm linking them up...
+
+I should do the merging intersections by position before I throw any away for being just elbows
+  - There should be three intersections at 3,2 in my example, I think
+  - Two elbows, then the straight away of the curves linking
+  - I think I'm prematurely throwing away the straight away, which means they won't show up in intersection
+
+Focus of intersections should be:
+  1. collection of paths
+    - Maybe the distances info can go in here? 
+    - We may not care so much about the lowest from/highest to -- just the from/to for each part of path
+      - We can look up the other froms if needed from yield paths later
+  2. what schedule each path is on for open/closed
+  - Eventually, I might want to make lists of paths need to yield to which other paths
+    - Probably need this to build groups of routes that can go at same time
 
 2/11:
 

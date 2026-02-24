@@ -117,6 +117,8 @@ export function levelFromStreets( streets ) {
         const A = turn < 0 ? nameTwo : nameOne;
         const B = turn < 0 ? nameOne : nameTwo;
 
+        const intersectionPaths = [];
+
         function addPairs( streetNames, laneDirs ) {
           const fromLanesA = level.streetToRoutes[ streetNames[ 0 ] ][ laneDirs[ 0 ][ 0 ] ];
           const toLanesA   = level.streetToRoutes[ streetNames[ 1 ] ][ laneDirs[ 0 ][ 1 ] ];
@@ -145,7 +147,7 @@ export function levelFromStreets( streets ) {
           // console.log( 'Got best radius of ' + radius );
 
           if ( radius == null ) {
-            console.log( 'skipping pair, no acceptable radius found' );
+            // console.log( 'skipping pair, no acceptable radius found' );
             return false;
           }
 
@@ -158,6 +160,7 @@ export function levelFromStreets( streets ) {
               intersection,
               `#${ index }`,
               'lime',
+              intersectionPaths,
               fromDistances,
               toDistances,
             );
@@ -173,6 +176,7 @@ export function levelFromStreets( streets ) {
               intersection,
               `#${ index }`,
               'red',
+              intersectionPaths,
               fromDistances,
               toDistances,
             );
@@ -201,7 +205,10 @@ export function levelFromStreets( streets ) {
           numPairs ++;
         }
 
-        console.log( `numPairs = ${ numPairs }` );
+        // console.log( `numPairs = ${ numPairs }` );
+
+        console.log( 'intersectionPaths: ' );
+        console.log( intersectionPaths );
 
 
         // This is prematurely filtering out intersections that should be combined
@@ -259,22 +266,22 @@ export function levelFromStreets( streets ) {
           }
 
           // Try to build paths, starting from streets involved
-          let mostLinks = 0;
+          // let mostLinks = 0;
 
-          [ nameOne, nameTwo ].forEach( streetName => {
-            Object.entries( level.streetToRoutes[ streetName ] ).forEach( ( [ laneDir, routes ] ) => {
-              routes.forEach( routeName => {
-                mooQuack( routeName );
-              } );
-            } );
-          } );
+          // [ nameOne, nameTwo ].forEach( streetName => {
+          //   Object.entries( level.streetToRoutes[ streetName ] ).forEach( ( [ laneDir, routes ] ) => {
+          //     routes.forEach( routeName => {
+          //       mooQuack( routeName );
+          //     } );
+          //   } );
+          // } );
 
-          console.log( `paths:` );
-          console.log( paths );
+          // console.log( `paths:` );
+          // console.log( paths );
           
-          console.log( `mostLinks = ${ mostLinks }` );
+          // console.log( `mostLinks = ${ mostLinks }` );
 
-          if ( mostLinks > 1 ) {
+          // if ( mostLinks > 1 ) {
             const intersectionName = `${ nameOne }_vs_${ nameTwo }_#${ index }`;
             
             // console.log( intersectionName );
@@ -283,15 +290,55 @@ export function levelFromStreets( streets ) {
               streets: [ nameOne, nameTwo ],
               position: intersection,
               distances: distances,
+              paths: intersectionPaths,
             };
-          }
+          // }
         // }
       } );
     }
   }
 
+  console.log( 'Intersections:' );
   console.log( level.intersections );
 
+  const positionMap = new Map();
+
+  Object.entries( level.intersections ).forEach( ( [ name, intersection ] ) => {
+    const key = intersection.position.toString();
+
+    if ( !positionMap.has( key ) ) {
+      positionMap.set( key, {} );
+    }
+
+    positionMap.get( key )[ name ] = intersection;
+  } );
+
+  console.log( 'positionMap:' );
+  console.log( positionMap );
+
+  const grouped = {};
+
+  positionMap.values().forEach( group => {
+    const intersectionNames = [];
+    const streetNames = new Set();
+    const paths = [];
+
+    Object.entries( group ).forEach( ( [ name, intersection ] ) => {
+      intersectionNames.push( name );
+      intersection.streets.forEach( streetName => streetNames.add( streetName ) );
+      intersection.paths.forEach( path => paths.push( path ) );
+    } );
+
+    const intersectionName = intersectionNames.join( '+' );
+
+    grouped[ intersectionName ] = {
+      streets: new Array( streetNames ),
+      paths: paths,
+    };
+  } );
+
+  console.log( 'grouped:' );
+  console.log( grouped );
 
   // TODO: Make this based on distance remaining after last link again?
 
@@ -421,7 +468,10 @@ function getBestJoinRadius( fromRoute, toRoute, intersection, min, max ) {
   }
 }
 
-function joinRoutes( routes, fromName, toName, radius, intersection, intersectionName, debugColor, fromDistances, toDistances ) {
+// TODO: Rename "interseciton" to "closeTo" or "nearPoint" or something 
+// to avoid confusion with actual intersection object
+
+function joinRoutes( routes, fromName, toName, radius, intersection, intersectionName, debugColor, intersectionPaths, fromDistances, toDistances ) {
 
   // console.log( `\njoining route ${fromName} to ${ toName } at ${ intersection }` );
 
@@ -442,6 +492,8 @@ function joinRoutes( routes, fromName, toName, radius, intersection, intersectio
       fromDistance: Route.getLength( fromRoute ),
       toDistance: 0,
     } );
+
+    intersectionPaths.push( [ fromName, toName ] );
 
     return;
   }
@@ -483,6 +535,8 @@ function joinRoutes( routes, fromName, toName, radius, intersection, intersectio
     fromDistance: joinLength,
     toDistance: toDistance,
   } );
+
+  intersectionPaths.push( [ fromName, arcName, toName ] );
 
   joinRoute.arrowColor = debugColor;
 }
