@@ -92,6 +92,8 @@ export function levelFromStreets( streets ) {
   } );
 
   // Turns at intersections
+  const allIntersections = {};
+
   const streetNameList = Object.keys( streets );
 
   for ( let i = 0; i < streetNameList.length - 1; i ++ ) {
@@ -228,88 +230,30 @@ export function levelFromStreets( streets ) {
             distances[ key ].toDistance = toDistance;
           } );
 
-          // const paths = [];
-
-          // function mooQuack( routeName, fromDistance, pathArray = [] ) {
-
-          //   if ( pathArray.length > 10 ) {
-          //     console.warn( 'too much recursion!' );
-          //     return;
-          //   }
-
-          //   const newArray = pathArray.concat( routeName );
-
-          //   const dists = distances[ routeName ];
-
-          //   // No dists means simple straight links (not even a curve between)
-          //   if ( !dists ) {
-          //     return;
-          //   }
-            
-          //   const links = level.routes[ routeName ].links?.filter( link => 
-          //     ( fromDistance ?? dists.fromDistance ) <= link.fromDistance && link.fromDistance <= dists.toDistance 
-          //   );
-
-          //   if ( links?.length > 0 ) {
-          //     mostLinks = Math.max( mostLinks, links?.length ?? 0 );
-
-          //     links.forEach( link => {
-          //       mooQuack( link.name, link.toDistance, newArray );
-          //     } );
-          //   }
-          //   else {
-          //     // console.log( 'No links, Saving path:' );
-          //     // console.log( newArray );
-          //     paths.push( newArray );
-          //     return;
-          //   }
-          // }
-
-          // Try to build paths, starting from streets involved
-          // let mostLinks = 0;
-
-          // [ nameOne, nameTwo ].forEach( streetName => {
-          //   Object.entries( level.streetToRoutes[ streetName ] ).forEach( ( [ laneDir, routes ] ) => {
-          //     routes.forEach( routeName => {
-          //       mooQuack( routeName );
-          //     } );
-          //   } );
-          // } );
-
-          // console.log( `paths:` );
-          // console.log( paths );
+          const intersectionName = `${ nameOne }_vs_${ nameTwo }_#${ index }`;
           
-          // console.log( `mostLinks = ${ mostLinks }` );
-
-          // if ( mostLinks > 1 ) {
-            const intersectionName = `${ nameOne }_vs_${ nameTwo }_#${ index }`;
-            
-            // console.log( intersectionName );
-            
-            level.intersections[ intersectionName ] = {
-              streets: [ nameOne, nameTwo ],
-              position: intersection,
-              distances: distances,
-              paths: intersectionPaths.map( path =>
-                path.map( name => ( {
-                  name: name,
-                  fromDistance: distances[ name ].fromDistance,
-                  toDistance: distances[ name ].toDistance,
-                } ) )
-              ),
-            };
-          // }
-        // }
+          allIntersections[ intersectionName ] = {
+            streets: [ nameOne, nameTwo ],
+            position: intersection,
+            distances: distances,
+            paths: intersectionPaths.map( path =>
+              path.map( name => ( {
+                name: name,
+                fromDistance: distances[ name ].fromDistance,
+                toDistance: distances[ name ].toDistance,
+              } ) )
+            ),
+          };
       } );
     }
   }
 
-  console.log( 'Intersections:' );
-  console.log( level.intersections );
+  console.log( 'allIntersections:' );
+  console.log( allIntersections );
 
   const positionMap = new Map();
 
-  Object.entries( level.intersections ).forEach( ( [ name, intersection ] ) => {
+  Object.entries( allIntersections ).forEach( ( [ name, intersection ] ) => {
     const key = intersection.position.toString();
 
     if ( !positionMap.has( key ) ) {
@@ -322,31 +266,47 @@ export function levelFromStreets( streets ) {
   console.log( 'positionMap:' );
   console.log( positionMap );
 
-  const grouped = {};
-
   positionMap.values().forEach( group => {
     const intersectionNames = [];
     const streetNames = new Set();
+    let position;
     const paths = [];
 
     Object.entries( group ).forEach( ( [ name, intersection ] ) => {
       intersectionNames.push( name );
       intersection.streets.forEach( streetName => streetNames.add( streetName ) );
+      position = intersection.position;
       intersection.paths.forEach( path => paths.push( path ) );
     } );
 
-    const intersectionName = intersectionNames.join( '+' );
+    // Only include intersection if there's a route that starts more than 1 path
+    const startCount = {};
+    let bestCount = 0;
 
-    grouped[ intersectionName ] = {
-      streets: new Array( streetNames ),
-      paths: paths,
-    };
+    paths.forEach( path => {
+      const name = path[ 0 ].name;
+      startCount[ name ] ??= 0;
+      startCount[ name ] ++;
+
+      if ( startCount[ name ] > bestCount ) {
+        bestCount = startCount[ name ];
+      }
+    } );
+
+    if ( bestCount > 1 ) { 
+      const intersectionName = intersectionNames.join( '+' );
+      
+      level.intersections[ intersectionName ] = {
+        streets: new Array( streetNames ),
+        position: position,
+        paths: paths,
+      };
+    }
   } );
 
-  console.log( 'grouped:' );
-  console.log( grouped );
+  console.log( 'level.intersections:' );
+  console.log( level.intersections );
 
-  
 
   // TODO: Make this based on distance remaining after last link again?
 

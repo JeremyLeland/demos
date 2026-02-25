@@ -57,11 +57,11 @@ const streets = {
     lanes: { left: 1, right: 1 },
   },
   
-  // Down: {
-  //   start: [ -1, 0 ],
-  //   end: [ -1, 5 ],
-  //   lanes: { left: 1, right: 1 },
-  // },
+  Down: {
+    start: [ -1, 0 ],
+    end: [ -1, 5 ],
+    lanes: { left: 1, right: 1 },
+  },
   
   Right: {
     start: [ -6, 2 ],
@@ -69,41 +69,41 @@ const streets = {
     lanes: { left: 1, right: 1 },
   },
   
-  // A: {
-  //   start: [ -4, -4 ],
-  //   end: [ 0, -4 ],
-  //   lanes: { left: 1, right: 1 },
-  // },
+  A: {
+    start: [ -4, -4 ],
+    end: [ 0, -4 ],
+    lanes: { left: 1, right: 1 },
+  },
   
-  // B: {
-  //   start: [ 0, -4 ],
-  //   end: [ 4, -4 ],
-  //   lanes: { left: 1, right: 1 },
-  // },
+  B: {
+    start: [ 0, -4 ],
+    end: [ 4, -4 ],
+    lanes: { left: 1, right: 1 },
+  },
 
-  // C: {
-  //   end: [ -4, -1 ],
-  //   start: [ 0, -1 ],
-  //   lanes: { left: 1, right: 1 },
-  // },
+  C: {
+    end: [ -4, -1 ],
+    start: [ 0, -1 ],
+    lanes: { left: 1, right: 1 },
+  },
   
-  // D: {
-  //   start: [ 0, -1 ],
-  //   end: [ 4, -1 ],
-  //   lanes: { left: 1, right: 1 },
-  // },
+  D: {
+    start: [ 0, -1 ],
+    end: [ 4, -1 ],
+    lanes: { left: 1, right: 1 },
+  },
   
-  // E: {
-  //   start: [ -4, -4 ],
-  //   end: [ -4, -1 ],
-  //   lanes: { left: 1, right: 1 },
-  // },
+  E: {
+    start: [ -4, -4 ],
+    end: [ -4, -1 ],
+    lanes: { left: 1, right: 1 },
+  },
   
-  // F: {
-  //   start: [ 4, -4 ],
-  //   end: [ 4, -1 ],
-  //   lanes: { left: 1, right: 1 },
-  // },
+  F: {
+    start: [ 4, -4 ],
+    end: [ 4, -1 ],
+    lanes: { left: 1, right: 1 },
+  },
 };
 
 
@@ -317,10 +317,11 @@ canvas.draw = ( ctx ) => {
     ctx.fillStyle = colors[ index % colors.length ];
     drawPoint( ctx, intersection.position, 0.1 );
 
-    Object.entries( intersection.distances ).forEach( ( [ routeName, dists ] ) => {
-      const route = level.routes[ routeName ];
-      drawRoute( ctx, route, dists.fromDistance, dists.toDistance );
-    } );
+    intersection.paths.forEach( path => {
+      path.forEach( routeInfo => {
+        drawRoute( ctx, level.routes[ routeInfo.name ], routeInfo.fromDistance, routeInfo.toDistance );
+      } );
+    })
   } );
 
   // TODO: Draw outline of streets based on the routes (and connections between them)
