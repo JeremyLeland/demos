@@ -10,6 +10,28 @@ Merge Intersections
 Trim out "intersections" that are simple joins after this
   - Count number of paths that start with each name? True intersection if any name starts 2 or more paths?
 
+I'm not awake enough to work on this now
+  - Checked in a list of route names, but I think I need some distances
+  - Tried setting from and to distances, but I'm getting undefineds
+    - What should these be for a simple join of two lines?
+    - The same value for both, since it's infinitely small?
+    - I've got undefineds in the 3-way intersection too...
+      - figure out what these should be when I can properly think
+
+The whole from/to distance thing is starting to feel really cumbersome
+  - The other option is to have each route only have links at the end
+    - ...which involves breaking up the routes at every link
+      - In the past, I thought this was more complicated
+        - since it requires updating previously generated links
+      - But dealing with the from/to business makes a lot of other things more complicated
+        - Drawing, for one, since I can't just have a list of undrawn routes
+          - Each route can have multiple pieces connected at different points
+        - Every reference to a route has to also specify the from/to
+          - These structures could be a lot cleaner if routes were pre-broken up
+  - PLAN: Try to finish the intersection work with from/to as is
+    - Then merge it back into main
+      - Then make a new branch to explore splitting up the routes so links are only at end
+
 2/17:
 
 Intersection thoughts:

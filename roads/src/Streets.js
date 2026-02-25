@@ -228,42 +228,42 @@ export function levelFromStreets( streets ) {
             distances[ key ].toDistance = toDistance;
           } );
 
-          const paths = [];
+          // const paths = [];
 
-          function mooQuack( routeName, fromDistance, pathArray = [] ) {
+          // function mooQuack( routeName, fromDistance, pathArray = [] ) {
 
-            if ( pathArray.length > 10 ) {
-              console.warn( 'too much recursion!' );
-              return;
-            }
+          //   if ( pathArray.length > 10 ) {
+          //     console.warn( 'too much recursion!' );
+          //     return;
+          //   }
 
-            const newArray = pathArray.concat( routeName );
+          //   const newArray = pathArray.concat( routeName );
 
-            const dists = distances[ routeName ];
+          //   const dists = distances[ routeName ];
 
-            // No dists means simple straight links (not even a curve between)
-            if ( !dists ) {
-              return;
-            }
+          //   // No dists means simple straight links (not even a curve between)
+          //   if ( !dists ) {
+          //     return;
+          //   }
             
-            const links = level.routes[ routeName ].links?.filter( link => 
-              ( fromDistance ?? dists.fromDistance ) <= link.fromDistance && link.fromDistance <= dists.toDistance 
-            );
+          //   const links = level.routes[ routeName ].links?.filter( link => 
+          //     ( fromDistance ?? dists.fromDistance ) <= link.fromDistance && link.fromDistance <= dists.toDistance 
+          //   );
 
-            if ( links?.length > 0 ) {
-              mostLinks = Math.max( mostLinks, links?.length ?? 0 );
+          //   if ( links?.length > 0 ) {
+          //     mostLinks = Math.max( mostLinks, links?.length ?? 0 );
 
-              links.forEach( link => {
-                mooQuack( link.name, link.toDistance, newArray );
-              } );
-            }
-            else {
-              // console.log( 'No links, Saving path:' );
-              // console.log( newArray );
-              paths.push( newArray );
-              return;
-            }
-          }
+          //     links.forEach( link => {
+          //       mooQuack( link.name, link.toDistance, newArray );
+          //     } );
+          //   }
+          //   else {
+          //     // console.log( 'No links, Saving path:' );
+          //     // console.log( newArray );
+          //     paths.push( newArray );
+          //     return;
+          //   }
+          // }
 
           // Try to build paths, starting from streets involved
           // let mostLinks = 0;
@@ -290,7 +290,13 @@ export function levelFromStreets( streets ) {
               streets: [ nameOne, nameTwo ],
               position: intersection,
               distances: distances,
-              paths: intersectionPaths,
+              paths: intersectionPaths.map( path =>
+                path.map( name => ( {
+                  name: name,
+                  fromDistance: distances[ name ].fromDistance,
+                  toDistance: distances[ name ].toDistance,
+                } ) )
+              ),
             };
           // }
         // }
@@ -339,6 +345,8 @@ export function levelFromStreets( streets ) {
 
   console.log( 'grouped:' );
   console.log( grouped );
+
+  
 
   // TODO: Make this based on distance remaining after last link again?
 
@@ -486,12 +494,26 @@ function joinRoutes( routes, fromName, toName, radius, intersection, intersectio
 
   // If not an arc, then already joined, just need to link them up
   if ( joinRoute.center == null ) {
+    const fromDistance = Route.getLength( fromRoute );
+    const toDistance = 0;
+
     fromRoute.links ??= [];
     fromRoute.links.push( {
       name: toName,
-      fromDistance: Route.getLength( fromRoute ),
-      toDistance: 0,
+      fromDistance: fromDistance,
+      toDistance: toDistance,
     } );
+
+    // Update intersection distances
+    // TODO: Just do this in one place in function?
+    if ( !fromDistances.has( fromName ) || fromDistance < fromDistances.get( fromName ) ) {
+      fromDistances.set( fromName, fromDistance );
+    }
+    
+    if ( !toDistances.has( toName ) || toDistances.get( toName ) < toDistance ) {
+      toDistances.set( toName, toDistance );
+    }
+
 
     intersectionPaths.push( [ fromName, toName ] );
 
