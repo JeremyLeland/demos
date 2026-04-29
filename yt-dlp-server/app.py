@@ -8,16 +8,29 @@ import json
 app = Flask(__name__)
 progress_queue = queue.Queue()
 
-def run_yt_dlp(url):
+def run_yt_dlp(url,audio):
+    cmd = ['yt-dlp']
+
+    if audio:
+        cmd += [ '--extract-audio', '--audio-format', 'm4a' ]
+    
+    cmd += [
+        '-P', 'temp:/tmp/',
+        '-P', '/mnt/external/!!! Olivia !!!/Downloads/',
+        url
+    ]
+
     process = subprocess.Popen(
-        ['yt-dlp', '-P', 'temp:/tmp/', '-P', '/mnt/external/!!! Olivia !!!/Downloads/', url],
+        cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
         bufsize=1
     )
+
     for line in process.stdout:
         progress_queue.put(line.strip())
+
     process.stdout.close()
     process.wait()
     progress_queue.put('[DONE]')
@@ -30,7 +43,8 @@ def index():
 def start_download():
     data = request.get_json()
     url = data['url']
-    threading.Thread(target=run_yt_dlp, args=(url,), daemon=True).start()
+    audio = data['audio']
+    threading.Thread(target=run_yt_dlp, args=(url,audio,), daemon=True).start()
     return jsonify({'status': 'started'})
 
 @app.route('/progress')

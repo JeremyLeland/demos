@@ -20,7 +20,7 @@
       display: flex;
     }
 
-    input {
+    input[ type='text'] {
       flex-grow: 1;
     }
 
@@ -35,6 +35,8 @@
   <div class="container">
     <form id="download-form">
       <input type="text" id="url" placeholder="Enter video URL" required>
+      <input type="checkbox" id="audio" name="audio" value="Audio Only">
+      <label for="audio"> Audio Only</label>
       <button type="submit">Download</button>
     </form>
     
@@ -45,11 +47,12 @@
     document.getElementById('download-form').addEventListener('submit', function(e) {
       e.preventDefault();
       const url = document.getElementById('url').value;
+      const audio = document.getElementById('audio').checked;
 
       fetch('/start_download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url })
+          body: JSON.stringify({ url, audio })
       });
 
       const progressElem = document.getElementById('progress');
