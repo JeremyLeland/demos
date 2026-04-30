@@ -36,7 +36,9 @@
     <form id="download-form">
       <input type="text" id="url" placeholder="Enter video URL" required>
       <input type="checkbox" id="audio" name="audio" value="Audio Only">
-      <label for="audio"> Audio Only</label>
+      <label for="audio">Audio Only</label>
+      <input type="checkbox" id="chapters" name="chapters" value="Chapters">
+      <label for="chapters">Chapters</label>
       <button type="submit">Download</button>
     </form>
     
@@ -48,11 +50,12 @@
       e.preventDefault();
       const url = document.getElementById('url').value;
       const audio = document.getElementById('audio').checked;
+      const chapters = document.getElementById('chapters').checked;
 
       fetch('/start_download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url, audio })
+          body: JSON.stringify({ url, audio, chapters })
       });
 
       const progressElem = document.getElementById('progress');

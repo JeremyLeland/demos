@@ -8,11 +8,15 @@ import json
 app = Flask(__name__)
 progress_queue = queue.Queue()
 
-def run_yt_dlp(url,audio):
+def run_yt_dlp(url,audio,chapters):
     cmd = ['yt-dlp']
 
     if audio:
-        cmd += [ '--extract-audio', '--audio-format', 'm4a' ]
+        #cmd += [ '--extract-audio', '--audio-format', 'm4a' ]
+        cmd += [ '-f 140' ]
+
+    if chapters:
+        cmd += [ '--split-chapters', '-o', 'chapter:%(title)s/%(section_number)02d - %(section_title)s.%(ext)s' ]
     
     cmd += [
         '-P', 'temp:/tmp/',
@@ -44,7 +48,8 @@ def start_download():
     data = request.get_json()
     url = data['url']
     audio = data['audio']
-    threading.Thread(target=run_yt_dlp, args=(url,audio,), daemon=True).start()
+    chapters = data['chapters']
+    threading.Thread(target=run_yt_dlp, args=(url,audio,chapters,), daemon=True).start()
     return jsonify({'status': 'started'})
 
 @app.route('/progress')
