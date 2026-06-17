@@ -10,6 +10,7 @@ const Constants = {
   },
 }
 
+const TWO_PI = Math.PI * 2;
 const PI_2 = Math.PI / 2;
 
 const spinnerPath = new Path2D();
@@ -94,6 +95,20 @@ gameCanvas.draw = ( ctx ) => {
   ctx.restore();
 
 
+  // Colors
+  const ColorOffset = 3.5;
+  const ColorRadius = ColorOffset * TWO_PI / 32;
+
+  const Colors = [ 'red', 'green', 'yellow', 'blue' ];
+
+  for ( let i = 0; i < 16; i ++ ) {
+    const angle = i * TWO_PI / 16 + TWO_PI / 32;
+
+    ctx.beginPath();
+    ctx.arc( Math.cos( angle ) * ColorOffset, Math.sin( angle ) * ColorOffset, ColorRadius, 0, TWO_PI );
+    ctx.fillStyle = Colors[ i % 4 ];
+    ctx.fill();
+  }
 
   ctx.rotate( spinner.angle );
 
