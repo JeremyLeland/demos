@@ -34,6 +34,63 @@ gameCanvas.update = ( dt ) => {
 
 gameCanvas.draw = ( ctx ) => {
 
+  ctx.font = '0.5px Arial';
+  ctx.fillStyle = 'black';
+
+  const TextOffset = 4.75;
+  ctx.textBaseline = 'hanging';   // 'top' to low in FF
+  ctx.textAlign = 'left';
+  ctx.fillText( 'Left Foot',  -TextOffset, -TextOffset );
+  ctx.textAlign = 'right';
+  ctx.fillText( 'Right Hand',  TextOffset, -TextOffset );
+
+  ctx.textBaseline = 'alphabetic';  // 'bottom' too high in FF
+  ctx.textAlign = 'left';
+  ctx.fillText( 'Left Hand', -TextOffset,  TextOffset );
+  ctx.textAlign = 'right';
+  ctx.fillText( 'Right Foot',   TextOffset,  TextOffset );
+
+
+  ctx.font = '1.5px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const IconOffset = 3.5;
+
+  // Left foot
+  ctx.save(); {
+    ctx.translate( -IconOffset, -IconOffset );
+    ctx.rotate( -Math.PI / 4 );
+    ctx.scale( -1, 1 );
+    ctx.fillText( '🦶', 0, 0 );
+  }
+  ctx.restore();
+
+  // Right hand
+  ctx.save(); {
+    ctx.translate( IconOffset, -IconOffset );
+    ctx.rotate( Math.PI / 4 );
+    ctx.fillText( '🖐️', 0, 0 );
+  }
+  ctx.restore();
+
+  // Left hand
+  ctx.save(); {
+    ctx.translate( -IconOffset, IconOffset );
+    ctx.rotate( -Math.PI / 4 );
+    ctx.scale( -1, 1 );
+    ctx.fillText( '🖐️', 0, 0 );
+  }
+  ctx.restore();
+
+  // Right foot
+  ctx.save(); {
+    ctx.translate( IconOffset, IconOffset );
+    ctx.rotate( -Math.PI * 0.09 );
+    ctx.fillText( '🦶', 0, 0 );
+  }
+  ctx.restore();
+
   ctx.rotate( spinner.angle );
 
   ctx.fillStyle = 'black';

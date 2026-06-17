@@ -1,3 +1,12 @@
+6/17:
+
+DONE: Spin randomly with click
+
+Draw board (simple for now)
+
+Eventually, make it spin enough to hit a given value (randomly determined in advance)
+  - This lets us make sure it doesn't land on one we already have chosen
+
 6/16:
 
 Twister spinner idea
