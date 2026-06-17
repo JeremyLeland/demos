@@ -23,8 +23,13 @@ const gameCanvas = new GameCanvas();
 gameCanvas.backgroundColor = 'white';
 
 gameCanvas.update = ( dt ) => {
-  spinner.angleVel = Math.max( 0, spinner.angleVel + spinner.angleAccel * dt );
-  spinner.angle += spinner.angleVel * dt;
+  spinner.angle += spinner.angleVel * dt + spinner.angleAccel * dt * dt / 2;
+  spinner.angleVel += spinner.angleAccel * dt;
+
+  if ( spinner.angleVel < 0 ) {
+    spinner.angleVel = 0;
+    gameCanvas.stop();
+  }
 }
 
 gameCanvas.draw = ( ctx ) => {
