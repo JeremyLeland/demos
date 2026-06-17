@@ -1,0 +1,5 @@
+6/16:
+
+Twister spinner idea
+- Start with a triangle that spins continuously
+- Then try one that starts fast and slows to a stop

@@ -1,0 +1,19 @@
+<style>
+  @keyframes spin {
+    from {
+      transform: rotate( 0deg );
+    }
+    to {
+      transform: rotate( 500deg );
+    }
+  }
+
+  .spinning {
+    display: inline-block;
+    animation: spin 2s ease-out;
+  }
+</style>
+
+<body>
+  <div class="spinning" style="position: absolute; width: 10px; height: 100px; background: black" id="spinner"></div>
+</body>
