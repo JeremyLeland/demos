@@ -2,17 +2,19 @@ import { GameCanvas } from './GameCanvas.js';
 
 const Constants = {
   Spinner: {
-    Radius: 0.5,
-    Length: 5,
+    TipRadius: 0.1,
+    BaseRadius: 0.5,
+    TipLength: 4,
+    BaseLength: 2.5,
     AngleAccel: -0.000005,
   },
 }
 
+const PI_2 = Math.PI / 2;
+
 const spinnerPath = new Path2D();
-spinnerPath.moveTo( Constants.Spinner.Length, 0 );
-spinnerPath.lineTo( 0, Constants.Spinner.Radius );
-spinnerPath.arc( 0, 0, Constants.Spinner.Radius, Math.PI / 2, -Math.PI / 2 );
-spinnerPath.closePath();
+spinnerPath.arc( Constants.Spinner.TipLength, 0, Constants.Spinner.TipRadius, -PI_2, PI_2 );
+spinnerPath.arc( -Constants.Spinner.BaseLength, 0, Constants.Spinner.BaseRadius, PI_2, -PI_2 );
 
 const spinner = {
   angle: 0,
@@ -90,6 +92,8 @@ gameCanvas.draw = ( ctx ) => {
     ctx.fillText( '🦶', 0, 0 );
   }
   ctx.restore();
+
+
 
   ctx.rotate( spinner.angle );
 
