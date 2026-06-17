@@ -4,6 +4,7 @@ const Constants = {
   Spinner: {
     Radius: 0.5,
     Length: 5,
+    AngleAccel: -0.000005,
   },
 }
 
@@ -15,19 +16,18 @@ spinnerPath.closePath();
 
 const spinner = {
   angle: 0,
-  angleVel: 0.025,
-  angleAccel: -0.000005,
+  dAngle: 0,
 }
 
 const gameCanvas = new GameCanvas();
 gameCanvas.backgroundColor = 'white';
 
 gameCanvas.update = ( dt ) => {
-  spinner.angle += spinner.angleVel * dt + spinner.angleAccel * dt * dt / 2;
-  spinner.angleVel += spinner.angleAccel * dt;
+  spinner.angle += spinner.dAngle * dt + Constants.Spinner.AngleAccel * dt * dt / 2;
+  spinner.dAngle += Constants.Spinner.AngleAccel * dt;
 
-  if ( spinner.angleVel < 0 ) {
-    spinner.angleVel = 0;
+  if ( spinner.dAngle < 0 ) {
+    spinner.dAngle = 0;
     gameCanvas.stop();
   }
 }
@@ -41,3 +41,12 @@ gameCanvas.draw = ( ctx ) => {
 }
 
 gameCanvas.start();
+
+//
+// Input
+//
+
+gameCanvas.pointerDown = ( m ) => {
+  spinner.dAngle = 0.01 + Math.random() * 0.015;
+  gameCanvas.start();
+}
