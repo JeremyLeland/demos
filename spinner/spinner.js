@@ -1,3 +1,4 @@
+import * as Angle from './Angle.js';
 import { GameCanvas } from './GameCanvas.js';
 
 const Constants = {
@@ -123,6 +124,9 @@ gameCanvas.start();
 //
 
 gameCanvas.pointerDown = ( m ) => {
-  spinner.dAngle = 0.01 + Math.random() * 0.015;
+  const goalAngle = Math.atan2( m.y, m.x );
+  const sweepAngle = Angle.sweepAngle( spinner.angle, goalAngle );
+  spinner.dAngle = Math.sqrt( -2 * Constants.Spinner.AngleAccel * sweepAngle );
+
   gameCanvas.start();
 }

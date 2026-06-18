@@ -3,9 +3,19 @@
 DONE: Spin randomly with click
 
 Draw board (simple for now)
+ - Labels, icons, colors DONE
+ - Needs black lines to separate limbs
 
 Eventually, make it spin enough to hit a given value (randomly determined in advance)
   - This lets us make sure it doesn't land on one we already have chosen
+  - To verify it's working, it should land exactly in the middle of the chosen value
+  - Later, to make it look at little better, give it some random offset (but still be near middle)
+
+Keep track of chosen color for each limb
+  - Mark with black circle? Or something
+
+DONE: Spin to specified point
+  - Figure out starting velocity by putting deltaAngle into equations of motion
 
 6/16:
 
