@@ -123,9 +123,14 @@ gameCanvas.start();
 // Input
 //
 
+const MinSpins = 1;
+const MaxSpins = 3;
+
 gameCanvas.pointerDown = ( m ) => {
+  const numSpins = Math.round( MinSpins + Math.random() * ( MaxSpins - MinSpins ) );
+
   const goalAngle = Math.atan2( m.y, m.x );
-  const sweepAngle = Angle.sweepAngle( spinner.angle, goalAngle );
+  const sweepAngle = Angle.sweepAngle( spinner.angle, goalAngle ) + numSpins * TWO_PI;
   spinner.dAngle = Math.sqrt( -2 * Constants.Spinner.AngleAccel * sweepAngle );
 
   gameCanvas.start();
