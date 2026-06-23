@@ -171,8 +171,6 @@ gameCanvas.draw = ( ctx ) => {
   ctx.fill( spinnerPath );
 }
 
-gameCanvas.start();
-
 //
 // Input
 //
