@@ -1,3 +1,19 @@
+6/22:
+  - Choose random limb/color (number 0-15)
+    - Limbs: right foot, left hand, left food, right hand (clockwise from angle 0)
+    - Colors: red, green, yellow, blue
+  - Eventually keep track of which color for each limb, and don't choose it again
+
+6/18:
+
+Idea: Create SVG path editor
+  - To help me trace the jpeg's of twister boards
+  - Create lines, then drag control points?
+  - Try to get a curve from the average of a bunch of hand-drawn lines (delta's)?
+  - Play with some different ideas here
+  - Draw all the points and control points in a given path, let user drag them around
+    - or edit string manually, and show result
+
 6/17:
 
 DONE: Spin randomly with click

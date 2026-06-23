@@ -9,7 +9,19 @@ const Constants = {
     BaseLength: 2.5,
     AngleAccel: -0.000005,
   },
-}
+  Limbs: [
+    'right foot',
+    'left hand',
+    'left foot',
+    'right hand',
+  ],
+  Colors: [
+    'red',
+    'green',
+    'yellow',
+    'blue',
+  ],
+};
 
 const TWO_PI = Math.PI * 2;
 const PI_2 = Math.PI / 2;
@@ -100,14 +112,11 @@ gameCanvas.draw = ( ctx ) => {
   const ColorOffset = 3.5;
   const ColorRadius = ColorOffset * TWO_PI / 32;
 
-  const Colors = [ 'red', 'green', 'yellow', 'blue' ];
-
   for ( let i = 0; i < 16; i ++ ) {
-    const angle = i * TWO_PI / 16 + TWO_PI / 32;
-
+    const angle = getAngleForIndex( i );
     ctx.beginPath();
     ctx.arc( Math.cos( angle ) * ColorOffset, Math.sin( angle ) * ColorOffset, ColorRadius, 0, TWO_PI );
-    ctx.fillStyle = Colors[ i % 4 ];
+    ctx.fillStyle = Constants.Colors[ i % 4 ];
     ctx.fill();
   }
 
@@ -127,11 +136,27 @@ const MinSpins = 1;
 const MaxSpins = 3;
 
 gameCanvas.pointerDown = ( m ) => {
+
+  const roll = Math.floor( Math.random() * 16 );
+
+  const limb = Math.floor( roll / 4 );
+  const color = roll % 4;
+
+  console.log( roll, Constants.Limbs[ limb ], Constants.Colors[ color ] );
+
+  // const goalAngle = Math.atan2( m.y, m.x );
+  const goalAngle = getAngleForIndex( roll );
+
   const numSpins = Math.round( MinSpins + Math.random() * ( MaxSpins - MinSpins ) );
 
-  const goalAngle = Math.atan2( m.y, m.x );
   const sweepAngle = Angle.sweepAngle( spinner.angle, goalAngle ) + numSpins * TWO_PI;
+
+  // Find initial velocity to reach desired sweepAngle using equations of motion
   spinner.dAngle = Math.sqrt( -2 * Constants.Spinner.AngleAccel * sweepAngle );
 
   gameCanvas.start();
+}
+
+function getAngleForIndex( i ) {
+  return i * TWO_PI / 16 + TWO_PI / 32;
 }
