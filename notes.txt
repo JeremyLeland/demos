@@ -1,8 +1,9 @@
 6/22:
-  - Choose random limb/color (number 0-15)
+  - DONE: Choose random limb/color (number 0-15)
     - Limbs: right foot, left hand, left food, right hand (clockwise from angle 0)
     - Colors: red, green, yellow, blue
-  - Eventually keep track of which color for each limb, and don't choose it again
+  - DONE: Eventually keep track of which color for each limb
+    - NEXT: ...and don't choose it again
 
 6/18:
 
