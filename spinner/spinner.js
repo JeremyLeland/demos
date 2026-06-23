@@ -182,15 +182,8 @@ const MaxSpins = 3;
 
 gameCanvas.pointerDown = ( m ) => {
 
-  const roll = Math.floor( Math.random() * NumLimbs * NumColors );
-
-  const limb = Math.floor( roll / NumColors );
-  const color = roll % NumColors;
-
-  // console.log( roll, Constants.Limbs[ limb ], Constants.Colors[ color ] );
-
   // const goalAngle = Math.atan2( m.y, m.x );
-  const goalAngle = getAngleForIndex( roll );
+  const goalAngle = getAngleForIndex( roll() );
 
   const numSpins = Math.round( MinSpins + Math.random() * ( MaxSpins - MinSpins ) );
 
@@ -200,6 +193,24 @@ gameCanvas.pointerDown = ( m ) => {
   spinner.dAngle = Math.sqrt( -2 * Constants.Spinner.AngleAccel * sweepAngle );
 
   gameCanvas.start();
+}
+
+function roll() {
+  for ( let retries = 0; retries < 100; retries ++ ) {
+    const roll = Math.floor( Math.random() * NumLimbs * NumColors );
+
+    const limb = Math.floor( roll / NumColors );
+    const color = roll % NumColors;
+
+    if ( limbColors[ limb ] === color ) {
+      console.log( `${ Constants.Limbs[ limb ] } is already ${ Constants.Colors[ color ] }, re-rolling (attempt ${ retries + 1 })` );
+    }
+    else {
+      return roll;
+    }
+  }
+
+  console.warn( 'Failed to get unique roll after 100 attempts!' );
 }
 
 function getAngleForIndex( i ) {
