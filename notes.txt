@@ -2,6 +2,16 @@
 6/23:
   - DONE: Re-roll if limb color already active
 
+  - Start playing with SVG path editor
+    - Begin with points
+    - Add control points?
+      - I could click on line and drag out to circle, that looked good with arcs
+      - Not sure how it would look for bezier curves
+    - Save path as list of tokens (so we can more easily insert, delete, etc)
+      - Flatten to an actual string when saving it
+
+  - DONE: Starting with a set of lines and curves that can have their points and control points moved
+
 6/22:
   - DONE: Choose random limb/color (number 0-15)
     - Limbs: right foot, left hand, left food, right hand (clockwise from angle 0)
