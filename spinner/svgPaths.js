@@ -14,8 +14,9 @@ const TWO_PI = Math.PI * 2;
 const PI_2 = Math.PI / 2;
 
 const gameCanvas = new GameCanvas();
-gameCanvas.backgroundColor = 'gray';
+gameCanvas.backgroundColor = '#123';
 
+let hover = null;
 let selected = null;
 
 gameCanvas.draw = ( ctx ) => {
@@ -47,6 +48,13 @@ gameCanvas.draw = ( ctx ) => {
       drawPoint( ctx, part[ 2 ] );
     }
   } );
+
+  if ( hover ) {
+    const point = hover.point ?? path[ hover.partIndex ][ hover.pointIndex ];
+
+    ctx.fillStyle = hover.point ? 'purple' : '#fff8';
+    drawPoint( ctx, point );
+  }
 
   if ( selected ) {
     ctx.fillStyle = '#fff8';
@@ -86,6 +94,8 @@ function drawPoint( ctx, p, radius = 0.05 ) {
 //
 
 gameCanvas.pointerDown = ( m ) => {
+
+  /*
   // Find closest point
   const closest = {
     partIndex: null,
@@ -108,9 +118,45 @@ gameCanvas.pointerDown = ( m ) => {
   } );
 
   selected = closest.dist < 0.1 ? closest : null;
+  */
+
+  // For now, just test creating and moving control points
+  // Add endpoints back in (hover should differentiate between existing and potential points)
+
+  if ( hover ) {
+
+    // If we're hovering over a potential new control point, add it to part and select it
+    if ( hover.point ) {
+      const part = path[ hover.partIndex ];
+      const controlPointIndex = part.length - 1;
+
+      // Upgrade from line -> quadratic bezier -> cubic bezier
+      if ( part[ 0 ] === 'L' ) {
+        part[ 0 ] = 'Q';
+      }
+      else if ( part[ 0 ] === 'Q' ) {
+        part[ 0 ] = 'C';
+      }
+
+      part.splice( controlPointIndex, 0, hover.point );
+
+      selected = {
+        partIndex: hover.partIndex,
+        pointIndex: controlPointIndex,
+        // dist not needed
+      };
+    }
+    else {
+      selected = hover;
+    }
+
+    hover = null;
+  }
 
   gameCanvas.redraw();
 }
+
+const SelectDist = 0.2;
 
 gameCanvas.pointerMove = ( m ) => {
   if ( selected ) {
@@ -118,6 +164,63 @@ gameCanvas.pointerMove = ( m ) => {
 
     point[ 0 ] += m.dx;
     point[ 1 ] += m.dy;
+  }
+  else {
+    const closest = {
+      partIndex: null,
+      pointIndex: null,
+      point: null,
+      dist: SelectDist,
+    }
+
+    // Find closest existing point
+    path.forEach( ( part, partIndex ) => {
+      part.forEach( ( point, pointIndex ) => {
+        if ( pointIndex > 0 ) {
+          const dist = Math.hypot( m.x - point[ 0 ], m.y - point[ 1 ] );
+
+          if ( dist < closest.dist ) {
+            closest.partIndex = partIndex;
+            closest.pointIndex = pointIndex;
+            closest.dist = dist;
+          }
+        }
+      } );
+    } );
+
+    // If no existing points close enough, look for closest potential control point (on lines/curves)
+    if ( closest.dist >= SelectDist ) {
+      for ( let i = 0; i < path.length - 1; i ++ ) {
+        const A = path[ i ].at( -1 );
+
+        // TODO: Handle Z loop (use path[ 0 ] point)
+        // TODO: Also, if it's a Z and we're adding control points, it'll need to be changed to actual point
+        // TODO: If next part is M, we should skip
+        const B = path[ i + 1 ].at( -1 );
+
+        const ABx = B[ 0 ] - A[ 0 ];
+        const ABy = B[ 1 ] - A[ 1 ];
+
+        const APx = m.x - A[ 0 ];
+        const APy = m.y - A[ 1 ];
+
+        const u = ( ABx * APx + ABy * APy ) / ( ABx ** 2 + ABy ** 2 );
+        const t = Math.max( 0, Math.min( 1, u ) );
+
+        const closestX = A[ 0 ] + ABx * t;
+        const closestY = A[ 1 ] + ABy * t;
+
+        const dist = Math.hypot( m.x - closestX, m.y - closestY );
+
+        if ( dist < closest.dist ) {
+          closest.partIndex = i + 1;
+          closest.point = [ closestX, closestY ];
+          closest.dist = dist;
+        }
+      }
+    }
+
+    hover = closest.dist < SelectDist ? closest : null;
   }
 
   gameCanvas.redraw();

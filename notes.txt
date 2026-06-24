@@ -1,3 +1,18 @@
+6/24:
+  - Create control points by dragging
+    - One kind of click for arc, another for curves?
+    - Less interested in arcs at the moment, start with curves
+      1. Show potential control point when hover over line
+        - This could get yucky for bezier curves...
+          - quadratic bezier seems at least possible (but quite a bit of code)
+          - I'm afraid to ask about cubic bezier...
+        - Maybe check if we are within polygon formed by endpoints and control points?
+          - Can we be within more than one of those at a time?
+      2. Clicking with potential control point makes it an actual control point and sets it active
+      - Start with 1 for quadratic, then allow 2 for cubic
+
+  - Visual: draw faint dotted lines between endpoints and controlpoints 
+    - so it's clear which belongs to which
 
 6/23:
   - DONE: Re-roll if limb color already active
