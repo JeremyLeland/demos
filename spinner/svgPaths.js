@@ -16,10 +16,22 @@ const PI_2 = Math.PI / 2;
 const gameCanvas = new GameCanvas();
 gameCanvas.backgroundColor = '#123';
 
+// Reference image
+const image = new Image();
+image.src = 'https://sorryrobot.com/twister/img5.jpg';
+await image.decode();
+
+let imageOffsetX = -5;
+let imageOffsetY = -5;
+let imageWidth = 10;
+let imageHeight = 10;
+
 let hover = null;
 let selected = null;
 
 gameCanvas.draw = ( ctx ) => {
+
+  ctx.drawImage( image, imageOffsetX, imageOffsetY, imageWidth, imageHeight );
 
   const pathStr = path.map( e => e.join( ' ' ) ).join( ' ' );
 
@@ -176,12 +188,22 @@ gameCanvas.pointerDown = ( m ) => {
 const SelectDist = 0.2;
 
 gameCanvas.pointerMove = ( m ) => {
+
+  // If point is selected, move it
   if ( selected ) {
     const point = path[ selected.partIndex ][ selected.pointIndex ];
 
     point[ 0 ] += m.dx;
     point[ 1 ] += m.dy;
   }
+
+  // Middle click and drag in empty area to move background
+  else if ( m.buttons === 4 ) {
+    imageOffsetX += m.dx;
+    imageOffsetY += m.dy;
+  }
+
+  // If no buttons pressed, show hover point
   else {
     const closest = {
       partIndex: null,
@@ -273,6 +295,20 @@ gameCanvas.pointerMove = ( m ) => {
 
 gameCanvas.pointerUp = ( m ) => {
   selected = null;
+
+  gameCanvas.redraw();
+}
+
+gameCanvas.wheelInput = ( m ) => {
+  const xPerc = ( m.x - imageOffsetX ) / imageWidth;
+  const yPerc = ( m.y - imageOffsetY ) / imageHeight;
+
+  const resize = 1 + Math.sign( m.wheel ) * 0.1;    // TODO: Shift = bigger move, Control = smaller move?
+  imageWidth *= resize;
+  imageHeight *= resize;
+
+  imageOffsetX = m.x - imageWidth * xPerc;
+  imageOffsetY = m.y - imageHeight * yPerc;
 
   gameCanvas.redraw();
 }

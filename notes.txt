@@ -1,3 +1,8 @@
+6/25:
+  - Show background image that I will try to trace
+    - Hardcode it for now, eventually have a way to choose or drag-n-drop
+    - Can I link to image on another server, or do I have to download locally?
+
 6/24:
   - Create control points by dragging
     - One kind of click for arc, another for curves?
