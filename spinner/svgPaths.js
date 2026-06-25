@@ -1,14 +1,23 @@
 import * as Angle from './Angle.js';
 import { GameCanvas } from './GameCanvas.js';
+import { GameState } from './GameState.js';
 
+const gameState = new GameState( 'spinner_svgPaths_main' );
 
-const path = [
+gameState.path ??= [
   [ 'M', [ 0, 0 ] ],
   [ 'L', [ 2, 0 ] ],
   [ 'L', [ 1, 1 ] ],
   [ 'Q', [ 0, 2 ], [ 2, 2 ] ],
   [ 'C', [ 4, 2.5 ], [ 1, 3 ], [ 2, 4 ] ],
 ];
+gameState.image ??= {
+  src: 'https://sorryrobot.com/twister/img5.jpg',
+  offsetX: -5,
+  offsetY: -5,
+  width: 10,
+  height: 10,
+};
 
 const TWO_PI = Math.PI * 2;
 const PI_2 = Math.PI / 2;
@@ -18,22 +27,22 @@ gameCanvas.backgroundColor = '#123';
 
 // Reference image
 const image = new Image();
-image.src = 'https://sorryrobot.com/twister/img5.jpg';
+image.src = gameState.image.src;
 await image.decode();
-
-let imageOffsetX = -5;
-let imageOffsetY = -5;
-let imageWidth = 10;
-let imageHeight = 10;
 
 let hover = null;
 let selected = null;
 
 gameCanvas.draw = ( ctx ) => {
 
-  ctx.drawImage( image, imageOffsetX, imageOffsetY, imageWidth, imageHeight );
+  ctx.drawImage( image,
+    gameState.image.offsetX,
+    gameState.image.offsetY,
+    gameState.image.width,
+    gameState.image.height,
+  );
 
-  const pathStr = path.map( e => e.join( ' ' ) ).join( ' ' );
+  const pathStr = gameState.path.map( e => e.join( ' ' ) ).join( ' ' );
 
   console.log( pathStr );
 
@@ -46,8 +55,8 @@ gameCanvas.draw = ( ctx ) => {
   ctx.lineWidth = 0.01;
   ctx.setLineDash( [ 0.05, 0.05 ] );
 
-  for ( let i = 0; i < path.length; i ++ ) {
-    const part = path[ i ];
+  for ( let i = 0; i < gameState.path.length; i ++ ) {
+    const part = gameState.path[ i ];
 
     // Point
     if ( part.length > 1 ) {
@@ -58,7 +67,7 @@ gameCanvas.draw = ( ctx ) => {
     // Control points
     if ( part.length > 2 ) {
       ctx.strokeStyle = 'lightblue';
-      drawLine( ctx, path[ i - 1 ].at( -1 ), part[ 1 ] );
+      drawLine( ctx, gameState.path[ i - 1 ].at( -1 ), part[ 1 ] );
 
       ctx.fillStyle = 'lightblue';
       drawPoint( ctx, part[ 1 ] );
@@ -79,7 +88,7 @@ gameCanvas.draw = ( ctx ) => {
   }
 
   if ( hover ) {
-    const point = hover.point ?? path[ hover.partIndex ][ hover.pointIndex ];
+    const point = hover.point ?? gameState.path[ hover.partIndex ][ hover.pointIndex ];
 
     ctx.fillStyle = hover.point ? 'purple' : '#fff8';
     drawPoint( ctx, point );
@@ -87,7 +96,7 @@ gameCanvas.draw = ( ctx ) => {
 
   if ( selected ) {
     ctx.fillStyle = '#fff8';
-    drawPoint( ctx, path[ selected.partIndex ][ selected.pointIndex ] );
+    drawPoint( ctx, gameState.path[ selected.partIndex ][ selected.pointIndex ] );
   }
 }
 
@@ -125,7 +134,7 @@ function drawPoint( ctx, p, radius = 0.05 ) {
 gameCanvas.pointerDown = ( m ) => {
 
   if ( hover ) {
-    const part = path[ hover.partIndex ];
+    const part = gameState.path[ hover.partIndex ];
 
     // Remove hovered point if existing endpoint/control point, otherwise remove entire part
     if ( m.buttons === 2 ) {
@@ -151,7 +160,6 @@ gameCanvas.pointerDown = ( m ) => {
 
     // If we're hovering over a potential new control point, add it to part and select it
     if ( hover.point ) {
-      // const part = path[ hover.partIndex ];
       const controlPointIndex = part.length - 1;
 
       // Upgrade from line -> quadratic bezier -> cubic bezier
@@ -186,7 +194,7 @@ gameCanvas.pointerMove = ( m ) => {
 
   // If point is selected, move it
   if ( selected ) {
-    const point = path[ selected.partIndex ][ selected.pointIndex ];
+    const point = gameState.path[ selected.partIndex ][ selected.pointIndex ];
 
     point[ 0 ] += m.dx;
     point[ 1 ] += m.dy;
@@ -194,8 +202,8 @@ gameCanvas.pointerMove = ( m ) => {
 
   // Middle click and drag in empty area to move background
   else if ( m.buttons === 4 ) {
-    imageOffsetX += m.dx;
-    imageOffsetY += m.dy;
+    gameState.image.offsetX += m.dx;
+    gameState.image.offsetY += m.dy;
   }
 
   // If no buttons pressed, show hover point
@@ -208,7 +216,7 @@ gameCanvas.pointerMove = ( m ) => {
     }
 
     // Find closest existing point
-    path.forEach( ( part, partIndex ) => {
+    gameState.path.forEach( ( part, partIndex ) => {
       part.forEach( ( point, pointIndex ) => {
         if ( pointIndex > 0 ) {
           const dist = Math.hypot( m.x - point[ 0 ], m.y - point[ 1 ] );
@@ -224,15 +232,15 @@ gameCanvas.pointerMove = ( m ) => {
 
     // If no existing points close enough, look for closest potential control point (on lines/curves)
     if ( closest.dist >= SelectDist ) {
-      for ( let i = 0; i < path.length - 1; i ++ ) {
-        const A = path[ i ].at( -1 );
+      for ( let i = 0; i < gameState.path.length - 1; i ++ ) {
+        const A = gameState.path[ i ].at( -1 );
 
         // TODO: Handle Z loop (use path[ 0 ] point)
         // TODO: Also, if it's a Z and we're adding control points, it'll need to be changed to actual point
         // TODO: If next part is M, we should skip
-        const B = path[ i + 1 ].at( -1 );
+        const B = gameState.path[ i + 1 ].at( -1 );
 
-        if ( path[ i + 1 ].length == 2 ) {
+        if ( gameState.path[ i + 1 ].length == 2 ) {
           const ABx = B[ 0 ] - A[ 0 ];
           const ABy = B[ 1 ] - A[ 1 ];
 
@@ -253,9 +261,9 @@ gameCanvas.pointerMove = ( m ) => {
             closest.dist = dist;
           }
         }
-        else if ( path[ i + 1 ].length == 3 ) {
+        else if ( gameState.path[ i + 1 ].length == 3 ) {
           for ( let t = 0; t <= 1; t += 0.01 ) {
-            const p = quadraticBezier( A, path[ i + 1 ][ 1 ], B, t );
+            const p = quadraticBezier( A, gameState.path[ i + 1 ][ 1 ], B, t );
             const dist = Math.hypot( m.x - p[ 0 ], m.y - p[ 1 ] );
 
             if ( dist < closest.dist ) {
@@ -266,10 +274,10 @@ gameCanvas.pointerMove = ( m ) => {
           }
         }
         // Actually, we shouldn't ever need this, because we already have two control points
-        // else if ( path[ i + 1 ].length == 4 ) {
+        // else if ( gameState.path[ i + 1 ].length == 4 ) {
         //   for ( let j = 0; j < 10; j ++ ) {
         //     const t = j / 10;
-        //     const p = cubicBezier( A, path[ i + 1 ][ 1 ], path[ i + 1 ][ 2 ], B, t );
+        //     const p = cubicBezier( A, gameState.path[ i + 1 ][ 1 ], gameState.path[ i + 1 ][ 2 ], B, t );
         //     const dist = Math.hypot( m.x - p[ 0 ], m.y - p[ 1 ] );
 
         //     if ( dist < closest.dist ) {
@@ -295,15 +303,15 @@ gameCanvas.pointerUp = ( m ) => {
 }
 
 gameCanvas.wheelInput = ( m ) => {
-  const xPerc = ( m.x - imageOffsetX ) / imageWidth;
-  const yPerc = ( m.y - imageOffsetY ) / imageHeight;
+  const xPerc = ( m.x - gameState.image.offsetX ) / gameState.image.width;
+  const yPerc = ( m.y - gameState.image.offsetY ) / gameState.image.height;
 
   const resize = 1 + Math.sign( m.wheel ) * 0.1;    // TODO: Shift = bigger move, Control = smaller move?
-  imageWidth *= resize;
-  imageHeight *= resize;
+  gameState.image.width *= resize;
+  gameState.image.height *= resize;
 
-  imageOffsetX = m.x - imageWidth * xPerc;
-  imageOffsetY = m.y - imageHeight * yPerc;
+  gameState.image.offsetX = m.x - gameState.image.width * xPerc;
+  gameState.image.offsetY = m.y - gameState.image.height * yPerc;
 
   gameCanvas.redraw();
 }
