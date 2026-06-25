@@ -1,7 +1,21 @@
 6/25:
-  - Show background image that I will try to trace
+  - DONE: Show background image that I will try to trace
     - Hardcode it for now, eventually have a way to choose or drag-n-drop
     - Can I link to image on another server, or do I have to download locally?
+      - Can use remote
+  - Moving lines and control points around works nicely!
+  - Need to add and remove points
+    1. Remove control points with right click
+    2. Move entire part with right click (on end point)
+      - How do we handle removing a part in the middle of sequence?
+        - Change it to M so next part has a starting spot?
+    - Think on how to add new lines (M) versus continue lines (L)
+  - UI to show result
+    - Side panel (easier to see each part individually)
+    - Show list of parts, have number controls to change values
+      - Update number pickers when points dragged, update points when number pickers changed
+    - Separate panel with string at bottom? Or button to copy string?
+  - Save image position and path so we can restore on page refresh
 
 6/24:
   - Create control points by dragging

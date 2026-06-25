@@ -124,39 +124,34 @@ function drawPoint( ctx, p, radius = 0.05 ) {
 
 gameCanvas.pointerDown = ( m ) => {
 
-  /*
-  // Find closest point
-  const closest = {
-    partIndex: null,
-    pointIndex: null,
-    dist: Infinity,
-  };
+  if ( hover ) {
+    const part = path[ hover.partIndex ];
 
-  path.forEach( ( part, partIndex ) => {
-    part.forEach( ( point, pointIndex ) => {
-      if ( pointIndex > 0 ) {
-        const dist = Math.hypot( m.x - point[ 0 ], m.y - point[ 1 ] );
+    // Remove hovered point if existing endpoint/control point, otherwise remove entire part
+    if ( m.buttons === 2 ) {
+      // Existing control point
+      if ( hover.pointIndex !== null && hover.pointIndex < part.length - 1 ) {
+        part.splice( hover.pointIndex, 1 );
 
-        if ( dist < closest.dist ) {
-          closest.partIndex = partIndex;
-          closest.pointIndex = pointIndex;
-          closest.dist = dist;
+        // Downgrade from cubic bezier -> quadratic bezier -> line
+        if ( part[ 0 ] === 'C' ) {
+          part[ 0 ] = 'Q';
+        }
+        else if ( part[ 0 ] === 'Q' ) {
+          part[ 0 ] = 'L';
         }
       }
-    } );
-  } );
 
-  selected = closest.dist < 0.1 ? closest : null;
-  */
+      // Existing endpoint, or potential control point (hovering over line/curve)
+      // TODO: Think more on what removing 'endpoints' actually means depending on situation
+      else {
 
-  // For now, just test creating and moving control points
-  // Add endpoints back in (hover should differentiate between existing and potential points)
-
-  if ( hover ) {
+      }
+    }
 
     // If we're hovering over a potential new control point, add it to part and select it
     if ( hover.point ) {
-      const part = path[ hover.partIndex ];
+      // const part = path[ hover.partIndex ];
       const controlPointIndex = part.length - 1;
 
       // Upgrade from line -> quadratic bezier -> cubic bezier
