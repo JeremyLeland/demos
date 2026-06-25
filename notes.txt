@@ -6,10 +6,16 @@
         - This could get yucky for bezier curves...
           - quadratic bezier seems at least possible (but quite a bit of code)
           - I'm afraid to ask about cubic bezier...
+            - Sounds like it can't be solved directly
+            - But I can calculate a bunch of points on the curve and find the closest one of those
+              - That's probably fine
+              - For bonus points, I can try "Newton-Raphson" refinement
         - Maybe check if we are within polygon formed by endpoints and control points?
           - Can we be within more than one of those at a time?
       2. Clicking with potential control point makes it an actual control point and sets it active
       - Start with 1 for quadratic, then allow 2 for cubic
+
+  - NEXT: Check 10 points of curve for closest
 
   - Visual: draw faint dotted lines between endpoints and controlpoints 
     - so it's clear which belongs to which

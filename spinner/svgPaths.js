@@ -198,25 +198,53 @@ gameCanvas.pointerMove = ( m ) => {
         // TODO: If next part is M, we should skip
         const B = path[ i + 1 ].at( -1 );
 
-        const ABx = B[ 0 ] - A[ 0 ];
-        const ABy = B[ 1 ] - A[ 1 ];
+        if ( path[ i + 1 ].length == 2 ) {
+          const ABx = B[ 0 ] - A[ 0 ];
+          const ABy = B[ 1 ] - A[ 1 ];
 
-        const APx = m.x - A[ 0 ];
-        const APy = m.y - A[ 1 ];
+          const APx = m.x - A[ 0 ];
+          const APy = m.y - A[ 1 ];
 
-        const u = ( ABx * APx + ABy * APy ) / ( ABx ** 2 + ABy ** 2 );
-        const t = Math.max( 0, Math.min( 1, u ) );
+          const u = ( ABx * APx + ABy * APy ) / ( ABx ** 2 + ABy ** 2 );
+          const t = Math.max( 0, Math.min( 1, u ) );
 
-        const closestX = A[ 0 ] + ABx * t;
-        const closestY = A[ 1 ] + ABy * t;
+          const closestX = A[ 0 ] + ABx * t;
+          const closestY = A[ 1 ] + ABy * t;
 
-        const dist = Math.hypot( m.x - closestX, m.y - closestY );
+          const dist = Math.hypot( m.x - closestX, m.y - closestY );
 
-        if ( dist < closest.dist ) {
-          closest.partIndex = i + 1;
-          closest.point = [ closestX, closestY ];
-          closest.dist = dist;
+          if ( dist < closest.dist ) {
+            closest.partIndex = i + 1;
+            closest.point = [ closestX, closestY ];
+            closest.dist = dist;
+          }
         }
+        else if ( path[ i + 1 ].length == 3 ) {
+          for ( let t = 0; t <= 1; t += 0.01 ) {
+            const p = quadraticBezier( A, path[ i + 1 ][ 1 ], B, t );
+            const dist = Math.hypot( m.x - p[ 0 ], m.y - p[ 1 ] );
+
+            if ( dist < closest.dist ) {
+              closest.partIndex = i + 1;
+              closest.point = p;
+              closest.dist = dist;
+            }
+          }
+        }
+        // Actually, we shouldn't ever need this, because we already have two control points
+        // else if ( path[ i + 1 ].length == 4 ) {
+        //   for ( let j = 0; j < 10; j ++ ) {
+        //     const t = j / 10;
+        //     const p = cubicBezier( A, path[ i + 1 ][ 1 ], path[ i + 1 ][ 2 ], B, t );
+        //     const dist = Math.hypot( m.x - p[ 0 ], m.y - p[ 1 ] );
+
+        //     if ( dist < closest.dist ) {
+        //       closest.partIndex = i + 1;
+        //       closest.point = p;
+        //       closest.dist = dist;
+        //     }
+        //   }
+        // }
       }
     }
 
@@ -230,4 +258,20 @@ gameCanvas.pointerUp = ( m ) => {
   selected = null;
 
   gameCanvas.redraw();
+}
+
+function quadraticBezier( P0, P1, P2, t ) {
+  const mt = 1 - t;
+  return [
+    mt ** 2 * P0[ 0 ] + 2 * mt * t * P1[ 0 ] + t ** 2 * P2[ 0 ],
+    mt ** 2 * P0[ 1 ] + 2 * mt * t * P1[ 1 ] + t ** 2 * P2[ 1 ],
+  ];
+}
+
+function cubicBezier( P0, P1, P2, P3, t ) {
+  const mt = 1 - t;
+  return [
+    mt ** 3 * P0[ 0 ] + 3 * mt ** 2 * t * P1[ 0 ] + 3 * mt * t ** 2 * P2[ 0 ] + t ** 3 * P3[ 0 ],
+    mt ** 3 * P0[ 1 ] + 3 * mt ** 2 * t * P1[ 1 ] + 3 * mt * t ** 2 * P2[ 1 ] + t ** 3 * P3[ 1 ],
+  ];
 }
