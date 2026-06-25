@@ -31,7 +31,12 @@ gameCanvas.draw = ( ctx ) => {
   ctx.stroke( new Path2D( pathStr ) );
 
   // Points and control points
-  path.forEach( part => {
+  ctx.lineWidth = 0.01;
+  ctx.setLineDash( [ 0.05, 0.05 ] );
+
+  for ( let i = 0; i < path.length; i ++ ) {
+    const part = path[ i ];
+
     // Point
     if ( part.length > 1 ) {
       ctx.fillStyle = 'yellow';
@@ -40,14 +45,26 @@ gameCanvas.draw = ( ctx ) => {
 
     // Control points
     if ( part.length > 2 ) {
+      ctx.strokeStyle = 'lightblue';
+      drawLine( ctx, path[ i - 1 ].at( -1 ), part[ 1 ] );
+
       ctx.fillStyle = 'lightblue';
       drawPoint( ctx, part[ 1 ] );
+
+      ctx.strokeStyle = 'yellow';
+      drawLine( ctx, part[ 1 ], part[ 2 ] );
     }
     if ( part.length > 3 ) {
+      ctx.strokeStyle = 'aqua';
+      drawLine( ctx, part[ 1 ], part[ 2 ] );
+
       ctx.fillStyle = 'aqua';
       drawPoint( ctx, part[ 2 ] );
+
+      ctx.strokeStyle = 'yellow';
+      drawLine( ctx, part[ 2 ], part[ 3 ] );
     }
-  } );
+  }
 
   if ( hover ) {
     const point = hover.point ?? path[ hover.partIndex ][ hover.pointIndex ];
