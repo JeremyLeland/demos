@@ -18,6 +18,39 @@
   - DONE: Save image position and path so we can restore on page refresh
     - Saving all GameState
 
+  - Adding new parts
+    - For now, default to "insert" mode
+      - show line to potential new endpoint
+    - Refactor: one "cursor" variable?
+      - status hover/selected/new
+      - location
+      - whether moving
+      - IN PROGRESS
+
+  - Maybe hold off on refactor for the moment, need to think more about this
+    - I can have a currently selected point and a place I'm hovering
+    - I'm thinking of clicking on an endpoint to say I want to continue the sequence
+      - And then draw a dotted line from the selected endpoint to the place my mouse is currently hovering
+      - So these can't be replaced by just one "cursor"
+
+  - Think about creating a series from scratch
+    - Click to start sequence (adds an M <point>)
+    - Click again for next point (adds an L <point>)
+
+  - Controls
+    - Left click to create point
+      - Left clicking on existing line would add a point there
+    - Middle click to move point?
+      - Distinguish creating point on existing line to creating control point and moving it
+    - Right click to remove point
+      - Feels straightforward
+    - Control snaps to line/curve (makes sure we don't snap to control points!)
+    - Need way to snap to alignment with previous control points
+
+  - Make viewport be 1x1? Or -1 to positive 1, centered at 0?
+    - I think -1 being left-most and 1 being right-most is easiest to conceptualize
+    - Radius of 1 is simplest
+
 6/24:
   - Create control points by dragging
     - One kind of click for arc, another for curves?

@@ -32,6 +32,7 @@ await image.decode();
 
 let hover = null;
 let selected = null;
+let pointerPos = [ 0, 0 ];
 
 gameCanvas.draw = ( ctx ) => {
 
@@ -95,8 +96,15 @@ gameCanvas.draw = ( ctx ) => {
   }
 
   if ( selected ) {
+
+    const selectedPoint = gameState.path[ selected.partIndex ][ selected.pointIndex ];
+
     ctx.fillStyle = '#fff8';
-    drawPoint( ctx, gameState.path[ selected.partIndex ][ selected.pointIndex ] );
+    drawPoint( ctx, selectedPoint, 0.1 );
+
+    ctx.strokeStyle = 'orange';
+    // ctx.lineWidth = 0.05;
+    drawLine( ctx, selectedPoint, pointerPos );
   }
 }
 
@@ -133,12 +141,71 @@ function drawPoint( ctx, p, radius = 0.05 ) {
 
 gameCanvas.pointerDown = ( m ) => {
 
-  if ( hover ) {
-    const part = gameState.path[ hover.partIndex ];
+  // Left click
+  if ( m.buttons === 1 ) {
 
-    // Remove hovered point if existing endpoint/control point, otherwise remove entire part
-    if ( m.buttons === 2 ) {
-      // Existing control point
+    // TODO: Can't assume hover if on touch device, would need to redo work
+    if ( hover && hover.pointIndex !== null ) {
+      selected = hover;
+    }
+    else {
+
+      // TODO: Only add L if selected is end of a sequence?
+      // TODO: Definitely not if selected is a control point!
+
+      if ( !selected ) {
+        gameState.path.push( [ 'M', [ m.x, m.y ] ] );
+      }
+      else {
+        gameState.path.push( [ 'L', [ m.x, m.y ] ] );
+      }
+
+      selected = {
+        partIndex: gameState.path.length - 1,
+        pointIndex: 1,
+        // dist not needed
+      };
+    }
+  }
+
+  // Middle click
+  else if ( m.buttons === 4 ) {
+    // TODO: Can't assume hover if on touch device, would need to redo work
+    if ( hover ) {
+      // If we're hovering over a potential new control point, add it to part and select it
+      if ( hover.point ) {
+        const part = gameState.path[ hover.partIndex ];
+        const controlPointIndex = part.length - 1;
+
+        // Upgrade from line -> quadratic bezier -> cubic bezier
+        if ( part[ 0 ] === 'L' ) {
+          part[ 0 ] = 'Q';
+        }
+        else if ( part[ 0 ] === 'Q' ) {
+          part[ 0 ] = 'C';
+        }
+
+        part.splice( controlPointIndex, 0, hover.point );
+
+        selected = {
+          partIndex: hover.partIndex,
+          pointIndex: controlPointIndex,
+          // dist not needed
+        };
+      }
+      else {
+        selected = hover;
+      }
+    }
+  }
+
+  // Right click
+  else if ( m.buttons === 2 ) {
+
+    // TODO: Can't assume hover if on touch device, would need to redo work
+    if ( hover ) {
+      const part = gameState.path[ hover.partIndex ];
+
       if ( hover.pointIndex !== null && hover.pointIndex < part.length - 1 ) {
         part.splice( hover.pointIndex, 1 );
 
@@ -158,31 +225,8 @@ gameCanvas.pointerDown = ( m ) => {
       }
     }
 
-    // If we're hovering over a potential new control point, add it to part and select it
-    if ( hover.point ) {
-      const controlPointIndex = part.length - 1;
-
-      // Upgrade from line -> quadratic bezier -> cubic bezier
-      if ( part[ 0 ] === 'L' ) {
-        part[ 0 ] = 'Q';
-      }
-      else if ( part[ 0 ] === 'Q' ) {
-        part[ 0 ] = 'C';
-      }
-
-      part.splice( controlPointIndex, 0, hover.point );
-
-      selected = {
-        partIndex: hover.partIndex,
-        pointIndex: controlPointIndex,
-        // dist not needed
-      };
-    }
-    else {
-      selected = hover;
-    }
-
-    hover = null;
+    // Clear selection
+    selected = null;
   }
 
   gameCanvas.redraw();
@@ -192,8 +236,11 @@ const SelectDist = 0.2;
 
 gameCanvas.pointerMove = ( m ) => {
 
-  // If point is selected, move it
-  if ( selected ) {
+  pointerPos[ 0 ] = m.x;
+  pointerPos[ 1 ] = m.y;
+
+  // If point is selected, move it ()
+  if ( selected && m.buttons === 4 ) {
     const point = gameState.path[ selected.partIndex ][ selected.pointIndex ];
 
     point[ 0 ] += m.dx;
@@ -297,7 +344,7 @@ gameCanvas.pointerMove = ( m ) => {
 }
 
 gameCanvas.pointerUp = ( m ) => {
-  selected = null;
+  // selected = null;
 
   gameCanvas.redraw();
 }
@@ -315,6 +362,17 @@ gameCanvas.wheelInput = ( m ) => {
 
   gameCanvas.redraw();
 }
+
+document.addEventListener( 'keydown', e => {
+  if ( e.key === 'Backspace' ) {
+    gameState.path = [];
+
+    selected = null;
+    hover = null;
+  }
+
+  gameCanvas.redraw();
+} );
 
 function quadraticBezier( P0, P1, P2, t ) {
   const mt = 1 - t;
