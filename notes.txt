@@ -1,3 +1,23 @@
+6/30:
+  - Lots of potential subtlties to point editing
+    - DONE: Delete seems straightforward enough, start with that
+      - Deleting first point (M) makes next point M
+      - Deleting middle segment makes it an M (same as first, I guess)
+      - Deleting last segment just removes it?
+    - DONE: What if deleting a point merges the previous and next point?
+      - And deleting a line changes it to M?
+        - Does that make more sense?
+
+6/28:
+  - Don't select control points, just drag them
+  - Select any point?
+    - Moving mouse now shows preview of inserting a point between selected point and next point.
+      - Or just adding a point, if it's the last one
+      - How would we insert a point in the beginning of a series?
+  - Only select first or last point of series?
+    - Separate "split" function to create new points instead of control points?
+      - Maybe a modifier key to clicking, perhaps Alt+Click?
+
 6/25:
   - DONE: Show background image that I will try to trace
     - Hardcode it for now, eventually have a way to choose or drag-n-drop

@@ -175,23 +175,28 @@ gameCanvas.pointerDown = ( m ) => {
       // If we're hovering over a potential new control point, add it to part and select it
       if ( hover.point ) {
         const part = gameState.path[ hover.partIndex ];
-        const controlPointIndex = part.length - 1;
 
         // Upgrade from line -> quadratic bezier -> cubic bezier
         if ( part[ 0 ] === 'L' ) {
           part[ 0 ] = 'Q';
+
+          part.splice( 1, 0, hover.point );
+
+          selected = {
+            partIndex: hover.partIndex,
+            pointIndex: 1,
+          };
         }
         else if ( part[ 0 ] === 'Q' ) {
           part[ 0 ] = 'C';
+
+          part.splice( 2, 0, hover.point );
+
+          selected = {
+            partIndex: hover.partIndex,
+            pointIndex: 2,
+          };
         }
-
-        part.splice( controlPointIndex, 0, hover.point );
-
-        selected = {
-          partIndex: hover.partIndex,
-          pointIndex: controlPointIndex,
-          // dist not needed
-        };
       }
       else {
         selected = hover;
@@ -206,7 +211,29 @@ gameCanvas.pointerDown = ( m ) => {
     if ( hover ) {
       const part = gameState.path[ hover.partIndex ];
 
-      if ( hover.pointIndex !== null && hover.pointIndex < part.length - 1 ) {
+      // Hovering on line/curve, not existing point/control point
+      if ( hover.pointIndex === null ) {
+        // Deleting a line/curve breaks the sequence
+        // This segment becomes starting (M) point for the rest of the sequence
+        part[ 0 ] = 'M';
+
+        // Set position for M
+        part[ 1 ] = part.at( -1 );
+
+        // Remove any control points
+        part.splice( 2 );
+      }
+
+      // End point
+      else if ( hover.pointIndex === part.length - 1 ) {
+        // Remove this segment, which will automatically link to next segment
+        gameState.path.splice( hover.partIndex, 1 );
+
+        hover = null;
+      }
+
+      // Control point
+      else {
         part.splice( hover.pointIndex, 1 );
 
         // Downgrade from cubic bezier -> quadratic bezier -> line
@@ -216,12 +243,6 @@ gameCanvas.pointerDown = ( m ) => {
         else if ( part[ 0 ] === 'Q' ) {
           part[ 0 ] = 'L';
         }
-      }
-
-      // Existing endpoint, or potential control point (hovering over line/curve)
-      // TODO: Think more on what removing 'endpoints' actually means depending on situation
-      else {
-
       }
     }
 
@@ -320,20 +341,19 @@ gameCanvas.pointerMove = ( m ) => {
             }
           }
         }
-        // Actually, we shouldn't ever need this, because we already have two control points
-        // else if ( gameState.path[ i + 1 ].length == 4 ) {
-        //   for ( let j = 0; j < 10; j ++ ) {
-        //     const t = j / 10;
-        //     const p = cubicBezier( A, gameState.path[ i + 1 ][ 1 ], gameState.path[ i + 1 ][ 2 ], B, t );
-        //     const dist = Math.hypot( m.x - p[ 0 ], m.y - p[ 1 ] );
+        // Putting this back in so we can recognize hovers for cubic beziers
+        else if ( gameState.path[ i + 1 ].length == 4 ) {
+          for ( let t = 0; t <= 1; t += 0.01 ) {
+            const p = cubicBezier( A, gameState.path[ i + 1 ][ 1 ], gameState.path[ i + 1 ][ 2 ], B, t );
+            const dist = Math.hypot( m.x - p[ 0 ], m.y - p[ 1 ] );
 
-        //     if ( dist < closest.dist ) {
-        //       closest.partIndex = i + 1;
-        //       closest.point = p;
-        //       closest.dist = dist;
-        //     }
-        //   }
-        // }
+            if ( dist < closest.dist ) {
+              closest.partIndex = i + 1;
+              closest.point = p;
+              closest.dist = dist;
+            }
+          }
+        }
       }
     }
 
