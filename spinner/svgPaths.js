@@ -44,7 +44,7 @@ gameCanvas.draw = ( ctx ) => {
     gameState.image.height,
   );
 
-  const pathStr = gameState.path.map( e => e.join( ' ' ) ).join( ' ' );
+  const pathStr = gameState.path.map( e => e.join( ' ' ) ).join( '\n' /*' '*/ );
 
   console.log( pathStr );
 
