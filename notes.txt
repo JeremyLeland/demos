@@ -1,3 +1,10 @@
+7/1:
+  - Improve adding points
+    - DONE: Add points at hover if left click (so we can snap to existing lines/curves)
+      - Don't use hover is Ctrl is pressed (allow precise placement near line/curve)
+    - Insert point before sequence if selected point is an M
+    - Insert point between parts (how to trigger?)
+
 6/30:
   - Lots of potential subtlties to point editing
     - DONE: Delete seems straightforward enough, start with that

@@ -153,12 +153,10 @@ gameCanvas.pointerDown = ( m ) => {
       // TODO: Only add L if selected is end of a sequence?
       // TODO: Definitely not if selected is a control point!
 
-      if ( !selected ) {
-        gameState.path.push( [ 'M', [ m.x, m.y ] ] );
-      }
-      else {
-        gameState.path.push( [ 'L', [ m.x, m.y ] ] );
-      }
+      gameState.path.push( [
+        selected ? 'L' : 'M',
+        hover ? structuredClone( hover.point ) : [ m.x, m.y ],
+      ] );
 
       selected = {
         partIndex: gameState.path.length - 1,
@@ -384,6 +382,14 @@ gameCanvas.wheelInput = ( m ) => {
 }
 
 document.addEventListener( 'keydown', e => {
+
+  // Deselect
+  if ( e.key === 'Escape' ) {
+    selected = null;
+    hover = null;
+  }
+
+  // Clear everything
   if ( e.key === 'Backspace' ) {
     gameState.path = [];
 
