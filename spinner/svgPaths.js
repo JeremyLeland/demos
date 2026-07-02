@@ -13,17 +13,15 @@ gameState.path ??= [
 ];
 gameState.image ??= {
   src: 'https://sorryrobot.com/twister/img5.jpg',
-  offsetX: -5,
-  offsetY: -5,
-  width: 10,
-  height: 10,
+  offsetX: -1,
+  offsetY: -1,
+  width: 2,
+  height: 2,
 };
-
-const TWO_PI = Math.PI * 2;
-const PI_2 = Math.PI / 2;
 
 const gameCanvas = new GameCanvas();
 gameCanvas.backgroundColor = '#123';
+gameCanvas.setBounds( -1, -1, 1, 1 );
 
 // Reference image
 const image = new Image();
@@ -33,6 +31,9 @@ await image.decode();
 let hover = null;
 let selected = null;
 let pointerPos = [ 0, 0 ];
+
+const PointSize = 0.025;
+const LineWidth = 0.005;
 
 gameCanvas.draw = ( ctx ) => {
 
@@ -49,12 +50,12 @@ gameCanvas.draw = ( ctx ) => {
 
   // Actual path
   ctx.strokeStyle = 'orange';
-  ctx.lineWidth = 0.05;
+  ctx.lineWidth = PointSize;
   ctx.stroke( new Path2D( pathStr ) );
 
   // Points and control points
-  ctx.lineWidth = 0.01;
-  ctx.setLineDash( [ 0.05, 0.05 ] );
+  ctx.lineWidth = LineWidth;
+  ctx.setLineDash( [ PointSize, PointSize ] );
 
   for ( let i = 0; i < gameState.path.length; i ++ ) {
     const part = gameState.path[ i ];
@@ -100,12 +101,20 @@ gameCanvas.draw = ( ctx ) => {
     const selectedPoint = gameState.path[ selected.partIndex ][ selected.pointIndex ];
 
     ctx.fillStyle = '#fff8';
-    drawPoint( ctx, selectedPoint, 0.1 );
+    drawPoint( ctx, selectedPoint, PointSize * 2 );
 
     ctx.strokeStyle = 'orange';
-    // ctx.lineWidth = 0.05;
-    drawLine( ctx, selectedPoint, pointerPos );
+    drawLine( ctx, selectedPoint, hover?.point ?? pointerPos );
   }
+
+  // Center guide
+  ctx.beginPath();
+  ctx.moveTo( 0, -1 );
+  ctx.lineTo( 0,  1 );
+  ctx.moveTo( -1, 0 );
+  ctx.lineTo(  1, 0 );
+  ctx.strokeStyle = '#aaa8';
+  ctx.stroke();
 }
 
 // gameCanvas.start();
@@ -128,7 +137,7 @@ function drawLine( ctx, start, end ) {
   ctx.stroke();
 }
 
-function drawPoint( ctx, p, radius = 0.05 ) {
+function drawPoint( ctx, p, radius = PointSize ) {
   ctx.beginPath();
   ctx.arc( p[ 0 ], p[ 1 ], radius, 0, Math.PI * 2 );
   ctx.fill();
@@ -251,7 +260,7 @@ gameCanvas.pointerDown = ( m ) => {
   gameCanvas.redraw();
 }
 
-const SelectDist = 0.2;
+const SelectDist = PointSize * 2;
 
 gameCanvas.pointerMove = ( m ) => {
 
@@ -299,11 +308,17 @@ gameCanvas.pointerMove = ( m ) => {
     // If no existing points close enough, look for closest potential control point (on lines/curves)
     if ( closest.dist >= SelectDist ) {
       for ( let i = 0; i < gameState.path.length - 1; i ++ ) {
+        // TODO: If next part is M, we should skip
+        if ( gameState.path[ i + 1 ][ 0 ] === 'M' ) {
+          continue;
+        }
+
+
         const A = gameState.path[ i ].at( -1 );
 
         // TODO: Handle Z loop (use path[ 0 ] point)
         // TODO: Also, if it's a Z and we're adding control points, it'll need to be changed to actual point
-        // TODO: If next part is M, we should skip
+
         const B = gameState.path[ i + 1 ].at( -1 );
 
         if ( gameState.path[ i + 1 ].length == 2 ) {
@@ -367,11 +382,14 @@ gameCanvas.pointerUp = ( m ) => {
   gameCanvas.redraw();
 }
 
+const ZoomSpeed = 0.1;
+
 gameCanvas.wheelInput = ( m ) => {
   const xPerc = ( m.x - gameState.image.offsetX ) / gameState.image.width;
   const yPerc = ( m.y - gameState.image.offsetY ) / gameState.image.height;
 
-  const resize = 1 + Math.sign( m.wheel ) * 0.1;    // TODO: Shift = bigger move, Control = smaller move?
+  // Shift = bigger move, Control = smaller move
+  const resize = 1 + Math.sign( m.wheel ) * ZoomSpeed * ( m.shiftKey ? 2 : 1 ) * ( m.ctrlKey ? 0.25 : 1 );
   gameState.image.width *= resize;
   gameState.image.height *= resize;
 

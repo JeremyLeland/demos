@@ -4,6 +4,12 @@
       - Don't use hover is Ctrl is pressed (allow precise placement near line/curve)
     - Insert point before sequence if selected point is an M
     - Insert point between parts (how to trigger?)
+  - Hover
+    - It's finding lines that shouldn't exist
+      - DONE: Don't look on a line if second point is M
+
+  - DONE: Make area -1 to 1 instead of -5 to 5
+    - Added a crosshair for the center as well
 
 6/30:
   - Lots of potential subtlties to point editing
