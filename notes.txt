@@ -1,3 +1,19 @@
+7/2:
+  - Adding points
+    - Add point before selected point if beginning of sequence?
+      - Maybe a better way to do this is allow a segment to link into another a segment
+      - If we click from one existing point to an M, link them?
+        - Need to differentiate from just clicking on various points, though
+    - Split segment with inserted point?
+      - Middle click drag feels natural, but that's control points...
+        - maybe do it with a modifier key?
+    - NEXT: Don't preview new segment if selected point is control point
+    - DONE: NOW: Need space around -1,1 for control points
+    - For the hand, I want to insert new lines starting at the same spot as old lines
+      - If a point is selected that is not followed by an M, duplicate it and create new line
+  - Add a way to lock in the background 
+    - So I don't keep accidentally moving it!
+
 7/1:
   - Improve adding points
     - DONE: Add points at hover if left click (so we can snap to existing lines/curves)

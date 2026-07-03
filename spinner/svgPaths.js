@@ -13,15 +13,15 @@ gameState.path ??= [
 ];
 gameState.image ??= {
   src: 'https://sorryrobot.com/twister/img5.jpg',
-  offsetX: -1,
-  offsetY: -1,
-  width: 2,
-  height: 2,
+  offsetX: -1.5,
+  offsetY: -1.5,
+  width: 3,
+  height: 3,
 };
 
 const gameCanvas = new GameCanvas();
 gameCanvas.backgroundColor = '#123';
-gameCanvas.setBounds( -1, -1, 1, 1 );
+gameCanvas.setBounds( -1.5, -1.5, 1.5, 1.5 );
 
 // Reference image
 const image = new Image();
@@ -34,6 +34,7 @@ let pointerPos = [ 0, 0 ];
 
 const PointSize = 0.025;
 const LineWidth = 0.005;
+const LineColor = '#fa0a';
 
 gameCanvas.draw = ( ctx ) => {
 
@@ -49,7 +50,7 @@ gameCanvas.draw = ( ctx ) => {
   console.log( pathStr );
 
   // Actual path
-  ctx.strokeStyle = 'orange';
+  ctx.strokeStyle = LineColor;
   ctx.lineWidth = PointSize;
   ctx.stroke( new Path2D( pathStr ) );
 
@@ -103,18 +104,19 @@ gameCanvas.draw = ( ctx ) => {
     ctx.fillStyle = '#fff8';
     drawPoint( ctx, selectedPoint, PointSize * 2 );
 
-    ctx.strokeStyle = 'orange';
+    ctx.strokeStyle = LineColor;
     drawLine( ctx, selectedPoint, hover?.point ?? pointerPos );
   }
 
   // Center guide
   ctx.beginPath();
-  ctx.moveTo( 0, -1 );
-  ctx.lineTo( 0,  1 );
-  ctx.moveTo( -1, 0 );
-  ctx.lineTo(  1, 0 );
+  ctx.moveTo( 0, -1.5 );
+  ctx.lineTo( 0,  1.5 );
+  ctx.moveTo( -1.5, 0 );
+  ctx.lineTo(  1.5, 0 );
   ctx.strokeStyle = '#aaa8';
   ctx.stroke();
+  ctx.strokeRect( -1, -1, 2, 2 );
 }
 
 // gameCanvas.start();
@@ -159,19 +161,47 @@ gameCanvas.pointerDown = ( m ) => {
     }
     else {
 
-      // TODO: Only add L if selected is end of a sequence?
-      // TODO: Definitely not if selected is a control point!
+      const newPoint = hover ? structuredClone( hover.point ) : [ m.x, m.y ];
 
-      gameState.path.push( [
-        selected ? 'L' : 'M',
-        hover ? structuredClone( hover.point ) : [ m.x, m.y ],
-      ] );
+      // If nothing is selected, this is a new point
+      if ( !selected ) {
+        gameState.path.push( [ 'M', newPoint ] );
 
-      selected = {
-        partIndex: gameState.path.length - 1,
-        pointIndex: 1,
-        // dist not needed
-      };
+        selected = {
+          partIndex: gameState.path.length - 1,
+          pointIndex: 1,
+        };
+      }
+
+      // If we have a selected point (not control point!), see if its the end of a sequence or not
+      else if ( selected.pointIndex === gameState.path[ selected.partIndex ].length - 1 ) {
+        const nextPart = gameState.path[ selected.partIndex + 1 ];
+
+        // Extend sequence
+        if ( !nextPart || nextPart[ 0 ] === 'M' ) {
+          gameState.path.splice( selected.partIndex + 1, 0, [ 'L', newPoint ] );
+
+          selected = {
+            partIndex: selected.partIndex + 1,
+            pointIndex: 1,
+          };
+        }
+
+        // New sequence at same point
+        else {
+          const oldPoint = structuredClone( gameState.path[ selected.partIndex ].at( -1 ) );
+
+          gameState.path.push(
+            [ 'M', oldPoint ],
+            [ 'L', newPoint ],
+          );
+
+          selected = {
+            partIndex: gameState.path.length - 1,
+            pointIndex: 1,
+          }
+        }
+      }
     }
   }
 
