@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5 -5 10 10">
+  <defs>
+    <circle id="circ" cx="0" cy="0" r="0.392699081699"/>  <!-- TWO_PI / 4 colors / 4 limbs -->
+    <g id="quarter">
+      <use href="#circ" fill="red" transform="rotate(0) translate(2,0)"/>
+      <use href="#circ" fill="yellow" transform="rotate(22.5) translate(2,0)"/>
+      <use href="#circ" fill="green" transform="rotate(45) translate(2,0)"/>
+      <use href="#circ" fill="blue" transform="rotate(67.5) translate(2,0)"/>
+    </g>
+  </defs>
+
+  <use href="#quarter"/>
+  <use href="#quarter" transform="rotate(90)"/>
+  <use href="#quarter" transform="rotate(180)"/>
+  <use href="#quarter" transform="rotate(270)"/>
+</svg>
