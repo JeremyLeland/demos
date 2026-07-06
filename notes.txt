@@ -1,3 +1,7 @@
+7/5:
+  - DONE: Try making color circles of spinner as an SVG
+  - DONE: Fixing hand SVG by redoing entire outline as one path and details as additional path
+
 7/2:
   - Adding points
     - Add point before selected point if beginning of sequence?
