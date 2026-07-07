@@ -1,4 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-5 -5 10 10">
+  <style>
+    text {
+      font-family: "Arial Narrow";
+      font-weight: bold;
+      font-size: 0.5px;
+    }
+  </style>
   <defs>
     <circle id="circ" cx="0" cy="0" r="0.6872233929727672"/>  <!-- Distance * PI / 4 colors / 4 limbs -->
     <g id="quarter">
@@ -85,12 +92,16 @@ Q -0.023780222880647857,-0.3496534844320955 -0.09336498676318117,-0.338530397089
       "></path>
     </g>
   </defs>
-  <use href="#foot" transform="translate(-3.5,-3.5)"/>
-  <use href="#hand" transform="translate( 3.5,-3.5)"/>
-  <use href="#hand" transform="translate(-3.5, 3.5) scale(-1,1)"/>
-  <use href="#foot" transform="translate( 3.5, 3.5) rotate(-45) scale(-1,1)"/>
+  <use href="#foot" transform="translate(-3.5,-3.7)"/>
+  <use href="#hand" transform="translate( 3.5,-3.5) scale( 0.8, 0.8)"/>
+  <use href="#hand" transform="translate(-3.5, 3.5) scale(-0.8, 0.8)"/>
+  <use href="#foot" transform="translate( 3.5, 3.3) rotate(-55) scale(-1,1)"/>
   <use href="#quarter"/>
   <use href="#quarter" transform="rotate(90)"/>
   <use href="#quarter" transform="rotate(180)"/>
   <use href="#quarter" transform="rotate(270)"/>
+  <text dominant-baseline="middle" text-anchor="start" x="-4.5" y="-4.5">LEFT FOOT</text>
+  <text dominant-baseline="middle" text-anchor="end"   x=" 4.5" y="-4.5">RIGHT HAND</text>
+  <text dominant-baseline="middle" text-anchor="start" x="-4.5" y=" 4.5">LEFT HAND</text>
+  <text dominant-baseline="middle" text-anchor="end"   x=" 4.5" y=" 4.5">RIGHT FOOT</text>
 </svg>
