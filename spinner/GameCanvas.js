@@ -200,6 +200,9 @@ export class GameCanvas {
       this.ctx.fillStyle = this.backgroundColor;
       this.ctx.fillRect( this.#offsetX, this.#offsetY, canvasWidth, canvasHeight );
     }
+    else {
+      this.ctx.clearRect( this.#offsetX, this.#offsetY, canvasWidth, canvasHeight );
+    }
 
     this.ctx.save(); {
       this.draw( this.ctx, this.#bounds );
